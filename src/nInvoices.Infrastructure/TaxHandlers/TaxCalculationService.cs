@@ -9,7 +9,7 @@ namespace nInvoices.Infrastructure.TaxHandlers;
 /// Service for calculating taxes on invoices.
 /// Orchestrates multiple tax handlers and manages tax application order.
 /// </summary>
-public sealed class TaxCalculationService
+public sealed class TaxCalculationService : ITaxCalculationService
 {
     private readonly IEnumerable<ITaxHandler> _taxHandlers;
 

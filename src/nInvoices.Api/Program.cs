@@ -30,6 +30,9 @@ builder.Services.AddTaxHandlers();
 // Add Template Engine
 builder.Services.AddTemplateEngine();
 
+// Add Application Services
+builder.Services.AddApplicationServices();
+
 // Add MediatR for CQRS
 builder.Services.AddMediatR(cfg => 
 {
@@ -80,5 +83,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
 
 
