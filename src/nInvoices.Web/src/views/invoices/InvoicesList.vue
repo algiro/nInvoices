@@ -1,15 +1,465 @@
 <template>
-  <div class="page">
-    <h1>Invoices List</h1>
-    <p>This page is under construction.</p>
+  <div class="invoices-list">
+    <div class="header">
+      <h1 class="text-3xl font-bold">Invoices</h1>
+      <button @click="handleGenerate" class="btn-primary">
+        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Generate Invoice
+      </button>
+    </div>
+
+    <div class="filters">
+      <input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Search invoices..."
+        class="search-input"
+      />
+      
+      <select v-model="statusFilter" class="filter-select">
+        <option value="">All Statuses</option>
+        <option value="Draft">Draft</option>
+        <option value="Finalized">Finalized</option>
+        <option value="Sent">Sent</option>
+        <option value="Paid">Paid</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+
+      <select v-model="typeFilter" class="filter-select">
+        <option value="">All Types</option>
+        <option value="Monthly">Monthly</option>
+        <option value="OneTime">One-Time</option>
+      </select>
+    </div>
+
+    <div v-if="invoicesStore.loading" class="loading-state">
+      <div class="spinner"></div>
+      <p class="mt-4">Loading invoices...</p>
+    </div>
+
+    <div v-else-if="invoicesStore.error" class="error-state">
+      <p class="text-red-600">{{ invoicesStore.error }}</p>
+      <button @click="loadData" class="btn-primary mt-4">Retry</button>
+    </div>
+
+    <div v-else-if="filteredInvoices.length === 0" class="empty-state">
+      <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+      <p class="text-xl text-gray-600 mb-2">
+        {{ searchQuery || statusFilter || typeFilter ? 'No invoices found' : 'No invoices yet' }}
+      </p>
+      <p class="text-gray-500 mb-4">
+        {{ searchQuery || statusFilter || typeFilter ? 'Try adjusting your filters' : 'Generate your first invoice to get started' }}
+      </p>
+      <button v-if="!searchQuery && !statusFilter && !typeFilter" @click="handleGenerate" class="btn-primary">
+        Generate First Invoice
+      </button>
+    </div>
+
+    <div v-else class="invoices-table-container">
+      <table class="invoices-table">
+        <thead>
+          <tr>
+            <th>Invoice #</th>
+            <th>Customer</th>
+            <th>Type</th>
+            <th>Issue Date</th>
+            <th>Due Date</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="invoice in filteredInvoices"
+            :key="invoice.id"
+            @click="handleView(invoice.id)"
+            class="invoice-row"
+          >
+            <td class="font-semibold">{{ invoice.invoiceNumber }}</td>
+            <td>{{ getCustomerName(invoice.customerId) }}</td>
+            <td>
+              <span class="type-badge" :class="`type-${invoice.type.toLowerCase()}`">
+                {{ formatType(invoice.type) }}
+              </span>
+            </td>
+            <td>{{ formatDate(invoice.issueDate) }}</td>
+            <td>{{ invoice.dueDate ? formatDate(invoice.dueDate) : '-' }}</td>
+            <td class="font-semibold">{{ formatMoney(invoice.total) }}</td>
+            <td>
+              <span class="status-badge" :class="`status-${invoice.status.toLowerCase()}`">
+                {{ invoice.status }}
+              </span>
+            </td>
+            <td class="actions-cell" @click.stop>
+              <button
+                @click="handleDownloadPdf(invoice.id)"
+                class="action-btn"
+                title="Download PDF"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </button>
+              <button
+                v-if="invoice.status === 'Draft'"
+                @click="handleDelete(invoice)"
+                class="action-btn text-red-600 hover:bg-red-50"
+                title="Delete invoice"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div v-if="filteredInvoices.length > 0" class="summary-stats">
+      <div class="stat-card">
+        <p class="stat-label">Total Invoices</p>
+        <p class="stat-value">{{ filteredInvoices.length }}</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Total Revenue</p>
+        <p class="stat-value">{{ formatMoney(totalRevenue) }}</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Paid</p>
+        <p class="stat-value">{{ paidCount }}</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Outstanding</p>
+        <p class="stat-value">{{ outstandingCount }}</p>
+      </div>
+    </div>
   </div>
 </template>
 
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useInvoicesStore } from '@/stores/invoices'
+import { useCustomersStore } from '@/stores/customers'
+import type { InvoiceDto } from '@/types'
+
+const router = useRouter()
+const invoicesStore = useInvoicesStore()
+const customersStore = useCustomersStore()
+
+const searchQuery = ref('')
+const statusFilter = ref('')
+const typeFilter = ref('')
+
+const filteredInvoices = computed(() => {
+  let result = invoicesStore.invoices
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(invoice =>
+      invoice.invoiceNumber.toLowerCase().includes(query) ||
+      getCustomerName(invoice.customerId).toLowerCase().includes(query)
+    )
+  }
+
+  if (statusFilter.value) {
+    result = result.filter(invoice => invoice.status === statusFilter.value)
+  }
+
+  if (typeFilter.value) {
+    result = result.filter(invoice => invoice.type === typeFilter.value)
+  }
+
+  return result.sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime())
+})
+
+const totalRevenue = computed(() => {
+  return filteredInvoices.value
+    .filter(inv => inv.status === 'Paid')
+    .reduce((sum, inv) => sum + inv.total.amount, 0)
+})
+
+const paidCount = computed(() =>
+  filteredInvoices.value.filter(inv => inv.status === 'Paid').length
+)
+
+const outstandingCount = computed(() =>
+  filteredInvoices.value.filter(inv => ['Finalized', 'Sent'].includes(inv.status)).length
+)
+
+onMounted(() => {
+  loadData()
+})
+
+async function loadData() {
+  await Promise.all([
+    invoicesStore.fetchAll(),
+    customersStore.fetchAll()
+  ])
+}
+
+function getCustomerName(customerId: number): string {
+  const customer = customersStore.getCustomerById(customerId)
+  return customer?.name || 'Unknown'
+}
+
+function formatDate(date: string): string {
+  return new Date(date).toLocaleDateString()
+}
+
+function formatMoney(money: { amount: number; currency: string }): string {
+  return `${money.amount.toFixed(2)} ${money.currency}`
+}
+
+function formatType(type: string): string {
+  return type === 'OneTime' ? 'One-Time' : type
+}
+
+function handleGenerate() {
+  router.push('/invoices/new')
+}
+
+function handleView(id: number) {
+  router.push(`/invoices/${id}`)
+}
+
+async function handleDownloadPdf(id: number) {
+  try {
+    await invoicesStore.downloadPdf(id)
+  } catch (error: any) {
+    alert(`Failed to download PDF: ${error.message}`)
+  }
+}
+
+async function handleDelete(invoice: InvoiceDto) {
+  if (!confirm(`Are you sure you want to delete invoice "${invoice.invoiceNumber}"?\n\nThis action cannot be undone.`)) {
+    return
+  }
+
+  try {
+    await invoicesStore.remove(invoice.id)
+  } catch (error: any) {
+    alert(`Failed to delete invoice: ${error.message}`)
+  }
+}
+</script>
+
 <style scoped>
-.page {
-  background: white;
+.invoices-list {
   padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.search-input,
+.filter-select {
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+}
+
+.search-input {
+  flex: 1;
+  max-width: 400px;
+}
+
+.filter-select {
+  min-width: 150px;
+}
+
+.search-input:focus,
+.filter-select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.loading-state,
+.error-state,
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.spinner {
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #2563eb;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.invoices-table-container {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.invoices-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.invoices-table thead {
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.invoices-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.invoices-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.invoice-row {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.invoice-row:hover {
+  background: #f9fafb;
+}
+
+.type-badge,
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.type-monthly {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.type-onetime {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.status-draft {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.status-finalized {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-sent {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-paid {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  padding: 0.5rem;
+  border: none;
+  background: transparent;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
 }
 </style>

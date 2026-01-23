@@ -1,15 +1,24 @@
 <template>
-  <div class="page">
-    <h1>Customer Form</h1>
-    <p>This page is under construction.</p>
+  <div class="customer-form-view">
+    <CustomerFormComponent :customer-id="customerId" />
   </div>
 </template>
 
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import CustomerFormComponent from '@/components/customers/CustomerForm.vue'
+
+const route = useRoute()
+const customerId = computed(() => {
+  const id = route.params.id
+  return id ? Number(id) : undefined
+})
+</script>
+
 <style scoped>
-.page {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.customer-form-view {
+  min-height: calc(100vh - 4rem);
+  background: #f9fafb;
 }
 </style>
