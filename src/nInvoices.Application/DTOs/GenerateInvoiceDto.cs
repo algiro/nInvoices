@@ -6,11 +6,14 @@ namespace nInvoices.Application.DTOs;
 /// Data transfer object for generating a new invoice.
 /// Contains all information needed for invoice creation.
 /// </summary>
-public sealed record GenerateInvoiceDto(
-    long CustomerId,
-    InvoiceType Type,
-    int Year,
-    int Month,
-    IEnumerable<WorkDayDto> WorkDays,
-    IEnumerable<ExpenseDto> Expenses,
-    string InvoiceNumberFormat = "INV-{YEAR}-{NUMBER:000}");
+public sealed class GenerateInvoiceDto
+{
+    public required long CustomerId { get; init; }
+    public required InvoiceType InvoiceType { get; init; }
+    public DateOnly IssueDate { get; init; } = DateOnly.FromDateTime(DateTime.UtcNow);
+    public int? Year { get; init; }
+    public int? Month { get; init; }
+    public ICollection<WorkDayDto>? WorkDays { get; init; }
+    public ICollection<ExpenseDto>? Expenses { get; init; }
+    public string InvoiceNumberFormat { get; init; } = "INV-{YEAR}-{NUMBER:000}";
+}

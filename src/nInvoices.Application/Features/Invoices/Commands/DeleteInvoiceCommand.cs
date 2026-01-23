@@ -6,4 +6,4 @@ namespace nInvoices.Application.Features.Invoices.Commands;
 /// Command to delete a draft invoice.
 /// Only draft invoices can be deleted.
 /// </summary>
-public sealed record DeleteInvoiceCommand(long Id) : IRequest<bool>;
+public sealed record DeleteInvoiceCommand(long InvoiceId) : IRequest<Unit>;

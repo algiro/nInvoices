@@ -7,4 +7,4 @@ namespace nInvoices.Application.Features.Invoices.Commands;
 /// Command to update a draft invoice.
 /// Only draft invoices can be updated.
 /// </summary>
-public sealed record UpdateInvoiceCommand(long Id, UpdateInvoiceDto Invoice) : IRequest<InvoiceDto>;
+public sealed record UpdateInvoiceCommand(long InvoiceId, UpdateInvoiceDto Dto) : IRequest<Unit>;

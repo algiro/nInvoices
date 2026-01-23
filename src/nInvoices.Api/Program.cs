@@ -1,4 +1,5 @@
 using Serilog;
+using nInvoices.Application;
 using nInvoices.Infrastructure.Data;
 using nInvoices.Infrastructure.TaxHandlers;
 using nInvoices.Infrastructure.TemplateEngine;

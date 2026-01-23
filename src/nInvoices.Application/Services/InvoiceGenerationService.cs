@@ -8,19 +8,13 @@ namespace nInvoices.Application.Services;
 
 /// <summary>
 /// Service responsible for invoice generation orchestration.
-/// Brings together: templates, rates, taxes, and rendering.
-/// Follows the Facade pattern - simplifies complex subsystem interactions.
+/// Implements the Facade pattern to simplify complex invoice generation workflow.
+/// Coordinates: template selection, rate calculation, tax application, and rendering.
 /// </summary>
 public interface IInvoiceGenerationService
 {
     Task<Invoice> GenerateInvoiceAsync(
-        Customer customer,
-        InvoiceType invoiceType,
-        int year,
-        int month,
-        IEnumerable<WorkDayDto> workDays,
-        IEnumerable<ExpenseDto> expenses,
-        string invoiceNumberFormat,
+        GenerateInvoiceDto dto,
         CancellationToken cancellationToken = default);
 }
 
@@ -29,6 +23,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     private readonly IRepository<InvoiceTemplate> _templateRepository;
     private readonly IRepository<Rate> _rateRepository;
     private readonly IRepository<Tax> _taxRepository;
+    private readonly IRepository<Invoice> _invoiceRepository;
     private readonly ITemplateEngine _templateEngine;
     private readonly ITaxCalculationService _taxCalculationService;
 
@@ -36,81 +31,82 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         IRepository<InvoiceTemplate> templateRepository,
         IRepository<Rate> rateRepository,
         IRepository<Tax> taxRepository,
+        IRepository<Invoice> invoiceRepository,
         ITemplateEngine templateEngine,
         ITaxCalculationService taxCalculationService)
     {
         _templateRepository = templateRepository;
         _rateRepository = rateRepository;
         _taxRepository = taxRepository;
+        _invoiceRepository = invoiceRepository;
         _templateEngine = templateEngine;
         _taxCalculationService = taxCalculationService;
     }
 
     public async Task<Invoice> GenerateInvoiceAsync(
-        Customer customer,
-        InvoiceType invoiceType,
-        int year,
-        int month,
-        IEnumerable<WorkDayDto> workDays,
-        IEnumerable<ExpenseDto> expenses,
-        string invoiceNumberFormat,
+        GenerateInvoiceDto dto,
         CancellationToken cancellationToken = default)
     {
-        var template = await FindTemplateAsync(customer.Id, invoiceType, cancellationToken);
-        if (template == null)
-            throw new InvalidOperationException($"No active template found for customer {customer.Id} and type {invoiceType}");
+        ArgumentNullException.ThrowIfNull(dto);
 
-        var rate = await FindApplicableRateAsync(customer.Id, invoiceType, cancellationToken);
-        if (rate == null)
-            throw new InvalidOperationException($"No rate found for customer {customer.Id}");
+        var template = await GetTemplateAsync(dto.CustomerId, dto.InvoiceType, cancellationToken);
+        var rate = await GetRateAsync(dto.CustomerId, dto.InvoiceType, cancellationToken);
+        var customerTaxes = await GetCustomerTaxesAsync(dto.CustomerId, cancellationToken);
 
-        var subtotal = CalculateSubtotal(workDays, rate);
-        var totalExpenses = CalculateTotalExpenses(expenses);
+        var subtotal = CalculateSubtotal(dto, rate);
+        var expensesTotal = CalculateExpensesTotal(dto.Expenses);
+        var invoiceNumber = await GenerateInvoiceNumberAsync(
+            dto.CustomerId,
+            dto.InvoiceType,
+            dto.IssueDate,
+            cancellationToken);
 
-        var invoiceNumber = GenerateInvoiceNumber(invoiceNumberFormat, year, month, customer);
-        var issueDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var (totalTax, taxLines) = _taxCalculationService.CalculateTaxes(customerTaxes, subtotal + expensesTotal);
 
         var invoice = new Invoice(
-            customer.Id,
-            invoiceType,
+            dto.CustomerId,
             invoiceNumber,
-            issueDate,
+            dto.InvoiceType,
+            dto.IssueDate,
             subtotal,
-            totalExpenses);
+            rate.Price.Currency);
 
-        foreach (var expense in expenses)
+        if (dto.InvoiceType == InvoiceType.Monthly && dto.WorkDays != null)
         {
-            var expenseEntity = new Expense(
-                invoice.Id,
-                expense.Description,
-                new Money(expense.Amount.Amount, expense.Amount.Currency));
-            invoice.Expenses.Add(expenseEntity);
+            invoice.SetMonthlyInvoiceDetails(dto.Year!.Value, dto.Month!.Value, dto.WorkDays.Count);
         }
 
-        foreach (var workDay in workDays)
+        if (dto.Expenses != null && dto.Expenses.Count > 0)
         {
-            var workDayEntity = new WorkDay(invoice.Id, workDay.Date, workDay.Notes);
-            invoice.WorkDays.Add(workDayEntity);
-        }
+            foreach (var expenseDto in dto.Expenses)
+            {
+                var expense = new Expense(
+                    dto.CustomerId,
+                    expenseDto.Date,
+                    expenseDto.Description,
+                    new Money(expenseDto.Amount, expenseDto.Currency));
+                invoice.Expenses.Add(expense);
+            }
 
-        var taxes = await FindApplicableTaxesAsync(customer.Id, cancellationToken);
-        var (totalTaxes, taxLines) = _taxCalculationService.CalculateTaxes(taxes, subtotal);
+            invoice.AddExpenses(expensesTotal);
+        }
 
         foreach (var taxLine in taxLines)
         {
             invoice.TaxLines.Add(taxLine);
         }
 
-        invoice.RecalculateTotals();
+        invoice.AddTaxes(totalTax);
 
-        var templateData = BuildTemplateData(invoice, customer, workDays, expenses, year, month);
+        var templateData = BuildTemplateData(invoice, dto, rate);
         var renderedContent = _templateEngine.Render(template.Content, templateData);
-        invoice.RenderedContent = renderedContent;
+
+        invoice.SetRenderedContent(renderedContent);
 
         return invoice;
     }
 
-    private async Task<InvoiceTemplate?> FindTemplateAsync(
+    private async Task<InvoiceTemplate> GetTemplateAsync(
         long customerId,
         InvoiceType invoiceType,
         CancellationToken cancellationToken)
@@ -118,10 +114,15 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         var templates = await _templateRepository.FindAsync(
             t => t.CustomerId == customerId && t.InvoiceType == invoiceType && t.IsActive,
             cancellationToken);
-        return templates.FirstOrDefault();
+
+        var template = templates.FirstOrDefault();
+        if (template == null)
+            throw new InvalidOperationException($"No active template found for customer {customerId} and type {invoiceType}");
+
+        return template;
     }
 
-    private async Task<Rate?> FindApplicableRateAsync(
+    private async Task<Rate> GetRateAsync(
         long customerId,
         InvoiceType invoiceType,
         CancellationToken cancellationToken)
@@ -129,118 +130,123 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         var rateType = invoiceType switch
         {
             InvoiceType.Monthly => RateType.Monthly,
-            InvoiceType.Daily => RateType.Daily,
-            InvoiceType.Hourly => RateType.Hourly,
-            _ => RateType.OneTime
+            InvoiceType.OneTime => RateType.Daily,
+            _ => throw new ArgumentException($"Unsupported invoice type: {invoiceType}", nameof(invoiceType))
         };
 
         var rates = await _rateRepository.FindAsync(
             r => r.CustomerId == customerId && r.Type == rateType,
             cancellationToken);
-        return rates.FirstOrDefault();
+
+        var rate = rates.FirstOrDefault();
+        if (rate == null)
+            throw new InvalidOperationException($"No {rateType} rate found for customer {customerId}");
+
+        return rate;
     }
 
-    private async Task<List<Tax>> FindApplicableTaxesAsync(
+    private async Task<IEnumerable<Tax>> GetCustomerTaxesAsync(
         long customerId,
         CancellationToken cancellationToken)
     {
-        var taxes = await _taxRepository.FindAsync(
+        return await _taxRepository.FindAsync(
             t => t.CustomerId == customerId && t.IsActive,
             cancellationToken);
-        return taxes.OrderBy(t => t.Order).ToList();
     }
 
-    private static Money CalculateSubtotal(IEnumerable<WorkDayDto> workDays, Rate rate)
+    private Money CalculateSubtotal(GenerateInvoiceDto dto, Rate rate)
     {
-        var workedDaysCount = workDays.Count();
-        
-        return rate.Type switch
+        return dto.InvoiceType switch
         {
-            RateType.Daily => rate.Price * workedDaysCount,
-            RateType.Monthly => rate.Price,
-            RateType.Hourly => rate.Price * (workedDaysCount * 8),
-            _ => rate.Price
+            InvoiceType.Monthly when dto.WorkDays != null => 
+                new Money(rate.Price.Amount * dto.WorkDays.Count, rate.Price.Currency),
+            InvoiceType.OneTime => rate.Price,
+            _ => throw new InvalidOperationException($"Cannot calculate subtotal for invoice type {dto.InvoiceType}")
         };
     }
 
-    private static Money CalculateTotalExpenses(IEnumerable<ExpenseDto> expenses)
+    private Money CalculateExpensesTotal(ICollection<ExpenseDto>? expenses)
     {
-        if (!expenses.Any())
-            return new Money(0, "USD");
+        if (expenses == null || expenses.Count == 0)
+            return Money.Zero("EUR");
 
-        var first = expenses.First();
-        var total = new Money(0, first.Amount.Currency);
+        var firstExpense = expenses.First();
+        var currency = firstExpense.Currency;
+        var total = expenses.Sum(e => e.Amount);
 
-        foreach (var expense in expenses)
+        return new Money(total, currency);
+    }
+
+    private async Task<InvoiceNumber> GenerateInvoiceNumberAsync(
+        long customerId,
+        InvoiceType invoiceType,
+        DateOnly issueDate,
+        CancellationToken cancellationToken)
+    {
+        var year = issueDate.Year;
+        var month = issueDate.Month;
+
+        var existingInvoices = await _invoiceRepository.FindAsync(
+            i => i.CustomerId == customerId && i.Type == invoiceType && i.Year == year,
+            cancellationToken);
+
+        var sequenceNumber = existingInvoices.Count() + 1;
+
+        var pattern = "INV-{YEAR}-{MONTH:00}-{NUMBER:000}";
+        var date = issueDate.ToDateTime(TimeOnly.MinValue);
+
+        return InvoiceNumber.Generate(pattern, sequenceNumber, date, customerId.ToString());
+    }
+
+    private Dictionary<string, object> BuildTemplateData(
+        Invoice invoice,
+        GenerateInvoiceDto dto,
+        Rate rate)
+    {
+        var data = new Dictionary<string, object>
         {
-            total += new Money(expense.Amount.Amount, expense.Amount.Currency);
+            ["InvoiceNumber"] = invoice.Number.ToString(),
+            ["Date"] = invoice.IssueDate.ToString("yyyy-MM-dd"),
+            ["IssueDate"] = invoice.IssueDate.ToString("yyyy-MM-dd"),
+            ["DueDate"] = invoice.DueDate?.ToString("yyyy-MM-dd") ?? string.Empty,
+            ["Subtotal"] = invoice.Subtotal.ToString(),
+            ["TotalExpenses"] = invoice.TotalExpenses.ToString(),
+            ["TotalExcludingExpenses"] = invoice.Subtotal.ToString(),
+            ["TotalIncludingExpenses"] = (invoice.Subtotal + invoice.TotalExpenses).ToString(),
+            ["TotalTaxes"] = invoice.TotalTaxes.ToString(),
+            ["Total"] = invoice.Total.ToString(),
+            ["Currency"] = rate.Price.Currency,
+            ["Notes"] = invoice.Notes ?? string.Empty
+        };
+
+        if (dto.InvoiceType == InvoiceType.Monthly && invoice.WorkedDays.HasValue)
+        {
+            data["WorkedDays"] = invoice.WorkedDays.Value;
+            data["Year"] = invoice.Year ?? DateTime.UtcNow.Year;
+            data["Month"] = invoice.Month ?? DateTime.UtcNow.Month;
+            data["MonthNumber"] = invoice.Month ?? DateTime.UtcNow.Month;
+            data["MonthlyRate"] = rate.Price.ToString();
+
+            if (invoice.Month.HasValue && invoice.Year.HasValue)
+            {
+                var monthDescriptions = new Dictionary<string, string>
+                {
+                    ["EN"] = new DateTime(invoice.Year.Value, invoice.Month.Value, 1)
+                        .ToString("MMMM", System.Globalization.CultureInfo.GetCultureInfo("en-US")),
+                    ["ES"] = new DateTime(invoice.Year.Value, invoice.Month.Value, 1)
+                        .ToString("MMMM", System.Globalization.CultureInfo.GetCultureInfo("es-ES")),
+                    ["IT"] = new DateTime(invoice.Year.Value, invoice.Month.Value, 1)
+                        .ToString("MMMM", System.Globalization.CultureInfo.GetCultureInfo("it-IT")),
+                    ["FR"] = new DateTime(invoice.Year.Value, invoice.Month.Value, 1)
+                        .ToString("MMMM", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")),
+                    ["DE"] = new DateTime(invoice.Year.Value, invoice.Month.Value, 1)
+                        .ToString("MMMM", System.Globalization.CultureInfo.GetCultureInfo("de-DE"))
+                };
+
+                data["MonthDescription"] = monthDescriptions;
+            }
         }
 
-        return total;
-    }
-
-    private static string GenerateInvoiceNumber(
-        string format,
-        int year,
-        int month,
-        Customer customer)
-    {
-        return format
-            .Replace("{YEAR}", year.ToString())
-            .Replace("{MONTH}", month.ToString("D2"))
-            .Replace("{NUMBER:000}", "001")
-            .Replace("{CUSTOMER}", customer.Name.Replace(" ", ""));
-    }
-
-    private static Dictionary<string, object?> BuildTemplateData(
-        Invoice invoice,
-        Customer customer,
-        IEnumerable<WorkDayDto> workDays,
-        IEnumerable<ExpenseDto> expenses,
-        int year,
-        int month)
-    {
-        var monthNames = new Dictionary<string, string>
-        {
-            ["EN"] = new DateTime(year, month, 1).ToString("MMMM", new System.Globalization.CultureInfo("en-US")),
-            ["ES"] = new DateTime(year, month, 1).ToString("MMMM", new System.Globalization.CultureInfo("es-ES")),
-            ["FR"] = new DateTime(year, month, 1).ToString("MMMM", new System.Globalization.CultureInfo("fr-FR")),
-            ["IT"] = new DateTime(year, month, 1).ToString("MMMM", new System.Globalization.CultureInfo("it-IT")),
-            ["DE"] = new DateTime(year, month, 1).ToString("MMMM", new System.Globalization.CultureInfo("de-DE"))
-        };
-
-        return new Dictionary<string, object?>
-        {
-            ["InvoiceNumber"] = invoice.InvoiceNumber,
-            ["IssueDate"] = invoice.IssueDate.ToString("yyyy-MM-dd"),
-            ["DueDate"] = invoice.DueDate?.ToString("yyyy-MM-dd"),
-            ["Customer"] = new Dictionary<string, object?>
-            {
-                ["Name"] = customer.Name,
-                ["FiscalId"] = customer.FiscalId,
-                ["Address"] = new Dictionary<string, object?>
-                {
-                    ["Street"] = customer.Address.Street,
-                    ["HouseNumber"] = customer.Address.HouseNumber,
-                    ["City"] = customer.Address.City,
-                    ["ZipCode"] = customer.Address.ZipCode,
-                    ["Country"] = customer.Address.Country,
-                    ["State"] = customer.Address.State
-                }
-            },
-            ["WorkedDays"] = workDays.Count(),
-            ["MonthNumber"] = month,
-            ["Year"] = year,
-            ["MonthDescription"] = monthNames,
-            ["Subtotal"] = $"{invoice.Subtotal.Amount:F2} {invoice.Subtotal.Currency}",
-            ["TotalExpenses"] = $"{invoice.TotalExpenses.Amount:F2} {invoice.TotalExpenses.Currency}",
-            ["TotalTaxes"] = $"{invoice.TotalTaxes.Amount:F2} {invoice.TotalTaxes.Currency}",
-            ["Total"] = $"{invoice.Total.Amount:F2} {invoice.Total.Currency}",
-            ["Expenses"] = expenses.Select(e => new Dictionary<string, object?>
-            {
-                ["Description"] = e.Description,
-                ["Amount"] = $"{e.Amount.Amount:F2} {e.Amount.Currency}"
-            }).ToList()
-        };
+        return data;
     }
 }
