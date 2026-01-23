@@ -1,4 +1,5 @@
 using Serilog;
+using nInvoices.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
+// Add Database
+builder.Services.AddDatabase(builder.Configuration);
+
 // Configure CORS
 builder.Services.AddCors(options =>
 {
@@ -29,7 +33,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// TODO: Add MediatR, FluentValidation, and EF Core services
+// TODO: Add MediatR and FluentValidation
 
 var app = builder.Build();
 
