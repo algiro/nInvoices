@@ -2,6 +2,7 @@ using Serilog;
 using nInvoices.Infrastructure.Data;
 using nInvoices.Infrastructure.TaxHandlers;
 using nInvoices.Infrastructure.TemplateEngine;
+using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,15 @@ builder.Services.AddTaxHandlers();
 
 // Add Template Engine
 builder.Services.AddTemplateEngine();
+
+// Add MediatR for CQRS
+builder.Services.AddMediatR(cfg => 
+{
+    cfg.RegisterServicesFromAssembly(typeof(nInvoices.Application.ApplicationAssemblyMarker).Assembly);
+});
+
+// Add FluentValidation
+builder.Services.AddValidatorsFromAssembly(typeof(nInvoices.Application.ApplicationAssemblyMarker).Assembly);
 
 // Configure CORS
 builder.Services.AddCors(options =>
@@ -70,3 +80,5 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+

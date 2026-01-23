@@ -38,6 +38,22 @@ public sealed class Customer : EntityBase
         Address = address;
     }
 
+    public void Update(string name, string fiscalId, Address address)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(fiscalId);
+        ArgumentNullException.ThrowIfNull(address);
+
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Customer name cannot be empty", nameof(name));
+        if (string.IsNullOrWhiteSpace(fiscalId))
+            throw new ArgumentException("Fiscal ID cannot be empty", nameof(fiscalId));
+
+        Name = name;
+        FiscalId = fiscalId;
+        Address = address;
+    }
+
     public void UpdateDetails(string name, string fiscalId, Address address)
     {
         ArgumentNullException.ThrowIfNull(name);
