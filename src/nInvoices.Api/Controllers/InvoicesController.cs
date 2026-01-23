@@ -1,4 +1,5 @@
 using MediatR;
+using nInvoices.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Invoices.Commands;
@@ -16,11 +17,16 @@ public sealed class InvoicesController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly ILogger<InvoicesController> _logger;
+    private readonly IPdfExportService _pdfExportService;
 
-    public InvoicesController(IMediator mediator, ILogger<InvoicesController> logger)
+    public InvoicesController(
+        IMediator mediator, 
+        ILogger<InvoicesController> logger,
+        IPdfExportService pdfExportService)
     {
         _mediator = mediator;
         _logger = logger;
+        _pdfExportService = pdfExportService;
     }
 
     /// <summary>
@@ -181,4 +187,72 @@ public sealed class InvoicesController : ControllerBase
             return BadRequest(new { error = ex.Message });
         }
     }
+    /// <summary>
+    /// Exports an invoice as PDF.
+    /// Returns PDF file for download.
+    /// </summary>
+    [HttpGet("{id}/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> ExportPdf(long id, CancellationToken cancellationToken)
+    {
+        var query = new GetInvoiceByIdQuery(id);
+        var invoiceDto = await _mediator.Send(query, cancellationToken);
+
+        if (invoiceDto == null)
+            return NotFound();
+
+        var repository = HttpContext.RequestServices.GetRequiredService<IRepository<Core.Entities.Invoice>>();
+        var invoice = await repository.GetByIdAsync(id, cancellationToken);
+
+        if (invoice == null)
+            return NotFound();
+
+        try
+        {
+            var pdfBytes = _pdfExportService.GenerateInvoicePdf(invoice);
+            var fileName = $"Invoice-{invoice.Number}.pdf";
+
+            return File(pdfBytes, "application/pdf", fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to generate PDF for invoice {InvoiceId}", id);
+            return StatusCode(500, new { error = "Failed to generate PDF" });
+        }
+    }
+
+    /// <summary>
+    /// Exports worked days calendar as PDF for a monthly invoice.
+    /// Useful for timesheet documentation.
+    /// </summary>
+    [HttpGet("{id}/calendar/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> ExportCalendarPdf(long id, CancellationToken cancellationToken)
+    {
+        var repository = HttpContext.RequestServices.GetRequiredService<IRepository<Core.Entities.Invoice>>();
+        var invoice = await repository.GetByIdAsync(id, cancellationToken);
+
+        if (invoice == null)
+            return NotFound();
+
+        if (invoice.Type != Core.Enums.InvoiceType.Monthly)
+            return BadRequest(new { error = "Calendar export is only available for monthly invoices" });
+
+        try
+        {
+            var pdfBytes = _pdfExportService.GenerateWorkedDaysCalendarPdf(invoice);
+            var fileName = $"Calendar-{invoice.Year}-{invoice.Month:00}-{invoice.Customer?.Name}.pdf";
+
+            return File(pdfBytes, "application/pdf", fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to generate calendar PDF for invoice {InvoiceId}", id);
+            return StatusCode(500, new { error = "Failed to generate calendar PDF" });
+        }
+    }
 }
+

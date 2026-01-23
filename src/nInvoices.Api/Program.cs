@@ -3,6 +3,7 @@ using nInvoices.Application;
 using nInvoices.Infrastructure.Data;
 using nInvoices.Infrastructure.TaxHandlers;
 using nInvoices.Infrastructure.TemplateEngine;
+using nInvoices.Infrastructure.PdfExport;
 using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,6 +31,7 @@ builder.Services.AddTaxHandlers();
 
 // Add Template Engine
 builder.Services.AddTemplateEngine();
+builder.Services.AddPdfExport();
 
 // Add Application Services
 builder.Services.AddApplicationServices();
@@ -84,6 +86,7 @@ finally
 {
     Log.CloseAndFlush();
 }
+
 
 
 
