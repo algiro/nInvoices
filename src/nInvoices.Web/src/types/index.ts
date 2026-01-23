@@ -1,0 +1,203 @@
+// TypeScript interfaces matching backend DTOs
+// Ensures type safety across frontend-backend communication
+
+export enum InvoiceType {
+  Monthly = 'Monthly',
+  OneTime = 'OneTime'
+}
+
+export enum InvoiceStatus {
+  Draft = 'Draft',
+  Finalized = 'Finalized',
+  Sent = 'Sent',
+  Paid = 'Paid',
+  Cancelled = 'Cancelled'
+}
+
+export enum RateType {
+  Daily = 'Daily',
+  Monthly = 'Monthly',
+  Hourly = 'Hourly'
+}
+
+export interface MoneyDto {
+  amount: number;
+  currency: string;
+}
+
+export interface AddressDto {
+  street: string;
+  houseNumber: string;
+  city: string;
+  zipCode: string;
+  country: string;
+  state?: string;
+}
+
+export interface CustomerDto {
+  id: number;
+  name: string;
+  fiscalId: string;
+  address: AddressDto;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateCustomerDto {
+  name: string;
+  fiscalId: string;
+  address: AddressDto;
+}
+
+export interface UpdateCustomerDto {
+  name: string;
+  fiscalId: string;
+  address: AddressDto;
+}
+
+export interface RateDto {
+  id: number;
+  customerId: number;
+  type: RateType;
+  price: MoneyDto;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateRateDto {
+  customerId: number;
+  type: RateType;
+  price: MoneyDto;
+}
+
+export interface UpdateRateDto {
+  type: RateType;
+  price: MoneyDto;
+  isActive: boolean;
+}
+
+export interface TaxDto {
+  id: number;
+  customerId: number;
+  taxId: string;
+  description: string;
+  handlerId: string;
+  rate: number;
+  appliedToTaxId?: number;
+  order: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateTaxDto {
+  customerId: number;
+  taxId: string;
+  description: string;
+  handlerId: string;
+  rate: number;
+  appliedToTaxId?: number;
+  order: number;
+}
+
+export interface UpdateTaxDto {
+  taxId: string;
+  description: string;
+  handlerId: string;
+  rate: number;
+  appliedToTaxId?: number;
+  order: number;
+  isActive: boolean;
+}
+
+export interface InvoiceTemplateDto {
+  id: number;
+  customerId: number;
+  invoiceType: InvoiceType;
+  content: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateInvoiceTemplateDto {
+  customerId: number;
+  invoiceType: InvoiceType;
+  content: string;
+}
+
+export interface UpdateInvoiceTemplateDto {
+  invoiceType: InvoiceType;
+  content: string;
+  isActive: boolean;
+}
+
+export interface WorkDayDto {
+  date: string;
+  notes?: string;
+}
+
+export interface ExpenseDto {
+  description: string;
+  amount: number;
+  currency: string;
+  date: string;
+}
+
+export interface InvoiceDto {
+  id: number;
+  customerId: number;
+  type: InvoiceType;
+  invoiceNumber: string;
+  issueDate: string;
+  dueDate?: string;
+  workedDays?: number;
+  year?: number;
+  month?: number;
+  subtotal: MoneyDto;
+  totalExpenses: MoneyDto;
+  totalTaxes: MoneyDto;
+  total: MoneyDto;
+  status: InvoiceStatus;
+  renderedContent?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface GenerateInvoiceDto {
+  customerId: number;
+  invoiceType: InvoiceType;
+  issueDate: string;
+  year?: number;
+  month?: number;
+  workDays?: WorkDayDto[];
+  expenses?: ExpenseDto[];
+  invoiceNumberFormat?: string;
+}
+
+export interface UpdateInvoiceDto {
+  dueDate?: string;
+  renderedContent?: string;
+  notes?: string;
+}
+
+export interface TemplateValidationResultDto {
+  isValid: boolean;
+  errors: string[];
+  placeholders: string[];
+}
+
+// API Response types
+export interface ApiError {
+  error: string;
+  details?: string[];
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+}
