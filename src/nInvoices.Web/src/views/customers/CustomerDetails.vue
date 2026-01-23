@@ -78,19 +78,11 @@
         </div>
 
         <div v-if="activeTab === 'rates'" class="tab-pane">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold">Rates</h3>
-            <button class="btn-primary">Add Rate</button>
-          </div>
-          <p class="text-gray-600">Rate management coming soon...</p>
+          <RatesList :customer-id="customerId" />
         </div>
 
         <div v-if="activeTab === 'taxes'" class="tab-pane">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold">Tax Configuration</h3>
-            <button class="btn-primary">Add Tax</button>
-          </div>
-          <p class="text-gray-600">Tax configuration coming soon...</p>
+          <TaxesList :customer-id="customerId" />
         </div>
 
         <div v-if="activeTab === 'templates'" class="tab-pane">
@@ -117,6 +109,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCustomersStore } from '@/stores/customers'
+import RatesList from '@/components/rates/RatesList.vue'
+import TaxesList from '@/components/taxes/TaxesList.vue'
 import type { AddressDto } from '@/types'
 
 const route = useRoute()
