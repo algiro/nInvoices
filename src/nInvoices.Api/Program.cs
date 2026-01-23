@@ -1,5 +1,6 @@
 using Serilog;
 using nInvoices.Infrastructure.Data;
+using nInvoices.Infrastructure.TaxHandlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,9 @@ builder.Services.AddOpenApi();
 
 // Add Database
 builder.Services.AddDatabase(builder.Configuration);
+
+// Add Tax Handlers
+builder.Services.AddTaxHandlers();
 
 // Configure CORS
 builder.Services.AddCors(options =>
