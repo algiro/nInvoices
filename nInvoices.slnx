@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/nInvoices.Api/nInvoices.Api.csproj" />
+    <Project Path="src/nInvoices.Application/nInvoices.Application.csproj" />
+    <Project Path="src/nInvoices.Core/nInvoices.Core.csproj" />
+    <Project Path="src/nInvoices.Infrastructure/nInvoices.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/nInvoices.Api.Tests/nInvoices.Api.Tests.csproj" />
+    <Project Path="tests/nInvoices.Application.Tests/nInvoices.Application.Tests.csproj" />
+    <Project Path="tests/nInvoices.Core.Tests/nInvoices.Core.Tests.csproj" />
+    <Project Path="tests/nInvoices.Infrastructure.Tests/nInvoices.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>
