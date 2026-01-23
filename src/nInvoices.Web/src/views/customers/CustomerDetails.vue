@@ -86,11 +86,7 @@
         </div>
 
         <div v-if="activeTab === 'templates'" class="tab-pane">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold">Invoice Templates</h3>
-            <button class="btn-primary">Add Template</button>
-          </div>
-          <p class="text-gray-600">Template management coming soon...</p>
+          <TemplatesList :customer-id="customerId" />
         </div>
 
         <div v-if="activeTab === 'invoices'" class="tab-pane">
@@ -111,6 +107,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCustomersStore } from '@/stores/customers'
 import RatesList from '@/components/rates/RatesList.vue'
 import TaxesList from '@/components/taxes/TaxesList.vue'
+import TemplatesList from '@/components/templates/TemplatesList.vue'
 import type { AddressDto } from '@/types'
 
 const route = useRoute()
