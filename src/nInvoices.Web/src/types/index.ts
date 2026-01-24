@@ -190,7 +190,7 @@ export interface ExpenseDto {
 export interface InvoiceDto {
   id: number;
   customerId: number;
-  type: InvoiceType;
+  type: InvoiceType | string;  // Backend serializes as string
   invoiceNumber: string;
   issueDate: string;
   dueDate?: string;
@@ -201,7 +201,7 @@ export interface InvoiceDto {
   totalExpenses: MoneyDto;
   totalTaxes: MoneyDto;
   total: MoneyDto;
-  status: InvoiceStatus;
+  status: InvoiceStatus | string;  // Backend serializes as string
   renderedContent?: string;
   notes?: string;
   createdAt: string;
@@ -246,6 +246,7 @@ export interface CreateMonthlyReportTemplateDto {
   customerId: number;
   name: string;
   content: string;
+  invoiceType?: InvoiceType;
 }
 
 export interface UpdateMonthlyReportTemplateDto {

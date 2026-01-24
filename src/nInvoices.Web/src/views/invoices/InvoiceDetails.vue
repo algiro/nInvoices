@@ -32,7 +32,7 @@
             {{ downloadingPdf ? 'Downloading...' : 'Download PDF' }}
           </button>
           <button
-            v-if="invoice.invoiceType === InvoiceType.Monthly"
+            v-if="invoice && (invoice.type === 'Monthly' || invoice.type === 0)"
             @click="handleDownloadMonthlyReport"
             class="btn-primary"
             :disabled="downloadingMonthlyReport"

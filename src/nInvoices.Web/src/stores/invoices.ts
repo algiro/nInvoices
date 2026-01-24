@@ -162,6 +162,14 @@ export const useInvoicesStore = defineStore('invoices', () => {
     error.value = null;
     try {
       const blob = await invoicesApi.downloadMonthlyReportPdf(id);
+      
+      // Check if the blob is actually JSON (error response)
+      if (blob.type === 'application/json') {
+        const text = await blob.text();
+        const errorData = JSON.parse(text);
+        throw new Error(errorData.error || 'Failed to download monthly report');
+      }
+      
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -172,6 +180,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
       window.URL.revokeObjectURL(url);
     } catch (e: any) {
       error.value = e.message || 'Failed to download monthly report';
+      console.error('Monthly report download error:', e);
+      alert('Failed to download monthly report: ' + e.message);
       throw e;
     } finally {
       loading.value = false;

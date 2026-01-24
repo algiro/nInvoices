@@ -96,6 +96,7 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
             
             var dayModel = new MonthDayTemplateModel
             {
+                DateValue = dateTime,
                 Date = date.ToString("dd/MM/yyyy"),
                 DayOfWeek = dateTime.ToString("dddd", System.Globalization.CultureInfo.GetCultureInfo("en-US")),
                 DayNumber = day,
@@ -122,6 +123,18 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
         var model = new MonthlyReportTemplateModel
         {
             CustomerName = customer.Name,
+            Customer = new CustomerTemplateModel
+            {
+                Name = customer.Name,
+                FiscalId = customer.FiscalId ?? string.Empty,
+                Address = new AddressTemplateModel
+                {
+                    Street = customer.Address?.Street ?? string.Empty,
+                    City = customer.Address?.City ?? string.Empty,
+                    PostalCode = customer.Address?.ZipCode ?? string.Empty,
+                    Country = customer.Address?.Country ?? string.Empty
+                }
+            },
             MonthDescription = monthDescription,
             Year = year,
             MonthNumber = month,

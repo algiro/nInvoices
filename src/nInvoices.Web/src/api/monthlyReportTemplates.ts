@@ -36,6 +36,8 @@ export const monthlyReportTemplatesApi = {
   },
 
   validate: async (content: string): Promise<TemplateValidationResultDto> => {
-    return apiClient.post<TemplateValidationResultDto>('/api/monthlyreporttemplates/validate', { content });
+    return apiClient.post<TemplateValidationResultDto>('/api/monthlyreporttemplates/validate', content, {
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 };

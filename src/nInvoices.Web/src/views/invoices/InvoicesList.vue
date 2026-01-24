@@ -106,7 +106,7 @@
                 </svg>
               </button>
               <button
-                v-if="invoice.status === 'Draft'"
+                v-if="invoice.status === 'Draft' || invoice.status === 0"
                 @click="handleDelete(invoice)"
                 class="action-btn text-red-600 hover:bg-red-50"
                 title="Delete invoice"
@@ -170,23 +170,33 @@ const filteredInvoices = computed(() => {
   }
 
   if (statusFilter.value) {
-    // Convert string filter to enum number for comparison
-    const statusNum = Object.entries(InvoiceStatusNames).find(
-      ([_, name]) => name === statusFilter.value
-    )?.[0]
-    if (statusNum !== undefined) {
-      result = result.filter(invoice => invoice.status === Number(statusNum))
-    }
+    result = result.filter(invoice => {
+      // Backend returns string values like "Draft", "Finalized"
+      if (typeof invoice.status === 'string') {
+        return invoice.status === statusFilter.value
+      }
+      // Handle numeric enum values
+      const statusNum = Object.entries(InvoiceStatusNames).find(
+        ([_, name]) => name === statusFilter.value
+      )?.[0]
+      return statusNum !== undefined && invoice.status === Number(statusNum)
+    })
   }
 
   if (typeFilter.value) {
-    // Convert string filter to enum number for comparison
-    const typeNum = Object.entries(InvoiceTypeNames).find(
-      ([_, name]) => name === typeFilter.value
-    )?.[0]
-    if (typeNum !== undefined) {
-      result = result.filter(invoice => invoice.type === Number(typeNum))
-    }
+    result = result.filter(invoice => {
+      // Backend returns string values like "Monthly", "OneTime"
+      if (typeof invoice.type === 'string') {
+        // Handle "One-Time" filter matching "OneTime" backend value
+        const backendValue = typeFilter.value === 'One-Time' ? 'OneTime' : typeFilter.value
+        return invoice.type === backendValue
+      }
+      // Handle numeric enum values
+      const typeNum = Object.entries(InvoiceTypeNames).find(
+        ([_, name]) => name === typeFilter.value
+      )?.[0]
+      return typeNum !== undefined && invoice.type === Number(typeNum)
+    })
   }
 
   return result.sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime())
@@ -194,16 +204,17 @@ const filteredInvoices = computed(() => {
 
 const totalRevenue = computed(() => {
   return filteredInvoices.value
-    .filter(inv => inv.status === InvoiceStatus.Paid)
+    .filter(inv => inv.status === 'Paid' || inv.status === InvoiceStatus.Paid)
     .reduce((sum, inv) => sum + inv.total.amount, 0)
 })
 
 const paidCount = computed(() =>
-  filteredInvoices.value.filter(inv => inv.status === InvoiceStatus.Paid).length
+  filteredInvoices.value.filter(inv => inv.status === 'Paid' || inv.status === InvoiceStatus.Paid).length
 )
 
 const outstandingCount = computed(() =>
   filteredInvoices.value.filter(inv => 
+    inv.status === 'Finalized' || inv.status === 'Sent' ||
     inv.status === InvoiceStatus.Finalized || inv.status === InvoiceStatus.Sent
   ).length
 )
@@ -217,6 +228,10 @@ async function loadData() {
     invoicesStore.fetchAll(),
     customersStore.fetchAll()
   ])
+  console.log('Invoices loaded:', invoicesStore.invoices.length);
+  if (invoicesStore.invoices.length > 0) {
+    console.log('First invoice:', JSON.stringify(invoicesStore.invoices[0], null, 2));
+  }
 }
 
 function getCustomerName(customerId: number): string {
@@ -235,12 +250,33 @@ function formatMoney(money: { amount: number; currency: string } | undefined): s
   return `${money.amount.toFixed(2)} ${money.currency}`
 }
 
-function formatType(type: InvoiceType): string {
-  return InvoiceTypeNames[type] || 'Unknown'
+function formatType(type: InvoiceType | string): string {
+  console.log('formatType called with:', type, 'Type:', typeof type);
+  
+  // Handle string enum values from backend
+  if (typeof type === 'string') {
+    // Backend returns "Monthly", "OneTime", etc as strings
+    return type === 'OneTime' ? 'One-Time' : type;
+  }
+  
+  // Handle numeric enum values
+  const result = InvoiceTypeNames[type as InvoiceType];
+  console.log('Result:', result);
+  return result || 'Unknown'
 }
 
-function formatStatus(status: InvoiceStatus): string {
-  return InvoiceStatusNames[status] || 'Unknown'
+function formatStatus(status: InvoiceStatus | string): string {
+  console.log('formatStatus called with:', status, 'Type:', typeof status);
+  
+  // Handle string enum values from backend
+  if (typeof status === 'string') {
+    return status;
+  }
+  
+  // Handle numeric enum values
+  const result = InvoiceStatusNames[status as InvoiceStatus];
+  console.log('Result:', result);
+  return result || 'Unknown'
 }
 
 function getTypeCssClass(type: InvoiceType): string {
@@ -461,6 +497,15 @@ async function handleDelete(invoice: InvoiceDto) {
   cursor: pointer;
   color: #6b7280;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  stroke: currentColor;
 }
 
 .action-btn:hover {

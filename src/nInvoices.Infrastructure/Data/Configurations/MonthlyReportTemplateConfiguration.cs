@@ -15,6 +15,9 @@ public sealed class MonthlyReportTemplateConfiguration : IEntityTypeConfiguratio
         builder.ToTable("MonthlyReportTemplates");
 
         builder.HasKey(t => t.Id);
+        
+        builder.Property(t => t.Id)
+            .ValueGeneratedOnAdd();
 
         builder.Property(t => t.CustomerId)
             .IsRequired();

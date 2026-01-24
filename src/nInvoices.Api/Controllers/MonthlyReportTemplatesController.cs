@@ -16,15 +16,18 @@ namespace nInvoices.Api.Controllers;
 public sealed class MonthlyReportTemplatesController : ControllerBase
 {
     private readonly IRepository<MonthlyReportTemplate> _repository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ITemplateRenderer _templateRenderer;
     private readonly ILogger<MonthlyReportTemplatesController> _logger;
 
     public MonthlyReportTemplatesController(
         IRepository<MonthlyReportTemplate> repository,
+        IUnitOfWork unitOfWork,
         ITemplateRenderer templateRenderer,
         ILogger<MonthlyReportTemplatesController> logger)
     {
         _repository = repository;
+        _unitOfWork = unitOfWork;
         _templateRenderer = templateRenderer;
         _logger = logger;
     }
@@ -97,6 +100,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
                 dto.InvoiceType);
 
             await _repository.AddAsync(template, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(
                 "Monthly report template {TemplateId} created for customer {CustomerId}",
@@ -144,6 +148,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
         {
             template.Update(dto.Name, dto.Content);
             await _repository.UpdateAsync(template, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(
                 "Monthly report template {TemplateId} updated",
@@ -180,6 +185,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
             return NotFound();
 
         await _repository.DeleteAsync(template, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation(
             "Monthly report template {TemplateId} deleted",
@@ -192,7 +198,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
     /// Validates monthly report template syntax.
     /// </summary>
     [HttpPost("validate")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(TemplateValidationResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Validate(
         [FromBody] string content,
@@ -203,10 +209,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
 
         var result = await _templateRenderer.ValidateAsync(content, cancellationToken);
 
-        if (!result.IsValid)
-            return BadRequest(new { errors = result.Errors });
-
-        return Ok(new { message = "Template is valid" });
+        return Ok(result);
     }
 
     /// <summary>
@@ -223,6 +226,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
 
         template.Activate();
         await _repository.UpdateAsync(template, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Monthly report template {TemplateId} activated", id);
 
@@ -243,6 +247,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
 
         template.Deactivate();
         await _repository.UpdateAsync(template, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Monthly report template {TemplateId} deactivated", id);
 

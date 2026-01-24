@@ -89,6 +89,10 @@
           <TemplatesList :customer-id="customerId" />
         </div>
 
+        <div v-if="activeTab === 'monthly-reports'" class="tab-pane">
+          <MonthlyReportTemplatesList :customer-id="customerId" />
+        </div>
+
         <div v-if="activeTab === 'invoices'" class="tab-pane">
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold">Invoices</h3>
@@ -108,6 +112,7 @@ import { useCustomersStore } from '@/stores/customers'
 import RatesList from '@/components/rates/RatesList.vue'
 import TaxesList from '@/components/taxes/TaxesList.vue'
 import TemplatesList from '@/components/templates/TemplatesList.vue'
+import MonthlyReportTemplatesList from '@/components/monthlyreports/MonthlyReportTemplatesList.vue'
 import type { AddressDto } from '@/types'
 
 const route = useRoute()
@@ -124,7 +129,8 @@ const tabs = [
   { id: 'overview', label: 'Overview' },
   { id: 'rates', label: 'Rates' },
   { id: 'taxes', label: 'Taxes' },
-  { id: 'templates', label: 'Templates' },
+  { id: 'templates', label: 'Invoice Templates' },
+  { id: 'monthly-reports', label: 'Monthly Reports' },
   { id: 'invoices', label: 'Invoices' }
 ]
 
