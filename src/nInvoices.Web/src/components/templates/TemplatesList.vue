@@ -33,7 +33,7 @@
       <div v-for="template in templates" :key="template.id" class="template-card">
         <div class="card-header">
           <div>
-            <span class="type-badge" :class="`type-${template.invoiceType.toLowerCase()}`">
+            <span class="type-badge" :class="getTypeBadgeClass(template.invoiceType)">
               {{ formatType(template.invoiceType) }}
             </span>
             <p class="card-subtitle">Created {{ formatDate(template.createdAt) }}</p>
@@ -70,7 +70,7 @@
           </div>
         </div>
         <div class="card-content">
-          <pre class="template-preview">{{ truncateContent(template.content) }}</pre>
+          <pre class="template-preview" v-text="truncateContent(template.content)"></pre>
         </div>
       </div>
     </div>
@@ -106,7 +106,7 @@
             </button>
           </div>
           <div class="preview-content">
-            <pre class="template-full">{{ previewTemplate.content }}</pre>
+            <pre class="template-full" v-text="previewTemplate.content"></pre>
           </div>
         </div>
       </div>
@@ -118,6 +118,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useTemplatesStore } from '@/stores/templates'
 import TemplateForm from './TemplateForm.vue'
+import { InvoiceType, InvoiceTypeNames } from '@/types'
 import type { InvoiceTemplateDto } from '@/types'
 
 interface Props {
@@ -148,8 +149,22 @@ async function loadTemplates() {
   }
 }
 
-function formatType(type: string): string {
-  return type === 'OneTime' ? 'One-Time' : type
+function formatType(type: InvoiceType): string {
+  return InvoiceTypeNames[type] || 'Unknown'
+}
+
+function getTypeBadgeClass(type: InvoiceType | undefined | null): string {
+  if (type === undefined || type === null) {
+    return 'type-unknown'
+  }
+  const name = InvoiceTypeNames[type]?.toLowerCase() || 'unknown'
+  const sanitized = name.replace(/[^a-z0-9]/g, '')
+  return `type-${sanitized}`
+}
+
+function getTypeCssClass(type: InvoiceType): string {
+  const name = InvoiceTypeNames[type]?.toLowerCase() || 'unknown'
+  return name.replace(/[^a-z0-9]/g, '')
 }
 
 function formatDate(date: string): string {
@@ -301,18 +316,26 @@ function handleClosePreview() {
 }
 
 .action-btn {
-  padding: 0.25rem;
+  padding: 0.5rem;
   border: none;
   background: transparent;
   border-radius: 0.375rem;
   cursor: pointer;
   color: #6b7280;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .action-btn:hover {
-  background: white;
+  background: #f3f4f6;
   color: #1f2937;
+}
+
+.action-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .card-content {

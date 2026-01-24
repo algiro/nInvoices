@@ -28,8 +28,8 @@
     <div v-else class="rates-grid">
       <div v-for="rate in rates" :key="rate.id" class="rate-card">
         <div class="rate-header">
-          <span class="rate-type-badge" :class="`type-${rate.type.toLowerCase()}`">
-            {{ rate.type }}
+          <span class="rate-type-badge" :class="`type-${getRateTypeCssClass(rate.type)}`">
+            {{ formatRateType(rate.type) }}
           </span>
           <div class="rate-actions">
             <button
@@ -56,7 +56,7 @@
           {{ formatMoney(rate.price) }}
         </div>
         <div class="rate-description">
-          per {{ rate.type.toLowerCase() }}
+          per {{ formatRateType(rate.type).toLowerCase() }}
         </div>
       </div>
     </div>
@@ -88,7 +88,11 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRatesStore } from '@/stores/rates'
 import RateForm from './RateForm.vue'
+import { RateTypeNames, RateType } from '@/types'
 import type { RateDto, MoneyDto } from '@/types'
+
+// 🔍 DEBUG: Component loaded
+console.log('🔍 RatesList component loaded!')
 
 interface Props {
   customerId: number
@@ -100,17 +104,30 @@ const ratesStore = useRatesStore()
 const showForm = ref(false)
 const editingRate = ref<RateDto | null>(null)
 
-const rates = computed(() => ratesStore.ratesByCustomer(props.customerId))
-const loading = computed(() => ratesStore.loading)
-const error = computed(() => ratesStore.error)
+const rates = computed(() => {
+  const result = ratesStore.ratesByCustomer(props.customerId)
+  console.log('🔍 rates computed:', result.length, 'rates', result)
+  return result
+})
+const loading = computed(() => {
+  console.log('🔍 loading computed:', ratesStore.loading)
+  return ratesStore.loading
+})
+const error = computed(() => {
+  console.log('🔍 error computed:', ratesStore.error)
+  return ratesStore.error
+})
 
 onMounted(() => {
+  console.log('🔍 RatesList mounted, customerId:', props.customerId)
   loadRates()
 })
 
 async function loadRates() {
+  console.log('🔍 loadRates called for customerId:', props.customerId)
   try {
     await ratesStore.fetchByCustomerId(props.customerId)
+    console.log('🔍 Rates loaded:', rates.value.length, 'rates')
   } catch (error) {
     console.error('Failed to load rates:', error)
   }
@@ -126,23 +143,40 @@ function handleAdd() {
 }
 
 function handleEdit(rate: RateDto) {
+  console.log('handleEdit called with rate:', rate)
   editingRate.value = rate
   showForm.value = true
+  console.log('Edit form should be visible now, showForm:', showForm.value)
+}
+
+function formatRateType(type: RateType): string {
+  return RateTypeNames[type] || 'Unknown'
+}
+
+function getRateTypeCssClass(type: RateType): string {
+  return RateTypeNames[type]?.toLowerCase() || 'unknown'
 }
 
 async function handleDelete(rate: RateDto) {
-  if (!confirm(`Are you sure you want to delete this ${rate.type.toLowerCase()} rate?\n\nThis action cannot be undone.`)) {
+  console.log('handleDelete called with rate:', rate)
+  const typeName = formatRateType(rate.type).toLowerCase()
+  if (!confirm(`Are you sure you want to delete this ${typeName} rate?\n\nThis action cannot be undone.`)) {
+    console.log('Delete cancelled by user')
     return
   }
 
+  console.log('Delete confirmed, calling ratesStore.remove...')
   try {
     await ratesStore.remove(rate.id)
+    console.log('Rate deleted successfully')
   } catch (error: any) {
+    console.error('Delete failed with error:', error)
     alert(`Failed to delete rate: ${error.message}`)
   }
 }
 
 function handleFormSuccess() {
+  console.log('handleFormSuccess called')
   showForm.value = false
   editingRate.value = null
   loadRates()
@@ -246,16 +280,20 @@ function handleCloseForm() {
 .action-btn {
   padding: 0.25rem;
   border: none;
-  background: transparent;
+  background: red !important; /* DEBUG: Make visible */
   border-radius: 0.375rem;
   cursor: pointer;
-  color: #6b7280;
+  color: white !important; /* DEBUG: Contrast */
   transition: all 0.2s;
+  position: relative;
+  z-index: 100;
+  width: 32px;
+  height: 32px;
 }
 
 .action-btn:hover {
-  background: white;
-  color: #1f2937;
+  background: darkred !important; /* DEBUG */
+  color: white !important;
 }
 
 .rate-amount {

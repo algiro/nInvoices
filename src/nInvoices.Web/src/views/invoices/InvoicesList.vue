@@ -83,7 +83,7 @@
             <td class="font-semibold">{{ invoice.invoiceNumber }}</td>
             <td>{{ getCustomerName(invoice.customerId) }}</td>
             <td>
-              <span class="type-badge" :class="`type-${invoice.type.toLowerCase()}`">
+              <span class="type-badge" :class="`type-${getTypeCssClass(invoice.type)}`">
                 {{ formatType(invoice.type) }}
               </span>
             </td>
@@ -91,8 +91,8 @@
             <td>{{ invoice.dueDate ? formatDate(invoice.dueDate) : '-' }}</td>
             <td class="font-semibold">{{ formatMoney(invoice.total) }}</td>
             <td>
-              <span class="status-badge" :class="`status-${invoice.status.toLowerCase()}`">
-                {{ invoice.status }}
+              <span class="status-badge" :class="`status-${getStatusCssClass(invoice.status)}`">
+                {{ formatStatus(invoice.status) }}
               </span>
             </td>
             <td class="actions-cell" @click.stop>
@@ -147,6 +147,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useInvoicesStore } from '@/stores/invoices'
 import { useCustomersStore } from '@/stores/customers'
+import { InvoiceTypeNames, InvoiceStatusNames, InvoiceType, InvoiceStatus } from '@/types'
 import type { InvoiceDto } from '@/types'
 
 const router = useRouter()
@@ -169,11 +170,23 @@ const filteredInvoices = computed(() => {
   }
 
   if (statusFilter.value) {
-    result = result.filter(invoice => invoice.status === statusFilter.value)
+    // Convert string filter to enum number for comparison
+    const statusNum = Object.entries(InvoiceStatusNames).find(
+      ([_, name]) => name === statusFilter.value
+    )?.[0]
+    if (statusNum !== undefined) {
+      result = result.filter(invoice => invoice.status === Number(statusNum))
+    }
   }
 
   if (typeFilter.value) {
-    result = result.filter(invoice => invoice.type === typeFilter.value)
+    // Convert string filter to enum number for comparison
+    const typeNum = Object.entries(InvoiceTypeNames).find(
+      ([_, name]) => name === typeFilter.value
+    )?.[0]
+    if (typeNum !== undefined) {
+      result = result.filter(invoice => invoice.type === Number(typeNum))
+    }
   }
 
   return result.sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime())
@@ -181,16 +194,18 @@ const filteredInvoices = computed(() => {
 
 const totalRevenue = computed(() => {
   return filteredInvoices.value
-    .filter(inv => inv.status === 'Paid')
+    .filter(inv => inv.status === InvoiceStatus.Paid)
     .reduce((sum, inv) => sum + inv.total.amount, 0)
 })
 
 const paidCount = computed(() =>
-  filteredInvoices.value.filter(inv => inv.status === 'Paid').length
+  filteredInvoices.value.filter(inv => inv.status === InvoiceStatus.Paid).length
 )
 
 const outstandingCount = computed(() =>
-  filteredInvoices.value.filter(inv => ['Finalized', 'Sent'].includes(inv.status)).length
+  filteredInvoices.value.filter(inv => 
+    inv.status === InvoiceStatus.Finalized || inv.status === InvoiceStatus.Sent
+  ).length
 )
 
 onMounted(() => {
@@ -213,12 +228,27 @@ function formatDate(date: string): string {
   return new Date(date).toLocaleDateString()
 }
 
-function formatMoney(money: { amount: number; currency: string }): string {
+function formatMoney(money: { amount: number; currency: string } | undefined): string {
+  if (!money || money.amount === undefined) {
+    return '0.00 N/A'
+  }
   return `${money.amount.toFixed(2)} ${money.currency}`
 }
 
-function formatType(type: string): string {
-  return type === 'OneTime' ? 'One-Time' : type
+function formatType(type: InvoiceType): string {
+  return InvoiceTypeNames[type] || 'Unknown'
+}
+
+function formatStatus(status: InvoiceStatus): string {
+  return InvoiceStatusNames[status] || 'Unknown'
+}
+
+function getTypeCssClass(type: InvoiceType): string {
+  return InvoiceTypeNames[type]?.toLowerCase().replace('-', '') || 'unknown'
+}
+
+function getStatusCssClass(status: InvoiceStatus): string {
+  return InvoiceStatusNames[status]?.toLowerCase() || 'unknown'
 }
 
 function handleGenerate() {

@@ -37,7 +37,7 @@ builder.Services.AddPdfExport();
 builder.Services.AddApplicationServices();
 
 // Add MediatR for CQRS
-builder.Services.AddMediatR(cfg => 
+builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(nInvoices.Application.ApplicationAssemblyMarker).Assembly);
 });
@@ -50,14 +50,18 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowVueApp", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:5174")
+        policy.WithOrigins(
+                "http://localhost:5173", 
+                "http://localhost:5174", 
+                "http://localhost:3000",
+                "http://localhost:3001",
+                "http://localhost:5297",
+                "https://localhost:7277")
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
     });
 });
-
-// TODO: Add MediatR and FluentValidation
 
 var app = builder.Build();
 

@@ -1,4 +1,5 @@
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Models;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
@@ -16,30 +17,40 @@ public interface IInvoiceGenerationService
     Task<Invoice> GenerateInvoiceAsync(
         GenerateInvoiceDto dto,
         CancellationToken cancellationToken = default);
+    
+    Task<byte[]> GenerateInvoicePdfAsync(
+        long invoiceId,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class InvoiceGenerationService : IInvoiceGenerationService
 {
     private readonly IRepository<InvoiceTemplate> _templateRepository;
+    private readonly IRepository<Customer> _customerRepository;
     private readonly IRepository<Rate> _rateRepository;
     private readonly IRepository<Tax> _taxRepository;
     private readonly IRepository<Invoice> _invoiceRepository;
-    private readonly ITemplateEngine _templateEngine;
+    private readonly ITemplateRenderer _templateRenderer;
+    private readonly IHtmlToPdfConverter _htmlToPdfConverter;
     private readonly ITaxCalculationService _taxCalculationService;
 
     public InvoiceGenerationService(
         IRepository<InvoiceTemplate> templateRepository,
+        IRepository<Customer> customerRepository,
         IRepository<Rate> rateRepository,
         IRepository<Tax> taxRepository,
         IRepository<Invoice> invoiceRepository,
-        ITemplateEngine templateEngine,
+        ITemplateRenderer templateRenderer,
+        IHtmlToPdfConverter htmlToPdfConverter,
         ITaxCalculationService taxCalculationService)
     {
         _templateRepository = templateRepository;
+        _customerRepository = customerRepository;
         _rateRepository = rateRepository;
         _taxRepository = taxRepository;
         _invoiceRepository = invoiceRepository;
-        _templateEngine = templateEngine;
+        _templateRenderer = templateRenderer;
+        _htmlToPdfConverter = htmlToPdfConverter;
         _taxCalculationService = taxCalculationService;
     }
 
@@ -54,7 +65,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         var customerTaxes = await GetCustomerTaxesAsync(dto.CustomerId, cancellationToken);
 
         var subtotal = CalculateSubtotal(dto, rate);
-        var expensesTotal = CalculateExpensesTotal(dto.Expenses);
+        var expensesTotal = CalculateExpensesTotal(dto.Expenses, rate.Price.Currency);
         var invoiceNumber = await GenerateInvoiceNumberAsync(
             dto.CustomerId,
             dto.InvoiceType,
@@ -98,12 +109,34 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
         invoice.AddTaxes(totalTax);
 
-        var templateData = BuildTemplateData(invoice, dto, rate);
-        var renderedContent = _templateEngine.Render(template.Content, templateData);
+        // NEW: Use Scriban template renderer instead of old template engine
+        var customer = await _customerRepository.GetByIdAsync(dto.CustomerId, cancellationToken)
+            ?? throw new InvalidOperationException($"Customer {dto.CustomerId} not found");
 
-        invoice.SetRenderedContent(renderedContent);
+        var templateModel = BuildTemplateModel(invoice, customer, dto, rate);
+        var renderedHtml = await _templateRenderer.RenderAsync(template.Content, templateModel, cancellationToken);
+
+        invoice.SetRenderedContent(renderedHtml);
 
         return invoice;
+    }
+
+    public async Task<byte[]> GenerateInvoicePdfAsync(
+        long invoiceId,
+        CancellationToken cancellationToken = default)
+    {
+        var invoice = await _invoiceRepository.GetByIdAsync(invoiceId, cancellationToken)
+            ?? throw new InvalidOperationException($"Invoice {invoiceId} not found");
+
+        if (string.IsNullOrEmpty(invoice.RenderedContent))
+        {
+            throw new InvalidOperationException($"Invoice {invoiceId} has no rendered content. Generate invoice first.");
+        }
+
+        // NEW: Convert HTML to PDF using QuestPDF
+        var pdfBytes = await _htmlToPdfConverter.ConvertAsync(invoice.RenderedContent, cancellationToken);
+        
+        return pdfBytes;
     }
 
     private async Task<InvoiceTemplate> GetTemplateAsync(
@@ -127,9 +160,12 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         InvoiceType invoiceType,
         CancellationToken cancellationToken)
     {
+        // For Monthly invoices, we use Daily rate when tracking worked days
+        // For OneTime invoices, we use Daily rate
+        // Monthly rate would be used for fixed monthly billing without day tracking
         var rateType = invoiceType switch
         {
-            InvoiceType.Monthly => RateType.Monthly,
+            InvoiceType.Monthly => RateType.Daily,  // Changed: Monthly invoices use daily rate × worked days
             InvoiceType.OneTime => RateType.Daily,
             _ => throw new ArgumentException($"Unsupported invoice type: {invoiceType}", nameof(invoiceType))
         };
@@ -165,10 +201,10 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         };
     }
 
-    private Money CalculateExpensesTotal(ICollection<ExpenseDto>? expenses)
+    private Money CalculateExpensesTotal(ICollection<ExpenseDto>? expenses, string defaultCurrency)
     {
         if (expenses == null || expenses.Count == 0)
-            return Money.Zero("EUR");
+            return Money.Zero(defaultCurrency);
 
         var firstExpense = expenses.First();
         var currency = firstExpense.Currency;
@@ -198,55 +234,141 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         return InvoiceNumber.Generate(pattern, sequenceNumber, date, customerId.ToString());
     }
 
-    private Dictionary<string, object> BuildTemplateData(
+    /// <summary>
+    /// Builds the template model for rendering.
+    /// This model is passed to Scriban and all properties become template variables.
+    /// Following the Builder pattern for complex object construction.
+    /// </summary>
+    private InvoiceTemplateModel BuildTemplateModel(
+        Invoice invoice,
+        Customer customer,
+        GenerateInvoiceDto dto,
+        Rate rate)
+    {
+        // Calculate monthly-specific values upfront
+        int? workedDays = null;
+        int? monthNumber = null;
+        string? monthDescription = null;
+        decimal? monthlyRate = null;
+        decimal? totalExpenses = null;
+
+        if (dto.InvoiceType == InvoiceType.Monthly && invoice.WorkedDays.HasValue)
+        {
+            workedDays = invoice.WorkedDays.Value;
+            monthNumber = invoice.Month ?? DateTime.UtcNow.Month;
+            monthlyRate = rate.Price.Amount;
+            totalExpenses = invoice.TotalExpenses.Amount;
+
+            if (invoice.Month.HasValue && invoice.Year.HasValue)
+            {
+                var date = new DateTime(invoice.Year.Value, invoice.Month.Value, 1);
+                monthDescription = date.ToString("MMMM", System.Globalization.CultureInfo.GetCultureInfo("en-US"));
+            }
+        }
+
+        // Build model with object initializer
+        var model = new InvoiceTemplateModel
+        {
+            InvoiceNumber = invoice.Number.ToString(),
+            InvoiceType = invoice.Type.ToString(),
+            Date = invoice.IssueDate.ToString("yyyy-MM-dd"),
+            DueDate = invoice.DueDate?.ToString("yyyy-MM-dd"),
+            Currency = rate.Price.Currency,
+
+            Customer = new CustomerTemplateModel
+            {
+                Name = customer.Name,
+                FiscalId = customer.FiscalId,
+                Address = new AddressTemplateModel
+                {
+                    Street = customer.Address.Street,
+                    City = customer.Address.City,
+                    PostalCode = customer.Address.ZipCode,  // ZipCode → PostalCode
+                    Country = customer.Address.Country
+                }
+            },
+
+            LineItems = BuildLineItems(invoice, dto, rate),
+            Taxes = invoice.TaxLines.Select(t => new TaxTemplateModel
+            {
+                Description = t.Description,
+                Rate = t.Rate,
+                Amount = t.TaxAmount.Amount  // TaxAmount, not Amount
+            }).ToList(),
+
+            Subtotal = invoice.Subtotal.Amount,
+            TotalTax = invoice.TotalTaxes.Amount,
+            Total = invoice.Total.Amount,
+
+            // Monthly invoice specific data
+            WorkedDays = workedDays,
+            MonthNumber = monthNumber,
+            MonthDescription = monthDescription,
+            MonthlyRate = monthlyRate,
+            TotalExpenses = totalExpenses
+        };
+
+        return model;
+    }
+
+    /// <summary>
+    /// Builds line items for the template.
+    /// For monthly invoices with worked days, creates a single consolidated line.
+    /// For one-time invoices, could be extended to support multiple line items.
+    /// </summary>
+    private List<LineItemTemplateModel> BuildLineItems(
         Invoice invoice,
         GenerateInvoiceDto dto,
         Rate rate)
     {
-        var data = new Dictionary<string, object>
-        {
-            ["InvoiceNumber"] = invoice.Number.ToString(),
-            ["Date"] = invoice.IssueDate.ToString("yyyy-MM-dd"),
-            ["IssueDate"] = invoice.IssueDate.ToString("yyyy-MM-dd"),
-            ["DueDate"] = invoice.DueDate?.ToString("yyyy-MM-dd") ?? string.Empty,
-            ["Subtotal"] = invoice.Subtotal.ToString(),
-            ["TotalExpenses"] = invoice.TotalExpenses.ToString(),
-            ["TotalExcludingExpenses"] = invoice.Subtotal.ToString(),
-            ["TotalIncludingExpenses"] = (invoice.Subtotal + invoice.TotalExpenses).ToString(),
-            ["TotalTaxes"] = invoice.TotalTaxes.ToString(),
-            ["Total"] = invoice.Total.ToString(),
-            ["Currency"] = rate.Price.Currency,
-            ["Notes"] = invoice.Notes ?? string.Empty
-        };
+        var lineItems = new List<LineItemTemplateModel>();
 
         if (dto.InvoiceType == InvoiceType.Monthly && invoice.WorkedDays.HasValue)
         {
-            data["WorkedDays"] = invoice.WorkedDays.Value;
-            data["Year"] = invoice.Year ?? DateTime.UtcNow.Year;
-            data["Month"] = invoice.Month ?? DateTime.UtcNow.Month;
-            data["MonthNumber"] = invoice.Month ?? DateTime.UtcNow.Month;
-            data["MonthlyRate"] = rate.Price.ToString();
-
+            // Single line item for monthly invoices
+            var description = $"Professional Services - {invoice.WorkedDays.Value} days";
             if (invoice.Month.HasValue && invoice.Year.HasValue)
             {
-                var monthDescriptions = new Dictionary<string, string>
-                {
-                    ["EN"] = new DateTime(invoice.Year.Value, invoice.Month.Value, 1)
-                        .ToString("MMMM", System.Globalization.CultureInfo.GetCultureInfo("en-US")),
-                    ["ES"] = new DateTime(invoice.Year.Value, invoice.Month.Value, 1)
-                        .ToString("MMMM", System.Globalization.CultureInfo.GetCultureInfo("es-ES")),
-                    ["IT"] = new DateTime(invoice.Year.Value, invoice.Month.Value, 1)
-                        .ToString("MMMM", System.Globalization.CultureInfo.GetCultureInfo("it-IT")),
-                    ["FR"] = new DateTime(invoice.Year.Value, invoice.Month.Value, 1)
-                        .ToString("MMMM", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")),
-                    ["DE"] = new DateTime(invoice.Year.Value, invoice.Month.Value, 1)
-                        .ToString("MMMM", System.Globalization.CultureInfo.GetCultureInfo("de-DE"))
-                };
+                var date = new DateTime(invoice.Year.Value, invoice.Month.Value, 1);
+                var monthName = date.ToString("MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("en-US"));
+                description = $"Professional Services for {monthName}";
+            }
 
-                data["MonthDescription"] = monthDescriptions;
+            lineItems.Add(new LineItemTemplateModel
+            {
+                Description = description,
+                Quantity = invoice.WorkedDays.Value,
+                Rate = rate.Price.Amount,
+                Amount = invoice.Subtotal.Amount
+            });
+        }
+        else if (dto.InvoiceType == InvoiceType.OneTime)
+        {
+            // One-time invoice line item
+            lineItems.Add(new LineItemTemplateModel
+            {
+                Description = "Professional Services",
+                Quantity = 1,
+                Rate = rate.Price.Amount,
+                Amount = invoice.Subtotal.Amount
+            });
+        }
+
+        // Add expenses as separate line items
+        if (invoice.Expenses.Count > 0)
+        {
+            foreach (var expense in invoice.Expenses)
+            {
+                lineItems.Add(new LineItemTemplateModel
+                {
+                    Description = $"Expense: {expense.Description}",
+                    Quantity = 1,
+                    Rate = expense.Amount.Amount,
+                    Amount = expense.Amount.Amount
+                });
             }
         }
 
-        return data;
+        return lineItems;
     }
 }

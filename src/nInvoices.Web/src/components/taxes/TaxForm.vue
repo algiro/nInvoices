@@ -119,8 +119,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useTaxesStore } from '@/stores/taxes'
+import { TaxApplicationType } from '@/types'
 import type { CreateTaxDto, UpdateTaxDto } from '@/types'
 
 interface Props {
@@ -138,13 +139,15 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 const taxesStore = useTaxesStore()
 
-const loading = reactive({ value: false })
+const loading = ref(false)
 
 const form = reactive<CreateTaxDto | UpdateTaxDto>({
   customerId: props.customerId,
+  taxId: '',
   description: '',
   handlerId: 'PERCENTAGE',
   rate: 0,
+  applicationType: TaxApplicationType.OnSubtotal,
   order: 1,
   appliedToTaxId: null
 })

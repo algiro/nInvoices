@@ -221,3 +221,31 @@ Contributions, issues, and feature requests are welcome!
 ## ⭐ Support
 
 If you find this project useful, please consider giving it a star!
+
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the Docs folder:
+
+- **[README.md](./Docs/README.md)** - Documentation index and quick start
+- **[implementation-complete-summary.md](./Docs/implementation-complete-summary.md)** - Complete system guide
+- **[TEMPLATE-SYNTAX-REFERENCE.md](./Docs/TEMPLATE-SYNTAX-REFERENCE.md)** - Quick reference card
+- **[phase4-implementation-complete.md](./Docs/phase4-implementation-complete.md)** - Technical details
+
+### HTML Template System
+
+The application now supports custom HTML invoice templates with:
+- ✅ Scriban/Liquid template syntax
+- ✅ Loops and conditionals
+- ✅ Custom formatting functions
+- ✅ Real-time validation
+- ✅ PDF generation with QuestPDF
+
+**Quick Start:**
+1. Navigate to Customer → Templates
+2. Click "Add Template"
+3. Click "📋 Load Sample" to see example
+4. Modify as needed
+5. Save and generate invoices!
+
+See **[TEMPLATE-SYNTAX-REFERENCE.md](./Docs/TEMPLATE-SYNTAX-REFERENCE.md)** for syntax guide.

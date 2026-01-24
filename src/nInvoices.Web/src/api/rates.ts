@@ -18,8 +18,8 @@ export const ratesApi = {
     return apiClient.post<RateDto>('/api/rates', data)
   },
 
-  async update(id: number, data: UpdateRateDto): Promise<void> {
-    return apiClient.put<void>(`/api/rates/${id}`, data)
+  async update(id: number, data: UpdateRateDto): Promise<RateDto> {
+    return apiClient.put<RateDto>(`/api/rates/${id}`, data)
   },
 
   async delete(id: number): Promise<void> {

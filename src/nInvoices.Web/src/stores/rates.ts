@@ -83,11 +83,11 @@ export const useRatesStore = defineStore('rates', () => {
     try {
       loading.value = true
       error.value = null
-      await ratesApi.update(id, data)
-      
+      const updatedRate = await ratesApi.update(id, data)
+
       const index = rates.value.findIndex(r => r.id === id)
       if (index !== -1) {
-        rates.value[index] = { ...rates.value[index], ...data }
+        rates.value[index] = updatedRate
       }
     } catch (err: any) {
       error.value = err.message || 'Failed to update rate'

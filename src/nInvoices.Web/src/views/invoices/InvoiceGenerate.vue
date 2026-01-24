@@ -37,12 +37,12 @@
             </label>
             <select
               id="type"
-              v-model="form.type"
+              v-model="form.invoiceType"
               required
               class="form-control"
             >
-              <option value="Monthly">Monthly</option>
-              <option value="OneTime">One-Time</option>
+              <option :value="InvoiceType.Monthly">Monthly</option>
+              <option :value="InvoiceType.OneTime">One-Time</option>
             </select>
           </div>
 
@@ -60,7 +60,7 @@
           </div>
         </div>
 
-        <div v-if="form.type === 'Monthly'" class="form-group">
+        <div v-if="form.invoiceType === InvoiceType.Monthly" class="form-group">
           <label class="form-label">
             Select Month & Year <span class="text-red-500">*</span>
           </label>
@@ -79,7 +79,7 @@
         </div>
       </div>
 
-      <div v-if="form.type === 'Monthly'" class="form-section">
+      <div v-if="form.invoiceType === InvoiceType.Monthly" class="form-section">
         <h3 class="section-title">Mark Worked Days</h3>
         
         <div class="calendar">
@@ -206,11 +206,14 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useInvoicesStore } from '@/stores/invoices'
 import { useCustomersStore } from '@/stores/customers'
+import { useRatesStore } from '@/stores/rates'
+import { InvoiceType, RateType } from '@/types'
 import type { GenerateInvoiceDto, WorkDayDto, ExpenseDto } from '@/types'
 
 const router = useRouter()
 const invoicesStore = useInvoicesStore()
 const customersStore = useCustomersStore()
+const ratesStore = useRatesStore()
 
 const loading = ref(false)
 const selectedMonth = ref(new Date().getMonth() + 1)
@@ -219,7 +222,7 @@ const selectedRate = ref<any>(null)
 
 const form = reactive<GenerateInvoiceDto>({
   customerId: 0,
-  type: 'Monthly',
+  invoiceType: InvoiceType.Monthly,
   issueDate: new Date().toISOString().split('T')[0],
   workDays: [],
   expenses: []
@@ -295,37 +298,41 @@ const calendarDays = computed((): CalendarDay[] => {
 })
 
 const estimatedAmount = computed(() => {
-  if (!selectedRate.value || form.type !== 'Monthly') {
+  if (!selectedRate.value || form.invoiceType !== InvoiceType.Monthly) {
     return '-'
   }
-  
+
   const workedDays = form.workDays.length
   const rate = selectedRate.value.price.amount
   const currency = selectedRate.value.price.currency
-  
-  if (selectedRate.value.type === 'Daily') {
+
+  if (selectedRate.value.type === RateType.Daily) {
     return `${(workedDays * rate).toFixed(2)} ${currency}`
-  } else if (selectedRate.value.type === 'Monthly') {
+  } else if (selectedRate.value.type === RateType.Monthly) {
     return `${rate.toFixed(2)} ${currency}`
   }
-  
+
   return '-'
 })
 
 const isFormValid = computed(() => {
-  if (!form.customerId || !form.type || !form.issueDate) {
+  if (!form.customerId || form.invoiceType === undefined || form.invoiceType === null || !form.issueDate) {
     return false
   }
-  
-  if (form.type === 'Monthly' && form.workDays.length === 0) {
+
+  if (form.invoiceType === InvoiceType.Monthly && form.workDays.length === 0) {
     return false
   }
-  
+
   return true
 })
 
 watch([selectedMonth, selectedYear], () => {
   form.workDays = []
+})
+
+watch(() => form.customerId, () => {
+  loadCustomerData()
 })
 
 onMounted(() => {
@@ -334,10 +341,32 @@ onMounted(() => {
 
 async function loadCustomerData() {
   if (!form.customerId) return
-  
-  selectedRate.value = {
-    type: 'Daily',
-    price: { amount: 300, currency: 'EUR' }
+
+  try {
+    await ratesStore.fetchByCustomerId(form.customerId)
+    const rates = ratesStore.ratesByCustomer(form.customerId)
+    
+    if (rates.length === 0) {
+      alert('No rates found for this customer. Please add rates first.')
+      selectedRate.value = null
+      return
+    }
+
+    // For Monthly invoices, we always use Daily rate (calculated as daily rate × worked days)
+    // Monthly rate type would be for fixed monthly billing without day tracking
+    const rateType = RateType.Daily
+    const matchingRate = rates.find(r => r.type === rateType)
+    
+    if (matchingRate) {
+      selectedRate.value = matchingRate
+    } else {
+      // Fallback: use first available rate if no daily rate exists
+      selectedRate.value = rates[0]
+      console.warn('No Daily rate found, using first available rate')
+    }
+  } catch (error) {
+    console.error('Failed to load rates:', error)
+    selectedRate.value = null
   }
 }
 
@@ -379,9 +408,16 @@ function removeExpense(index: number) {
 
 async function handleSubmit() {
   if (!isFormValid.value) return
-  
+
   try {
     loading.value = true
+    
+    // Add year and month for monthly invoices
+    if (form.invoiceType === InvoiceType.Monthly) {
+      form.year = selectedYear.value
+      form.month = selectedMonth.value
+    }
+    
     const invoice = await invoicesStore.generate(form)
     router.push(`/invoices/${invoice.id}`)
   } catch (error: any) {

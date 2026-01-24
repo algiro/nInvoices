@@ -7,14 +7,14 @@
         </label>
         <select
           id="type"
-          v-model="form.type"
+          v-model.number="form.type"
           required
           class="form-control"
           :disabled="disabled"
         >
-          <option value="Daily">Daily</option>
-          <option value="Monthly">Monthly</option>
-          <option value="Hourly">Hourly</option>
+          <option :value="RateType.Daily">Daily</option>
+          <option :value="RateType.Monthly">Monthly</option>
+          <option :value="RateType.Hourly">Hourly</option>
         </select>
       </div>
 
@@ -79,9 +79,10 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRatesStore } from '@/stores/rates'
-import type { CreateRateDto, UpdateRateDto, RateType } from '@/types'
+import { RateType } from '@/types'
+import type { CreateRateDto, UpdateRateDto } from '@/types'
 
 interface Props {
   customerId: number
@@ -98,11 +99,11 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 const ratesStore = useRatesStore()
 
-const loading = reactive({ value: false })
+const loading = ref(false)
 
 const form = reactive<CreateRateDto | UpdateRateDto>({
   customerId: props.customerId,
-  type: 'Daily' as RateType,
+  type: RateType.Daily, // Default to Daily (numeric 0)
   price: {
     amount: 0,
     currency: 'EUR'
@@ -157,8 +158,14 @@ async function handleSubmit() {
     loading.value = true
 
     if (props.rateId) {
-      await ratesStore.update(props.rateId, form as UpdateRateDto)
+      // For update, send only type and price (no customerId)
+      const updateDto: UpdateRateDto = {
+        type: form.type,
+        price: form.price
+      }
+      await ratesStore.update(props.rateId, updateDto)
     } else {
+      // For create, send full form with customerId
       await ratesStore.create(form as CreateRateDto)
     }
 

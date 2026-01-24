@@ -1,8 +1,8 @@
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Customers.Commands;
 using nInvoices.Application.Features.Customers.Queries;
+using MediatR;
 
 namespace nInvoices.Api.Controllers;
 

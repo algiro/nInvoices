@@ -197,3 +197,8 @@ public sealed class InvoiceTemplatesController : ControllerBase
         return NoContent();
     }
 }
+
+/// <summary>
+/// Request model for template validation.
+/// </summary>
+public sealed record ValidateTemplateRequest(string TemplateContent);

@@ -81,3 +81,7 @@ docker/logs/
 # Rider
 .idea/
 *.sln.iml
+
+screenshots/
+
+Docs/Issues/

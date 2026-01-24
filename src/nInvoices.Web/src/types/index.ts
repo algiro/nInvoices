@@ -2,23 +2,52 @@
 // Ensures type safety across frontend-backend communication
 
 export enum InvoiceType {
-  Monthly = 'Monthly',
-  OneTime = 'OneTime'
+  Monthly = 0,
+  OneTime = 1,
+  Quarterly = 2,
+  Annual = 3
+}
+
+export enum TaxApplicationType {
+  OnSubtotal = 0,
+  OnTax = 1
 }
 
 export enum InvoiceStatus {
-  Draft = 'Draft',
-  Finalized = 'Finalized',
-  Sent = 'Sent',
-  Paid = 'Paid',
-  Cancelled = 'Cancelled'
+  Draft = 0,
+  Finalized = 1,
+  Sent = 2,
+  Paid = 3,
+  Cancelled = 4
 }
 
+// Helper functions to convert enum numbers to display strings
+export const InvoiceTypeNames: Record<InvoiceType, string> = {
+  [InvoiceType.Monthly]: 'Monthly',
+  [InvoiceType.OneTime]: 'One-Time',
+  [InvoiceType.Quarterly]: 'Quarterly',
+  [InvoiceType.Annual]: 'Annual'
+};
+
+export const InvoiceStatusNames: Record<InvoiceStatus, string> = {
+  [InvoiceStatus.Draft]: 'Draft',
+  [InvoiceStatus.Finalized]: 'Finalized',
+  [InvoiceStatus.Sent]: 'Sent',
+  [InvoiceStatus.Paid]: 'Paid',
+  [InvoiceStatus.Cancelled]: 'Cancelled'
+};
+
 export enum RateType {
-  Daily = 'Daily',
-  Monthly = 'Monthly',
-  Hourly = 'Hourly'
+  Daily = 0,
+  Monthly = 1,
+  Hourly = 2
 }
+
+export const RateTypeNames: Record<RateType, string> = {
+  [RateType.Daily]: 'Daily',
+  [RateType.Monthly]: 'Monthly',
+  [RateType.Hourly]: 'Hourly'
+};
 
 export interface MoneyDto {
   amount: number;
@@ -74,7 +103,6 @@ export interface CreateRateDto {
 export interface UpdateRateDto {
   type: RateType;
   price: MoneyDto;
-  isActive: boolean;
 }
 
 export interface TaxDto {
@@ -97,7 +125,8 @@ export interface CreateTaxDto {
   description: string;
   handlerId: string;
   rate: number;
-  appliedToTaxId?: number;
+  applicationType: TaxApplicationType;
+  appliedToTaxId?: number | null;
   order: number;
 }
 

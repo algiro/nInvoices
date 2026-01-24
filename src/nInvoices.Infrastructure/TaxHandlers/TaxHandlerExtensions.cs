@@ -19,8 +19,8 @@ public static class TaxHandlerExtensions
         services.AddSingleton<ITaxHandler, FixedAmountTaxHandler>();
         services.AddSingleton<ITaxHandler, CompoundTaxHandler>();
 
-        // Register the tax calculation service
-        services.AddScoped<TaxCalculationService>();
+        // Register the tax calculation service (interface + implementation)
+        services.AddScoped<ITaxCalculationService, TaxCalculationService>();
 
         return services;
     }

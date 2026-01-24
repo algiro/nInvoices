@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using nInvoices.Application.Services;
 using nInvoices.Core.Interfaces;
 
 namespace nInvoices.Infrastructure.PdfExport;
@@ -15,6 +16,7 @@ public static class PdfExportExtensions
     public static IServiceCollection AddPdfExport(this IServiceCollection services)
     {
         services.AddScoped<IPdfExportService, PdfExportService>();
+        services.AddScoped<IHtmlToPdfConverter, QuestPdfHtmlConverter>();
 
         return services;
     }

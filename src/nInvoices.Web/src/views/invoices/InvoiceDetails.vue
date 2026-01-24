@@ -15,8 +15,8 @@
         <div>
           <h1 class="text-3xl font-bold">Invoice {{ invoice.invoiceNumber }}</h1>
           <p class="text-gray-600 mt-2">
-            <span class="status-badge" :class="`status-${invoice.status.toLowerCase()}`">
-              {{ invoice.status }}
+            <span class="status-badge" :class="`status-${getStatusCssClass(invoice.status)}`">
+              {{ formatStatus(invoice.status) }}
             </span>
           </p>
         </div>
@@ -32,14 +32,14 @@
             {{ downloadingPdf ? 'Downloading...' : 'Download PDF' }}
           </button>
           <button
-            v-if="invoice.status === 'Draft'"
+            v-if="invoice.status === InvoiceStatus.Draft"
             @click="handleFinalize"
             class="btn-secondary"
           >
             Finalize
           </button>
           <button
-            v-if="invoice.status === 'Draft'"
+            v-if="invoice.status === InvoiceStatus.Draft"
             @click="handleDelete"
             class="btn-danger"
           >
@@ -170,6 +170,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useInvoicesStore } from '@/stores/invoices'
 import { useCustomersStore } from '@/stores/customers'
+import { InvoiceStatusNames, InvoiceTypeNames, InvoiceStatus, InvoiceType } from '@/types'
 import type { MoneyDto } from '@/types'
 
 const route = useRoute()
@@ -212,12 +213,23 @@ function formatDate(date: string): string {
   return new Date(date).toLocaleDateString()
 }
 
-function formatMoney(money: MoneyDto): string {
+function formatMoney(money: MoneyDto | undefined): string {
+  if (!money || money.amount === undefined) {
+    return '0.00 N/A'
+  }
   return `${money.amount.toFixed(2)} ${money.currency}`
 }
 
-function formatType(type: string): string {
-  return type === 'OneTime' ? 'One-Time' : type
+function formatType(type: InvoiceType): string {
+  return InvoiceTypeNames[type] || 'Unknown'
+}
+
+function formatStatus(status: InvoiceStatus): string {
+  return InvoiceStatusNames[status] || 'Unknown'
+}
+
+function getStatusCssClass(status: InvoiceStatus): string {
+  return InvoiceStatusNames[status]?.toLowerCase() || 'unknown'
 }
 
 function formatTaxRate(rate: number): string {

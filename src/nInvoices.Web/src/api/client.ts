@@ -7,9 +7,13 @@ import axios, { type AxiosInstance, AxiosError } from 'axios';
 class ApiClient {
   private client: AxiosInstance;
 
-  constructor(baseURL: string = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000') {
+  constructor(baseURL: string = import.meta.env.VITE_API_BASE_URL || '') {
+    // Use empty baseURL to leverage Vite proxy in development
+    const finalBaseURL = baseURL || '';
+    console.log('[API Client] Base URL:', finalBaseURL || '(empty - using Vite proxy)');
+    
     this.client = axios.create({
-      baseURL,
+      baseURL: finalBaseURL,
       headers: {
         'Content-Type': 'application/json',
       },

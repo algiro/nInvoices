@@ -1,6 +1,7 @@
 using MediatR;
 using nInvoices.Application.DTOs;
-using nInvoices.Core.Interfaces;
+using nInvoices.Application.Services;
+using System.Text.RegularExpressions;
 
 namespace nInvoices.Application.Features.InvoiceTemplates.Commands;
 
@@ -10,19 +11,36 @@ namespace nInvoices.Application.Features.InvoiceTemplates.Commands;
 /// </summary>
 public sealed class ValidateTemplateCommandHandler : IRequestHandler<ValidateTemplateCommand, TemplateValidationResultDto>
 {
-    private readonly ITemplateEngine _templateEngine;
+    private readonly ITemplateRenderer _templateRenderer;
 
-    public ValidateTemplateCommandHandler(ITemplateEngine templateEngine)
+    public ValidateTemplateCommandHandler(ITemplateRenderer templateRenderer)
     {
-        _templateEngine = templateEngine;
+        _templateRenderer = templateRenderer;
     }
 
-    public Task<TemplateValidationResultDto> Handle(ValidateTemplateCommand request, CancellationToken cancellationToken)
+    public async Task<TemplateValidationResultDto> Handle(ValidateTemplateCommand request, CancellationToken cancellationToken)
     {
-        var isValid = _templateEngine.ValidateTemplate(request.Content, out var errors);
-        var placeholders = _templateEngine.ExtractPlaceholders(request.Content);
+        // Validate syntax
+        var validationResult = await _templateRenderer.ValidateAsync(request.Content, cancellationToken);
+        
+        // Extract placeholders using regex
+        var placeholders = ExtractPlaceholders(request.Content);
 
-        var result = new TemplateValidationResultDto(isValid, errors, placeholders);
-        return Task.FromResult(result);
+        return new TemplateValidationResultDto(
+            validationResult.IsValid,
+            validationResult.Errors,
+            placeholders);
+    }
+
+    private static List<string> ExtractPlaceholders(string content)
+    {
+        var regex = new Regex(@"\{\{\s*([a-zA-Z_][a-zA-Z0-9_\.]*)\s*\}\}", RegexOptions.Compiled);
+        var matches = regex.Matches(content);
+        
+        return matches
+            .Select(m => m.Groups[1].Value)
+            .Distinct()
+            .OrderBy(p => p)
+            .ToList();
     }
 }
