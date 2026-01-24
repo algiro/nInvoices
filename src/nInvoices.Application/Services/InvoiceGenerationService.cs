@@ -30,6 +30,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     private readonly IRepository<Rate> _rateRepository;
     private readonly IRepository<Tax> _taxRepository;
     private readonly IRepository<Invoice> _invoiceRepository;
+    private readonly IRepository<WorkDay> _workDayRepository;
     private readonly ITemplateRenderer _templateRenderer;
     private readonly IHtmlToPdfConverter _htmlToPdfConverter;
     private readonly ITaxCalculationService _taxCalculationService;
@@ -40,6 +41,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         IRepository<Rate> rateRepository,
         IRepository<Tax> taxRepository,
         IRepository<Invoice> invoiceRepository,
+        IRepository<WorkDay> workDayRepository,
         ITemplateRenderer templateRenderer,
         IHtmlToPdfConverter htmlToPdfConverter,
         ITaxCalculationService taxCalculationService)
@@ -49,6 +51,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         _rateRepository = rateRepository;
         _taxRepository = taxRepository;
         _invoiceRepository = invoiceRepository;
+        _workDayRepository = workDayRepository;
         _templateRenderer = templateRenderer;
         _htmlToPdfConverter = htmlToPdfConverter;
         _taxCalculationService = taxCalculationService;
@@ -85,6 +88,9 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         if (dto.InvoiceType == InvoiceType.Monthly && dto.WorkDays != null)
         {
             invoice.SetMonthlyInvoiceDetails(dto.Year!.Value, dto.Month!.Value, dto.WorkDays.Count);
+            
+            // Save or update work days
+            await SaveWorkDaysAsync(dto.CustomerId, dto.WorkDays, cancellationToken);
         }
 
         if (dto.Expenses != null && dto.Expenses.Count > 0)
@@ -370,5 +376,45 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         }
 
         return lineItems;
+    }
+    
+    /// <summary>
+    /// Saves or updates work days for a customer.
+    /// Existing work days for the same dates are updated with new day types.
+    /// </summary>
+    private async Task SaveWorkDaysAsync(
+        long customerId,
+        ICollection<WorkDayDto> workDayDtos,
+        CancellationToken cancellationToken)
+    {
+        if (workDayDtos == null || workDayDtos.Count == 0)
+            return;
+
+        var dates = workDayDtos.Select(wd => wd.Date).ToList();
+        var existingWorkDays = await _workDayRepository.FindAsync(
+            wd => wd.CustomerId == customerId && dates.Contains(wd.Date),
+            cancellationToken);
+
+        var existingDict = existingWorkDays.ToDictionary(wd => wd.Date);
+
+        foreach (var dto in workDayDtos)
+        {
+            if (existingDict.TryGetValue(dto.Date, out var existing))
+            {
+                // Update existing work day
+                existing.UpdateDayType(dto.DayType);
+                if (dto.Notes != null)
+                {
+                    existing.UpdateNotes(dto.Notes);
+                }
+                await _workDayRepository.UpdateAsync(existing, cancellationToken);
+            }
+            else
+            {
+                // Create new work day
+                var workDay = new WorkDay(customerId, dto.Date, dto.DayType, dto.Notes);
+                await _workDayRepository.AddAsync(workDay, cancellationToken);
+            }
+        }
     }
 }

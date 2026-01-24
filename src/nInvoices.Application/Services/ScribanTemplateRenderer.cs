@@ -43,13 +43,17 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
 
             var scriptObject = new ScriptObject();
             scriptObject.Import(model, renamer: member => ToCamelCase(member.Name));
-
+            
             // Add custom functions
             scriptObject.Import(nameof(FormatCurrency), new Func<decimal, string, string>(FormatCurrency));
             scriptObject.Import(nameof(FormatDate), new Func<DateTime, string, string>(FormatDate));
             scriptObject.Import(nameof(FormatDecimal), new Func<decimal, int, string>(FormatDecimal));
-
-            var context = new TemplateContext();
+            
+            // Configure member accessor to use camelCase for all property access (including nested objects)
+            var context = new TemplateContext
+            {
+                MemberRenamer = member => ToCamelCase(member.Name)
+            };
             context.PushGlobal(scriptObject);
 
             var result = await template.RenderAsync(context);

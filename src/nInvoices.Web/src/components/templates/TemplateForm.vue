@@ -292,18 +292,18 @@ function loadSampleTemplate() {
 <body>
     <h1>INVOICE</h1>
     
-    <h3>Invoice #[[ '[[ invoiceNumber ]]' ]]</h3>
-    <p>Date: [[ '[[ date ]]' ]]</p>
+    <h3>Invoice #[[ invoiceNumber ]]</h3>
+    <p>Date: [[ date ]]</p>
     
     <h3>Bill To:</h3>
     <p>
-        <strong>[[ '[[ customer.name ]]' ]]</strong><br>
-        [[ '[[ customer.address.street ]]' ]]<br>
-        [[ '[[ customer.address.city ]]' ]], [[ '[[ customer.address.postalCode ]]' ]]<br>
-        VAT: [[ '[[ customer.fiscalId ]]' ]]
+        <strong>[[ customer.name ]]</strong><br>
+        [[ customer.address.street ]]<br>
+        [[ customer.address.city ]], [[ customer.address.postalCode ]]<br>
+        VAT: [[ customer.fiscalId ]]
     </p>
     
-    <h3>Services & Charges</h3>
+    <h3>Services &amp; Charges</h3>
     <table>
         <tr>
             <th width="60%">Description</th>
@@ -311,42 +311,42 @@ function loadSampleTemplate() {
             <th width="20%">Amount</th>
         </tr>
         
-        [[ '[[ for item in lineItems ]]' ]]
+        [[ for item in lineItems ]]
         <tr>
-            <td>[[ '[[ item.description ]]' ]]</td>
-            <td>[[ '[[ item.quantity ]]' ]]</td>
-            <td>[[ '[[ FormatCurrency item.amount currency ]]' ]]</td>
+            <td>[[ item.description ]]</td>
+            <td>[[ item.quantity ]]</td>
+            <td>[[ FormatCurrency item.amount currency ]]</td>
         </tr>
-        [[ '[[ end ]]' ]]
+        [[ end ]]
         
         <tr>
             <td><strong>Subtotal</strong></td>
             <td></td>
-            <td><strong>[[ '[[ FormatCurrency subtotal currency ]]' ]]</strong></td>
+            <td><strong>[[ FormatCurrency subtotal currency ]]</strong></td>
         </tr>
         
-        [[ '[[ for tax in taxes ]]' ]]
+        [[ for tax in taxes ]]
         <tr>
-            <td>[[ '[[ tax.description ]]' ]] ([[ '[[ FormatDecimal tax.rate 2 ]]' ]]%)</td>
+            <td>[[ tax.description ]] ([[ FormatDecimal tax.rate 2 ]]%)</td>
             <td></td>
-            <td>[[ '[[ FormatCurrency tax.amount currency ]]' ]]</td>
+            <td>[[ FormatCurrency tax.amount currency ]]</td>
         </tr>
-        [[ '[[ end ]]' ]]
+        [[ end ]]
         
         <tr>
             <td><h3>TOTAL</h3></td>
             <td></td>
-            <td><h3>[[ '[[ FormatCurrency total currency ]]' ]]</h3></td>
+            <td><h3>[[ FormatCurrency total currency ]]</h3></td>
         </tr>
     </table>
     
-    [[ '[[ if workedDays ]]' ]]
+    [[ if workedDays ]]
     <p>
-        <strong>Period:</strong> [[ '[[ monthDescription ]]' ]]<br>
-        <strong>Days Worked:</strong> [[ '[[ workedDays ]]' ]]<br>
-        <strong>Daily Rate:</strong> [[ '[[ FormatCurrency monthlyRate currency ]]' ]]
+        <strong>Period:</strong> [[ monthDescription ]]<br>
+        <strong>Days Worked:</strong> [[ workedDays ]]<br>
+        <strong>Daily Rate:</strong> [[ FormatCurrency monthlyRate currency ]]
     </p>
-    [[ '[[ end ]]' ]]
+    [[ end ]]
     
     <p>Thank you for your business!</p>
 </body>

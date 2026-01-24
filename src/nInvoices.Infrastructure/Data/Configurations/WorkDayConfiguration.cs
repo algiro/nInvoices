@@ -15,6 +15,10 @@ public sealed class WorkDayConfiguration : IEntityTypeConfiguration<WorkDay>
         builder.Property(w => w.Date)
             .IsRequired();
 
+        builder.Property(w => w.DayType)
+            .IsRequired()
+            .HasConversion<int>();
+
         builder.Property(w => w.Notes)
             .HasMaxLength(500);
 

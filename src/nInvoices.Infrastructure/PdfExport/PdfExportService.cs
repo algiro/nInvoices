@@ -3,6 +3,7 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Services;
 
 namespace nInvoices.Infrastructure.PdfExport;
 
@@ -13,13 +14,23 @@ namespace nInvoices.Infrastructure.PdfExport;
 /// </summary>
 public sealed class PdfExportService : IPdfExportService
 {
-    public PdfExportService()
+    private readonly IHtmlToPdfConverter _htmlToPdfConverter;
+
+    public PdfExportService(IHtmlToPdfConverter htmlToPdfConverter)
     {
         QuestPDF.Settings.License = LicenseType.Community;
+        _htmlToPdfConverter = htmlToPdfConverter;
     }
 
     public byte[] GenerateInvoicePdf(Invoice invoice)
     {
+        // Use custom HTML template if rendered content is available
+        if (!string.IsNullOrWhiteSpace(invoice.RenderedContent))
+        {
+            return _htmlToPdfConverter.ConvertAsync(invoice.RenderedContent).GetAwaiter().GetResult();
+        }
+
+        // Fallback to default invoice layout
         var document = new InvoicePdfDocument(invoice);
         return document.GeneratePdf();
     }

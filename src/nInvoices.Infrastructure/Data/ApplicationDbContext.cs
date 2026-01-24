@@ -18,6 +18,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<Rate> Rates => Set<Rate>();
     public DbSet<Tax> Taxes => Set<Tax>();
     public DbSet<InvoiceTemplate> InvoiceTemplates => Set<InvoiceTemplate>();
+    public DbSet<MonthlyReportTemplate> MonthlyReportTemplates => Set<MonthlyReportTemplate>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<InvoiceTaxLine> InvoiceTaxLines => Set<InvoiceTaxLine>();
     public DbSet<WorkDay> WorkDays => Set<WorkDay>();

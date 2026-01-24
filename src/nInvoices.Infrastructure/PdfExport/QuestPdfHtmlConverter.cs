@@ -156,22 +156,22 @@ public sealed class QuestPdfHtmlConverter : Application.Services.IHtmlToPdfConve
             var columnCount = firstRow.ChildNodes
                 .Count(n => n.Name.ToLowerInvariant() is "th" or "td");
 
-            // Define columns with relative widths
+            // Define columns with relative widths - MUST be called only once
             var headerCells = firstRow.ChildNodes
                 .Where(n => n.Name.ToLowerInvariant() is "th" or "td")
                 .ToList();
 
-            for (int i = 0; i < columnCount; i++)
+            table.ColumnsDefinition(columns =>
             {
-                var width = GetColumnWidth(headerCells.ElementAtOrDefault(i));
-                table.ColumnsDefinition(columns =>
+                for (int i = 0; i < columnCount; i++)
                 {
+                    var width = GetColumnWidth(headerCells.ElementAtOrDefault(i));
                     if (width > 0)
                         columns.RelativeColumn(width);
                     else
                         columns.RelativeColumn(); // Equal width
-                });
-            }
+                }
+            });
 
             // Render header row if first row contains <th>
             if (firstRow.ChildNodes.Any(n => n.Name.ToLowerInvariant() == "th"))
