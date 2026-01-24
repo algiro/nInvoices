@@ -97,8 +97,6 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
             var dayModel = new MonthDayTemplateModel
             {
                 DateValue = dateTime,
-                Date = date.ToString("dd/MM/yyyy"),
-                DayOfWeek = dateTime.ToString("dddd", System.Globalization.CultureInfo.GetCultureInfo("en-US")),
                 DayNumber = day,
                 Type = workedDay != null ? workedDay.DayType.ToString() : string.Empty,
                 IsWeekend = isWeekend,
@@ -116,9 +114,6 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
         var publicHolidayCount = workDays.Count(wd => wd.DayType == DayType.PublicHoliday);
         var unpaidLeaveCount = workDays.Count(wd => wd.DayType == DayType.UnpaidLeave);
 
-        var monthDate = new DateTime(year, month, 1);
-        var monthDescription = monthDate.ToString("MMMM", System.Globalization.CultureInfo.GetCultureInfo("en-US"));
-
         // Build model
         var model = new MonthlyReportTemplateModel
         {
@@ -135,7 +130,7 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
                     Country = customer.Address?.Country ?? string.Empty
                 }
             },
-            MonthDescription = monthDescription,
+            Locale = "it-IT", // Default locale - can be made configurable per customer/template in future
             Year = year,
             MonthNumber = month,
             MonthDays = monthDays,

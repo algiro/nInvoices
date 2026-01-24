@@ -11,7 +11,7 @@ public sealed record MonthlyReportTemplateModel
 {
     public string CustomerName { get; init; } = string.Empty;
     public CustomerTemplateModel? Customer { get; init; } // Nested customer object for template access
-    public string MonthDescription { get; init; } = string.Empty;
+    public string Locale { get; init; } = "en-US"; // Locale for localization (e.g., "it-IT", "en-US", "es-ES")
     public int Year { get; init; }
     public int MonthNumber { get; init; }
     
@@ -34,9 +34,7 @@ public sealed record MonthlyReportTemplateModel
 /// </summary>
 public sealed record MonthDayTemplateModel
 {
-    public DateTime DateValue { get; init; } // DateTime object for Scriban date filters
-    public string Date { get; init; } = string.Empty; // Formatted date (e.g., "24/01/2026")
-    public string DayOfWeek { get; init; } = string.Empty; // e.g., "Monday"
+    public DateTime DateValue { get; init; } // DateTime object for Scriban date filters and localization
     public int DayNumber { get; init; } // Day of month (1-31)
     public string Type { get; init; } = string.Empty; // "Worked", "PublicHoliday", "UnpaidLeave", or empty
     public bool IsWeekend { get; init; }

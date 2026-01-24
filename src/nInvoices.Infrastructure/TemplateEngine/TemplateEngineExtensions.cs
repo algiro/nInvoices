@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Services;
 
 namespace nInvoices.Infrastructure.TemplateEngine;
 
@@ -14,6 +15,7 @@ public static class TemplateEngineExtensions
     public static IServiceCollection AddTemplateEngine(this IServiceCollection services)
     {
         services.AddSingleton<ITemplateEngine, HandlebarsTemplateEngine>();
+        services.AddSingleton<ILocalizationService, LocalizationService>();
         return services;
     }
 }

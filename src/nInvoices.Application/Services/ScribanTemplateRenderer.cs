@@ -11,10 +11,14 @@ namespace nInvoices.Application.Services;
 public sealed class ScribanTemplateRenderer : ITemplateRenderer
 {
     private readonly ILogger<ScribanTemplateRenderer> _logger;
+    private readonly ILocalizationService _localizationService;
 
-    public ScribanTemplateRenderer(ILogger<ScribanTemplateRenderer> logger)
+    public ScribanTemplateRenderer(
+        ILogger<ScribanTemplateRenderer> logger,
+        ILocalizationService localizationService)
     {
         _logger = logger;
+        _localizationService = localizationService;
     }
 
     public async Task<string> RenderAsync(
@@ -48,6 +52,10 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
             scriptObject.Import(nameof(FormatCurrency), new Func<decimal, string, string>(FormatCurrency));
             scriptObject.Import(nameof(FormatDate), new Func<DateTime, string, string>(FormatDate));
             scriptObject.Import(nameof(FormatDecimal), new Func<decimal, int, string>(FormatDecimal));
+            
+            // Add localization functions
+            scriptObject.Import(nameof(LocalizeDayOfWeek), new Func<DateTime, string, bool, string>(LocalizeDayOfWeek));
+            scriptObject.Import(nameof(LocalizeMonth), new Func<int, string, bool, string>(LocalizeMonth));
             
             // Configure member accessor to use camelCase for all property access (including nested objects)
             var context = new TemplateContext
@@ -129,6 +137,22 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
     private static string FormatDecimal(decimal value, int decimals)
     {
         return Math.Round(value, decimals).ToString($"F{decimals}");
+    }
+
+    /// <summary>
+    /// Localizes day of week name: LocalizeDayOfWeek(date, "it-IT") => "Lunedì"
+    /// </summary>
+    private string LocalizeDayOfWeek(DateTime date, string locale, bool shortFormat = false)
+    {
+        return _localizationService.GetDayOfWeek(date.DayOfWeek, locale, shortFormat);
+    }
+
+    /// <summary>
+    /// Localizes month name: LocalizeMonth(1, "it-IT") => "Gennaio"
+    /// </summary>
+    private string LocalizeMonth(int monthNumber, string locale, bool shortFormat = false)
+    {
+        return _localizationService.GetMonthName(monthNumber, locale, shortFormat);
     }
 
     /// <summary>

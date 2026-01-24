@@ -57,7 +57,7 @@
               <strong>Global Variables:</strong>
               <code class="inline-code">[[ year ]]</code>
               <code class="inline-code">[[ month ]]</code>
-              <code class="inline-code">[[ monthName ]]</code>
+              <code class="inline-code">[[ LocalizeMonth monthNumber locale ]]</code>
               <code class="inline-code">[[ workedDaysCount ]]</code>
               <code class="inline-code">[[ publicHolidaysCount ]]</code>
               <code class="inline-code">[[ unpaidLeaveCount ]]</code>
@@ -74,7 +74,7 @@
             <div class="syntax-example">
               <strong>Day Properties:</strong>
               <code class="inline-code">[[ day.date ]]</code>
-              <code class="inline-code">[[ day.dayOfWeek ]]</code>
+              <code class="inline-code">[[ LocalizeDayOfWeek day.dateValue locale ]]</code>
               <code class="inline-code">[[ day.type ]]</code>
               <code class="inline-code">[[ day.isWeekend ]]</code>
               <code class="inline-code">[[ day.isWorked ]]</code>
@@ -246,7 +246,7 @@ function loadSampleTemplate() {
     return
   }
 
-  form.value.name = 'Standard Monthly Report'
+  form.value.name = 'Standard Monthly Report (Italian)'
   form.value.content = `<!DOCTYPE html>
 <html>
 <head>
@@ -268,20 +268,20 @@ function loadSampleTemplate() {
     </style>
 </head>
 <body>
-    <h1>Monthly Work Report - [[ monthName ]] [[ year ]]</h1>
+    <h1>Monthly Work Report - [[ LocalizeMonth monthNumber locale ]] [[ year ]]</h1>
     
     <div class="summary">
         <div class="summary-item">
-            <span class="summary-label">Customer:</span> [[ customer.name ]]
+            <span class="summary-label">Cliente:</span> [[ customer.name ]]
         </div>
         <div class="summary-item">
-            <span class="summary-label">Worked Days:</span> [[ workedDaysCount ]]
+            <span class="summary-label">Giorni Lavorati:</span> [[ workedDaysCount ]]
         </div>
         <div class="summary-item">
-            <span class="summary-label">Public Holidays:</span> [[ publicHolidaysCount ]]
+            <span class="summary-label">Festività:</span> [[ publicHolidaysCount ]]
         </div>
         <div class="summary-item">
-            <span class="summary-label">Unpaid Leave:</span> [[ unpaidLeaveCount ]]
+            <span class="summary-label">Permessi:</span> [[ unpaidLeaveCount ]]
         </div>
     </div>
 
@@ -289,7 +289,7 @@ function loadSampleTemplate() {
         <thead>
             <tr>
                 <th>Date</th>
-                <th>Day of Week</th>
+                <th>Giorno</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -297,7 +297,7 @@ function loadSampleTemplate() {
             [[ for day in monthDays ]]
             <tr class="[[ if day.isWeekend ]]weekend[[ else if day.isWorked ]]worked[[ else if day.isPublicHoliday ]]public-holiday[[ else if day.isUnpaidLeave ]]unpaid-leave[[ end ]]">
                 <td>[[ day.dateValue | date.to_string "%Y-%m-%d" ]]</td>
-                <td>[[ day.dayOfWeek ]]</td>
+                <td>[[ LocalizeDayOfWeek day.dateValue locale ]]</td>
                 <td>[[ day.type ]]</td>
             </tr>
             [[ end ]]
@@ -424,3 +424,4 @@ function loadSampleTemplate() {
   margin-top: 0.25rem;
 }
 </style>
+
