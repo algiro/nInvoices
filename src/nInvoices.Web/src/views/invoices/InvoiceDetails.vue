@@ -32,6 +32,17 @@
             {{ downloadingPdf ? 'Downloading...' : 'Download PDF' }}
           </button>
           <button
+            v-if="invoice.invoiceType === InvoiceType.Monthly"
+            @click="handleDownloadMonthlyReport"
+            class="btn-primary"
+            :disabled="downloadingMonthlyReport"
+          >
+            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            {{ downloadingMonthlyReport ? 'Downloading...' : 'Download Monthly Report' }}
+          </button>
+          <button
             v-if="invoice.status === InvoiceStatus.Draft"
             @click="handleFinalize"
             class="btn-secondary"
@@ -183,6 +194,7 @@ const invoice = computed(() => invoicesStore.selectedInvoice)
 const loading = ref(false)
 const error = ref<string | null>(null)
 const downloadingPdf = ref(false)
+const downloadingMonthlyReport = ref(false)
 
 const customerName = computed(() => {
   if (!invoice.value) return ''
@@ -244,6 +256,17 @@ async function handleDownloadPdf() {
     alert(`Failed to download PDF: ${err.message}`)
   } finally {
     downloadingPdf.value = false
+  }
+}
+
+async function handleDownloadMonthlyReport() {
+  try {
+    downloadingMonthlyReport.value = true
+    await invoicesStore.downloadMonthlyReportPdf(invoiceId.value)
+  } catch (err: any) {
+    alert(`Failed to download monthly report: ${err.message}`)
+  } finally {
+    downloadingMonthlyReport.value = false
   }
 }
 

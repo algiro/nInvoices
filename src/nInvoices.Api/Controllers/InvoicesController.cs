@@ -254,5 +254,54 @@ public sealed class InvoicesController : ControllerBase
             return StatusCode(500, new { error = "Failed to generate calendar PDF" });
         }
     }
+
+    /// <summary>
+    /// Exports monthly report as PDF using custom template.
+    /// Shows worked days, holidays, and unpaid leave for the month.
+    /// </summary>
+    [HttpGet("{id}/monthlyreport/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> ExportMonthlyReportPdf(long id, CancellationToken cancellationToken)
+    {
+        var repository = HttpContext.RequestServices.GetRequiredService<IRepository<Core.Entities.Invoice>>();
+        var customerRepository = HttpContext.RequestServices.GetRequiredService<IRepository<Core.Entities.Customer>>();
+        var monthlyReportService = HttpContext.RequestServices.GetRequiredService<Application.Services.IMonthlyReportGenerationService>();
+        var htmlToPdfConverter = HttpContext.RequestServices.GetRequiredService<Application.Services.IHtmlToPdfConverter>();
+
+        var invoice = await repository.GetByIdAsync(id, cancellationToken);
+        if (invoice == null)
+            return NotFound();
+
+        if (invoice.Type != Core.Enums.InvoiceType.Monthly)
+            return BadRequest(new { error = "Monthly reports are only available for monthly invoices" });
+
+        try
+        {
+            var customer = await customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken);
+            if (customer == null)
+                return NotFound(new { error = "Customer not found" });
+
+            // Generate HTML from template
+            var html = await monthlyReportService.GenerateReportHtmlAsync(invoice, customer, cancellationToken);
+
+            // Convert to PDF
+            var pdfBytes = await htmlToPdfConverter.ConvertAsync(html, cancellationToken);
+            var fileName = $"MonthlyReport-{invoice.Year}-{invoice.Month:00}-{customer.Name}.pdf";
+
+            return File(pdfBytes, "application/pdf", fileName);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Monthly report template not found for invoice {InvoiceId}", id);
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to generate monthly report PDF for invoice {InvoiceId}", id);
+            return StatusCode(500, new { error = "Failed to generate monthly report PDF" });
+        }
+    }
 }
 

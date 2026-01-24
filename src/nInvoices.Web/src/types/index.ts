@@ -21,6 +21,12 @@ export enum InvoiceStatus {
   Cancelled = 4
 }
 
+export enum DayType {
+  Worked = 0,
+  PublicHoliday = 1,
+  UnpaidLeave = 2
+}
+
 // Helper functions to convert enum numbers to display strings
 export const InvoiceTypeNames: Record<InvoiceType, string> = {
   [InvoiceType.Monthly]: 'Monthly',
@@ -35,6 +41,12 @@ export const InvoiceStatusNames: Record<InvoiceStatus, string> = {
   [InvoiceStatus.Sent]: 'Sent',
   [InvoiceStatus.Paid]: 'Paid',
   [InvoiceStatus.Cancelled]: 'Cancelled'
+};
+
+export const DayTypeNames: Record<DayType, string> = {
+  [DayType.Worked]: 'Worked',
+  [DayType.PublicHoliday]: 'Public Holiday',
+  [DayType.UnpaidLeave]: 'Unpaid Leave'
 };
 
 export enum RateType {
@@ -164,6 +176,7 @@ export interface UpdateInvoiceTemplateDto {
 
 export interface WorkDayDto {
   date: string;
+  dayType?: DayType;
   notes?: string;
 }
 
@@ -216,6 +229,28 @@ export interface TemplateValidationResultDto {
   isValid: boolean;
   errors: string[];
   placeholders: string[];
+}
+
+export interface MonthlyReportTemplateDto {
+  id: number;
+  customerId: number;
+  invoiceType: InvoiceType;
+  name: string;
+  content: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateMonthlyReportTemplateDto {
+  customerId: number;
+  name: string;
+  content: string;
+}
+
+export interface UpdateMonthlyReportTemplateDto {
+  name?: string;
+  content?: string;
 }
 
 // API Response types

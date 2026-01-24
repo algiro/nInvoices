@@ -87,7 +87,21 @@
             <h4 class="text-lg font-semibold">
               {{ months.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }}
             </h4>
-            <p class="text-sm text-gray-600">Click on days to mark them as worked</p>
+            <p class="text-sm text-gray-600">Click on days to cycle through: Worked → Public Holiday → Unpaid Leave → Unselected</p>
+            <div class="day-type-legend">
+              <div class="legend-item">
+                <span class="legend-color worked"></span>
+                <span>Worked</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color public-holiday"></span>
+                <span>Public Holiday</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color unpaid-leave"></span>
+                <span>Unpaid Leave</span>
+              </div>
+            </div>
           </div>
 
           <div class="calendar-grid">
@@ -106,10 +120,12 @@
               :class="{
                 'empty': !day.isCurrentMonth,
                 'weekend': day.isWeekend,
-                'worked': isWorkedDay(day.date),
+                'worked': getDayType(day.date) === DayType.Worked,
+                'public-holiday': getDayType(day.date) === DayType.PublicHoliday,
+                'unpaid-leave': getDayType(day.date) === DayType.UnpaidLeave,
                 'today': isToday(day.date)
               }"
-              @click="toggleWorkDay(day)"
+              @click="cycleWorkDayType(day)"
             >
               <span v-if="day.isCurrentMonth">{{ day.day }}</span>
             </div>
@@ -117,8 +133,16 @@
 
           <div class="calendar-summary">
             <div class="stat">
-              <span class="stat-label">Total Worked Days:</span>
-              <span class="stat-value">{{ form.workDays.length }}</span>
+              <span class="stat-label">Worked Days:</span>
+              <span class="stat-value">{{ workedDaysCount }}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Public Holidays:</span>
+              <span class="stat-value">{{ publicHolidaysCount }}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Unpaid Leave:</span>
+              <span class="stat-value">{{ unpaidLeaveCount }}</span>
             </div>
             <div class="stat">
               <span class="stat-label">Estimated Amount:</span>
@@ -207,7 +231,7 @@ import { useRouter } from 'vue-router'
 import { useInvoicesStore } from '@/stores/invoices'
 import { useCustomersStore } from '@/stores/customers'
 import { useRatesStore } from '@/stores/rates'
-import { InvoiceType, RateType } from '@/types'
+import { InvoiceType, RateType, DayType, DayTypeNames } from '@/types'
 import type { GenerateInvoiceDto, WorkDayDto, ExpenseDto } from '@/types'
 
 const router = useRouter()
@@ -297,12 +321,24 @@ const calendarDays = computed((): CalendarDay[] => {
   return days
 })
 
+const workedDaysCount = computed(() => {
+  return form.workDays.filter(wd => (wd.dayType ?? DayType.Worked) === DayType.Worked).length
+})
+
+const publicHolidaysCount = computed(() => {
+  return form.workDays.filter(wd => wd.dayType === DayType.PublicHoliday).length
+})
+
+const unpaidLeaveCount = computed(() => {
+  return form.workDays.filter(wd => wd.dayType === DayType.UnpaidLeave).length
+})
+
 const estimatedAmount = computed(() => {
   if (!selectedRate.value || form.invoiceType !== InvoiceType.Monthly) {
     return '-'
   }
 
-  const workedDays = form.workDays.length
+  const workedDays = workedDaysCount.value
   const rate = selectedRate.value.price.amount
   const currency = selectedRate.value.price.currency
 
@@ -370,26 +406,37 @@ async function loadCustomerData() {
   }
 }
 
-function isWorkedDay(date: string): boolean {
-  return form.workDays.some(wd => wd.date === date)
+function getDayType(date: string): DayType | null {
+  const workDay = form.workDays.find(wd => wd.date === date)
+  return workDay ? (workDay.dayType ?? DayType.Worked) : null
 }
 
 function isToday(date: string): boolean {
   return date === new Date().toISOString().split('T')[0]
 }
 
-function toggleWorkDay(day: CalendarDay) {
+function cycleWorkDayType(day: CalendarDay) {
   if (!day.isCurrentMonth) return
   
   const existingIndex = form.workDays.findIndex(wd => wd.date === day.date)
   
   if (existingIndex >= 0) {
-    form.workDays.splice(existingIndex, 1)
+    const currentType = form.workDays[existingIndex].dayType ?? DayType.Worked
+    
+    // Cycle: Worked (0) → PublicHoliday (1) → UnpaidLeave (2) → unselected
+    if (currentType === DayType.Worked) {
+      form.workDays[existingIndex].dayType = DayType.PublicHoliday
+    } else if (currentType === DayType.PublicHoliday) {
+      form.workDays[existingIndex].dayType = DayType.UnpaidLeave
+    } else {
+      // UnpaidLeave → remove (unselect)
+      form.workDays.splice(existingIndex, 1)
+    }
   } else {
+    // First click: add as Worked day
     form.workDays.push({
       date: day.date,
-      hoursWorked: 8,
-      description: null
+      dayType: DayType.Worked
     })
   }
 }
@@ -501,6 +548,44 @@ function handleCancel() {
   margin-bottom: 1.5rem;
 }
 
+.day-type-legend {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.legend-color {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d1d5db;
+}
+
+.legend-color.worked {
+  background: #e8f5e9;
+  border-color: #4caf50;
+}
+
+.legend-color.public-holiday {
+  background: #fff3e0;
+  border-color: #ff9800;
+}
+
+.legend-color.unpaid-leave {
+  background: #ffebee;
+  border-color: #f44336;
+}
+
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -545,9 +630,24 @@ function handleCancel() {
 }
 
 .day-cell.worked {
-  background: #2563eb;
-  color: white;
-  border-color: #1d4ed8;
+  background: #e8f5e9;
+  color: #1b5e20;
+  border-color: #4caf50;
+  font-weight: 600;
+}
+
+.day-cell.public-holiday {
+  background: #fff3e0;
+  color: #e65100;
+  border-color: #ff9800;
+  font-weight: 600;
+}
+
+.day-cell.unpaid-leave {
+  background: #ffebee;
+  color: #b71c1c;
+  border-color: #f44336;
+  font-weight: 600;
 }
 
 .day-cell.today {
@@ -556,8 +656,9 @@ function handleCancel() {
 }
 
 .calendar-summary {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid #e5e7eb;

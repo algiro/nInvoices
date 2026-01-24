@@ -157,6 +157,27 @@ export const useInvoicesStore = defineStore('invoices', () => {
     }
   }
 
+  async function downloadMonthlyReportPdf(id: number, invoiceNumber: string) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const blob = await invoicesApi.downloadMonthlyReportPdf(id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `MonthlyReport-${invoiceNumber}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (e: any) {
+      error.value = e.message || 'Failed to download monthly report';
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   function clearError() {
     error.value = null;
   }
@@ -182,6 +203,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
     finalize,
     remove,
     downloadPdf,
+    downloadMonthlyReportPdf,
     clearError,
   };
 });

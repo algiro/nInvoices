@@ -50,4 +50,8 @@ export const invoicesApi = {
   async downloadCalendarPdf(id: number): Promise<Blob> {
     return apiClient.downloadFile(`/api/invoices/${id}/calendar/pdf`);
   },
+
+  async downloadMonthlyReportPdf(id: number): Promise<Blob> {
+    return apiClient.downloadFile(`/api/invoices/${id}/monthlyreport/pdf`);
+  },
 };
