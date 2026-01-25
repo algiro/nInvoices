@@ -97,7 +97,7 @@
             </td>
             <td class="actions-cell" @click.stop>
               <button
-                @click="handleDownloadPdf(invoice.id)"
+                @click.prevent.stop="handleDownloadPdf(invoice.id)"
                 class="action-btn"
                 title="Download PDF"
               >
@@ -105,14 +105,26 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </button>
+              <!-- Normal delete button for drafts -->
               <button
                 v-if="invoice.status === 'Draft' || invoice.status === 0"
-                @click="handleDelete(invoice)"
+                @click.prevent.stop="handleDelete(invoice)"
                 class="action-btn text-red-600 hover:bg-red-50"
-                title="Delete invoice"
+                title="Delete draft invoice"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+              <!-- Force delete button for finalized invoices -->
+              <button
+                v-if="invoice.status !== 'Draft' && invoice.status !== 0"
+                @click.prevent.stop="handleForceDelete(invoice)"
+                class="action-btn text-orange-600 hover:bg-orange-50"
+                title="Force delete finalized invoice"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </button>
             </td>
@@ -304,13 +316,43 @@ async function handleDownloadPdf(id: number) {
 }
 
 async function handleDelete(invoice: InvoiceDto) {
+  console.log('handleDelete called for invoice:', invoice.id, 'Status:', invoice.status);
+  
   if (!confirm(`Are you sure you want to delete invoice "${invoice.invoiceNumber}"?\n\nThis action cannot be undone.`)) {
+    console.log('Delete cancelled by user');
     return
   }
 
   try {
-    await invoicesStore.remove(invoice.id)
+    console.log('Calling invoicesStore.remove with force=false');
+    await invoicesStore.remove(invoice.id, false)
+    console.log('Delete successful');
   } catch (error: any) {
+    console.error('Delete failed:', error);
+    alert(`Failed to delete invoice: ${error.message}`)
+  }
+}
+
+async function handleForceDelete(invoice: InvoiceDto) {
+  console.log('handleForceDelete called for invoice:', invoice.id, 'Status:', invoice.status);
+  
+  if (!confirm(
+    `⚠️ WARNING: Force Delete\n\n` +
+    `You are about to force delete invoice "${invoice.invoiceNumber}".\n\n` +
+    `This invoice is ${formatStatus(invoice.status)} and normally cannot be deleted.\n\n` +
+    `Force delete should only be used to fix generation errors.\n\n` +
+    `This action cannot be undone. Are you sure?`
+  )) {
+    console.log('Force delete cancelled by user');
+    return
+  }
+
+  try {
+    console.log('Calling invoicesStore.remove with force=true');
+    await invoicesStore.remove(invoice.id, true)
+    console.log('Force delete successful');
+  } catch (error: any) {
+    console.error('Force delete failed:', error);
     alert(`Failed to delete invoice: ${error.message}`)
   }
 }

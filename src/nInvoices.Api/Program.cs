@@ -1,5 +1,6 @@
 using Serilog;
 using nInvoices.Application;
+using nInvoices.Core.Configuration;
 using nInvoices.Infrastructure.Data;
 using nInvoices.Infrastructure.TaxHandlers;
 using nInvoices.Infrastructure.TemplateEngine;
@@ -27,6 +28,9 @@ builder.Services.AddControllers()
     });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
+
+// Add Configuration
+builder.Services.Configure<InvoiceSettings>(builder.Configuration.GetSection(InvoiceSettings.SectionName));
 
 // Add Database
 builder.Services.AddDatabase(builder.Configuration);

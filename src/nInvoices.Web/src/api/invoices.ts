@@ -39,8 +39,11 @@ export const invoicesApi = {
     return apiClient.post<void>(`/api/invoices/${id}/finalize`);
   },
 
-  async delete(id: number): Promise<void> {
-    return apiClient.delete<void>(`/api/invoices/${id}`);
+  async delete(id: number, force: boolean = false): Promise<void> {
+    console.log(`[API] delete called - ID: ${id}, Force: ${force}`);
+    const params = force ? { force: true } : undefined;
+    console.log('[API] params:', params);
+    return apiClient.delete<void>(`/api/invoices/${id}`, params);
   },
 
   async downloadPdf(id: number): Promise<Blob> {
@@ -61,5 +64,13 @@ export const invoicesApi = {
 
   async regenerateMonthlyReportPdf(id: number): Promise<{ message: string }> {
     return apiClient.post(`/api/invoices/${id}/monthlyreport/regenerate`, {});
+  },
+
+  async getSequence(): Promise<{ currentValue: number }> {
+    return apiClient.get<{ currentValue: number }>('/api/invoices/sequence');
+  },
+
+  async setSequence(value: number): Promise<{ currentValue: number; message: string }> {
+    return apiClient.put<{ currentValue: number; message: string }>('/api/invoices/sequence', { value });
   },
 };

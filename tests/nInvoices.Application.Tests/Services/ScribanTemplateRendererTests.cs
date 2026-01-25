@@ -14,7 +14,8 @@ public sealed class ScribanTemplateRendererTests
     public void Setup()
     {
         var logger = new Mock<ILogger<ScribanTemplateRenderer>>();
-        _renderer = new ScribanTemplateRenderer(logger.Object);
+        var localizationService = new Mock<ILocalizationService>();
+        _renderer = new ScribanTemplateRenderer(logger.Object, localizationService.Object);
     }
 
     [Test]

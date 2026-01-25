@@ -1,5 +1,6 @@
 using MediatR;
 using nInvoices.Core.Interfaces;
+using nInvoices.Core.Entities;
 using Microsoft.AspNetCore.Mvc;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Invoices.Commands;
@@ -167,19 +168,27 @@ public sealed class InvoicesController : ControllerBase
     }
 
     /// <summary>
-    /// Deletes a draft invoice.
-    /// Only draft invoices can be deleted.
+    /// Deletes an invoice.
+    /// By default, only draft invoices can be deleted.
+    /// Use force=true query parameter to delete finalized invoices (e.g., when there was a generation error).
     /// </summary>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> Delete(long id, CancellationToken cancellationToken)
+    public async Task<ActionResult> Delete(
+        long id,
+        [FromQuery] bool force = false,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            var command = new DeleteInvoiceCommand(id);
+            var command = new DeleteInvoiceCommand(id, force);
             await _mediator.Send(command, cancellationToken);
+            
+            if (force)
+                _logger.LogWarning("Invoice {InvoiceId} was force deleted", id);
+            
             return NoContent();
         }
         catch (InvalidOperationException ex)
@@ -381,6 +390,58 @@ public sealed class InvoicesController : ControllerBase
             _logger.LogError(ex, "Failed to verify monthly report for invoice {InvoiceId}", id);
             return StatusCode(500, new { error = "Failed to verify monthly report" });
         }
+    }
+
+    /// <summary>
+    /// Gets the current global invoice sequence number.
+    /// </summary>
+    [HttpGet("sequence")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    public async Task<ActionResult> GetSequence(CancellationToken cancellationToken)
+    {
+        var repository = HttpContext.RequestServices.GetRequiredService<IRepository<InvoiceSequence>>();
+        var sequence = await repository.GetByIdAsync(1, cancellationToken);
+
+        if (sequence == null)
+            return Ok(new { currentValue = 1, message = "Sequence not initialized yet" });
+
+        return Ok(new { currentValue = sequence.CurrentValue });
+    }
+
+    /// <summary>
+    /// Sets the global invoice sequence to a specific value.
+    /// WARNING: Setting this too low can cause duplicate invoice numbers.
+    /// </summary>
+    [HttpPut("sequence")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> SetSequence(
+        [FromBody] SetSequenceDto dto,
+        CancellationToken cancellationToken)
+    {
+        if (dto.Value < 1)
+            return BadRequest(new { error = "Sequence value must be at least 1" });
+
+        var repository = HttpContext.RequestServices.GetRequiredService<IRepository<InvoiceSequence>>();
+        var unitOfWork = HttpContext.RequestServices.GetRequiredService<IUnitOfWork>();
+
+        var sequence = await repository.GetByIdAsync(1, cancellationToken);
+        
+        if (sequence == null)
+        {
+            sequence = new InvoiceSequence(dto.Value);
+            await repository.AddAsync(sequence, cancellationToken);
+        }
+        else
+        {
+            sequence.SetValue(dto.Value);
+            await repository.UpdateAsync(sequence, cancellationToken);
+        }
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Invoice sequence set to {Value}", dto.Value);
+        return Ok(new { currentValue = sequence.CurrentValue, message = "Sequence updated successfully" });
     }
 }
 

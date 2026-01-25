@@ -23,8 +23,9 @@ public sealed class DeleteInvoiceCommandHandler : IRequestHandler<DeleteInvoiceC
         if (invoice == null)
             throw new InvalidOperationException($"Invoice with ID {request.InvoiceId} not found");
 
-        if (invoice.Status != Core.Enums.InvoiceStatus.Draft)
-            throw new InvalidOperationException("Only draft invoices can be deleted");
+        // Check status only if not forcing delete
+        if (!request.Force && invoice.Status != Core.Enums.InvoiceStatus.Draft)
+            throw new InvalidOperationException("Only draft invoices can be deleted. Use force=true to delete finalized invoices.");
 
         await _repository.DeleteAsync(invoice, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

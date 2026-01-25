@@ -22,7 +22,7 @@
         </div>
         <div class="header-actions">
           <button
-            @click="handleDownloadPdf"
+            @click.prevent.stop="handleDownloadPdf"
             class="btn-primary"
             :disabled="downloadingPdf"
           >
@@ -33,7 +33,7 @@
           </button>
           <button
             v-if="invoice && (invoice.type === 'Monthly' || invoice.type === 0)"
-            @click="handleDownloadMonthlyReport"
+            @click.prevent.stop="handleDownloadMonthlyReport"
             class="btn-primary"
             :disabled="downloadingMonthlyReport"
           >
@@ -43,7 +43,7 @@
             {{ downloadingMonthlyReport ? 'Downloading...' : 'Download Monthly Report' }}
           </button>
           <button
-            @click="handleRegenerateInvoicePdf"
+            @click.prevent.stop="handleRegenerateInvoicePdf"
             class="btn-secondary"
             :disabled="regeneratingInvoice"
             title="Regenerate PDF with current template"
@@ -55,7 +55,7 @@
           </button>
           <button
             v-if="invoice && (invoice.type === 'Monthly' || invoice.type === 0)"
-            @click="handleRegenerateMonthlyReport"
+            @click.prevent.stop="handleRegenerateMonthlyReport"
             class="btn-secondary"
             :disabled="regeneratingMonthlyReport"
             title="Verify monthly report template"
@@ -67,14 +67,14 @@
           </button>
           <button
             v-if="invoice.status === InvoiceStatus.Draft"
-            @click="handleFinalize"
+            @click.prevent.stop="handleFinalize"
             class="btn-secondary"
           >
             Finalize
           </button>
           <button
             v-if="invoice.status === InvoiceStatus.Draft"
-            @click="handleDelete"
+            @click.prevent.stop="handleDelete"
             class="btn-danger"
           >
             Delete
@@ -296,16 +296,26 @@ async function handleDownloadMonthlyReport() {
 }
 
 async function handleRegenerateInvoicePdf() {
-  if (!confirm('Regenerate invoice PDF with current template? This will update the rendered content.')) {
+  console.log('handleRegenerateInvoicePdf called for invoice:', invoiceId.value);
+  console.log('About to show confirm dialog...');
+  
+  const confirmed = confirm('Regenerate invoice PDF with current template? This will update the rendered content.');
+  console.log('Confirm dialog result:', confirmed);
+  
+  if (!confirmed) {
+    console.log('Regenerate cancelled by user');
     return
   }
 
   try {
+    console.log('Calling invoicesStore.regenerateInvoicePdf');
     regeneratingInvoice.value = true
     const result = await invoicesStore.regenerateInvoicePdf(invoiceId.value)
+    console.log('Regenerate successful:', result);
     alert(result.message || 'Invoice PDF regenerated successfully!')
     await loadData()
   } catch (err: any) {
+    console.error('Regenerate failed:', err);
     alert(`Failed to regenerate invoice PDF: ${err.message}`)
   } finally {
     regeneratingInvoice.value = false

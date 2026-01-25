@@ -23,6 +23,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<InvoiceTaxLine> InvoiceTaxLines => Set<InvoiceTaxLine>();
     public DbSet<WorkDay> WorkDays => Set<WorkDay>();
     public DbSet<Expense> Expenses => Set<Expense>();
+    public DbSet<InvoiceSequence> InvoiceSequences => Set<InvoiceSequence>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

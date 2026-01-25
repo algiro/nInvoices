@@ -7,6 +7,7 @@ import type {
   UpdateInvoiceTemplateDto,
   TemplateValidationResultDto 
 } from '@/types'
+import { InvoiceType } from '@/types'
 
 export const useTemplatesStore = defineStore('templates', () => {
   const templates = ref<InvoiceTemplateDto[]>([])
@@ -24,7 +25,7 @@ export const useTemplatesStore = defineStore('templates', () => {
   })
 
   const getTemplateByCustomerAndType = computed(() => {
-    return (customerId: number, invoiceType: string) => 
+    return (customerId: number, invoiceType: string | InvoiceType) => 
       templates.value.find(t => t.customerId === customerId && t.invoiceType === invoiceType)
   })
 

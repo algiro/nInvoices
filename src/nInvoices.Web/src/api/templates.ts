@@ -42,8 +42,6 @@ export const templatesApi = {
   },
 
   async validate(content: string): Promise<TemplateValidationResultDto> {
-    return apiClient.post<TemplateValidationResultDto>('/api/invoicetemplates/validate', content, {
-      headers: { 'Content-Type': 'application/json' }
-    })
+    return apiClient.post<TemplateValidationResultDto>('/api/invoicetemplates/validate', content)
   }
 }

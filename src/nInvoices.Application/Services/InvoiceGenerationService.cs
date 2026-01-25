@@ -1,5 +1,7 @@
+using Microsoft.Extensions.Options;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Models;
+using nInvoices.Core.Configuration;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
@@ -31,9 +33,12 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     private readonly IRepository<Tax> _taxRepository;
     private readonly IRepository<Invoice> _invoiceRepository;
     private readonly IRepository<WorkDay> _workDayRepository;
+    private readonly IRepository<InvoiceSequence> _sequenceRepository;
     private readonly ITemplateRenderer _templateRenderer;
     private readonly IHtmlToPdfConverter _htmlToPdfConverter;
     private readonly ITaxCalculationService _taxCalculationService;
+    private readonly InvoiceSettings _invoiceSettings;
+    private readonly IUnitOfWork _unitOfWork;
 
     public InvoiceGenerationService(
         IRepository<InvoiceTemplate> templateRepository,
@@ -42,9 +47,12 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         IRepository<Tax> taxRepository,
         IRepository<Invoice> invoiceRepository,
         IRepository<WorkDay> workDayRepository,
+        IRepository<InvoiceSequence> sequenceRepository,
         ITemplateRenderer templateRenderer,
         IHtmlToPdfConverter htmlToPdfConverter,
-        ITaxCalculationService taxCalculationService)
+        ITaxCalculationService taxCalculationService,
+        IOptions<InvoiceSettings> invoiceSettings,
+        IUnitOfWork unitOfWork)
     {
         _templateRepository = templateRepository;
         _customerRepository = customerRepository;
@@ -52,9 +60,12 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         _taxRepository = taxRepository;
         _invoiceRepository = invoiceRepository;
         _workDayRepository = workDayRepository;
+        _sequenceRepository = sequenceRepository;
         _templateRenderer = templateRenderer;
         _htmlToPdfConverter = htmlToPdfConverter;
         _taxCalculationService = taxCalculationService;
+        _invoiceSettings = invoiceSettings.Value;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Invoice> GenerateInvoiceAsync(
@@ -87,10 +98,12 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
         if (dto.InvoiceType == InvoiceType.Monthly && dto.WorkDays != null)
         {
-            invoice.SetMonthlyInvoiceDetails(dto.Year!.Value, dto.Month!.Value, dto.WorkDays.Count);
+            // Count only "Worked" days for invoice calculation
+            var workedDaysCount = dto.WorkDays.Count(wd => wd.DayType == DayType.Worked);
+            invoice.SetMonthlyInvoiceDetails(dto.Year!.Value, dto.Month!.Value, workedDaysCount);
             
-            // Save or update work days
-            await SaveWorkDaysAsync(dto.CustomerId, dto.WorkDays, cancellationToken);
+            // Clear existing work days for this month and save new ones
+            await ClearAndSaveWorkDaysAsync(dto.CustomerId, dto.Year!.Value, dto.Month!.Value, dto.WorkDays, cancellationToken);
         }
 
         if (dto.Expenses != null && dto.Expenses.Count > 0)
@@ -201,7 +214,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         return dto.InvoiceType switch
         {
             InvoiceType.Monthly when dto.WorkDays != null => 
-                new Money(rate.Price.Amount * dto.WorkDays.Count, rate.Price.Currency),
+                new Money(rate.Price.Amount * dto.WorkDays.Count(wd => wd.DayType == DayType.Worked), rate.Price.Currency),
             InvoiceType.OneTime => rate.Price,
             _ => throw new InvalidOperationException($"Cannot calculate subtotal for invoice type {dto.InvoiceType}")
         };
@@ -225,19 +238,28 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         DateOnly issueDate,
         CancellationToken cancellationToken)
     {
-        var year = issueDate.Year;
-        var month = issueDate.Month;
+        // Get or create the singleton sequence record (ID = 1)
+        var sequence = await _sequenceRepository.GetByIdAsync(1, cancellationToken);
+        if (sequence == null)
+        {
+            sequence = new InvoiceSequence(1);
+            await _sequenceRepository.AddAsync(sequence, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
-        var existingInvoices = await _invoiceRepository.FindAsync(
-            i => i.CustomerId == customerId && i.Type == invoiceType && i.Year == year,
-            cancellationToken);
+        // Atomically increment the sequence
+        var sequenceNumber = sequence.Increment();
+        await _sequenceRepository.UpdateAsync(sequence, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var sequenceNumber = existingInvoices.Count() + 1;
-
-        var pattern = "INV-{YEAR}-{MONTH:00}-{NUMBER:000}";
+        // Use configured pattern from appsettings
+        var pattern = _invoiceSettings.NumberFormat;
         var date = issueDate.ToDateTime(TimeOnly.MinValue);
 
-        return InvoiceNumber.Generate(pattern, sequenceNumber, date, customerId.ToString());
+        var customer = await _customerRepository.GetByIdAsync(customerId, cancellationToken);
+        var customerCode = customer?.FiscalId;
+
+        return InvoiceNumber.Generate(pattern, sequenceNumber, date, customerCode);
     }
 
     /// <summary>
@@ -376,6 +398,41 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         }
 
         return lineItems;
+    }
+    
+    /// <summary>
+    /// Clears all work days for the specified month and saves new ones.
+    /// This ensures the calendar is accurate for the month being invoiced.
+    /// </summary>
+    private async Task ClearAndSaveWorkDaysAsync(
+        long customerId,
+        int year,
+        int month,
+        ICollection<WorkDayDto> workDayDtos,
+        CancellationToken cancellationToken)
+    {
+        if (workDayDtos == null || workDayDtos.Count == 0)
+            return;
+
+        // Delete all work days for this customer in this month
+        var startDate = new DateOnly(year, month, 1);
+        var endDate = new DateOnly(year, month, DateTime.DaysInMonth(year, month));
+        
+        var existingWorkDays = await _workDayRepository.FindAsync(
+            wd => wd.CustomerId == customerId && wd.Date >= startDate && wd.Date <= endDate,
+            cancellationToken);
+
+        foreach (var existing in existingWorkDays)
+        {
+            await _workDayRepository.DeleteAsync(existing, cancellationToken);
+        }
+
+        // Insert new work days
+        foreach (var dto in workDayDtos)
+        {
+            var workDay = new WorkDay(customerId, dto.Date, dto.DayType, dto.Notes);
+            await _workDayRepository.AddAsync(workDay, cancellationToken);
+        }
     }
     
     /// <summary>

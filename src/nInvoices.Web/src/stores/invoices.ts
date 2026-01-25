@@ -119,16 +119,21 @@ export const useInvoicesStore = defineStore('invoices', () => {
     }
   }
 
-  async function remove(id: number) {
+  async function remove(id: number, force: boolean = false) {
+    console.log(`[Store] remove called - ID: ${id}, Force: ${force}`);
     loading.value = true;
     error.value = null;
     try {
-      await invoicesApi.delete(id);
+      console.log('[Store] Calling invoicesApi.delete');
+      await invoicesApi.delete(id, force);
+      console.log('[Store] Delete API call successful, updating local state');
       invoices.value = invoices.value.filter(i => i.id !== id);
       if (selectedInvoice.value?.id === id) {
         selectedInvoice.value = null;
       }
+      console.log('[Store] Local state updated');
     } catch (e: any) {
+      console.error('[Store] Delete failed:', e);
       error.value = e.message || 'Failed to delete invoice';
       throw e;
     } finally {
@@ -189,13 +194,17 @@ export const useInvoicesStore = defineStore('invoices', () => {
   }
 
   async function regenerateInvoicePdf(id: number) {
+    console.log('[Store] regenerateInvoicePdf called for ID:', id);
     loading.value = true;
     error.value = null;
     try {
+      console.log('[Store] Calling invoicesApi.regenerateInvoicePdf');
       const result = await invoicesApi.regenerateInvoicePdf(id);
+      console.log('[Store] Regenerate API call successful:', result);
       await fetchById(id); // Refresh invoice data
       return result;
     } catch (e: any) {
+      console.error('[Store] Regenerate failed:', e);
       error.value = e.message || 'Failed to regenerate invoice PDF';
       throw e;
     } finally {
