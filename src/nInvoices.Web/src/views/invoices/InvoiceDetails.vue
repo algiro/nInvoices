@@ -43,6 +43,29 @@
             {{ downloadingMonthlyReport ? 'Downloading...' : 'Download Monthly Report' }}
           </button>
           <button
+            @click="handleRegenerateInvoicePdf"
+            class="btn-secondary"
+            :disabled="regeneratingInvoice"
+            title="Regenerate PDF with current template"
+          >
+            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {{ regeneratingInvoice ? 'Regenerating...' : 'Regenerate Invoice PDF' }}
+          </button>
+          <button
+            v-if="invoice && (invoice.type === 'Monthly' || invoice.type === 0)"
+            @click="handleRegenerateMonthlyReport"
+            class="btn-secondary"
+            :disabled="regeneratingMonthlyReport"
+            title="Verify monthly report template"
+          >
+            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {{ regeneratingMonthlyReport ? 'Verifying...' : 'Verify Monthly Report' }}
+          </button>
+          <button
             v-if="invoice.status === InvoiceStatus.Draft"
             @click="handleFinalize"
             class="btn-secondary"
@@ -195,6 +218,8 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const downloadingPdf = ref(false)
 const downloadingMonthlyReport = ref(false)
+const regeneratingInvoice = ref(false)
+const regeneratingMonthlyReport = ref(false)
 
 const customerName = computed(() => {
   if (!invoice.value) return ''
@@ -267,6 +292,35 @@ async function handleDownloadMonthlyReport() {
     alert(`Failed to download monthly report: ${err.message}`)
   } finally {
     downloadingMonthlyReport.value = false
+  }
+}
+
+async function handleRegenerateInvoicePdf() {
+  if (!confirm('Regenerate invoice PDF with current template? This will update the rendered content.')) {
+    return
+  }
+
+  try {
+    regeneratingInvoice.value = true
+    const result = await invoicesStore.regenerateInvoicePdf(invoiceId.value)
+    alert(result.message || 'Invoice PDF regenerated successfully!')
+    await loadData()
+  } catch (err: any) {
+    alert(`Failed to regenerate invoice PDF: ${err.message}`)
+  } finally {
+    regeneratingInvoice.value = false
+  }
+}
+
+async function handleRegenerateMonthlyReport() {
+  try {
+    regeneratingMonthlyReport.value = true
+    const result = await invoicesStore.regenerateMonthlyReportPdf(invoiceId.value)
+    alert(result.message || 'Monthly report verified successfully!')
+  } catch (err: any) {
+    alert(`Failed to verify monthly report: ${err.message}`)
+  } finally {
+    regeneratingMonthlyReport.value = false
   }
 }
 

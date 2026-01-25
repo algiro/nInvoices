@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Invoices.Commands;
 using nInvoices.Application.Features.Invoices.Queries;
+using nInvoices.Application.Models;
 
 namespace nInvoices.Api.Controllers;
 
@@ -301,6 +302,84 @@ public sealed class InvoicesController : ControllerBase
         {
             _logger.LogError(ex, "Failed to generate monthly report PDF for invoice {InvoiceId}", id);
             return StatusCode(500, new { error = "Failed to generate monthly report PDF" });
+        }
+    }
+
+    /// <summary>
+    /// Regenerates the invoice PDF using the current active template.
+    /// Useful when templates are updated and need to re-render existing invoices.
+    /// </summary>
+    [HttpPost("{id}/regenerate")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> RegenerateInvoicePdf(long id, CancellationToken cancellationToken)
+    {
+        var invoiceGenerationService = HttpContext.RequestServices.GetRequiredService<Application.Services.IInvoiceGenerationService>();
+        
+        try
+        {
+            // Use the existing service to regenerate the PDF with current template
+            var pdfBytes = await invoiceGenerationService.GenerateInvoicePdfAsync(id, cancellationToken);
+            
+            _logger.LogInformation("Invoice {InvoiceId} PDF regenerated successfully", id);
+            return Ok(new { message = "Invoice PDF regenerated successfully. Download the invoice to see the updated version." });
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to regenerate invoice PDF for {InvoiceId}", id);
+            return StatusCode(500, new { error = "Failed to regenerate invoice PDF" });
+        }
+    }
+
+    /// <summary>
+    /// Regenerates the monthly report PDF using the current active template.
+    /// Useful when monthly report templates are updated.
+    /// </summary>
+    [HttpPost("{id}/monthlyreport/regenerate")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> RegenerateMonthlyReportPdf(long id, CancellationToken cancellationToken)
+    {
+        var repository = HttpContext.RequestServices.GetRequiredService<IRepository<Core.Entities.Invoice>>();
+        var invoice = await repository.GetByIdAsync(id, cancellationToken);
+        
+        if (invoice == null)
+            return NotFound();
+
+        if (invoice.Type != Core.Enums.InvoiceType.Monthly)
+            return BadRequest(new { error = "Monthly reports are only available for monthly invoices" });
+
+        try
+        {
+            // Monthly reports don't store rendered content - they're generated on-demand
+            // So "regeneration" is just verification that it can be generated
+            var customerRepository = HttpContext.RequestServices.GetRequiredService<IRepository<Core.Entities.Customer>>();
+            var monthlyReportService = HttpContext.RequestServices.GetRequiredService<Application.Services.IMonthlyReportGenerationService>();
+            
+            var customer = await customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken);
+            if (customer == null)
+                return NotFound(new { error = "Customer not found" });
+
+            // Test generation with current template
+            _ = await monthlyReportService.GenerateReportHtmlAsync(invoice, customer, cancellationToken);
+
+            _logger.LogInformation("Monthly report for invoice {InvoiceId} verified successfully", id);
+            return Ok(new { message = "Monthly report is ready to be generated with current template" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Monthly report template not found for invoice {InvoiceId}", id);
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to verify monthly report for invoice {InvoiceId}", id);
+            return StatusCode(500, new { error = "Failed to verify monthly report" });
         }
     }
 }

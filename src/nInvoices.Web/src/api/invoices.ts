@@ -54,4 +54,12 @@ export const invoicesApi = {
   async downloadMonthlyReportPdf(id: number): Promise<Blob> {
     return apiClient.downloadFile(`/api/invoices/${id}/monthlyreport/pdf`);
   },
+
+  async regenerateInvoicePdf(id: number): Promise<{ message: string }> {
+    return apiClient.post(`/api/invoices/${id}/regenerate`, {});
+  },
+
+  async regenerateMonthlyReportPdf(id: number): Promise<{ message: string }> {
+    return apiClient.post(`/api/invoices/${id}/monthlyreport/regenerate`, {});
+  },
 };

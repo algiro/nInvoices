@@ -188,6 +188,35 @@ export const useInvoicesStore = defineStore('invoices', () => {
     }
   }
 
+  async function regenerateInvoicePdf(id: number) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const result = await invoicesApi.regenerateInvoicePdf(id);
+      await fetchById(id); // Refresh invoice data
+      return result;
+    } catch (e: any) {
+      error.value = e.message || 'Failed to regenerate invoice PDF';
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function regenerateMonthlyReportPdf(id: number) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const result = await invoicesApi.regenerateMonthlyReportPdf(id);
+      return result;
+    } catch (e: any) {
+      error.value = e.message || 'Failed to regenerate monthly report PDF';
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   function clearError() {
     error.value = null;
   }
@@ -214,6 +243,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
     remove,
     downloadPdf,
     downloadMonthlyReportPdf,
+    regenerateInvoicePdf,
+    regenerateMonthlyReportPdf,
     clearError,
   };
 });
