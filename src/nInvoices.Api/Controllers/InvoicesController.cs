@@ -327,10 +327,10 @@ public sealed class InvoicesController : ControllerBase
         
         try
         {
-            // Use the existing service to regenerate the PDF with current template
-            var pdfBytes = await invoiceGenerationService.GenerateInvoicePdfAsync(id, cancellationToken);
+            // Re-render the HTML with the current active template
+            await invoiceGenerationService.RegenerateInvoiceHtmlAsync(id, cancellationToken);
             
-            _logger.LogInformation("Invoice {InvoiceId} PDF regenerated successfully", id);
+            _logger.LogInformation("Invoice {InvoiceId} HTML re-rendered successfully with current template", id);
             return Ok(new { message = "Invoice PDF regenerated successfully. Download the invoice to see the updated version." });
         }
         catch (KeyNotFoundException)

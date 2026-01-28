@@ -23,6 +23,10 @@ public interface IInvoiceGenerationService
     Task<byte[]> GenerateInvoicePdfAsync(
         long invoiceId,
         CancellationToken cancellationToken = default);
+    
+    Task RegenerateInvoiceHtmlAsync(
+        long invoiceId,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class InvoiceGenerationService : IInvoiceGenerationService
@@ -156,6 +160,45 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         var pdfBytes = await _htmlToPdfConverter.ConvertAsync(invoice.RenderedContent, cancellationToken);
         
         return pdfBytes;
+    }
+
+    public async Task RegenerateInvoiceHtmlAsync(
+        long invoiceId,
+        CancellationToken cancellationToken = default)
+    {
+        var invoice = await _invoiceRepository.GetByIdAsync(invoiceId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Invoice {invoiceId} not found");
+
+        var customer = await _customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken)
+            ?? throw new InvalidOperationException($"Customer {invoice.CustomerId} not found");
+
+        var template = await GetTemplateAsync(invoice.CustomerId, invoice.Type, cancellationToken);
+        var rate = await GetRateAsync(invoice.CustomerId, invoice.Type, cancellationToken);
+
+        // Rebuild the template model from the existing invoice data
+        var dto = new GenerateInvoiceDto
+        {
+            CustomerId = invoice.CustomerId,
+            InvoiceType = invoice.Type,
+            IssueDate = invoice.IssueDate,
+            Year = invoice.Year,
+            Month = invoice.Month,
+            WorkDays = null, // We don't have the original work days, but we have the count
+            Expenses = invoice.Expenses.Select(e => new ExpenseDto
+            {
+                Date = e.Date,
+                Description = e.Description,
+                Amount = e.Amount.Amount,
+                Currency = e.Amount.Currency
+            }).ToList()
+        };
+
+        var templateModel = BuildTemplateModel(invoice, customer, dto, rate);
+        var renderedHtml = await _templateRenderer.RenderAsync(template.Content, templateModel, cancellationToken);
+
+        invoice.SetRenderedContent(renderedHtml);
+        await _invoiceRepository.UpdateAsync(invoice, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<InvoiceTemplate> GetTemplateAsync(
@@ -299,8 +342,8 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         {
             InvoiceNumber = invoice.Number.ToString(),
             InvoiceType = invoice.Type.ToString(),
-            Date = invoice.IssueDate.ToString("yyyy-MM-dd"),
-            DueDate = invoice.DueDate?.ToString("yyyy-MM-dd"),
+            Date = invoice.IssueDate.ToDateTime(TimeOnly.MinValue),
+            DueDate = invoice.DueDate?.ToDateTime(TimeOnly.MinValue),
             Currency = rate.Price.Currency,
 
             Customer = new CustomerTemplateModel

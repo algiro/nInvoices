@@ -27,12 +27,14 @@ public sealed class InvoiceSequence : EntityBase
     }
 
     /// <summary>
-    /// Increments the sequence and returns the new value.
+    /// Increments the sequence and returns the current value before incrementing.
+    /// This ensures that if CurrentValue is 1, the first invoice gets number 1.
     /// </summary>
     public int Increment()
     {
+        var currentValue = CurrentValue;
         CurrentValue++;
-        return CurrentValue;
+        return currentValue;
     }
 
     /// <summary>

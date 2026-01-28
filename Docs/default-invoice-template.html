@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice [[ invoiceNumber ]]</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            padding: 40px;
+            line-height: 1.4;
+        }
+        
+        .header-wave {
+            position: relative;
+            background: linear-gradient(135deg, #89CFF0 0%, #4A90A4 100%);
+            height: 100px;
+            margin: -40px -40px 40px -40px;
+            overflow: hidden;
+        }
+        
+        .header-wave::before {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: white;
+            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+        }
+        
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        
+        .invoice-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2E6B7F;
+            margin-bottom: 5px;
+        }
+        
+        .invoice-number {
+            font-size: 18px;
+            color: #5A9FB8;
+        }
+        
+        .company-logo {
+            text-align: right;
+        }
+        
+        .company-name {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 600;
+            color: #2E6B7F;
+        }
+        
+        .logo-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #5A9FB8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .info-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .info-block {
+            padding: 0;
+        }
+        
+        .info-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #5A9FB8;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-content {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.8;
+        }
+        
+        .info-content strong {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .info-value {
+            color: #2E6B7F;
+            font-weight: 600;
+        }
+        
+        .summary-section {
+            background: #F8FCFD;
+            border-left: 4px solid #5A9FB8;
+            padding: 10px 14px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #5A9FB8;
+            font-weight: 600;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        
+        .summary-text {
+            font-size: 11px;
+            line-height: 1.4;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        
+        .summary-text:last-child {
+            margin-bottom: 0;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        
+        .items-table thead {
+            background: #E8F4F7;
+        }
+        
+        .items-table th {
+            padding: 12px;
+            text-align: left;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #5A9FB8;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #5A9FB8;
+        }
+        
+        .items-table th:last-child,
+        .items-table td:last-child {
+            text-align: right;
+            white-space: nowrap;
+            min-width: 120px;
+        }
+        
+        .items-table th:nth-child(2),
+        .items-table td:nth-child(2) {
+            text-align: center;
+        }
+        
+        .items-table tbody tr {
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .items-table td {
+            padding: 14px 12px;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .section-header-row {
+            background: #F8FCFD !important;
+            font-weight: 600;
+            color: #2E6B7F;
+        }
+        
+        .section-header-row td {
+            padding: 10px 12px;
+            font-size: 13px;
+        }
+        
+        .totals-row {
+            font-weight: 600;
+            background: #F9FAFB;
+        }
+        
+        .total-final-row {
+            font-weight: 700;
+            background: #E8F4F7;
+            font-size: 13px;
+        }
+        
+        .total-final-row td {
+            padding: 6px 12px !important;
+        }
+        
+        .footer-note {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #E8F4F7;
+            color: #666;
+            font-size: 13px;
+        }
+        
+        [[ if workedDays ]]
+        .period-info {
+            background: #FFF9E6;
+            border-left: 4px solid #FFD700;
+            padding: 10px 14px;
+            margin: 15px 0;
+        }
+        
+        .period-info-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #B8860B;
+            font-weight: 600;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        
+        .period-info-grid {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .period-info-item {
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .period-info-label {
+            color: #666;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+        
+        .period-info-value {
+            font-weight: 600;
+            color: #333;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        [[ end ]]
+    </style>
+</head>
+<body>
+    <div class="header-wave"></div>
+    
+    <div class="header-container">
+        <div>
+            <div class="invoice-title">Factura - Invoice</div>
+            <div class="invoice-number">#[[ invoiceNumber ]]</div>
+        </div>
+        <div class="company-logo">
+            <div class="company-name">
+                <div class="logo-circle">AG</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="info-section">
+        <div class="info-block">
+            <div class="info-label">From</div>
+            <div class="info-content">
+                <strong>Alessandro Girotto</strong>
+                Calle La Asomada, 9<br>
+                35329 Vega de San Mateo<br>
+                (Las Palmas)<br>
+                España
+            </div>
+        </div>
+        
+        <div class="info-block">
+            <div class="info-label">A - To:</div>
+            <div class="info-content">
+                <strong>[[ customer.name ]]</strong>
+                [[ customer.address.street ]]<br>
+                [[ customer.address.postalCode ]] , [[ customer.address.city ]] <br>
+                P.IVA: [[ customer.fiscalId ]]
+            </div>
+        </div>
+        
+        <div class="info-block">
+            <div class="info-label">Factura N. - Invoice No.</div>
+            <div class="info-content">
+                <span class="info-value">[[ invoiceNumber ]]</span>
+            </div>
+            
+            <div class="info-label" style="margin-top: 15px;">Invoice Date</div>
+            <div class="info-content">
+                <span class="info-value">[[ FormatDate date "dd/MM/yyyy" ]]</span>
+            </div>
+        </div>
+    </div>
+    
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th width="65%">Descrizione-Description</th>
+                <th width="15%">Quantita-Qty</th>
+                <th width="20%">Prezzo-Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            [[ for item in lineItems ]]
+            [[ if item.description | string.starts_with "Header" || item.quantity == 0 ]]
+            <tr class="section-header-row">
+                <td colspan="4">[[ item.description ]]</td>
+            </tr>
+            [[ else ]]
+            <tr>
+                <td>Consulenza-Consultancy [[ LocalizeMonth monthNumber "it-IT" ]] [[ LocalizeMonth monthNumber "en-EN" ]]</td>
+                <td>[[ item.quantity ]]</td>
+                <td>[[ FormatCurrency item.amount currency ]]</td>
+            </tr>
+            [[ end ]]
+            [[ end ]]
+            
+            [[ for tax in taxes ]]
+            <tr>
+                <td colspan="3" style="text-align: right; padding-right: 20px;">
+                    [[ tax.description ]] ([[ FormatDecimal tax.rate 2 ]]%)
+                </td>
+                <td>[[ FormatCurrency tax.amount currency ]]</td>
+            </tr>
+            [[ end ]]
+
+            <tr class="total-final-row">
+                <td colspan="3" style="text-align: right; padding-right: 20px;">IGIC/VAT (7%)</td>
+                <td>*€</td>
+            </tr>
+
+            <tr class="total-final-row">
+                <td colspan="3" style="text-align: right; padding-right: 20px;">Retención/withholding (15%)</td>
+                <td>- €</td>
+            </tr>
+            
+            <tr class="total-final-row">
+                <td colspan="3" style="text-align: right; padding-right: 20px;">TOTAL</td>
+                <td>[[ FormatCurrency total currency ]]</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="period-info">
+        <div class="period-info-title">Payment terms:</div>
+        <div class="period-info-grid">
+            <div class="period-info-item">
+                <span class="period-info-label">Bank transfer</span>
+            </div>
+            <div class="period-info-item">
+                <span class="period-info-label">IBAN:</span>
+                <span class="period-info-value">BBVA ES06 0182 6342 9102 0154 5604</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="summary-section">
+        <div class="summary-title">Summary</div>
+        <div class="summary-text">
+            *VAT - REVERSE CHARGE MECHANISM IN THE RECIPIENT OF THE SERVICE, IN ACCORDANCE WITH DIRECTIVE 2006/112/EC OF 28 NOVEMBER 2006 ON THE COMMON SYSTEM OF VALUE ADDED TAX
+        </div>
+        <div class="summary-text">
+            (*) “Prestación de servicios no sujeta a IGIC, realizada fuera del ámbito espacial del Impuesto, según lo dispuesto por los artículos 3 y 17 de la Ley 20/1991, de 7 de junio, de modificación de los aspectos fiscales del Régimen Económico-Fiscal de Canarias”
+        </div>        
+    </div>
+</body>
+</html>

@@ -12,11 +12,12 @@ public static class PdfExportExtensions
 {
     /// <summary>
     /// Registers PDF export services in the DI container.
+    /// Uses PuppeteerSharp for high-fidelity HTML to PDF conversion.
     /// </summary>
     public static IServiceCollection AddPdfExport(this IServiceCollection services)
     {
         services.AddScoped<IPdfExportService, PdfExportService>();
-        services.AddScoped<IHtmlToPdfConverter, QuestPdfHtmlConverter>();
+        services.AddSingleton<IHtmlToPdfConverter, PuppeteerPdfConverter>();
 
         return services;
     }

@@ -116,11 +116,12 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
     // Custom functions available in templates
 
     /// <summary>
-    /// Formats a decimal as currency: FormatCurrency(100.50, "EUR") => "100.50 EUR"
+    /// Formats a decimal as currency with Italian locale: FormatCurrency(1200.50, "EUR") => "1.200,50 EUR"
     /// </summary>
     private static string FormatCurrency(decimal amount, string currency)
     {
-        return $"{amount:N2} {currency}";
+        var culture = new System.Globalization.CultureInfo("it-IT");
+        return $"{amount.ToString("N2", culture)} {currency}";
     }
 
     /// <summary>

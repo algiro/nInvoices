@@ -11,6 +11,23 @@
     </div>
 
     <div v-else-if="invoice" class="invoice-content">
+      <!-- Success/Error Messages -->
+      <div v-if="successMessage" class="message-banner success-banner">
+        <svg class="mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        {{ successMessage }}
+        <button @click="successMessage = null" class="close-btn">×</button>
+      </div>
+      
+      <div v-if="errorMessage" class="message-banner error-banner">
+        <svg class="mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        {{ errorMessage }}
+        <button @click="errorMessage = null" class="close-btn">×</button>
+      </div>
+
       <div class="invoice-header">
         <div>
           <h1 class="text-3xl font-bold">Invoice {{ invoice.invoiceNumber }}</h1>
@@ -221,6 +238,22 @@ const downloadingMonthlyReport = ref(false)
 const regeneratingInvoice = ref(false)
 const regeneratingMonthlyReport = ref(false)
 
+// Message system for user feedback
+const successMessage = ref<string | null>(null)
+const errorMessage = ref<string | null>(null)
+
+function showSuccess(message: string) {
+  successMessage.value = message
+  errorMessage.value = null
+  setTimeout(() => { successMessage.value = null }, 5000) // Auto-hide after 5 seconds
+}
+
+function showError(message: string) {
+  errorMessage.value = message
+  successMessage.value = null
+  setTimeout(() => { errorMessage.value = null }, 5000) // Auto-hide after 5 seconds
+}
+
 const customerName = computed(() => {
   if (!invoice.value) return ''
   const customer = customersStore.getCustomerById(invoice.value.customerId)
@@ -297,26 +330,17 @@ async function handleDownloadMonthlyReport() {
 
 async function handleRegenerateInvoicePdf() {
   console.log('handleRegenerateInvoicePdf called for invoice:', invoiceId.value);
-  console.log('About to show confirm dialog...');
   
-  const confirmed = confirm('Regenerate invoice PDF with current template? This will update the rendered content.');
-  console.log('Confirm dialog result:', confirmed);
-  
-  if (!confirmed) {
-    console.log('Regenerate cancelled by user');
-    return
-  }
-
   try {
     console.log('Calling invoicesStore.regenerateInvoicePdf');
     regeneratingInvoice.value = true
     const result = await invoicesStore.regenerateInvoicePdf(invoiceId.value)
     console.log('Regenerate successful:', result);
-    alert(result.message || 'Invoice PDF regenerated successfully!')
+    showSuccess(result.message || 'Invoice PDF regenerated successfully! You can now download the updated version.')
     await loadData()
   } catch (err: any) {
     console.error('Regenerate failed:', err);
-    alert(`Failed to regenerate invoice PDF: ${err.message}`)
+    showError(`Failed to regenerate invoice PDF: ${err.message}`)
   } finally {
     regeneratingInvoice.value = false
   }
@@ -641,5 +665,71 @@ async function handleDelete() {
 
 .btn-danger:hover {
   background: #dc2626;
+}
+
+/* Message Banners */
+.message-banner {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+  position: relative;
+  animation: slideIn 0.3s ease-out;
+  font-size: 0.875rem;
+}
+
+.message-banner svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.success-banner {
+  background: #d1fae5;
+  color: #065f46;
+  border-left: 4px solid #10b981;
+}
+
+.error-banner {
+  background: #fee2e2;
+  color: #991b1b;
+  border-left: 4px solid #ef4444;
+}
+
+.message-banner .close-btn {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.message-banner .close-btn:hover {
+  opacity: 1;
 }
 </style>

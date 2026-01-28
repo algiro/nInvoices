@@ -10,8 +10,8 @@ public sealed record InvoiceTemplateModel
 {
     public string InvoiceNumber { get; init; } = string.Empty;
     public string InvoiceType { get; init; } = string.Empty;
-    public string Date { get; init; } = string.Empty;
-    public string? DueDate { get; init; }
+    public DateTime Date { get; init; }
+    public DateTime? DueDate { get; init; }
     public string Currency { get; init; } = string.Empty;
     
     public CustomerTemplateModel Customer { get; init; } = null!;
