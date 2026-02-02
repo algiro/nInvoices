@@ -8,4 +8,5 @@ namespace nInvoices.Application.DTOs;
 public sealed record CreateInvoiceTemplateDto(
     long CustomerId,
     InvoiceType InvoiceType,
+    string Name,
     string Content);

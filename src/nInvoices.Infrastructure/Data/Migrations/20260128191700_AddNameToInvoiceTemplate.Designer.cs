@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using nInvoices.Infrastructure.Data;
 
@@ -10,9 +11,11 @@ using nInvoices.Infrastructure.Data;
 namespace nInvoices.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260128191700_AddNameToInvoiceTemplate")]
+    partial class AddNameToInvoiceTemplate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.2");
@@ -100,6 +103,9 @@ namespace nInvoices.Infrastructure.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("Month")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("MonthlyReportTemplateId")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Notes")

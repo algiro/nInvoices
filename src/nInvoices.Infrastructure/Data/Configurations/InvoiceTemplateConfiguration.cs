@@ -16,6 +16,10 @@ public sealed class InvoiceTemplateConfiguration : IEntityTypeConfiguration<Invo
             .IsRequired()
             .HasConversion<string>();
 
+        builder.Property(t => t.Name)
+            .IsRequired()
+            .HasMaxLength(200);
+
         builder.Property(t => t.Content)
             .IsRequired()
             .HasMaxLength(int.MaxValue);

@@ -42,7 +42,7 @@ public sealed class CreateInvoiceTemplateCommandHandler : IRequestHandler<Create
             throw new ArgumentException($"Invalid template syntax: {errorMessage}");
         }
 
-        var template = new InvoiceTemplate(dto.CustomerId, dto.InvoiceType, dto.Content);
+        var template = new InvoiceTemplate(dto.CustomerId, dto.InvoiceType, dto.Name, dto.Content);
 
         await _templateRepository.AddAsync(template, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -54,6 +54,7 @@ public sealed class CreateInvoiceTemplateCommandHandler : IRequestHandler<Create
         template.Id,
         template.CustomerId,
         template.InvoiceType,
+        template.Name,
         template.Content,
         template.IsActive,
         template.CreatedAt,

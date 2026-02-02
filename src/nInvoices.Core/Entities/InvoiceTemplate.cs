@@ -10,6 +10,7 @@ public sealed class InvoiceTemplate : EntityBase
 {
     public long CustomerId { get; set; }
     public InvoiceType InvoiceType { get; set; }
+    public string Name { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public string Format { get; set; } = "html";
     public int Version { get; set; }

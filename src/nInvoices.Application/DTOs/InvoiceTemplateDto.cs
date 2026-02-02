@@ -10,6 +10,7 @@ public sealed record InvoiceTemplateDto(
     long Id,
     long CustomerId,
     InvoiceType InvoiceType,
+    string Name,
     string Content,
     bool IsActive,
     DateTime CreatedAt,

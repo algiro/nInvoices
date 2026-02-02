@@ -28,6 +28,7 @@ public sealed class GetInvoiceTemplateByIdQueryHandler : IRequestHandler<GetInvo
         template.Id,
         template.CustomerId,
         template.InvoiceType,
+        template.Name,
         template.Content,
         template.IsActive,
         template.CreatedAt,

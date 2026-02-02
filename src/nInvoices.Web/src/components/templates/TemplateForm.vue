@@ -2,6 +2,24 @@
   <div class="template-form">
     <form @submit.prevent="handleSubmit" class="form-content">
       <div class="form-group">
+        <label for="name" class="form-label">
+          Template Name <span class="text-red-500">*</span>
+        </label>
+        <input
+          id="name"
+          v-model="form.name"
+          type="text"
+          required
+          placeholder="e.g., My Monthly Invoice Template"
+          class="form-control"
+          :disabled="disabled"
+        />
+        <p class="form-hint">
+          A descriptive name to identify this template
+        </p>
+      </div>
+
+      <div class="form-group">
         <label for="invoiceType" class="form-label">
           Invoice Type <span class="text-red-500">*</span>
         </label>
@@ -222,6 +240,7 @@ const contentTextarea = ref<HTMLTextAreaElement | null>(null)
 const form = reactive<CreateInvoiceTemplateDto | UpdateInvoiceTemplateDto>({
   customerId: props.customerId,
   invoiceType: 'Monthly' as InvoiceType,
+  name: '',
   content: ''
 })
 
@@ -273,6 +292,7 @@ async function loadTemplate(id: number) {
     const template = await templatesStore.fetchById(id)
     if (template) {
       form.invoiceType = template.invoiceType
+      form.name = template.name
       form.content = template.content
       await handleValidate()
     }

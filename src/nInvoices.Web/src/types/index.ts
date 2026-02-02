@@ -156,6 +156,7 @@ export interface InvoiceTemplateDto {
   id: number;
   customerId: number;
   invoiceType: InvoiceType;
+  name: string;
   content: string;
   isActive: boolean;
   createdAt: string;
@@ -165,11 +166,13 @@ export interface InvoiceTemplateDto {
 export interface CreateInvoiceTemplateDto {
   customerId: number;
   invoiceType: InvoiceType;
+  name: string;
   content: string;
 }
 
 export interface UpdateInvoiceTemplateDto {
   invoiceType: InvoiceType;
+  name: string;
   content: string;
   isActive: boolean;
 }
