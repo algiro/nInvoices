@@ -128,13 +128,9 @@
           </div>
 
           <div class="calendar-grid">
-            <div class="day-header">Sun</div>
-            <div class="day-header">Mon</div>
-            <div class="day-header">Tue</div>
-            <div class="day-header">Wed</div>
-            <div class="day-header">Thu</div>
-            <div class="day-header">Fri</div>
-            <div class="day-header">Sat</div>
+            <div v-for="dayName in dayHeaders" :key="dayName" class="day-header">
+              {{ dayName }}
+            </div>
 
             <div
               v-for="day in calendarDays"
@@ -307,10 +303,20 @@ interface CalendarDay {
   isWeekend: boolean
 }
 
+const dayHeaders = computed(() => {
+  const allDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const firstDayOfWeek = settingsStore.getFirstDayOfWeek()
+  return [...allDays.slice(firstDayOfWeek), ...allDays.slice(0, firstDayOfWeek)]
+})
+
 const calendarDays = computed((): CalendarDay[] => {
   const firstDay = new Date(selectedYear.value, selectedMonth.value - 1, 1)
   const lastDay = new Date(selectedYear.value, selectedMonth.value, 0)
-  const startingDayOfWeek = firstDay.getDay()
+  const firstDayOfWeek = settingsStore.getFirstDayOfWeek() // 0 = Sunday, 1 = Monday, etc.
+  
+  // Adjust starting day to match configured first day of week
+  let startingDayOfWeek = firstDay.getDay() - firstDayOfWeek
+  if (startingDayOfWeek < 0) startingDayOfWeek += 7
   
   const days: CalendarDay[] = []
   
@@ -406,14 +412,18 @@ watch(() => form.customerId, () => {
   loadCustomerData()
 })
 
-onMounted(() => {
-  customersStore.fetchAll()
+onMounted(async () => {
+  await Promise.all([
+    customersStore.fetchAll(),
+    settingsStore.fetchInvoiceSettings()
+  ])
 })
 
 async function loadCustomerData() {
   if (!form.customerId) return
 
   try {
+    // Load rates
     await ratesStore.fetchByCustomerId(form.customerId)
     const rates = ratesStore.ratesByCustomer(form.customerId)
     

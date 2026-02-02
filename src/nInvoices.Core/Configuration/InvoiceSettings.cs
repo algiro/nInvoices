@@ -14,4 +14,9 @@ public sealed class InvoiceSettings
     /// Example: "INV-{YEAR}-{MONTH:00}-{NUMBER:000}" produces "INV-2026-01-001"
     /// </summary>
     public string NumberFormat { get; init; } = "INV-{YEAR}-{MONTH:00}-{NUMBER:000}";
+
+    /// <summary>
+    /// First day of the week for calendar generation (0 = Sunday, 1 = Monday, etc.)
+    /// </summary>
+    public int FirstDayOfWeek { get; init; } = 1; // Monday by default
 }

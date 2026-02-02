@@ -110,6 +110,45 @@
           </div>
         </div>
       </section>
+
+      <!-- First Day of Week -->
+      <section class="settings-card">
+        <div class="card-header">
+          <h2 class="text-xl font-semibold">Calendar Settings</h2>
+          <p class="text-gray-600 text-sm mt-1">
+            Configure calendar display preferences
+          </p>
+        </div>
+
+        <div class="card-body">
+          <div class="info-box">
+            <svg class="info-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <div>
+              <p class="font-semibold mb-2">First Day of Week:</p>
+              <p class="text-sm mb-3">
+                Currently configured to start on: <strong>{{ firstDayOfWeekName }}</strong>
+              </p>
+              <p class="mt-3 text-sm">
+                To change this setting, edit the <code>Invoice.FirstDayOfWeek</code> value in appsettings.json:
+              </p>
+              <ul class="token-list">
+                <li><code>0</code> - Sunday</li>
+                <li><code>1</code> - Monday (default)</li>
+                <li><code>2</code> - Tuesday</li>
+                <li><code>3</code> - Wednesday</li>
+                <li><code>4</code> - Thursday</li>
+                <li><code>5</code> - Friday</li>
+                <li><code>6</code> - Saturday</li>
+              </ul>
+              <p class="mt-3 text-sm text-gray-600">
+                After changing this value, restart the API for it to take effect.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </template>
@@ -117,6 +156,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { invoicesApi } from '@/api'
+import { useSettingsStore } from '@/stores/settings'
+
+const settingsStore = useSettingsStore()
 
 const currentSequence = ref(1)
 const newSequenceValue = ref<number | null>(null)
@@ -136,8 +178,15 @@ const nextInvoiceNumber = computed(() => {
   return `INV-${year}-${month.toString().padStart(2, '0')}-${num}`
 })
 
+const firstDayOfWeekName = computed(() => {
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const firstDay = settingsStore.invoiceSettings?.firstDayOfWeek ?? 1
+  return dayNames[firstDay] || 'Monday'
+})
+
 onMounted(() => {
   loadSequence()
+  settingsStore.fetchInvoiceSettings()
 })
 
 async function loadSequence() {
