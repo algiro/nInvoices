@@ -19,6 +19,7 @@ public sealed class Invoice : EntityBase
     public int? WorkedDays { get; set; }
     public int? Year { get; set; }
     public int? Month { get; set; }
+    public long? MonthlyReportTemplateId { get; set; }
 
     public Money Subtotal { get; set; } = null!;
     public Money TotalExpenses { get; set; } = null!;

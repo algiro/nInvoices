@@ -106,6 +106,12 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             var workedDaysCount = dto.WorkDays.Count(wd => wd.DayType == DayType.Worked);
             invoice.SetMonthlyInvoiceDetails(dto.Year!.Value, dto.Month!.Value, workedDaysCount);
             
+            // Store the template ID if provided
+            if (dto.MonthlyReportTemplateId.HasValue)
+            {
+                invoice.MonthlyReportTemplateId = dto.MonthlyReportTemplateId.Value;
+            }
+            
             // Clear existing work days for this month and save new ones
             await ClearAndSaveWorkDaysAsync(dto.CustomerId, dto.Year!.Value, dto.Month!.Value, dto.WorkDays, cancellationToken);
         }

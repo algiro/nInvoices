@@ -77,6 +77,29 @@
             </select>
           </div>
         </div>
+
+        <div v-if="form.invoiceType === InvoiceType.Monthly && availableTemplates.length > 0" class="form-group">
+          <label for="monthlyReportTemplate" class="form-label">
+            Monthly Report Template
+          </label>
+          <select
+            id="monthlyReportTemplate"
+            v-model="form.monthlyReportTemplateId"
+            class="form-control"
+          >
+            <option :value="undefined">Use active template (default)</option>
+            <option
+              v-for="template in availableTemplates"
+              :key="template.id"
+              :value="template.id"
+            >
+              {{ template.name }} {{ template.isActive ? '(Active)' : '' }}
+            </option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">
+            Select which template to use for the monthly report PDF. If not selected, the active template will be used.
+          </p>
+        </div>
       </div>
 
       <div v-if="form.invoiceType === InvoiceType.Monthly" class="form-section">
@@ -231,6 +254,8 @@ import { useRouter } from 'vue-router'
 import { useInvoicesStore } from '@/stores/invoices'
 import { useCustomersStore } from '@/stores/customers'
 import { useRatesStore } from '@/stores/rates'
+import { useSettingsStore } from '@/stores/settings'
+import { useMonthlyReportTemplatesStore } from '@/stores/monthlyReportTemplates'
 import { InvoiceType, RateType, DayType, DayTypeNames } from '@/types'
 import type { GenerateInvoiceDto, WorkDayDto, ExpenseDto } from '@/types'
 
@@ -238,6 +263,8 @@ const router = useRouter()
 const invoicesStore = useInvoicesStore()
 const customersStore = useCustomersStore()
 const ratesStore = useRatesStore()
+const settingsStore = useSettingsStore()
+const monthlyReportTemplatesStore = useMonthlyReportTemplatesStore()
 
 const loading = ref(false)
 const selectedMonth = ref(new Date().getMonth() + 1)
@@ -249,7 +276,8 @@ const form = reactive<GenerateInvoiceDto>({
   invoiceType: InvoiceType.Monthly,
   issueDate: new Date().toISOString().split('T')[0],
   workDays: [],
-  expenses: []
+  expenses: [],
+  monthlyReportTemplateId: undefined
 })
 
 const months = [
@@ -363,6 +391,13 @@ const isFormValid = computed(() => {
   return true
 })
 
+const availableTemplates = computed(() => {
+  if (!form.customerId) return []
+  return monthlyReportTemplatesStore.templates.filter(
+    t => t.customerId === form.customerId && t.invoiceType === InvoiceType.Monthly
+  )
+})
+
 watch([selectedMonth, selectedYear], () => {
   form.workDays = []
 })
@@ -400,8 +435,13 @@ async function loadCustomerData() {
       selectedRate.value = rates[0]
       console.warn('No Daily rate found, using first available rate')
     }
+
+    // Load monthly report templates for this customer
+    if (form.invoiceType === InvoiceType.Monthly) {
+      await monthlyReportTemplatesStore.fetchByCustomer(form.customerId)
+    }
   } catch (error) {
-    console.error('Failed to load rates:', error)
+    console.error('Failed to load customer data:', error)
     selectedRate.value = null
   }
 }

@@ -200,6 +200,7 @@ export interface InvoiceDto {
   workedDays?: number;
   year?: number;
   month?: number;
+  monthlyReportTemplateId?: number;
   subtotal: MoneyDto;
   totalExpenses: MoneyDto;
   totalTaxes: MoneyDto;
@@ -220,6 +221,7 @@ export interface GenerateInvoiceDto {
   workDays?: WorkDayDto[];
   expenses?: ExpenseDto[];
   invoiceNumberFormat?: string;
+  monthlyReportTemplateId?: number;
 }
 
 export interface UpdateInvoiceDto {
@@ -253,8 +255,8 @@ export interface CreateMonthlyReportTemplateDto {
 }
 
 export interface UpdateMonthlyReportTemplateDto {
-  name?: string;
-  content?: string;
+  name: string;
+  content: string;
 }
 
 // API Response types

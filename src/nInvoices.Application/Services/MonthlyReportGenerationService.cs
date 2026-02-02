@@ -48,13 +48,24 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
         if (!invoice.Month.HasValue || !invoice.Year.HasValue)
             throw new InvalidOperationException("Invoice must have month and year set");
 
-        // Get active template
-        var templates = await _templateRepository.FindAsync(
-            t => t.CustomerId == customer.Id && t.InvoiceType == InvoiceType.Monthly && t.IsActive,
-            cancellationToken);
+        MonthlyReportTemplate template;
 
-        var template = templates.FirstOrDefault()
-            ?? throw new InvalidOperationException($"No active monthly report template found for customer {customer.Id}");
+        // Use the template ID from the invoice if specified, otherwise use active template
+        if (invoice.MonthlyReportTemplateId.HasValue)
+        {
+            template = await _templateRepository.GetByIdAsync(invoice.MonthlyReportTemplateId.Value, cancellationToken)
+                ?? throw new InvalidOperationException($"Monthly report template {invoice.MonthlyReportTemplateId.Value} not found");
+        }
+        else
+        {
+            // Get active template (backward compatibility)
+            var templates = await _templateRepository.FindAsync(
+                t => t.CustomerId == customer.Id && t.InvoiceType == InvoiceType.Monthly && t.IsActive,
+                cancellationToken);
+
+            template = templates.FirstOrDefault()
+                ?? throw new InvalidOperationException($"No active monthly report template found for customer {customer.Id}");
+        }
 
         // Get work days for this month
         var year = invoice.Year.Value;

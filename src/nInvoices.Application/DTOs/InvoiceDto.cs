@@ -16,6 +16,7 @@ public sealed class InvoiceDto
     public int? WorkedDays { get; init; }
     public int? Year { get; init; }
     public int? Month { get; init; }
+    public long? MonthlyReportTemplateId { get; init; }
     public MoneyDto Subtotal { get; init; } = null!;
     public MoneyDto TotalExpenses { get; init; } = null!;
     public MoneyDto TotalTaxes { get; init; } = null!;

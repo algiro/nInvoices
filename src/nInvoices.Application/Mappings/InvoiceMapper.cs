@@ -22,6 +22,7 @@ public static class InvoiceMapper
             WorkedDays = invoice.WorkedDays,
             Year = invoice.Year,
             Month = invoice.Month,
+            MonthlyReportTemplateId = invoice.MonthlyReportTemplateId,
             Subtotal = new MoneyDto(invoice.Subtotal.Amount, invoice.Subtotal.Currency),
             TotalExpenses = new MoneyDto(invoice.TotalExpenses.Amount, invoice.TotalExpenses.Currency),
             TotalTaxes = new MoneyDto(invoice.TotalTaxes.Amount, invoice.TotalTaxes.Currency),

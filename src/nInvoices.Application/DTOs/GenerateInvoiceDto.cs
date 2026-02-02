@@ -16,4 +16,5 @@ public sealed class GenerateInvoiceDto
     public ICollection<WorkDayDto>? WorkDays { get; init; }
     public ICollection<ExpenseDto>? Expenses { get; init; }
     public string InvoiceNumberFormat { get; init; } = "INV-{YEAR}-{NUMBER:000}";
+    public long? MonthlyReportTemplateId { get; init; }
 }
