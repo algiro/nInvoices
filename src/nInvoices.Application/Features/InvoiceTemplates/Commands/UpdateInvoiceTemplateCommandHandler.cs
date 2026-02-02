@@ -39,7 +39,7 @@ public sealed class UpdateInvoiceTemplateCommandHandler : IRequestHandler<Update
             throw new ArgumentException($"Invalid template syntax: {errorMessage}");
         }
 
-        template.Content = dto.Content;
+        template.UpdateContent(dto.Name, dto.Content);
         template.IsActive = dto.IsActive;
 
         await _repository.UpdateAsync(template, cancellationToken);

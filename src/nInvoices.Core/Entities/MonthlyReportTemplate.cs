@@ -20,7 +20,7 @@ public sealed class MonthlyReportTemplate : EntityBase
     public MonthlyReportTemplate()
     {
         CreatedAt = DateTime.UtcNow;
-        IsActive = true;
+        IsActive = false; // Changed: new templates start as inactive
         InvoiceType = InvoiceType.Monthly; // Monthly reports are only for monthly invoices
     }
 

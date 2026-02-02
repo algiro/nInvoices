@@ -196,6 +196,48 @@ public sealed class InvoiceTemplatesController : ControllerBase
         _logger.LogInformation("Deleted template with ID {TemplateId}", id);
         return NoContent();
     }
+
+    /// <summary>
+    /// Activates an invoice template.
+    /// </summary>
+    [HttpPost("{id}/activate")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Activate(long id, CancellationToken cancellationToken)
+    {
+        var command = new ActivateInvoiceTemplateCommand(id);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result)
+        {
+            _logger.LogWarning("Template with ID {TemplateId} not found for activation", id);
+            return NotFound();
+        }
+
+        _logger.LogInformation("Activated template with ID {TemplateId}", id);
+        return Ok();
+    }
+
+    /// <summary>
+    /// Deactivates an invoice template.
+    /// </summary>
+    [HttpPost("{id}/deactivate")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Deactivate(long id, CancellationToken cancellationToken)
+    {
+        var command = new DeactivateInvoiceTemplateCommand(id);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result)
+        {
+            _logger.LogWarning("Template with ID {TemplateId} not found for deactivation", id);
+            return NotFound();
+        }
+
+        _logger.LogInformation("Deactivated template with ID {TemplateId}", id);
+        return Ok();
+    }
 }
 
 /// <summary>

@@ -302,15 +302,25 @@ function truncateContent(content: string): string {
 
 .action-btn {
   padding: 0.5rem;
+  border: none;
+  background: transparent;
   border-radius: 0.375rem;
-  border: 1px solid #e5e7eb;
-  background: white;
   cursor: pointer;
+  color: #6b7280;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .action-btn:hover {
   background: #f3f4f6;
+  color: #1f2937;
+}
+
+.action-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .card-content {

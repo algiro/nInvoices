@@ -41,6 +41,14 @@ export const templatesApi = {
     return apiClient.delete<void>(`/api/invoicetemplates/${id}`)
   },
 
+  async activate(id: number): Promise<void> {
+    return apiClient.post<void>(`/api/invoicetemplates/${id}/activate`, {})
+  },
+
+  async deactivate(id: number): Promise<void> {
+    return apiClient.post<void>(`/api/invoicetemplates/${id}/deactivate`, {})
+  },
+
   async validate(content: string): Promise<TemplateValidationResultDto> {
     return apiClient.post<TemplateValidationResultDto>('/api/invoicetemplates/validate', content)
   }

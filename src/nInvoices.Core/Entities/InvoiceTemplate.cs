@@ -22,39 +22,54 @@ public sealed class InvoiceTemplate : EntityBase
     public InvoiceTemplate()
     {
         CreatedAt = DateTime.UtcNow;
-        IsActive = true;
+        IsActive = false; // Changed: new templates start as inactive to allow multiple templates
         Version = 1;
     }
 
     public InvoiceTemplate(
         long customerId,
         InvoiceType invoiceType,
+        string name,
         string content,
         string format = "html") : this()
     {
+        ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(content);
         ArgumentNullException.ThrowIfNull(format);
 
         if (customerId <= 0)
             throw new ArgumentException("Customer ID must be positive", nameof(customerId));
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Template name cannot be empty", nameof(name));
         if (string.IsNullOrWhiteSpace(content))
             throw new ArgumentException("Template content cannot be empty", nameof(content));
 
         CustomerId = customerId;
         InvoiceType = invoiceType;
+        Name = name;
         Content = content;
         Format = format.ToLowerInvariant();
     }
 
-    public void UpdateContent(string content)
+    public void UpdateContent(string name, string content)
     {
+        ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(content);
 
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Template name cannot be empty", nameof(name));
         if (string.IsNullOrWhiteSpace(content))
             throw new ArgumentException("Template content cannot be empty", nameof(content));
 
+        Name = name;
         Content = content;
         Version++;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Activate()
+    {
+        IsActive = true;
         UpdatedAt = DateTime.UtcNow;
     }
 

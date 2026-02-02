@@ -36,9 +36,32 @@
             <span class="type-badge" :class="getTypeBadgeClass(template.invoiceType)">
               {{ formatType(template.invoiceType) }}
             </span>
-            <p class="card-subtitle">Created {{ formatDate(template.createdAt) }}</p>
+            <p class="card-subtitle">
+              Created {{ formatDate(template.createdAt) }}
+              <span v-if="template.isActive" class="active-badge">Active</span>
+            </p>
           </div>
           <div class="card-actions">
+            <button
+              v-if="!template.isActive"
+              @click="handleActivate(template)"
+              class="action-btn text-green-600 hover:bg-green-50"
+              title="Activate template"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </button>
+            <button
+              v-else
+              @click="handleDeactivate(template)"
+              class="action-btn text-gray-600 hover:bg-gray-50"
+              title="Deactivate template"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
+            </button>
             <button
               @click="handlePreview(template)"
               class="action-btn"
@@ -206,6 +229,24 @@ async function handleDelete(template: InvoiceTemplateDto) {
   }
 }
 
+async function handleActivate(template: InvoiceTemplateDto) {
+  try {
+    await templatesStore.activate(template.id)
+    await loadTemplates()
+  } catch (error: any) {
+    alert(`Failed to activate template: ${error.message}`)
+  }
+}
+
+async function handleDeactivate(template: InvoiceTemplateDto) {
+  try {
+    await templatesStore.deactivate(template.id)
+    await loadTemplates()
+  } catch (error: any) {
+    alert(`Failed to deactivate template: ${error.message}`)
+  }
+}
+
 function handleFormSuccess() {
   showForm.value = false
   editingTemplate.value = null
@@ -308,6 +349,17 @@ function handleClosePreview() {
   font-size: 0.75rem;
   color: #6b7280;
   margin-top: 0.25rem;
+}
+
+.active-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
 }
 
 .card-actions {

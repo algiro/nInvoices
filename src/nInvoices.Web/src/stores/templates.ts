@@ -123,6 +123,46 @@ export const useTemplatesStore = defineStore('templates', () => {
     }
   }
 
+  async function activate(id: number) {
+    try {
+      loading.value = true
+      error.value = null
+      await templatesApi.activate(id)
+      const template = templates.value.find(t => t.id === id)
+      if (template) {
+        // Deactivate other templates of same customer and type
+        templates.value = templates.value.map(t => ({
+          ...t,
+          isActive: t.customerId === template.customerId && 
+                    t.invoiceType === template.invoiceType ? 
+                    t.id === id : t.isActive
+        }))
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to activate template'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function deactivate(id: number) {
+    try {
+      loading.value = true
+      error.value = null
+      await templatesApi.deactivate(id)
+      const template = templates.value.find(t => t.id === id)
+      if (template) {
+        template.isActive = false
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to deactivate template'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function validateTemplate(content: string) {
     try {
       loading.value = true
@@ -152,6 +192,8 @@ export const useTemplatesStore = defineStore('templates', () => {
     create,
     update,
     remove,
+    activate,
+    deactivate,
     validateTemplate
   }
 })

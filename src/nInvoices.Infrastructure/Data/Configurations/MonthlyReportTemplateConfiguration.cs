@@ -47,7 +47,7 @@ public sealed class MonthlyReportTemplateConfiguration : IEntityTypeConfiguratio
             .HasForeignKey(t => t.CustomerId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Index for faster queries
+        // Index for faster queries (not unique - allows multiple templates)
         builder.HasIndex(t => new { t.CustomerId, t.InvoiceType, t.IsActive });
     }
 }
