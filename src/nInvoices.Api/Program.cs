@@ -87,7 +87,7 @@ builder.Services.AddAuthentication("Bearer")
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidAudiences = new[] { keycloakAudience },
+            ValidAudiences = new[] { keycloakAudience, "ninvoices-web", "account" },
             // Accept internal, external, and public issuers
             ValidIssuers = new[] 
             { 
