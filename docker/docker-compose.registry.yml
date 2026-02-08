@@ -1,0 +1,146 @@
+version: '3.9'
+
+# Production Docker Compose - Uses Pre-built Images from Docker Hub
+# 
+# Prerequisites:
+# 1. Images pushed to Docker Hub (run build-and-push.ps1)
+# 2. .env file configured with production settings
+# 3. SSL certificates in ./volumes/ssl/ (if using HTTPS)
+# 4. nginx.prod.conf configured with your domain
+#
+# Deploy:
+# docker-compose -f docker-compose.registry.yml pull
+# docker-compose -f docker-compose.registry.yml up -d
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: ninvoices-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - ninvoices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # PostgreSQL not exposed externally in production
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.8
+    container_name: ninvoices-keycloak-prod
+    restart: always
+    command: start
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      # Production settings
+      KC_HOSTNAME: ${DOMAIN:-localhost}
+      KC_HOSTNAME_STRICT: ${KC_HOSTNAME_STRICT:-false}
+      KC_PROXY: edge
+      KC_HTTP_ENABLED: true
+      KC_HEALTH_ENABLED: true
+    volumes:
+      - ./volumes/keycloak:/opt/keycloak/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ninvoices-network
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 1 bash -c 'cat < /dev/null > /dev/tcp/localhost/8080' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    # Keycloak accessed via Nginx reverse proxy (or direct port 8080 for development)
+    ports:
+      - "${KEYCLOAK_PORT:-8080}:8080"
+
+  api:
+    # Use pre-built image from Docker Hub
+    image: ${DOCKER_USERNAME:-algiro}/ninvoices-api:${IMAGE_TAG:-latest}
+    container_name: ninvoices-api-prod
+    restart: always
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_HTTP_PORTS: 8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      Database__Type: PostgreSQL
+      # Internal Docker network address for API
+      Keycloak__Authority: http://keycloak:8080/realms/${KEYCLOAK_REALM:-ninvoices}
+      Keycloak__Audience: ${KEYCLOAK_CLIENT_ID:-ninvoices-api}
+    volumes:
+      - ./volumes/logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - ninvoices-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Expose API port (can be behind Nginx or direct)
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+  web:
+    # Use pre-built image from Docker Hub
+    image: ${DOCKER_USERNAME:-algiro}/ninvoices-web:${IMAGE_TAG:-latest}
+    container_name: ninvoices-web-prod
+    restart: always
+    depends_on:
+      - api
+    networks:
+      - ninvoices-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Expose web port
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+
+  # Nginx reverse proxy (optional - for production HTTPS)
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: ninvoices-nginx-prod
+  #   restart: always
+  #   volumes:
+  #     - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+  #     - ./volumes/ssl:/etc/nginx/ssl:ro
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   depends_on:
+  #     - web
+  #     - api
+  #     - keycloak
+  #   networks:
+  #     - ninvoices-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80 || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+networks:
+  ninvoices-network:
+    driver: bridge

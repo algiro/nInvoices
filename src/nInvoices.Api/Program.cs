@@ -7,6 +7,10 @@ using nInvoices.Infrastructure.TemplateEngine;
 using nInvoices.Infrastructure.PdfExport;
 using FluentValidation;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +36,9 @@ builder.Services.AddOpenApi();
 // Add Configuration
 builder.Services.Configure<InvoiceSettings>(builder.Configuration.GetSection(InvoiceSettings.SectionName));
 
+// Add HttpContextAccessor for user context
+builder.Services.AddHttpContextAccessor();
+
 // Add Database
 builder.Services.AddDatabase(builder.Configuration);
 
@@ -54,18 +61,69 @@ builder.Services.AddMediatR(cfg =>
 // Add FluentValidation
 builder.Services.AddValidatorsFromAssembly(typeof(nInvoices.Application.ApplicationAssemblyMarker).Assembly);
 
+// Configure Authentication & Authorization
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
+    {
+        var keycloakAuthority = builder.Configuration["Keycloak:Authority"] 
+            ?? throw new InvalidOperationException("Keycloak:Authority not configured");
+        var keycloakAudience = builder.Configuration["Keycloak:Audience"] 
+            ?? throw new InvalidOperationException("Keycloak:Audience not configured");
+
+        options.Authority = keycloakAuthority;
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        options.SaveToken = true;
+        
+        // Use custom backchannel handler to rewrite localhost:8080 to keycloak:8080
+        options.BackchannelHttpHandler = new nInvoices.Api.Infrastructure.KeycloakBackchannelHandler();
+        
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidAudiences = new[] { keycloakAudience },
+            // Accept both internal (keycloak:8080) and external (localhost:8080) issuers
+            ValidIssuers = new[] 
+            { 
+                "http://localhost:8080/realms/ninvoices",
+                keycloakAuthority
+            },
+            ClockSkew = TimeSpan.FromMinutes(5)
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                Log.Error("Authentication failed: {Error}", context.Exception.Message);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                var userId = context.Principal?.FindFirst("sub")?.Value;
+                Log.Information("Token validated for user: {UserId}", userId);
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireUser", policy => policy.RequireRole("user"));
+    options.AddPolicy("RequireAdmin", policy => policy.RequireRole("admin"));
+});
+
 // Configure CORS
+var corsOrigins = builder.Configuration["Cors:Origins"]?.Split(',') 
+    ?? ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowVueApp", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173", 
-                "http://localhost:5174", 
-                "http://localhost:3000",
-                "http://localhost:3001",
-                "http://localhost:5297",
-                "https://localhost:7277")
+        policy.WithOrigins(corsOrigins)
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
@@ -83,6 +141,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowVueApp");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

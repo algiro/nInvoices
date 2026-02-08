@@ -1,0 +1,133 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: ninvoices-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - ninvoices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Don't expose PostgreSQL port in production (internal only)
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: ninvoices-keycloak-prod
+    restart: always
+    command: start
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB_NAME}
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_HOSTNAME: ${DOMAIN}
+      KC_HOSTNAME_STRICT: true
+      KC_PROXY: edge
+      KC_HTTP_ENABLED: true
+      KC_HOSTNAME_STRICT_HTTPS: true
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    volumes:
+      - ./volumes/keycloak:/opt/keycloak/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ninvoices-network
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    # Keycloak accessed via Nginx reverse proxy
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: ninvoices-api-prod
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__Default=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};SSL Mode=Prefer
+      - Database__Type=PostgreSQL
+      - Keycloak__Authority=https://${DOMAIN}/auth/realms/${KEYCLOAK_REALM}
+      - Keycloak__Audience=${KEYCLOAK_CLIENT_ID}
+      - Keycloak__ValidIssuer=https://${DOMAIN}/auth/realms/${KEYCLOAK_REALM}
+      - Cors__Origins=https://${DOMAIN}
+    volumes:
+      - ./volumes/logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - ninvoices-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # API accessed via Nginx reverse proxy
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.web
+      args:
+        VITE_API_URL: https://${DOMAIN}/api
+        VITE_KEYCLOAK_URL: https://${DOMAIN}/auth
+        VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+        VITE_KEYCLOAK_CLIENT_ID: ninvoices-web
+    container_name: ninvoices-web-prod
+    restart: always
+    depends_on:
+      - api
+    networks:
+      - ninvoices-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    container_name: ninvoices-nginx-prod
+    restart: always
+    volumes:
+      - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./volumes/ssl:/etc/nginx/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - web
+      - api
+      - keycloak
+    networks:
+      - ninvoices-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  ninvoices-network:
+    driver: bridge

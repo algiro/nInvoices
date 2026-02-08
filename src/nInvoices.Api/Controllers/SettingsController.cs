@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using nInvoices.Core.Configuration;
 
@@ -9,6 +10,7 @@ namespace nInvoices.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public sealed class SettingsController : ControllerBase
 {
     private readonly IOptionsSnapshot<InvoiceSettings> _invoiceSettings;

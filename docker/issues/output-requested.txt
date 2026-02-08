@@ -1,0 +1,100 @@
+2026-02-05 11:54:09,322 INFO  [org.jgroups.protocols.FD_SOCK2] (ForkJoinPool.commonPool-worker-1) server listening on *.33193
+2026-02-05 11:54:11,328 INFO  [org.jgroups.protocols.pbcast.GMS] (ForkJoinPool.commonPool-worker-1) 17ad587126a5-37898: no members discovered after 2003 ms: creating cluster as coordinator
+2026-02-05 11:54:11,338 INFO  [org.infinispan.CLUSTER] (ForkJoinPool.commonPool-worker-1) ISPN000094: Received new cluster view for channel ISPN: [17ad587126a5-37898|0] (1) [17ad587126a5-37898]
+2026-02-05 11:54:11,427 INFO  [org.infinispan.CLUSTER] (ForkJoinPool.commonPool-worker-1) ISPN000079: Channel `ISPN` local address is `17ad587126a5-37898`, physical addresses are `[172.18.0.3:48729]`
+2026-02-05 11:54:18,634 INFO  [org.infinispan.CLUSTER] (main) ISPN000080: Disconnecting JGroups channel `ISPN`
+2026-02-05 11:54:18,657 INFO  [com.arjuna.ats.jbossatx] (main) ARJUNA032014: Stopping transaction recovery manager
+2026-02-05 11:54:18,658 WARN  [io.quarkus.narayana.jta.runtime.NarayanaJtaRecorder] (main) The recovery manager has already been shutdown: java.lang.NullPointerException: Cannot invoke "com.arjuna.ats.arjuna.recovery.RecoveryManager.terminate()" because "this._recoveryManager" is null
+        at com.arjuna.ats.jbossatx.jta.RecoveryManagerService.stop(RecoveryManagerService.java:58)
+        at io.quarkus.narayana.jta.runtime.NarayanaJtaRecorder.lambda$handleShutdown$2(NarayanaJtaRecorder.java:204)
+        at io.quarkus.runtime.StartupContext.runAllAndClear(StartupContext.java:79)
+        at io.quarkus.runtime.StartupContext.close(StartupContext.java:70)
+        at io.quarkus.runner.ApplicationImpl.doStart(Unknown Source)
+        at io.quarkus.runtime.Application.start(Application.java:101)
+        at io.quarkus.runtime.ApplicationLifecycleManager.run(ApplicationLifecycleManager.java:119)
+        at io.quarkus.runtime.Quarkus.run(Quarkus.java:71)
+        at org.keycloak.quarkus.runtime.KeycloakMain.start(KeycloakMain.java:146)
+        at org.keycloak.quarkus.runtime.cli.command.AbstractStartCommand.run(AbstractStartCommand.java:57)
+        at picocli.CommandLine.executeUserObject(CommandLine.java:2030)
+        at picocli.CommandLine.access$1500(CommandLine.java:148)
+        at picocli.CommandLine$RunLast.executeUserObjectOfLastSubcommandWithSameParent(CommandLine.java:2465)
+        at picocli.CommandLine$RunLast.handle(CommandLine.java:2457)
+        at picocli.CommandLine$RunLast.handle(CommandLine.java:2419)
+        at picocli.CommandLine$AbstractParseResultHandler.execute(CommandLine.java:2277)
+        at picocli.CommandLine$RunLast.execute(CommandLine.java:2421)
+        at picocli.CommandLine.execute(CommandLine.java:2174)
+        at org.keycloak.quarkus.runtime.cli.Picocli.run(Picocli.java:147)
+        at org.keycloak.quarkus.runtime.cli.Picocli.parseAndRun(Picocli.java:135)
+        at org.keycloak.quarkus.runtime.KeycloakMain.main(KeycloakMain.java:106)
+        at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+        at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+        at io.quarkus.bootstrap.runner.QuarkusEntryPoint.doRun(QuarkusEntryPoint.java:62)
+        at io.quarkus.bootstrap.runner.QuarkusEntryPoint.main(QuarkusEntryPoint.java:33)
+
+ERROR: Failed to start server in (production) mode
+ERROR: ARJUNA048006: cannot create new instance of com.arjuna.ats.internal.arjuna.objectstore.ShadowNoFileLockStore
+ERROR: ARJUNA012225: FileSystemStore::setupStore - cannot access root of object store: /opt/keycloak/bin/../data/transaction-logs/ShadowNoFileLockStore/defaultStore/
+For more details run the same command passing the '--verbose' option. Also you can use '--help' to see the details about the usage of the particular command.
+2026-02-05 11:54:21,354 ERROR [org.keycloak.quarkus.runtime.configuration.mappers.PropertyMappers] (main) Hostname v1 options [proxy] are still in use, please review your configuration
+2026-02-05 11:54:22,160 INFO  [org.keycloak.url.HostnameV2ProviderFactory] (main) If hostanme is specified, hostname-strict is effectively ignored
+2026-02-05 11:54:25,029 INFO  [org.keycloak.quarkus.runtime.storage.infinispan.CacheManagerFactory] (main) Starting Infinispan embedded cache manager
+2026-02-05 11:54:25,757 INFO  [org.infinispan.CONTAINER] (ForkJoinPool.commonPool-worker-1) ISPN000556: Starting user marshaller 'org.infinispan.commons.marshall.ImmutableProtoStreamMarshaller'
+2026-02-05 11:54:26,048 WARN  [org.jgroups.stack.Configurator] (ForkJoinPool.commonPool-worker-1) JGRP000014: ThreadPool.thread_dumps_threshold has been deprecated: ignored
+2026-02-05 11:54:26,061 INFO  [org.infinispan.CLUSTER] (ForkJoinPool.commonPool-worker-1) ISPN000078: Starting JGroups channel `ISPN` with stack `udp`
+2026-02-05 11:54:26,066 INFO  [org.jgroups.JChannel] (ForkJoinPool.commonPool-worker-1) local_addr: 8fda0b61-3595-46d2-830b-b85dc67b85ee, name: 17ad587126a5-7008
+2026-02-05 11:54:26,074 WARN  [org.jgroups.protocols.UDP] (ForkJoinPool.commonPool-worker-1) JGRP000015: the send buffer of socket MulticastSocket was set to 1MB, but the OS only allocated 212.99KB
+2026-02-05 11:54:26,075 WARN  [org.jgroups.protocols.UDP] (ForkJoinPool.commonPool-worker-1) JGRP000015: the receive buffer of socket MulticastSocket was set to 20MB, but the OS only allocated 212.99KB
+2026-02-05 11:54:26,075 WARN  [org.jgroups.protocols.UDP] (ForkJoinPool.commonPool-worker-1) JGRP000015: the send buffer of socket MulticastSocket was set to 1MB, but the OS only allocated 212.99KB
+2026-02-05 11:54:26,075 WARN  [org.jgroups.protocols.UDP] (ForkJoinPool.commonPool-worker-1) JGRP000015: the receive buffer of socket MulticastSocket was set to 25MB, but the OS only allocated 212.99KB
+2026-02-05 11:54:26,084 INFO  [org.jgroups.protocols.FD_SOCK2] (ForkJoinPool.commonPool-worker-1) server listening on *.41230
+2026-02-05 11:54:28,091 INFO  [org.jgroups.protocols.pbcast.GMS] (ForkJoinPool.commonPool-worker-1) 17ad587126a5-7008: no members discovered after 2003 ms: creating cluster as coordinator
+2026-02-05 11:54:28,103 INFO  [org.infinispan.CLUSTER] (ForkJoinPool.commonPool-worker-1) ISPN000094: Received new cluster view for channel ISPN: [17ad587126a5-7008|0] (1) [17ad587126a5-7008]
+2026-02-05 11:54:28,189 INFO  [org.infinispan.CLUSTER] (ForkJoinPool.commonPool-worker-1) ISPN000079: Channel `ISPN` local address is `17ad587126a5-7008`, physical addresses are `[172.18.0.3:56766]`
+2026-02-05 11:54:35,333 INFO  [org.infinispan.CLUSTER] (main) ISPN000080: Disconnecting JGroups channel `ISPN`
+2026-02-05 11:54:35,355 INFO  [com.arjuna.ats.jbossatx] (main) ARJUNA032014: Stopping transaction recovery manager
+2026-02-05 11:54:35,356 WARN  [io.quarkus.narayana.jta.runtime.NarayanaJtaRecorder] (main) The recovery manager has already been shutdown: java.lang.NullPointerException: Cannot invoke "com.arjuna.ats.arjuna.recovery.RecoveryManager.terminate()" because "this._recoveryManager" is null
+        at com.arjuna.ats.jbossatx.jta.RecoveryManagerService.stop(RecoveryManagerService.java:58)
+        at io.quarkus.narayana.jta.runtime.NarayanaJtaRecorder.lambda$handleShutdown$2(NarayanaJtaRecorder.java:204)
+        at io.quarkus.runtime.StartupContext.runAllAndClear(StartupContext.java:79)
+        at io.quarkus.runtime.StartupContext.close(StartupContext.java:70)
+        at io.quarkus.runner.ApplicationImpl.doStart(Unknown Source)
+        at io.quarkus.runtime.Application.start(Application.java:101)
+        at io.quarkus.runtime.ApplicationLifecycleManager.run(ApplicationLifecycleManager.java:119)
+        at io.quarkus.runtime.Quarkus.run(Quarkus.java:71)
+        at org.keycloak.quarkus.runtime.KeycloakMain.start(KeycloakMain.java:146)
+        at org.keycloak.quarkus.runtime.cli.command.AbstractStartCommand.run(AbstractStartCommand.java:57)
+        at picocli.CommandLine.executeUserObject(CommandLine.java:2030)
+        at picocli.CommandLine.access$1500(CommandLine.java:148)
+        at picocli.CommandLine$RunLast.executeUserObjectOfLastSubcommandWithSameParent(CommandLine.java:2465)
+        at picocli.CommandLine$RunLast.handle(CommandLine.java:2457)
+        at picocli.CommandLine$RunLast.handle(CommandLine.java:2419)
+        at picocli.CommandLine$AbstractParseResultHandler.execute(CommandLine.java:2277)
+        at picocli.CommandLine$RunLast.execute(CommandLine.java:2421)
+        at picocli.CommandLine.execute(CommandLine.java:2174)
+        at org.keycloak.quarkus.runtime.cli.Picocli.run(Picocli.java:147)
+        at org.keycloak.quarkus.runtime.cli.Picocli.parseAndRun(Picocli.java:135)
+        at org.keycloak.quarkus.runtime.KeycloakMain.main(KeycloakMain.java:106)
+        at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+        at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+        at io.quarkus.bootstrap.runner.QuarkusEntryPoint.doRun(QuarkusEntryPoint.java:62)
+        at io.quarkus.bootstrap.runner.QuarkusEntryPoint.main(QuarkusEntryPoint.java:33)
+
+ERROR: Failed to start server in (production) mode
+ERROR: ARJUNA048006: cannot create new instance of com.arjuna.ats.internal.arjuna.objectstore.ShadowNoFileLockStore
+ERROR: ARJUNA012225: FileSystemStore::setupStore - cannot access root of object store: /opt/keycloak/bin/../data/transaction-logs/ShadowNoFileLockStore/defaultStore/
+For more details run the same command passing the '--verbose' option. Also you can use '--help' to see the details about the usage of the particular command.
+2026-02-05 11:54:37,916 ERROR [org.keycloak.quarkus.runtime.configuration.mappers.PropertyMappers] (main) Hostname v1 options [proxy] are still in use, please review your configuration
+2026-02-05 11:54:38,736 INFO  [org.keycloak.url.HostnameV2ProviderFactory] (main) If hostanme is specified, hostname-strict is effectively ignored
+2026-02-05 11:54:41,411 INFO  [org.keycloak.quarkus.runtime.storage.infinispan.CacheManagerFactory] (main) Starting Infinispan embedded cache manager
+2026-02-05 11:54:42,072 INFO  [org.infinispan.CONTAINER] (ForkJoinPool.commonPool-worker-1) ISPN000556: Starting user marshaller 'org.infinispan.commons.marshall.ImmutableProtoStreamMarshaller'
+2026-02-05 11:54:42,362 WARN  [org.jgroups.stack.Configurator] (ForkJoinPool.commonPool-worker-1) JGRP000014: ThreadPool.thread_dumps_threshold has been deprecated: ignored
+2026-02-05 11:54:42,372 INFO  [org.infinispan.CLUSTER] (ForkJoinPool.commonPool-worker-1) ISPN000078: Starting JGroups channel `ISPN` with stack `udp`
+2026-02-05 11:54:42,376 INFO  [org.jgroups.JChannel] (ForkJoinPool.commonPool-worker-1) local_addr: b313a368-062c-4f8f-85c5-5edc2861e625, name: 17ad587126a5-18717
+2026-02-05 11:54:42,382 WARN  [org.jgroups.protocols.UDP] (ForkJoinPool.commonPool-worker-1) JGRP000015: the send buffer of socket MulticastSocket was set to 1MB, but the OS only allocated 212.99KB
+2026-02-05 11:54:42,383 WARN  [org.jgroups.protocols.UDP] (ForkJoinPool.commonPool-worker-1) JGRP000015: the receive buffer of socket MulticastSocket was set to 20MB, but the OS only allocated 212.99KB
+2026-02-05 11:54:42,383 WARN  [org.jgroups.protocols.UDP] (ForkJoinPool.commonPool-worker-1) JGRP000015: the send buffer of socket MulticastSocket was set to 1MB, but the OS only allocated 212.99KB
+2026-02-05 11:54:42,383 WARN  [org.jgroups.protocols.UDP] (ForkJoinPool.commonPool-worker-1) JGRP000015: the receive buffer of socket MulticastSocket was set to 25MB, but the OS only allocated 212.99KB
+2026-02-05 11:54:42,389 INFO  [org.jgroups.protocols.FD_SOCK2] (ForkJoinPool.commonPool-worker-1) server listening on *.34495
+2026-02-05 11:54:44,394 INFO  [org.jgroups.protocols.pbcast.GMS] (ForkJoinPool.commonPool-worker-1) 17ad587126a5-18717: no members discovered after 2002 ms: creating cluster as coordinator
+2026-02-05 11:54:44,403 INFO  [org.infinispan.CLUSTER] (ForkJoinPool.commonPool-worker-1) ISPN000094: Received new cluster view for channel ISPN: [17ad587126a5-18717|0] (1) [17ad587126a5-18717]
+2026-02-05 11:54:44,483 INFO  [org.infinispan.CLUSTER] (ForkJoinPool.commonPool-worker-1) ISPN000079: Channel `ISPN` local address is `17ad587126a5-18717`, physical addresses are `[172.18.0.3:50031]`

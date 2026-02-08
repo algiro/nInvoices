@@ -26,27 +26,31 @@ export const useAuthStore = defineStore('auth', () => {
   const isAdmin = computed(() => roles.value.includes('admin'));
 
   async function initialize() {
+    console.log('[Auth Store] Starting initialization...');
     isLoading.value = true;
     error.value = null;
 
     try {
       const currentUser = await authService.getUser();
       user.value = currentUser;
+      console.log('[Auth Store] User:', currentUser ? 'authenticated' : 'not authenticated');
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to initialize auth';
-      console.error('Auth initialization error:', err);
+      console.error('[Auth Store] Initialization error:', err);
     } finally {
       isLoading.value = false;
+      console.log('[Auth Store] Initialization complete. isAuthenticated:', isAuthenticated.value);
     }
   }
 
   async function login() {
+    console.log('[Auth Store] Login called - redirecting to Keycloak...');
     error.value = null;
     try {
       await authService.login();
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Login failed';
-      console.error('Login error:', err);
+      console.error('[Auth Store] Login error:', err);
       throw err;
     }
   }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Customers.Commands;
 using nInvoices.Application.Features.Customers.Queries;
@@ -12,6 +13,7 @@ namespace nInvoices.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public sealed class CustomersController : ControllerBase
 {
     private readonly IMediator _mediator;

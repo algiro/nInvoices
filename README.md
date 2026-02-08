@@ -45,19 +45,33 @@ This application follows **Clean Architecture** principles with clear separation
 - Axios
 
 ### Database
-- SQLite (default)
-- Easily switchable to PostgreSQL/SQL Server
+- PostgreSQL (production - recommended)
+- SQLite (development/testing)
+
+### Authentication
+- Keycloak (OAuth2/OIDC)
+- JWT Bearer tokens
+- Automatic token refresh
 
 ### DevOps
 - Docker & Docker Compose
+- Multi-stage Docker builds
+- Nginx reverse proxy
 - Health checks
 - Structured logging
+- Automated backups
 
 ## 📋 Prerequisites
 
+### For Development
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - [Node.js 20+](https://nodejs.org/)
-- [Docker](https://www.docker.com/) (optional, for containerized deployment)
+
+### For Docker Deployment
+- [Docker Engine 20.10+](https://www.docker.com/)
+- [Docker Compose 2.0+](https://docs.docker.com/compose/)
+- At least 2GB RAM
+- At least 5GB disk space
 
 ## 🚦 Getting Started
 
@@ -101,16 +115,107 @@ This application follows **Clean Architecture** principles with clear separation
    ```
    Frontend will be available at: `http://localhost:5173`
 
-### Docker Deployment
+### Docker Deployment with Keycloak
+
+**NEW: The application now uses Keycloak for authentication and PostgreSQL for data storage.**
+
+#### Quick Start
 
 ```bash
 cd docker
-docker-compose up --build
+
+# Copy environment file and configure
+cp ../.env.example .env
+# Edit .env with your settings (⚠️ avoid special characters in passwords!)
+
+# Start all services (PostgreSQL, Keycloak, API, Web)
+docker-compose -f docker-compose.dev.yml up -d
+
+# Check services status
+docker-compose -f docker-compose.dev.yml ps
+
+# View logs
+docker-compose -f docker-compose.dev.yml logs -f
 ```
 
-- API: `http://localhost:5000`
-- Web: `http://localhost:3000`
-- Database: Volume mounted at `./docker/data`
+**Access Points:**
+- **Web Application**: `http://localhost:3000`
+- **API**: `http://localhost:8080`
+- **Keycloak Admin**: `http://localhost:8080`
+- **PostgreSQL**: `localhost:5432` (via external tools)
+
+**Default Test User:**
+- Username: `testuser`
+- Password: `Test123!`
+
+#### 📚 Complete Implementation Guide
+
+**For detailed step-by-step instructions with all issues and solutions:**
+
+👉 **[docker/KEYCLOAK-DOCKER-GUIDE.md](./docker/KEYCLOAK-DOCKER-GUIDE.md)** 👈
+
+This comprehensive guide covers:
+- Complete setup process from scratch
+- All critical issues and their solutions
+- BackchannelHandler implementation (required for authentication)
+- Password configuration gotchas
+- Database initialization
+- Keycloak configuration walkthrough
+- Testing and validation
+- Production considerations
+
+#### Production Setup
+
+```bash
+cd docker
+
+# Configure production environment
+cp ../.env.example .env
+# Edit .env with:
+# - Strong passwords (alphanumeric only - no special characters!)
+# - Your domain name
+# - Production URLs (HTTPS)
+
+# Obtain SSL certificates (Let's Encrypt recommended)
+# Place certificates in docker/volumes/ssl/
+
+# Start production stack (includes Nginx reverse proxy)
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+**Production URLs:**
+- All services: `https://your-domain.com`
+- API: `https://your-domain.com/api`
+- Keycloak: `https://your-domain.com/auth`
+
+#### Additional Documentation
+
+- **[docker/README.md](./docker/README.md)** - Comprehensive deployment guide
+- **[docker/KEYCLOAK-DOCKER-GUIDE.md](./docker/KEYCLOAK-DOCKER-GUIDE.md)** - Complete step-by-step implementation
+- **[docker/TROUBLESHOOTING.md](./docker/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[docker/MIGRATION.md](./docker/MIGRATION.md)** - Database migration guide
+
+#### Database Migration
+
+If you have existing SQLite data, migrate to PostgreSQL:
+
+```bash
+cd docker
+.\migrate-sqlite-to-postgres.ps1 -SqliteDbPath "../src/nInvoices.Api/nInvoices.db"
+```
+
+See **[docker/MIGRATION.md](./docker/MIGRATION.md)** for details.
+
+#### Database Backup & Restore
+
+```bash
+# Backup
+cd docker
+.\backup-database.ps1
+
+# Restore
+.\restore-database.ps1 path/to/backup.sql
+```
 
 ## 🧪 Running Tests
 
@@ -152,22 +257,67 @@ nInvoices/
 
 ### Database Configuration
 
-Edit `src/nInvoices.Api/appsettings.json`:
+The application supports both SQLite (development) and PostgreSQL (production):
 
+**SQLite (Development):**
+Edit `src/nInvoices.Api/appsettings.Development.json`:
 ```json
 {
   "ConnectionStrings": {
     "Default": "Data Source=nInvoices.db"
   },
   "Database": {
-    "Type": "SQLite"  // Options: SQLite, PostgreSQL, SQLServer
+    "Type": "SQLite"
   }
 }
 ```
 
+**PostgreSQL (Production):**
+Edit `src/nInvoices.Api/appsettings.Production.json` or use environment variables:
+```json
+{
+  "ConnectionStrings": {
+    "Default": "Host=postgres;Port=5432;Database=ninvoices_db;Username=ninvoices_user;Password=your_password"
+  },
+  "Database": {
+    "Type": "PostgreSQL"
+  }
+}
+```
+
+### Authentication Configuration
+
+The application uses Keycloak for OAuth2/OIDC authentication.
+
+**API Configuration (`appsettings.json`):**
+```json
+{
+  "Keycloak": {
+    "Authority": "http://localhost:8080/realms/ninvoices",
+    "Audience": "ninvoices-api",
+    "ValidIssuer": "http://localhost:8080/realms/ninvoices"
+  }
+}
+```
+
+**Frontend Configuration (`.env`):**
+```env
+VITE_KEYCLOAK_URL=http://localhost:8080
+VITE_KEYCLOAK_REALM=ninvoices
+VITE_KEYCLOAK_CLIENT_ID=ninvoices-web
+```
+
 ### CORS Configuration
 
-The API is configured to allow requests from `http://localhost:5173` and `http://localhost:5174` (Vite dev servers).
+CORS origins can be configured via environment variable or appsettings:
+
+```json
+{
+  "Cors": {
+    "Origins": "http://localhost:3000,http://localhost:5173"
+  }
+}
+```
 
 ## 📖 API Documentation
 
@@ -187,10 +337,14 @@ Once the API is running, visit:
 
 ## 🔐 Security
 
-- Single-user application (no authentication required)
-- Input validation with FluentValidation
-- SQL injection protection via EF Core
-- CORS configured for development
+- **OAuth2/OIDC Authentication**: Powered by Keycloak
+- **JWT Bearer Tokens**: Secure API access
+- **Role-Based Access Control**: User and Admin roles
+- **Input validation**: FluentValidation throughout
+- **SQL injection protection**: Via EF Core
+- **Password Security**: Keycloak handles secure password storage
+- **Session Management**: Automatic token refresh
+- **CORS**: Configured for specific origins
 
 ## 📝 Development Status
 

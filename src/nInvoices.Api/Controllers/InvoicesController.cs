@@ -2,6 +2,7 @@ using MediatR;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Invoices.Commands;
 using nInvoices.Application.Features.Invoices.Queries;
@@ -15,6 +16,7 @@ namespace nInvoices.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public sealed class InvoicesController : ControllerBase
 {
     private readonly IMediator _mediator;

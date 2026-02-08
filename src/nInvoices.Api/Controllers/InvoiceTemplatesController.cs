@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.InvoiceTemplates.Commands;
 using nInvoices.Application.Features.InvoiceTemplates.Queries;
@@ -13,6 +14,7 @@ namespace nInvoices.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public sealed class InvoiceTemplatesController : ControllerBase
 {
     private readonly IMediator _mediator;

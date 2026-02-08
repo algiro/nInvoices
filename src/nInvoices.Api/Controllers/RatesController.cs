@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Rates.Commands;
 using nInvoices.Application.Features.Rates.Queries;
@@ -12,6 +13,7 @@ namespace nInvoices.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public sealed class RatesController : ControllerBase
 {
     private readonly IMediator _mediator;

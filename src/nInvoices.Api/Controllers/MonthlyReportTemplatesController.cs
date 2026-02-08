@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
@@ -13,6 +14,7 @@ namespace nInvoices.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/monthlyreporttemplates")]
+[Authorize]
 public sealed class MonthlyReportTemplatesController : ControllerBase
 {
     private readonly IRepository<MonthlyReportTemplate> _repository;

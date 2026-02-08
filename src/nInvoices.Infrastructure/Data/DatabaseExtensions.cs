@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using nInvoices.Core.Interfaces;
 using nInvoices.Infrastructure.Data.Repositories;
+using nInvoices.Infrastructure.Services;
 
 namespace nInvoices.Infrastructure.Data;
 
@@ -30,6 +32,13 @@ public static class DatabaseExtensions
                 options.EnableSensitiveDataLogging();
                 options.EnableDetailedErrors();
             }
+            
+            // Suppress pending model changes warning for PostgreSQL
+            if (dbType == "PostgreSQL")
+            {
+                options.ConfigureWarnings(warnings => 
+                    warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+            }
         });
 
         // Register Unit of Work
@@ -37,6 +46,9 @@ public static class DatabaseExtensions
 
         // Register generic repository
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+        
+        // Register User Context
+        services.AddScoped<IUserContext, UserContext>();
 
         return services;
     }
@@ -56,6 +68,16 @@ public static class DatabaseExtensions
                 break;
 
             case "POSTGRESQL":
+                options.UseNpgsql(connectionString, npgsqlOptions =>
+                {
+                    npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                    npgsqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        errorCodesToAdd: null);
+                });
+                break;
+
             case "SQLSERVER":
                 throw new NotSupportedException($"Database type '{dbType}' requires additional NuGet packages. " +
                     $"Install EntityFrameworkCore.{dbType} package and uncomment the corresponding code.");
