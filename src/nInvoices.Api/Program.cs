@@ -93,7 +93,8 @@ builder.Services.AddAuthentication("Bearer")
             { 
                 "http://localhost:8080/realms/ninvoices",
                 keycloakAuthority,
-                builder.Configuration["Keycloak:ExternalAuthority"] ?? ""
+                builder.Configuration["Keycloak:ExternalAuthority"] ?? "",
+                "http://DOMAIN_PLACEHOLDER:8080/realms/ninvoices"
             }.Where(s => !string.IsNullOrEmpty(s)).ToArray(),
             ClockSkew = TimeSpan.FromMinutes(5)
         };
