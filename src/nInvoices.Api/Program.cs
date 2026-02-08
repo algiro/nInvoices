@@ -71,7 +71,11 @@ builder.Services.AddAuthentication("Bearer")
             ?? throw new InvalidOperationException("Keycloak:Audience not configured");
 
         options.Authority = keycloakAuthority;
-        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        
+        // Allow configuration override for RequireHttpsMetadata
+        // In Docker deployments, Keycloak may be accessed via HTTP internally
+        var requireHttpsMetadata = builder.Configuration.GetValue<bool?>("Keycloak:RequireHttpsMetadata");
+        options.RequireHttpsMetadata = requireHttpsMetadata ?? !builder.Environment.IsDevelopment();
         options.SaveToken = true;
         
         // Use custom backchannel handler to rewrite localhost:8080 to keycloak:8080
