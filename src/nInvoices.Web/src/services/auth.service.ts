@@ -56,13 +56,8 @@ class AuthService {
    * Initiates the login flow by redirecting to Keycloak
    */
   async login(): Promise<void> {
-    console.log('[Auth Service] Starting login redirect...');
-    console.log('[Auth Service] Authority:', import.meta.env.VITE_KEYCLOAK_URL + '/realms/' + import.meta.env.VITE_KEYCLOAK_REALM);
-    console.log('[Auth Service] Client ID:', import.meta.env.VITE_KEYCLOAK_CLIENT_ID);
-    console.log('[Auth Service] Redirect URI:', window.location.origin + import.meta.env.BASE_URL + 'auth/callback');
     try {
       await this.userManager.signinRedirect();
-      console.log('[Auth Service] Redirect initiated');
     } catch (err) {
       console.error('[Auth Service] Login error:', err);
       throw err;

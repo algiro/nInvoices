@@ -35,12 +35,6 @@ class ApiClient {
         // Get access token
         const token = await authStore.getAccessToken();
         
-        console.log('[API Client] Request to:', config.url);
-        console.log('[API Client] Token available:', !!token);
-        if (token) {
-          console.log('[API Client] Token (first 50 chars):', token.substring(0, 50) + '...');
-        }
-        
         // Add token to Authorization header if available
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;

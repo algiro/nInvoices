@@ -73,21 +73,17 @@ const router = createRouter({
 
 // Navigation guard - check authentication before each route
 router.beforeEach(async (to) => {
-  console.log('[Router Guard] Navigating to:', to.path);
   const authStore = useAuthStore();
   
   // Initialize auth store if not already done
   if (authStore.isLoading) {
-    console.log('[Router Guard] Auth is loading, waiting for initialization...');
     await authStore.initialize();
   }
   
   // Check if route requires authentication
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-  console.log('[Router Guard] Route requires auth:', requiresAuth, 'isAuthenticated:', authStore.isAuthenticated);
   
   if (requiresAuth && !authStore.isAuthenticated) {
-    console.log('[Router Guard] Not authenticated - redirecting to login');
     // Save the intended destination
     sessionStorage.setItem('returnUrl', to.fullPath);
     
@@ -96,7 +92,6 @@ router.beforeEach(async (to) => {
     return;
   }
   
-  console.log('[Router Guard] Navigation allowed');
   return true;
 });
 
