@@ -88,12 +88,13 @@ builder.Services.AddAuthentication("Bearer")
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ValidAudiences = new[] { keycloakAudience },
-            // Accept both internal (keycloak:8080) and external (localhost:8080) issuers
+            // Accept internal, external, and public issuers
             ValidIssuers = new[] 
             { 
                 "http://localhost:8080/realms/ninvoices",
-                keycloakAuthority
-            },
+                keycloakAuthority,
+                builder.Configuration["Keycloak:ExternalAuthority"] ?? ""
+            }.Where(s => !string.IsNullOrEmpty(s)).ToArray(),
             ClockSkew = TimeSpan.FromMinutes(5)
         };
 
