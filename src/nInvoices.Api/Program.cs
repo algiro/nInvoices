@@ -70,6 +70,13 @@ builder.Services.AddAuthentication("Bearer")
         var keycloakAudience = builder.Configuration["Keycloak:Audience"] 
             ?? throw new InvalidOperationException("Keycloak:Audience not configured");
 
+        var keycloakExternalAuthority = builder.Configuration["Keycloak:ExternalAuthority"];
+        
+        // Extract hostname from ExternalAuthority for backchannel URL rewriting
+        var externalHost = keycloakExternalAuthority is not null 
+            ? new Uri(keycloakExternalAuthority).Host 
+            : null;
+        
         options.Authority = keycloakAuthority;
         
         // Allow configuration override for RequireHttpsMetadata
@@ -78,8 +85,23 @@ builder.Services.AddAuthentication("Bearer")
         options.RequireHttpsMetadata = requireHttpsMetadata ?? !builder.Environment.IsDevelopment();
         options.SaveToken = true;
         
-        // Use custom backchannel handler to rewrite localhost:8080 to keycloak:8080
-        options.BackchannelHttpHandler = new nInvoices.Api.Infrastructure.KeycloakBackchannelHandler();
+        // Rewrite external hostname requests to internal keycloak:8080
+        options.BackchannelHttpHandler = new nInvoices.Api.Infrastructure.KeycloakBackchannelHandler(
+            externalHost is not null ? [externalHost] : null);
+        
+        // Build valid issuers from config — Keycloak may present different issuer URLs
+        // depending on whether accessed internally or externally
+        var validIssuers = new List<string>
+        {
+            "http://localhost:8080/realms/ninvoices",
+            keycloakAuthority
+        };
+        if (keycloakExternalAuthority is not null)
+        {
+            validIssuers.Add(keycloakExternalAuthority);
+            // Keycloak internal metadata uses http://<hostname>:8080 as issuer
+            validIssuers.Add($"http://{externalHost}:8080/realms/ninvoices");
+        }
         
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -88,14 +110,7 @@ builder.Services.AddAuthentication("Bearer")
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ValidAudiences = new[] { keycloakAudience, "ninvoices-web", "account" },
-            // Accept internal, external, and public issuers
-            ValidIssuers = new[] 
-            { 
-                "http://localhost:8080/realms/ninvoices",
-                keycloakAuthority,
-                builder.Configuration["Keycloak:ExternalAuthority"] ?? "",
-                "http://DOMAIN_PLACEHOLDER:8080/realms/ninvoices"
-            }.Where(s => !string.IsNullOrEmpty(s)).ToArray(),
+            ValidIssuers = validIssuers.ToArray(),
             ClockSkew = TimeSpan.FromMinutes(5)
         };
 
