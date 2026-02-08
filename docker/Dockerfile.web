@@ -17,8 +17,9 @@ ENV VITE_BASE=$VITE_BASE
 
 COPY src/nInvoices.Web/package*.json ./
 RUN npm ci
-RUN ls -la node_modules | grep oidc || echo "oidc-client-ts not found in node_modules"
+RUN ls -la node_modules | grep oidc || echo "oidc-client-ts not found after npm ci"
 COPY src/nInvoices.Web/ .
+RUN ls -la node_modules | grep oidc || echo "oidc-client-ts not found after COPY"
 RUN npm run build
 
 FROM nginx:alpine
