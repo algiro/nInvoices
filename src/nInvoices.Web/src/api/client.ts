@@ -1,13 +1,15 @@
 import axios, { type AxiosInstance, AxiosError } from 'axios';
+import { useAuthStore } from '../stores/auth';
 
 /**
  * API Client configuration
  * Follows Single Responsibility Principle - handles HTTP communication
+ * Includes JWT token injection for authenticated requests
  */
 class ApiClient {
   private client: AxiosInstance;
 
-  constructor(baseURL: string = import.meta.env.VITE_API_BASE_URL || '') {
+  constructor(baseURL: string = import.meta.env.VITE_API_URL || '') {
     // Use empty baseURL to leverage Vite proxy in development
     const finalBaseURL = baseURL || '';
     console.log('[API Client] Base URL:', finalBaseURL || '(empty - using Vite proxy)');
@@ -24,18 +26,45 @@ class ApiClient {
   }
 
   private setupInterceptors(): void {
+    // Request interceptor - add JWT token
     this.client.interceptors.request.use(
-      (config) => {
+      async (config) => {
+        // Get the auth store
+        const authStore = useAuthStore();
+        
+        // Get access token
+        const token = await authStore.getAccessToken();
+        
+        // Add token to Authorization header if available
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        
         return config;
       },
       (error) => Promise.reject(error)
     );
 
+    // Response interceptor - handle errors
     this.client.interceptors.response.use(
       (response) => response,
-      (error: AxiosError) => {
+      async (error: AxiosError) => {
         if (error.response) {
           console.error('API Error:', error.response.status, error.response.data);
+          
+          // Handle 401 Unauthorized - token expired or invalid
+          if (error.response.status === 401) {
+            const authStore = useAuthStore();
+            
+            // Try to refresh user info
+            await authStore.refreshUser();
+            
+            // If still not authenticated, redirect to login
+            if (!authStore.isAuthenticated) {
+              console.warn('User not authenticated, redirecting to login...');
+              await authStore.login();
+            }
+          }
         } else if (error.request) {
           console.error('Network Error:', error.message);
         } else {
@@ -75,3 +104,4 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+
