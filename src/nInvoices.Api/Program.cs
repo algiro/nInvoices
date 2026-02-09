@@ -62,73 +62,86 @@ builder.Services.AddMediatR(cfg =>
 builder.Services.AddValidatorsFromAssembly(typeof(nInvoices.Application.ApplicationAssemblyMarker).Assembly);
 
 // Configure Authentication & Authorization
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", options =>
-    {
-        var keycloakAuthority = builder.Configuration["Keycloak:Authority"] 
-            ?? throw new InvalidOperationException("Keycloak:Authority not configured");
-        var keycloakAudience = builder.Configuration["Keycloak:Audience"] 
-            ?? throw new InvalidOperationException("Keycloak:Audience not configured");
+var useDevAuth = builder.Configuration.GetValue<bool>("Authentication:UseDevAuth");
 
-        var keycloakExternalAuthority = builder.Configuration["Keycloak:ExternalAuthority"];
-        
-        // Extract hostname from ExternalAuthority for backchannel URL rewriting
-        var externalHost = keycloakExternalAuthority is not null 
-            ? new Uri(keycloakExternalAuthority).Host 
-            : null;
-        
-        options.Authority = keycloakAuthority;
-        
-        // Allow configuration override for RequireHttpsMetadata
-        // In Docker deployments, Keycloak may be accessed via HTTP internally
-        var requireHttpsMetadata = builder.Configuration.GetValue<bool?>("Keycloak:RequireHttpsMetadata");
-        options.RequireHttpsMetadata = requireHttpsMetadata ?? !builder.Environment.IsDevelopment();
-        options.SaveToken = true;
-        
-        // Rewrite external hostname requests to internal keycloak:8080
-        options.BackchannelHttpHandler = new nInvoices.Api.Infrastructure.KeycloakBackchannelHandler(
-            externalHost is not null ? [externalHost] : null);
-        
-        // Build valid issuers from config — Keycloak may present different issuer URLs
-        // depending on whether accessed internally or externally
-        var validIssuers = new List<string>
+if (useDevAuth)
+{
+    Log.Warning("*** DEV AUTH ENABLED — all requests auto-authenticated as dev user ***");
+    builder.Services.AddAuthentication(nInvoices.Api.Infrastructure.DevAuthenticationHandler.SchemeName)
+        .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions,
+            nInvoices.Api.Infrastructure.DevAuthenticationHandler>(
+            nInvoices.Api.Infrastructure.DevAuthenticationHandler.SchemeName, _ => { });
+}
+else
+{
+    builder.Services.AddAuthentication("Bearer")
+        .AddJwtBearer("Bearer", options =>
         {
-            "http://localhost:8080/realms/ninvoices",
-            keycloakAuthority
-        };
-        if (keycloakExternalAuthority is not null)
-        {
-            validIssuers.Add(keycloakExternalAuthority);
-            // Keycloak internal metadata uses http://<hostname>:8080 as issuer
-            validIssuers.Add($"http://{externalHost}:8080/realms/ninvoices");
-        }
-        
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidAudiences = new[] { keycloakAudience, "ninvoices-web", "account" },
-            ValidIssuers = validIssuers.ToArray(),
-            ClockSkew = TimeSpan.FromMinutes(5)
-        };
+            var keycloakAuthority = builder.Configuration["Keycloak:Authority"]
+                ?? throw new InvalidOperationException("Keycloak:Authority not configured");
+            var keycloakAudience = builder.Configuration["Keycloak:Audience"]
+                ?? throw new InvalidOperationException("Keycloak:Audience not configured");
 
-        options.Events = new JwtBearerEvents
-        {
-            OnAuthenticationFailed = context =>
+            var keycloakExternalAuthority = builder.Configuration["Keycloak:ExternalAuthority"];
+
+            // Extract hostname from ExternalAuthority for backchannel URL rewriting
+            var externalHost = keycloakExternalAuthority is not null
+                ? new Uri(keycloakExternalAuthority).Host
+                : null;
+
+            options.Authority = keycloakAuthority;
+
+            // Allow configuration override for RequireHttpsMetadata
+            // In Docker deployments, Keycloak may be accessed via HTTP internally
+            var requireHttpsMetadata = builder.Configuration.GetValue<bool?>("Keycloak:RequireHttpsMetadata");
+            options.RequireHttpsMetadata = requireHttpsMetadata ?? !builder.Environment.IsDevelopment();
+            options.SaveToken = true;
+
+            // Rewrite external hostname requests to internal keycloak:8080
+            options.BackchannelHttpHandler = new nInvoices.Api.Infrastructure.KeycloakBackchannelHandler(
+                externalHost is not null ? [externalHost] : null);
+
+            // Build valid issuers from config — Keycloak may present different issuer URLs
+            // depending on whether accessed internally or externally
+            var validIssuers = new List<string>
             {
-                Log.Error("Authentication failed: {Error}", context.Exception.Message);
-                return Task.CompletedTask;
-            },
-            OnTokenValidated = context =>
+                "http://localhost:8080/realms/ninvoices",
+                keycloakAuthority
+            };
+            if (keycloakExternalAuthority is not null)
             {
-                var userId = context.Principal?.FindFirst("sub")?.Value;
-                Log.Information("Token validated for user: {UserId}", userId);
-                return Task.CompletedTask;
+                validIssuers.Add(keycloakExternalAuthority);
+                // Keycloak internal metadata uses http://<hostname>:8080 as issuer
+                validIssuers.Add($"http://{externalHost}:8080/realms/ninvoices");
             }
-        };
-    });
+
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidAudiences = new[] { keycloakAudience, "ninvoices-web", "account" },
+                ValidIssuers = validIssuers.ToArray(),
+                ClockSkew = TimeSpan.FromMinutes(5)
+            };
+
+            options.Events = new JwtBearerEvents
+            {
+                OnAuthenticationFailed = context =>
+                {
+                    Log.Error("Authentication failed: {Error}", context.Exception.Message);
+                    return Task.CompletedTask;
+                },
+                OnTokenValidated = context =>
+                {
+                    var userId = context.Principal?.FindFirst("sub")?.Value;
+                    Log.Information("Token validated for user: {UserId}", userId);
+                    return Task.CompletedTask;
+                }
+            };
+        });
+}
 
 builder.Services.AddAuthorization(options =>
 {

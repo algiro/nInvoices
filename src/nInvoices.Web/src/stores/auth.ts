@@ -3,29 +3,45 @@ import { ref, computed } from 'vue';
 import authService from '../services/auth.service';
 import type { User } from 'oidc-client-ts';
 
+const isAuthDisabled = import.meta.env.VITE_AUTH_DISABLED === 'true';
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
   const isLoading = ref(true);
   const error = ref<string | null>(null);
 
-  const isAuthenticated = computed(() => user.value !== null && !user.value.expired);
-  
-  const username = computed(() => 
-    user.value?.profile.preferred_username || 
-    user.value?.profile.name || 
-    user.value?.profile.email || 
-    'Unknown'
-  );
+  const isAuthenticated = computed(() => {
+    if (isAuthDisabled) return true;
+    return user.value !== null && !user.value.expired;
+  });
 
-  const email = computed(() => user.value?.profile.email || '');
+  const username = computed(() => {
+    if (isAuthDisabled) return 'Developer';
+    return user.value?.profile.preferred_username ||
+      user.value?.profile.name ||
+      user.value?.profile.email ||
+      'Unknown';
+  });
 
-  const roles = computed(() => 
-    (user.value?.profile.realm_access as any)?.roles || []
-  );
+  const email = computed(() => {
+    if (isAuthDisabled) return 'dev@localhost';
+    return user.value?.profile.email || '';
+  });
+
+  const roles = computed(() => {
+    if (isAuthDisabled) return ['user', 'admin'];
+    return (user.value?.profile.realm_access as any)?.roles || [];
+  });
 
   const isAdmin = computed(() => roles.value.includes('admin'));
 
   async function initialize() {
+    if (isAuthDisabled) {
+      console.log('[Auth Store] Auth disabled — using dev identity');
+      isLoading.value = false;
+      return;
+    }
+
     isLoading.value = true;
     error.value = null;
 
@@ -41,6 +57,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login() {
+    if (isAuthDisabled) return;
+
     error.value = null;
     try {
       await authService.login();
@@ -69,6 +87,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
+    if (isAuthDisabled) return;
+
     error.value = null;
     try {
       await authService.logout();
@@ -81,6 +101,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function getAccessToken(): Promise<string | null> {
+    if (isAuthDisabled) return null;
     return await authService.getAccessToken();
   }
 
