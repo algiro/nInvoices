@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import axios from 'axios'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5297'
+import { apiClient } from '../api/client'
 
 export interface InvoiceSettings {
   numberFormat: string
@@ -18,9 +16,9 @@ export const useSettingsStore = defineStore('settings', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await axios.get<InvoiceSettings>(`${API_URL}/api/settings/invoice`)
-      invoiceSettings.value = response.data
-      return response.data
+      const data = await apiClient.get<InvoiceSettings>('/api/settings/invoice')
+      invoiceSettings.value = data
+      return data
     } catch (err: any) {
       error.value = err.message || 'Failed to load invoice settings'
       throw err
