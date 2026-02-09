@@ -256,9 +256,12 @@ const filteredInvoices = computed(() => {
 })
 
 const totalRevenue = computed(() => {
-  return filteredInvoices.value
+  const paidInvoices = filteredInvoices.value
     .filter(inv => inv.status === 'Paid' || inv.status === InvoiceStatus.Paid)
-    .reduce((sum, inv) => sum + inv.total.amount, 0)
+  if (paidInvoices.length === 0) return undefined
+  const amount = paidInvoices.reduce((sum, inv) => sum + inv.total.amount, 0)
+  const currency = paidInvoices[0].total.currency
+  return { amount, currency }
 })
 
 const paidCount = computed(() =>
