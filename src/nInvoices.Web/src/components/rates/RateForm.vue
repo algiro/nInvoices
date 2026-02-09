@@ -123,7 +123,13 @@ async function loadRate(id: number) {
     loading.value = true
     const rate = await ratesStore.fetchById(id)
     if (rate) {
-      form.type = rate.type
+      // Handle string enum values from backend
+      if (typeof rate.type === 'string') {
+        const typeMap: Record<string, RateType> = { Daily: RateType.Daily, Monthly: RateType.Monthly, Hourly: RateType.Hourly }
+        form.type = typeMap[rate.type] ?? RateType.Daily
+      } else {
+        form.type = rate.type
+      }
       form.price = { ...rate.price }
     }
   } catch (error) {

@@ -149,11 +149,13 @@ function handleEdit(rate: RateDto) {
   console.log('Edit form should be visible now, showForm:', showForm.value)
 }
 
-function formatRateType(type: RateType): string {
+function formatRateType(type: RateType | string): string {
+  if (typeof type === 'string') return type
   return RateTypeNames[type] || 'Unknown'
 }
 
-function getRateTypeCssClass(type: RateType): string {
+function getRateTypeCssClass(type: RateType | string): string {
+  if (typeof type === 'string') return type.toLowerCase()
   return RateTypeNames[type]?.toLowerCase() || 'unknown'
 }
 
