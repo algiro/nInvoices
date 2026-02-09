@@ -149,13 +149,75 @@
           </div>
         </div>
       </section>
+
+      <!-- Data Management (Import/Export) -->
+      <section class="settings-card">
+        <div class="card-header">
+          <h2 class="section-heading">Data Management</h2>
+          <p class="section-description">
+            Import and export data for backup or migration between environments
+          </p>
+        </div>
+
+        <div class="card-body">
+          <div class="data-section">
+            <h3 class="subsection-title">Export</h3>
+            <p class="subsection-description">Download your data as JSON files</p>
+            <div class="button-group">
+              <button @click="handleExportCustomers" :disabled="exporting" class="btn-primary">
+                {{ exporting === 'customers' ? 'Exporting...' : '⬇ Export Customers' }}
+              </button>
+              <button @click="handleExportInvoices" :disabled="exporting" class="btn-primary">
+                {{ exporting === 'invoices' ? 'Exporting...' : '⬇ Export Invoices' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="data-divider"></div>
+
+          <div class="data-section">
+            <h3 class="subsection-title">Import</h3>
+            <p class="subsection-description">
+              Upload a previously exported JSON file. Existing records (matched by Fiscal ID or Invoice Number) will be skipped.
+            </p>
+            <div class="import-area">
+              <input
+                ref="importFileInput"
+                type="file"
+                accept=".json"
+                class="file-input"
+                @change="handleFileSelected"
+              />
+              <div v-if="importFile" class="import-preview">
+                <p class="file-name">📄 {{ importFile.name }}</p>
+                <div class="button-group">
+                  <button @click="handleImport('customers')" :disabled="importing" class="btn-primary">
+                    {{ importing === 'customers' ? 'Importing...' : 'Import as Customers' }}
+                  </button>
+                  <button @click="handleImport('invoices')" :disabled="importing" class="btn-primary">
+                    {{ importing === 'invoices' ? 'Importing...' : 'Import as Invoices' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="importExportMessage" class="import-result" :class="importExportError ? 'result-error' : 'result-success'">
+            <p>{{ importExportMessage }}</p>
+            <ul v-if="importErrors.length" class="error-list">
+              <li v-for="(err, i) in importErrors" :key="i">{{ err }}</li>
+            </ul>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { invoicesApi } from '@/api'
+import { invoicesApi, importExportApi } from '@/api'
+import type { DataExport } from '@/api/importExport'
 import { useSettingsStore } from '@/stores/settings'
 
 const settingsStore = useSettingsStore()
@@ -255,6 +317,93 @@ async function handleResetSequence() {
     alert(`Failed to reset sequence: ${sequenceError.value}`)
   } finally {
     sequenceUpdating.value = false
+  }
+}
+
+// Import/Export state
+const exporting = ref<string | false>(false)
+const importing = ref<string | false>(false)
+const importFile = ref<File | null>(null)
+const importFileInput = ref<HTMLInputElement | null>(null)
+const importExportMessage = ref<string | null>(null)
+const importExportError = ref(false)
+const importErrors = ref<string[]>([])
+
+function downloadJson(data: DataExport, filename: string) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+async function handleExportCustomers() {
+  exporting.value = 'customers'
+  importExportMessage.value = null
+  try {
+    const data = await importExportApi.exportCustomers()
+    const date = new Date().toISOString().slice(0, 10)
+    downloadJson(data, `ninvoices-customers-${date}.json`)
+    importExportMessage.value = `Exported ${data.customers?.length ?? 0} customer(s)`
+    importExportError.value = false
+  } catch (error: any) {
+    importExportMessage.value = error.message || 'Export failed'
+    importExportError.value = true
+  } finally {
+    exporting.value = false
+  }
+}
+
+async function handleExportInvoices() {
+  exporting.value = 'invoices'
+  importExportMessage.value = null
+  try {
+    const data = await importExportApi.exportInvoices()
+    const date = new Date().toISOString().slice(0, 10)
+    downloadJson(data, `ninvoices-invoices-${date}.json`)
+    importExportMessage.value = `Exported ${data.invoices?.length ?? 0} invoice(s)`
+    importExportError.value = false
+  } catch (error: any) {
+    importExportMessage.value = error.message || 'Export failed'
+    importExportError.value = true
+  } finally {
+    exporting.value = false
+  }
+}
+
+function handleFileSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  importFile.value = input.files?.[0] ?? null
+  importExportMessage.value = null
+  importErrors.value = []
+}
+
+async function handleImport(type: 'customers' | 'invoices') {
+  if (!importFile.value) return
+  importing.value = type
+  importExportMessage.value = null
+  importErrors.value = []
+
+  try {
+    const text = await importFile.value.text()
+    const data = JSON.parse(text) as DataExport
+
+    const result = type === 'customers'
+      ? await importExportApi.importCustomers(data)
+      : await importExportApi.importInvoices(data)
+
+    importExportMessage.value = `Import complete: ${result.imported} imported, ${result.skipped} skipped`
+    importErrors.value = result.errors ?? []
+    importExportError.value = importErrors.value.length > 0
+    importFile.value = null
+    if (importFileInput.value) importFileInput.value.value = ''
+  } catch (error: any) {
+    importExportMessage.value = error.message || 'Import failed'
+    importExportError.value = true
+  } finally {
+    importing.value = false
   }
 }
 </script>
@@ -486,5 +635,88 @@ async function handleResetSequence() {
   border-radius: 0.25rem;
   font-family: monospace;
   margin-right: 0.5rem;
+}
+
+/* Data Management styles */
+.section-heading {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.section-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.data-section {
+  margin-bottom: 1rem;
+}
+
+.subsection-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.subsection-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.data-divider {
+  border-top: 1px solid #e5e7eb;
+  margin: 1.5rem 0;
+}
+
+.file-input {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.import-preview {
+  margin-top: 0.5rem;
+}
+
+.file-name {
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.import-result {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.result-success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.result-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.error-list {
+  margin-top: 0.5rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+.error-list li {
+  margin-bottom: 0.25rem;
 }
 </style>
