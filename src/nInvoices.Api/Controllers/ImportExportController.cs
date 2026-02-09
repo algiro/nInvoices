@@ -343,55 +343,6 @@ public sealed class ImportExportController : ControllerBase
 
     private static string? FindTaxIdByPk(ICollection<Tax> taxes, long? pk) =>
         pk.HasValue ? taxes.FirstOrDefault(t => t.Id == pk.Value)?.TaxId : null;
-
-    /// <summary>
-    /// Diagnostic endpoint to help debug invoice query errors.
-    /// Returns detailed error information. Remove after debugging.
-    /// </summary>
-    [HttpGet("diagnose")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult> Diagnose(CancellationToken cancellationToken)
-    {
-        var result = new Dictionary<string, object?>();
-        try
-        {
-            var count = await _context.Invoices.CountAsync(cancellationToken);
-            result["invoiceCount"] = count;
-        }
-        catch (Exception ex) { result["invoiceCountError"] = $"{ex.GetType().Name}: {ex.Message}"; }
-
-        try
-        {
-            var raw = await _context.Invoices.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
-            result["firstInvoiceId"] = raw?.Id;
-            result["firstInvoiceNumber"] = raw?.Number?.Value;
-            result["subtotal"] = raw?.Subtotal?.Amount;
-        }
-        catch (Exception ex) { result["invoiceQueryError"] = $"{ex.GetType().Name}: {ex.Message}\n{ex.InnerException?.Message}"; }
-
-        try
-        {
-            var inv = await _context.Invoices.Include(i => i.Customer).AsNoTracking().FirstOrDefaultAsync(cancellationToken);
-            result["customerJoin"] = inv?.Customer?.Name;
-        }
-        catch (Exception ex) { result["customerJoinError"] = $"{ex.GetType().Name}: {ex.Message}\n{ex.InnerException?.Message}"; }
-
-        try
-        {
-            var inv = await _context.Invoices.Include(i => i.Expenses).AsNoTracking().FirstOrDefaultAsync(cancellationToken);
-            result["expensesCount"] = inv?.Expenses?.Count;
-        }
-        catch (Exception ex) { result["expensesJoinError"] = $"{ex.GetType().Name}: {ex.Message}\n{ex.InnerException?.Message}"; }
-
-        try
-        {
-            var inv = await _context.Invoices.Include(i => i.TaxLines).AsNoTracking().FirstOrDefaultAsync(cancellationToken);
-            result["taxLinesCount"] = inv?.TaxLines?.Count;
-        }
-        catch (Exception ex) { result["taxLinesJoinError"] = $"{ex.GetType().Name}: {ex.Message}\n{ex.InnerException?.Message}"; }
-
-        return Ok(result);
-    }
 }
 
 public sealed record ImportResultDto(int Imported, int Skipped, IReadOnlyList<string> Errors);
