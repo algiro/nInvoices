@@ -105,11 +105,52 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </button>
+              <!-- Status transition buttons -->
+              <button
+                v-if="invoice.status === 'Draft' || invoice.status === 0"
+                @click.prevent.stop="handleFinalize(invoice)"
+                class="action-btn action-finalize"
+                title="Finalize invoice"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+              <button
+                v-if="invoice.status === 'Finalized' || invoice.status === 1"
+                @click.prevent.stop="handleMarkAsSent(invoice)"
+                class="action-btn action-sent"
+                title="Mark as Sent"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </button>
+              <button
+                v-if="invoice.status === 'Sent' || invoice.status === 2 || invoice.status === 'Finalized' || invoice.status === 1"
+                @click.prevent.stop="handleMarkAsPaid(invoice)"
+                class="action-btn action-paid"
+                title="Mark as Paid"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+              <button
+                v-if="invoice.status !== 'Paid' && invoice.status !== 3 && invoice.status !== 'Cancelled' && invoice.status !== 4"
+                @click.prevent.stop="handleCancel(invoice)"
+                class="action-btn action-cancel"
+                title="Cancel invoice"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+              </button>
               <!-- Normal delete button for drafts -->
               <button
                 v-if="invoice.status === 'Draft' || invoice.status === 0"
                 @click.prevent.stop="handleDelete(invoice)"
-                class="action-btn text-red-600 hover:bg-red-50"
+                class="action-btn action-delete"
                 title="Delete draft invoice"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,7 +161,7 @@
               <button
                 v-if="invoice.status !== 'Draft' && invoice.status !== 0"
                 @click.prevent.stop="handleForceDelete(invoice)"
-                class="action-btn text-orange-600 hover:bg-orange-50"
+                class="action-btn action-force-delete"
                 title="Force delete finalized invoice"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -312,6 +353,43 @@ async function handleDownloadPdf(id: number) {
     await invoicesStore.downloadPdf(id)
   } catch (error: any) {
     alert(`Failed to download PDF: ${error.message}`)
+  }
+}
+
+async function handleFinalize(invoice: InvoiceDto) {
+  if (!confirm(`Finalize invoice "${invoice.invoiceNumber}"?\n\nThis will lock the invoice from further edits.`)) return
+  try {
+    await invoicesStore.finalize(invoice.id)
+    await invoicesStore.fetchAll()
+  } catch (error: any) {
+    alert(`Failed to finalize invoice: ${error.message}`)
+  }
+}
+
+async function handleMarkAsSent(invoice: InvoiceDto) {
+  if (!confirm(`Mark invoice "${invoice.invoiceNumber}" as Sent?`)) return
+  try {
+    await invoicesStore.markAsSent(invoice.id)
+  } catch (error: any) {
+    alert(`Failed to mark invoice as sent: ${error.message}`)
+  }
+}
+
+async function handleMarkAsPaid(invoice: InvoiceDto) {
+  if (!confirm(`Mark invoice "${invoice.invoiceNumber}" as Paid?`)) return
+  try {
+    await invoicesStore.markAsPaid(invoice.id)
+  } catch (error: any) {
+    alert(`Failed to mark invoice as paid: ${error.message}`)
+  }
+}
+
+async function handleCancel(invoice: InvoiceDto) {
+  if (!confirm(`Cancel invoice "${invoice.invoiceNumber}"?\n\nThis action can be reversed.`)) return
+  try {
+    await invoicesStore.cancelInvoice(invoice.id)
+  } catch (error: any) {
+    alert(`Failed to cancel invoice: ${error.message}`)
   }
 }
 
@@ -553,6 +631,48 @@ async function handleForceDelete(invoice: InvoiceDto) {
 .action-btn:hover {
   background: #f3f4f6;
   color: #1f2937;
+}
+
+.action-finalize {
+  color: #1e40af;
+}
+.action-finalize:hover {
+  background: #dbeafe;
+}
+
+.action-sent {
+  color: #92400e;
+}
+.action-sent:hover {
+  background: #fef3c7;
+}
+
+.action-paid {
+  color: #065f46;
+}
+.action-paid:hover {
+  background: #d1fae5;
+}
+
+.action-cancel {
+  color: #991b1b;
+}
+.action-cancel:hover {
+  background: #fee2e2;
+}
+
+.action-delete {
+  color: #dc2626;
+}
+.action-delete:hover {
+  background: #fee2e2;
+}
+
+.action-force-delete {
+  color: #ea580c;
+}
+.action-force-delete:hover {
+  background: #ffedd5;
 }
 
 .summary-stats {

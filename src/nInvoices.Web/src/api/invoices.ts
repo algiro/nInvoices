@@ -39,6 +39,18 @@ export const invoicesApi = {
     return apiClient.post<void>(`/api/invoices/${id}/finalize`);
   },
 
+  async markAsSent(id: number): Promise<void> {
+    return apiClient.post<void>(`/api/invoices/${id}/mark-as-sent`);
+  },
+
+  async markAsPaid(id: number): Promise<void> {
+    return apiClient.post<void>(`/api/invoices/${id}/mark-as-paid`);
+  },
+
+  async cancel(id: number): Promise<void> {
+    return apiClient.post<void>(`/api/invoices/${id}/cancel`);
+  },
+
   async delete(id: number, force: boolean = false): Promise<void> {
     console.log(`[API] delete called - ID: ${id}, Force: ${force}`);
     const params = force ? { force: true } : undefined;

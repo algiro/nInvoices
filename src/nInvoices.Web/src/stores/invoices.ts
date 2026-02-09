@@ -119,6 +119,48 @@ export const useInvoicesStore = defineStore('invoices', () => {
     }
   }
 
+  async function markAsSent(id: number) {
+    loading.value = true;
+    error.value = null;
+    try {
+      await invoicesApi.markAsSent(id);
+      await fetchAll();
+    } catch (e: any) {
+      error.value = e.message || 'Failed to mark invoice as sent';
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function markAsPaid(id: number) {
+    loading.value = true;
+    error.value = null;
+    try {
+      await invoicesApi.markAsPaid(id);
+      await fetchAll();
+    } catch (e: any) {
+      error.value = e.message || 'Failed to mark invoice as paid';
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function cancelInvoice(id: number) {
+    loading.value = true;
+    error.value = null;
+    try {
+      await invoicesApi.cancel(id);
+      await fetchAll();
+    } catch (e: any) {
+      error.value = e.message || 'Failed to cancel invoice';
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   async function remove(id: number, force: boolean = false) {
     console.log(`[Store] remove called - ID: ${id}, Force: ${force}`);
     loading.value = true;
@@ -249,6 +291,9 @@ export const useInvoicesStore = defineStore('invoices', () => {
     generate,
     update,
     finalize,
+    markAsSent,
+    markAsPaid,
+    cancelInvoice,
     remove,
     downloadPdf,
     downloadMonthlyReportPdf,

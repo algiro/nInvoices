@@ -170,6 +170,75 @@ public sealed class InvoicesController : ControllerBase
     }
 
     /// <summary>
+    /// Marks a finalized invoice as sent.
+    /// Transitions status from Finalized to Sent.
+    /// </summary>
+    [HttpPost("{id}/mark-as-sent")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> MarkAsSent(long id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var command = new MarkAsSentCommand(id);
+            await _mediator.Send(command, cancellationToken);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Failed to mark invoice as sent {InvoiceId}", id);
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Marks a sent invoice as paid.
+    /// Transitions status from Sent to Paid.
+    /// </summary>
+    [HttpPost("{id}/mark-as-paid")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> MarkAsPaid(long id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var command = new MarkAsPaidCommand(id);
+            await _mediator.Send(command, cancellationToken);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Failed to mark invoice as paid {InvoiceId}", id);
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Cancels an invoice.
+    /// Transitions status to Cancelled.
+    /// </summary>
+    [HttpPost("{id}/cancel")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> Cancel(long id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var command = new CancelInvoiceCommand(id);
+            await _mediator.Send(command, cancellationToken);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Failed to cancel invoice {InvoiceId}", id);
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Deletes an invoice.
     /// By default, only draft invoices can be deleted.
     /// Use force=true query parameter to delete finalized invoices (e.g., when there was a generation error).
