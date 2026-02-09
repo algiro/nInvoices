@@ -33,9 +33,13 @@ public sealed class CreateTaxCommandHandler : IRequestHandler<CreateTaxCommand, 
         if (customer == null)
             throw new KeyNotFoundException($"Customer with ID {dto.CustomerId} not found");
 
+        var taxId = string.IsNullOrWhiteSpace(dto.TaxId)
+            ? dto.Description.ToUpperInvariant().Replace(" ", "_")
+            : dto.TaxId;
+
         var tax = new Tax(
             dto.CustomerId,
-            dto.TaxId,
+            taxId,
             dto.Description,
             dto.HandlerId,
             dto.Rate,
