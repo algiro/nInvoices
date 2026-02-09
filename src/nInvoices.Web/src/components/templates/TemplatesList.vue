@@ -172,20 +172,23 @@ async function loadTemplates() {
   }
 }
 
-function formatType(type: InvoiceType): string {
+function formatType(type: InvoiceType | string): string {
+  if (typeof type === 'string') return type
   return InvoiceTypeNames[type] || 'Unknown'
 }
 
-function getTypeBadgeClass(type: InvoiceType | undefined | null): string {
+function getTypeBadgeClass(type: InvoiceType | string | undefined | null): string {
   if (type === undefined || type === null) {
     return 'type-unknown'
   }
+  if (typeof type === 'string') return `type-${type.toLowerCase().replace(/[^a-z0-9]/g, '')}`
   const name = InvoiceTypeNames[type]?.toLowerCase() || 'unknown'
   const sanitized = name.replace(/[^a-z0-9]/g, '')
   return `type-${sanitized}`
 }
 
-function getTypeCssClass(type: InvoiceType): string {
+function getTypeCssClass(type: InvoiceType | string): string {
+  if (typeof type === 'string') return type.toLowerCase().replace(/[^a-z0-9]/g, '')
   const name = InvoiceTypeNames[type]?.toLowerCase() || 'unknown'
   return name.replace(/[^a-z0-9]/g, '')
 }

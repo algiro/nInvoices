@@ -228,23 +228,31 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         InvoiceType invoiceType,
         CancellationToken cancellationToken)
     {
-        // For Monthly invoices, we use Daily rate when tracking worked days
-        // For OneTime invoices, we use Daily rate
-        // Monthly rate would be used for fixed monthly billing without day tracking
-        var rateType = invoiceType switch
+        // For Monthly invoices, prefer Daily rate (daily rate × worked days)
+        // Fall back to Monthly rate for fixed monthly billing
+        var preferredRateType = invoiceType switch
         {
-            InvoiceType.Monthly => RateType.Daily,  // Changed: Monthly invoices use daily rate × worked days
+            InvoiceType.Monthly => RateType.Daily,
             InvoiceType.OneTime => RateType.Daily,
             _ => throw new ArgumentException($"Unsupported invoice type: {invoiceType}", nameof(invoiceType))
         };
 
         var rates = await _rateRepository.FindAsync(
-            r => r.CustomerId == customerId && r.Type == rateType,
+            r => r.CustomerId == customerId && r.Type == preferredRateType,
             cancellationToken);
 
         var rate = rates.FirstOrDefault();
+        if (rate == null && invoiceType == InvoiceType.Monthly)
+        {
+            // Fall back to Monthly rate
+            rates = await _rateRepository.FindAsync(
+                r => r.CustomerId == customerId && r.Type == RateType.Monthly,
+                cancellationToken);
+            rate = rates.FirstOrDefault();
+        }
+
         if (rate == null)
-            throw new InvalidOperationException($"No {rateType} rate found for customer {customerId}");
+            throw new InvalidOperationException($"No {preferredRateType} rate found for customer {customerId}");
 
         return rate;
     }
@@ -262,6 +270,8 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     {
         return dto.InvoiceType switch
         {
+            InvoiceType.Monthly when rate.Type == RateType.Monthly =>
+                rate.Price,
             InvoiceType.Monthly when dto.WorkDays != null => 
                 new Money(rate.Price.Amount * dto.WorkDays.Count(wd => wd.DayType == DayType.Worked), rate.Price.Currency),
             InvoiceType.OneTime => rate.Price,

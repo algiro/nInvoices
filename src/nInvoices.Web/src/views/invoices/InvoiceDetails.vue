@@ -290,15 +290,18 @@ function formatMoney(money: MoneyDto | undefined): string {
   return `${money.amount.toFixed(2)} ${money.currency}`
 }
 
-function formatType(type: InvoiceType): string {
+function formatType(type: InvoiceType | string): string {
+  if (typeof type === 'string') return type === 'OneTime' ? 'One-Time' : type
   return InvoiceTypeNames[type] || 'Unknown'
 }
 
-function formatStatus(status: InvoiceStatus): string {
+function formatStatus(status: InvoiceStatus | string): string {
+  if (typeof status === 'string') return status
   return InvoiceStatusNames[status] || 'Unknown'
 }
 
-function getStatusCssClass(status: InvoiceStatus): string {
+function getStatusCssClass(status: InvoiceStatus | string): string {
+  if (typeof status === 'string') return status.toLowerCase()
   return InvoiceStatusNames[status]?.toLowerCase() || 'unknown'
 }
 

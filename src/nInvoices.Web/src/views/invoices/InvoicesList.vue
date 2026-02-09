@@ -335,11 +335,13 @@ function formatStatus(status: InvoiceStatus | string): string {
   return result || 'Unknown'
 }
 
-function getTypeCssClass(type: InvoiceType): string {
+function getTypeCssClass(type: InvoiceType | string): string {
+  if (typeof type === 'string') return type.toLowerCase().replace('-', '')
   return InvoiceTypeNames[type]?.toLowerCase().replace('-', '') || 'unknown'
 }
 
-function getStatusCssClass(status: InvoiceStatus): string {
+function getStatusCssClass(status: InvoiceStatus | string): string {
+  if (typeof status === 'string') return status.toLowerCase()
   return InvoiceStatusNames[status]?.toLowerCase() || 'unknown'
 }
 
