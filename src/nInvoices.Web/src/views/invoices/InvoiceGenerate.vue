@@ -470,6 +470,8 @@ async function loadCustomerData() {
     await ratesStore.fetchByCustomerId(form.customerId)
     const rates = ratesStore.ratesByCustomer(form.customerId)
     
+    console.log('Fetched rates for customer:', form.customerId, rates)
+    
     if (rates.length === 0) {
       alert('No rates found for this customer. Please add rates first.')
       selectedRate.value = null
@@ -487,12 +489,14 @@ async function loadCustomerData() {
       matchingRate = rates.find(r => r.type === RateType.Hourly)
     }
     
+    console.log('Selected rate:', matchingRate)
+    
     if (matchingRate) {
       selectedRate.value = matchingRate
     } else {
       // Fallback: use first available rate
       selectedRate.value = rates[0]
-      console.warn('No Daily/Monthly/Hourly rate found, using first available rate')
+      console.warn('No Daily/Monthly/Hourly rate found, using first available rate', rates[0])
     }
 
     // Load monthly report templates for this customer
