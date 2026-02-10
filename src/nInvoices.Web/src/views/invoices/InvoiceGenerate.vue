@@ -163,9 +163,38 @@
               <span class="stat-label">Unpaid Leave:</span>
               <span class="stat-value">{{ unpaidLeaveCount }}</span>
             </div>
+            <div v-if="isHourlyRate" class="stat">
+              <span class="stat-label">Total Hours:</span>
+              <span class="stat-value">{{ totalHours.toFixed(1) }}h</span>
+            </div>
             <div class="stat">
               <span class="stat-label">Estimated Amount:</span>
               <span class="stat-value">{{ estimatedAmount }}</span>
+            </div>
+          </div>
+
+          <!-- Hours input for hourly rates -->
+          <div v-if="isHourlyRate && workedDaysCount > 0" class="hours-input-section">
+            <h4 class="text-md font-semibold mb-2">Hours per Day</h4>
+            <p class="text-sm text-gray-600 mb-3">Specify hours worked for each day:</p>
+            <div class="hours-grid">
+              <div 
+                v-for="workDay in form.workDays.filter(wd => (wd.dayType ?? DayType.Worked) === DayType.Worked)" 
+                :key="workDay.date"
+                class="hours-row"
+              >
+                <span class="hours-date">{{ formatDate(workDay.date) }}</span>
+                <input 
+                  v-model.number="workDay.hoursWorked"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="24"
+                  placeholder="Hours"
+                  class="form-control hours-input"
+                  required
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -367,6 +396,17 @@ const unpaidLeaveCount = computed(() => {
   return form.workDays.filter(wd => wd.dayType === DayType.UnpaidLeave).length
 })
 
+const isHourlyRate = computed(() => {
+  return selectedRate.value?.type === RateType.Hourly
+})
+
+const totalHours = computed(() => {
+  if (!isHourlyRate.value) return 0
+  return form.workDays
+    .filter(wd => (wd.dayType ?? DayType.Worked) === DayType.Worked)
+    .reduce((sum, wd) => sum + (wd.hoursWorked ?? 0), 0)
+})
+
 const estimatedAmount = computed(() => {
   if (!selectedRate.value || form.invoiceType !== InvoiceType.Monthly) {
     return '-'
@@ -376,7 +416,10 @@ const estimatedAmount = computed(() => {
   const rate = selectedRate.value.price.amount
   const currency = selectedRate.value.price.currency
 
-  if (selectedRate.value.type === RateType.Daily) {
+  if (selectedRate.value.type === RateType.Hourly) {
+    const hours = totalHours.value
+    return `${(hours * rate).toFixed(2)} ${currency} (${hours.toFixed(1)}h)`
+  } else if (selectedRate.value.type === RateType.Daily) {
     return `${(workedDays * rate).toFixed(2)} ${currency}`
   } else if (selectedRate.value.type === RateType.Monthly) {
     return `${rate.toFixed(2)} ${currency}`
@@ -433,17 +476,23 @@ async function loadCustomerData() {
       return
     }
 
-    // For Monthly invoices, we always use Daily rate (calculated as daily rate × worked days)
-    // Monthly rate type would be for fixed monthly billing without day tracking
-    const rateType = RateType.Daily
-    const matchingRate = rates.find(r => r.type === rateType)
+    // For Monthly invoices, try Daily rate first, then Monthly, then Hourly
+    let matchingRate = rates.find(r => r.type === RateType.Daily)
+    
+    if (!matchingRate) {
+      matchingRate = rates.find(r => r.type === RateType.Monthly)
+    }
+    
+    if (!matchingRate) {
+      matchingRate = rates.find(r => r.type === RateType.Hourly)
+    }
     
     if (matchingRate) {
       selectedRate.value = matchingRate
     } else {
-      // Fallback: use first available rate if no daily rate exists
+      // Fallback: use first available rate
       selectedRate.value = rates[0]
-      console.warn('No Daily rate found, using first available rate')
+      console.warn('No Daily/Monthly/Hourly rate found, using first available rate')
     }
 
     // Load monthly report templates for this customer
@@ -465,6 +514,11 @@ function isToday(date: string): boolean {
   return date === new Date().toISOString().split('T')[0]
 }
 
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr + 'T00:00:00')
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
 function cycleWorkDayType(day: CalendarDay) {
   if (!day.isCurrentMonth) return
   
@@ -476,6 +530,7 @@ function cycleWorkDayType(day: CalendarDay) {
     // Cycle: Worked (0) → PublicHoliday (1) → UnpaidLeave (2) → unselected
     if (currentType === DayType.Worked) {
       form.workDays[existingIndex].dayType = DayType.PublicHoliday
+      form.workDays[existingIndex].hoursWorked = undefined // Clear hours when not worked
     } else if (currentType === DayType.PublicHoliday) {
       form.workDays[existingIndex].dayType = DayType.UnpaidLeave
     } else {
@@ -484,9 +539,12 @@ function cycleWorkDayType(day: CalendarDay) {
     }
   } else {
     // First click: add as Worked day
+    // For hourly rates, default to 8 hours
+    const defaultHours = isHourlyRate.value ? 8 : undefined
     form.workDays.push({
       date: day.date,
-      dayType: DayType.Worked
+      dayType: DayType.Worked,
+      hoursWorked: defaultHours
     })
   }
 }
@@ -707,7 +765,7 @@ function handleCancel() {
 
 .calendar-summary {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1rem;
   margin-top: 1.5rem;
   padding-top: 1.5rem;
@@ -729,6 +787,40 @@ function handleCancel() {
   font-size: 1.5rem;
   font-weight: 700;
   color: #1f2937;
+}
+
+.hours-input-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.hours-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
+}
+
+.hours-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background: #f9fafb;
+  border-radius: 0.375rem;
+}
+
+.hours-date {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.hours-input {
+  width: 100px;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.875rem;
 }
 
 .expenses-list {

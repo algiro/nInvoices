@@ -82,6 +82,20 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         var rate = await GetRateAsync(dto.CustomerId, dto.InvoiceType, cancellationToken);
         var customerTaxes = await GetCustomerTaxesAsync(dto.CustomerId, cancellationToken);
 
+        // Validate hourly rate requirements
+        if (rate.Type == RateType.Hourly && dto.InvoiceType == InvoiceType.Monthly)
+        {
+            if (dto.WorkDays == null || !dto.WorkDays.Any())
+                throw new InvalidOperationException("Work days are required for hourly rate invoices.");
+            
+            var workedDaysWithoutHours = dto.WorkDays
+                .Where(wd => wd.DayType == DayType.Worked && !wd.HoursWorked.HasValue)
+                .ToList();
+            
+            if (workedDaysWithoutHours.Any())
+                throw new InvalidOperationException($"Hours worked must be specified for all worked days when using hourly rates. Missing hours for {workedDaysWithoutHours.Count} day(s).");
+        }
+
         var subtotal = CalculateSubtotal(dto, rate);
         var expensesTotal = CalculateExpensesTotal(dto.Expenses, rate.Price.Currency);
         var invoiceNumber = await GenerateInvoiceNumberAsync(
@@ -230,7 +244,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         CancellationToken cancellationToken)
     {
         // For Monthly invoices, prefer Daily rate (daily rate × worked days)
-        // Fall back to Monthly rate for fixed monthly billing
+        // Fall back to Monthly rate for fixed monthly billing, or Hourly rate (hourly rate × hours worked)
         var preferredRateType = invoiceType switch
         {
             InvoiceType.Monthly => RateType.Daily,
@@ -250,10 +264,19 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
                 r => r.CustomerId == customerId && r.Type == RateType.Monthly,
                 cancellationToken);
             rate = rates.FirstOrDefault();
+            
+            // If still no rate, try Hourly rate
+            if (rate == null)
+            {
+                rates = await _rateRepository.FindAsync(
+                    r => r.CustomerId == customerId && r.Type == RateType.Hourly,
+                    cancellationToken);
+                rate = rates.FirstOrDefault();
+            }
         }
 
         if (rate == null)
-            throw new InvalidOperationException($"No {preferredRateType} rate found for customer {customerId}");
+            throw new InvalidOperationException($"No active rate found for customer {customerId}. Please add a Daily, Monthly, or Hourly rate.");
 
         return rate;
     }
@@ -271,10 +294,22 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     {
         return dto.InvoiceType switch
         {
+            // Fixed monthly rate
             InvoiceType.Monthly when rate.Type == RateType.Monthly =>
                 rate.Price,
+            
+            // Hourly rate: sum of (hourly_rate × hours_worked per day)
+            InvoiceType.Monthly when rate.Type == RateType.Hourly && dto.WorkDays != null =>
+                new Money(
+                    rate.Price.Amount * dto.WorkDays
+                        .Where(wd => wd.DayType == DayType.Worked && wd.HoursWorked.HasValue)
+                        .Sum(wd => wd.HoursWorked!.Value),
+                    rate.Price.Currency),
+            
+            // Daily rate: daily_rate × number of worked days
             InvoiceType.Monthly when dto.WorkDays != null => 
                 new Money(rate.Price.Amount * dto.WorkDays.Count(wd => wd.DayType == DayType.Worked), rate.Price.Currency),
+            
             InvoiceType.OneTime => rate.Price,
             _ => throw new InvalidOperationException($"Cannot calculate subtotal for invoice type {dto.InvoiceType}")
         };
@@ -490,7 +525,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         // Insert new work days
         foreach (var dto in workDayDtos)
         {
-            var workDay = new WorkDay(customerId, dto.Date, dto.DayType, dto.Notes);
+            var workDay = new WorkDay(customerId, dto.Date, dto.DayType, dto.HoursWorked, dto.Notes);
             await _workDayRepository.AddAsync(workDay, cancellationToken);
         }
     }
@@ -520,6 +555,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             {
                 // Update existing work day
                 existing.UpdateDayType(dto.DayType);
+                existing.UpdateHoursWorked(dto.HoursWorked);
                 if (dto.Notes != null)
                 {
                     existing.UpdateNotes(dto.Notes);
@@ -529,7 +565,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             else
             {
                 // Create new work day
-                var workDay = new WorkDay(customerId, dto.Date, dto.DayType, dto.Notes);
+                var workDay = new WorkDay(customerId, dto.Date, dto.DayType, dto.HoursWorked, dto.Notes);
                 await _workDayRepository.AddAsync(workDay, cancellationToken);
             }
         }

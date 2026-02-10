@@ -11,6 +11,7 @@ public sealed class WorkDay : EntityBase
     public long CustomerId { get; set; }
     public DateOnly Date { get; set; }
     public DayType DayType { get; set; }
+    public decimal? HoursWorked { get; set; }
     public string? Notes { get; set; }
 
     // Navigation property
@@ -22,14 +23,18 @@ public sealed class WorkDay : EntityBase
         DayType = DayType.Worked;
     }
 
-    public WorkDay(long customerId, DateOnly date, DayType dayType = DayType.Worked, string? notes = null) : this()
+    public WorkDay(long customerId, DateOnly date, DayType dayType = DayType.Worked, decimal? hoursWorked = null, string? notes = null) : this()
     {
         if (customerId <= 0)
             throw new ArgumentException("Customer ID must be positive", nameof(customerId));
 
+        if (hoursWorked.HasValue && hoursWorked.Value <= 0)
+            throw new ArgumentException("Hours worked must be positive", nameof(hoursWorked));
+
         CustomerId = customerId;
         Date = date;
         DayType = dayType;
+        HoursWorked = hoursWorked;
         Notes = notes;
     }
 
@@ -42,6 +47,15 @@ public sealed class WorkDay : EntityBase
     public void UpdateDayType(DayType dayType)
     {
         DayType = dayType;
+        UpdatedAt = DateTime.UtcNow;
+    }
+    
+    public void UpdateHoursWorked(decimal? hoursWorked)
+    {
+        if (hoursWorked.HasValue && hoursWorked.Value <= 0)
+            throw new ArgumentException("Hours worked must be positive", nameof(hoursWorked));
+        
+        HoursWorked = hoursWorked;
         UpdatedAt = DateTime.UtcNow;
     }
 }

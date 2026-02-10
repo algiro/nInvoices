@@ -180,6 +180,7 @@ export interface UpdateInvoiceTemplateDto {
 export interface WorkDayDto {
   date: string;
   dayType?: DayType;
+  hoursWorked?: number;
   notes?: string;
 }
 
