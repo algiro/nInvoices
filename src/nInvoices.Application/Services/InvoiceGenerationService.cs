@@ -35,7 +35,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     private readonly IRepository<Customer> _customerRepository;
     private readonly IRepository<Rate> _rateRepository;
     private readonly IRepository<Tax> _taxRepository;
-    private readonly IRepository<Invoice> _invoiceRepository;
+    private readonly IInvoiceRepository _invoiceRepository;
     private readonly IRepository<WorkDay> _workDayRepository;
     private readonly IRepository<InvoiceSequence> _sequenceRepository;
     private readonly ITemplateRenderer _templateRenderer;
@@ -49,7 +49,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         IRepository<Customer> customerRepository,
         IRepository<Rate> rateRepository,
         IRepository<Tax> taxRepository,
-        IRepository<Invoice> invoiceRepository,
+        IInvoiceRepository invoiceRepository,
         IRepository<WorkDay> workDayRepository,
         IRepository<InvoiceSequence> sequenceRepository,
         ITemplateRenderer templateRenderer,
@@ -172,7 +172,8 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         long invoiceId,
         CancellationToken cancellationToken = default)
     {
-        var invoice = await _invoiceRepository.GetByIdAsync(invoiceId, cancellationToken)
+        // Use the specialized repository method to eagerly load related entities
+        var invoice = await _invoiceRepository.GetByIdWithRelatedAsync(invoiceId, cancellationToken)
             ?? throw new KeyNotFoundException($"Invoice {invoiceId} not found");
 
         var customer = await _customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken)

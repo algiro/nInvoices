@@ -47,6 +47,9 @@ public static class DatabaseExtensions
         // Register generic repository
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         
+        // Register specialized repositories
+        services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+        
         // Register User Context
         services.AddScoped<IUserContext, UserContext>();
 
