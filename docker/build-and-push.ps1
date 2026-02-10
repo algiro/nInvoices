@@ -1,7 +1,27 @@
 # Build and Push Images to Docker Hub
 # 
 # This script builds nInvoices API and Web images and pushes them to Docker Hub
-# Usage: .\build-and-push.ps1
+#
+# Usage (local/dev):
+#   .\build-and-push.ps1
+#
+# Usage (production):
+#   .\build-and-push.ps1 -KeycloakUrl "https://it-tudes.tech" -Base "/nInvoices"
+#
+# Parameters:
+#   -KeycloakUrl      Keycloak base URL (default: http://localhost:8080)
+#   -ApiUrl           API base URL, empty = same origin (default: "")
+#   -KeycloakRealm    Keycloak realm name (default: ninvoices)
+#   -KeycloakClientId Keycloak client ID (default: ninvoices-web)
+#   -Base             Base path for the web app (default: /)
+
+param(
+    [string]$KeycloakUrl = "http://localhost:8080",
+    [string]$ApiUrl = "",
+    [string]$KeycloakRealm = "ninvoices",
+    [string]$KeycloakClientId = "ninvoices-web",
+    [string]$Base = "/"
+)
 
 # Configuration
 $DOCKER_USERNAME = "algiro"
@@ -58,14 +78,18 @@ Write-Host "[3/6] Building Web Image" -ForegroundColor Yellow
 Write-Host "================================================================`n" -ForegroundColor Cyan
 
 Write-Host "Image: $WEB_IMAGE`:$version" -ForegroundColor White
+Write-Host "  Keycloak URL: $KeycloakUrl" -ForegroundColor Gray
+Write-Host "  API URL: $ApiUrl" -ForegroundColor Gray
+Write-Host "  Base path: $Base" -ForegroundColor Gray
 Write-Host "Building...`n" -ForegroundColor Gray
 
 docker build `
     -t "${WEB_IMAGE}:${version}" `
-    --build-arg VITE_KEYCLOAK_URL=http://localhost:8080 `
-    --build-arg VITE_KEYCLOAK_REALM=ninvoices `
-    --build-arg VITE_KEYCLOAK_CLIENT_ID=ninvoices-web `
-    --build-arg VITE_API_URL=http://localhost:8080 `
+    --build-arg VITE_KEYCLOAK_URL=$KeycloakUrl `
+    --build-arg VITE_KEYCLOAK_REALM=$KeycloakRealm `
+    --build-arg VITE_KEYCLOAK_CLIENT_ID=$KeycloakClientId `
+    --build-arg VITE_API_URL=$ApiUrl `
+    --build-arg VITE_BASE=$Base `
     -f Dockerfile.web ..
 
 if ($LASTEXITCODE -ne 0) {

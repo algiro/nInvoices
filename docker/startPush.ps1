@@ -1,0 +1,1 @@
+.\build-and-push.ps1  -KeycloakUrl "https://it-tudes.tech" -ApiUrl "/nInvoices" -Base "/nInvoices"

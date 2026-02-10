@@ -24,7 +24,7 @@ public sealed class InvoiceTaxLineConfiguration : IEntityTypeConfiguration<Invoi
             .HasPrecision(18, 4)
             .IsRequired();
 
-        builder.OwnsOne(t => t.BaseAmount, money =>
+        builder.ComplexProperty(t => t.BaseAmount, money =>
         {
             money.Property(m => m.Amount)
                 .HasColumnName("BaseAmount")
@@ -36,7 +36,7 @@ public sealed class InvoiceTaxLineConfiguration : IEntityTypeConfiguration<Invoi
                 .IsRequired();
         });
 
-        builder.OwnsOne(t => t.TaxAmount, money =>
+        builder.ComplexProperty(t => t.TaxAmount, money =>
         {
             money.Property(m => m.Amount)
                 .HasColumnName("TaxAmount")

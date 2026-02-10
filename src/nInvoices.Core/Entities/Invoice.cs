@@ -161,4 +161,20 @@ public sealed class InvoiceTaxLine
 
     // Navigation property
     public Invoice Invoice { get; set; } = null!;
+
+    // Parameterless constructor for EF Core
+    public InvoiceTaxLine()
+    {
+    }
+
+    // Constructor for creating tax lines
+    public InvoiceTaxLine(string taxId, string description, decimal rate, Money baseAmount, Money taxAmount, int order)
+    {
+        TaxId = taxId;
+        Description = description;
+        Rate = rate;
+        BaseAmount = baseAmount;
+        TaxAmount = taxAmount;
+        Order = order;
+    }
 }

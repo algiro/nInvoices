@@ -45,7 +45,7 @@
           v-model.number="form.rate"
           type="number"
           step="0.01"
-          min="0"
+          min="-100"
           max="100"
           required
           class="form-control"
@@ -201,8 +201,8 @@ function getHandlerDescription(handlerId: string): string {
 function validateForm(): boolean {
   Object.keys(errors).forEach(key => delete errors[key])
 
-  if (form.rate < 0 || form.rate > 100) {
-    errors.rate = 'Rate must be between 0 and 100'
+  if (form.rate < -100 || form.rate > 100) {
+    errors.rate = 'Rate must be between -100 and 100'
     return false
   }
 

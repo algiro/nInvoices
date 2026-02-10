@@ -51,15 +51,14 @@ public sealed class TaxCalculationService : ITaxCalculationService
             var taxMoney = new Money(taxAmount, subtotal.Currency);
             calculatedTaxes[tax.Id] = taxMoney;
 
-            taxLines.Add(new InvoiceTaxLine
-            {
-                TaxId = tax.TaxId,
-                Description = tax.Description,
-                Rate = tax.Rate,
-                BaseAmount = baseAmount,
-                TaxAmount = taxMoney,
-                Order = tax.Order
-            });
+            var taxLine = new InvoiceTaxLine(
+                tax.TaxId,
+                tax.Description,
+                tax.Rate,
+                baseAmount,
+                taxMoney,
+                tax.Order);
+            taxLines.Add(taxLine);
         }
 
         var totalTax = calculatedTaxes.Values.Aggregate(Money.Zero(subtotal.Currency), (acc, tax) => acc + tax);
