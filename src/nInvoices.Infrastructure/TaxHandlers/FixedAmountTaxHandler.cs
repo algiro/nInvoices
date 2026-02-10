@@ -4,7 +4,8 @@ namespace nInvoices.Infrastructure.TaxHandlers;
 
 /// <summary>
 /// Applies a fixed tax amount regardless of the base amount.
-/// Example: €50 flat administrative fee
+/// Supports negative amounts for fixed deductions/withholdings.
+/// Example: €50 flat administrative fee, -€100 fixed deduction
 /// Rate parameter is treated as the fixed amount.
 /// </summary>
 public sealed class FixedAmountTaxHandler : ITaxHandler
@@ -15,9 +16,6 @@ public sealed class FixedAmountTaxHandler : ITaxHandler
 
     public decimal Calculate(decimal baseAmount, decimal rate, IDictionary<string, decimal>? context = null)
     {
-        if (rate < 0)
-            throw new ArgumentException("Fixed amount cannot be negative", nameof(rate));
-
         // Rate represents the fixed amount
         return rate;
     }

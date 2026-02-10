@@ -18,9 +18,6 @@ public sealed class UpdateTaxDtoValidator : AbstractValidator<UpdateTaxDto>
         RuleFor(x => x.ApplicationType)
             .IsInEnum().WithMessage("Invalid application type");
 
-        RuleFor(x => x.Rate)
-            .GreaterThanOrEqualTo(0).WithMessage("Rate must be non-negative");
-
         RuleFor(x => x.Order)
             .GreaterThanOrEqualTo(0).WithMessage("Order must be non-negative");
     }

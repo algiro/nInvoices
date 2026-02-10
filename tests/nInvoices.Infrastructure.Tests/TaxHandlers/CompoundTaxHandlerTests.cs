@@ -68,14 +68,16 @@ public sealed class CompoundTaxHandlerTests
     }
 
     [Test]
-    public void Calculate_WithNegativeRate_ThrowsException()
+    public void Calculate_WithNegativeRate_ReturnsNegativeAmount()
     {
         var context = new Dictionary<string, decimal>
         {
             ["BaseTaxAmount"] = 21m
         };
 
-        Should.Throw<ArgumentException>(() => _handler.Calculate(100, -10, context));
+        var result = _handler.Calculate(100, -10, context);
+
+        result.ShouldBe(-2.1m);
     }
 
     [Test]

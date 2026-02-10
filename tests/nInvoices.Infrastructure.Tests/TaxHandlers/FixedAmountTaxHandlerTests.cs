@@ -48,10 +48,16 @@ public sealed class FixedAmountTaxHandlerTests
         result.ShouldBe(0);
     }
 
-    [Test]
-    public void Calculate_WithNegativeFixedAmount_ThrowsException()
+    [TestCase(100, -50, -50)]
+    [TestCase(0, -25, -25)]
+    public void Calculate_WithNegativeFixedAmount_ReturnsNegativeAmount(
+        decimal baseAmount,
+        decimal fixedAmount,
+        decimal expected)
     {
-        Should.Throw<ArgumentException>(() => _handler.Calculate(100, -50));
+        var result = _handler.Calculate(baseAmount, fixedAmount);
+
+        result.ShouldBe(expected);
     }
 
     [Test]

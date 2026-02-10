@@ -4,7 +4,8 @@ namespace nInvoices.Infrastructure.TaxHandlers;
 
 /// <summary>
 /// Calculates tax as a percentage of the base amount.
-/// Example: 21% VAT on €100 = €21
+/// Supports negative rates for withholdings/deductions.
+/// Example: 21% VAT on €100 = €21, -15% withholding on €3900 = -€585
 /// </summary>
 public sealed class PercentageTaxHandler : ITaxHandler
 {
@@ -17,9 +18,6 @@ public sealed class PercentageTaxHandler : ITaxHandler
         if (baseAmount < 0)
             throw new ArgumentException("Base amount cannot be negative", nameof(baseAmount));
         
-        if (rate < 0)
-            throw new ArgumentException("Rate cannot be negative", nameof(rate));
-
         return baseAmount * (rate / 100m);
     }
 }

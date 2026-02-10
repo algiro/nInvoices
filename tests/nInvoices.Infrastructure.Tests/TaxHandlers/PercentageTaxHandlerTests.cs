@@ -55,10 +55,27 @@ public sealed class PercentageTaxHandlerTests
         Should.Throw<ArgumentException>(() => _handler.Calculate(-100, 21));
     }
 
-    [Test]
-    public void Calculate_WithNegativeRate_ThrowsException()
+    [TestCase(100, -21, -21)]
+    [TestCase(3900, -15, -585)]
+    [TestCase(1000, -7.5, -75)]
+    public void Calculate_WithNegativeRate_ReturnsNegativeAmount(
+        decimal baseAmount,
+        decimal rate,
+        decimal expected)
     {
-        Should.Throw<ArgumentException>(() => _handler.Calculate(100, -21));
+        var result = _handler.Calculate(baseAmount, rate);
+
+        result.ShouldBe(expected);
+    }
+
+    [Test]
+    public void Calculate_WithWithholdingScenario_ReturnsCorrectAmount()
+    {
+        // Scenario: daily rate 300 * 13 days = 3900 gross
+        // Withholding at -15% = -585
+        var result = _handler.Calculate(3900, -15);
+
+        result.ShouldBe(-585);
     }
 
     [Test]
