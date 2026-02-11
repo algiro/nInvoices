@@ -50,9 +50,9 @@ export const DayTypeNames: Record<DayType, string> = {
 };
 
 export enum RateType {
-  Daily = 0,
-  Monthly = 1,
-  Hourly = 2
+  Daily = 'Daily',
+  Monthly = 'Monthly',
+  Hourly = 'Hourly'
 }
 
 export const RateTypeNames: Record<RateType, string> = {
