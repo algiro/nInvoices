@@ -1,0 +1,7 @@
+   1. scp the .sql file to the remote server
+   2. docker cp it into the postgres container
+   3. docker exec ... psql -f /tmp/file.sql
+
+
+docker cp /tmp/migrate-imageassets.sql ninvoices-postgres-prod:/tmp/migrate-imageassets.sql 
+docker exec ninvoices-postgres-prod psql -U ninvoices_user -d ninvoices_db -f  /tmp/migrate-imageassets.sql

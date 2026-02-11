@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using nInvoices.Application.Services;
+using nInvoices.Core.Entities;
+using nInvoices.Core.Interfaces;
 using Shouldly;
 
 namespace nInvoices.Application.Tests.Services;
@@ -15,7 +17,10 @@ public sealed class ScribanTemplateRendererTests
     {
         var logger = new Mock<ILogger<ScribanTemplateRenderer>>();
         var localizationService = new Mock<ILocalizationService>();
-        _renderer = new ScribanTemplateRenderer(logger.Object, localizationService.Object);
+        var imageAssetRepo = new Mock<IRepository<ImageAsset>>();
+        imageAssetRepo.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ImageAsset>());
+        _renderer = new ScribanTemplateRenderer(logger.Object, localizationService.Object, imageAssetRepo.Object);
     }
 
     [Test]

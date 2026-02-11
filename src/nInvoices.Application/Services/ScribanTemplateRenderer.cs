@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Logging;
+using nInvoices.Core.Entities;
+using nInvoices.Core.Interfaces;
 using Scriban;
 using Scriban.Runtime;
 
@@ -12,13 +14,16 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
 {
     private readonly ILogger<ScribanTemplateRenderer> _logger;
     private readonly ILocalizationService _localizationService;
+    private readonly IRepository<ImageAsset> _imageAssetRepository;
 
     public ScribanTemplateRenderer(
         ILogger<ScribanTemplateRenderer> logger,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService,
+        IRepository<ImageAsset> imageAssetRepository)
     {
         _logger = logger;
         _localizationService = localizationService;
+        _imageAssetRepository = imageAssetRepository;
     }
 
     public async Task<string> RenderAsync(
@@ -45,6 +50,10 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
                 throw new InvalidOperationException($"Template syntax errors: {errors}");
             }
 
+            // Preload image assets for the Image function
+            var imageAssets = await _imageAssetRepository.GetAllAsync(cancellationToken);
+            var imagesByAlias = imageAssets.ToDictionary(a => a.Alias, a => a, StringComparer.OrdinalIgnoreCase);
+
             var scriptObject = new ScriptObject();
             scriptObject.Import(model, renamer: member => ToCamelCase(member.Name));
             
@@ -56,6 +65,10 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
             // Add localization functions
             scriptObject.Import(nameof(LocalizeDayOfWeek), new Func<DateTime, string, bool, string>(LocalizeDayOfWeek));
             scriptObject.Import(nameof(LocalizeMonth), new Func<int, string, bool, string>(LocalizeMonth));
+
+            // Add image function: Image "alias" width? height?
+            scriptObject.Import("Image", new Func<string, int?, int?, string>(
+                (alias, width, height) => RenderImage(imagesByAlias, alias, width, height)));
             
             // Configure member accessor to use camelCase for all property access (including nested objects)
             var context = new TemplateContext
@@ -166,5 +179,33 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
             return name;
 
         return char.ToLowerInvariant(name[0]) + name[1..];
+    }
+
+    /// <summary>
+    /// Renders an image asset as an HTML img tag with base64 data URI.
+    /// Usage in templates: [[ Image "companyLogo" 200 80 ]]
+    /// Width and height are optional.
+    /// </summary>
+    private string RenderImage(Dictionary<string, ImageAsset> imagesByAlias, string alias, int? width, int? height)
+    {
+        if (string.IsNullOrWhiteSpace(alias))
+        {
+            _logger.LogWarning("Image function called with empty alias");
+            return "<!-- Image: empty alias -->";
+        }
+
+        if (!imagesByAlias.TryGetValue(alias, out var asset))
+        {
+            _logger.LogWarning("Image asset '{Alias}' not found", alias);
+            return $"<!-- Image '{alias}' not found -->";
+        }
+
+        var sizeAttrs = "";
+        if (width.HasValue)
+            sizeAttrs += $" width=\"{width.Value}\"";
+        if (height.HasValue)
+            sizeAttrs += $" height=\"{height.Value}\"";
+
+        return $"<img src=\"data:{asset.ContentType};base64,{asset.Base64Data}\"{sizeAttrs} alt=\"{alias}\" />";
     }
 }

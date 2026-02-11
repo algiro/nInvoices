@@ -24,6 +24,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<WorkDay> WorkDays => Set<WorkDay>();
     public DbSet<Expense> Expenses => Set<Expense>();
     public DbSet<InvoiceSequence> InvoiceSequences => Set<InvoiceSequence>();
+    public DbSet<ImageAsset> ImageAssets => Set<ImageAsset>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

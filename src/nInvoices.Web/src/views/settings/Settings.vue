@@ -150,6 +150,94 @@
         </div>
       </section>
 
+      <!-- Image Assets -->
+      <section class="settings-card">
+        <div class="card-header">
+          <h2 class="text-xl font-semibold">Image Assets</h2>
+          <p class="text-gray-600 text-sm mt-1">
+            Upload logos and graphic elements to use in invoice templates.
+            Use <code>[[ Image "alias" width height ]]</code> in your templates.
+          </p>
+        </div>
+
+        <div class="card-body">
+          <!-- Upload form -->
+          <div class="upload-form">
+            <div class="upload-row">
+              <div class="input-group" style="flex: 1;">
+                <label for="imageAlias" class="input-label">Alias</label>
+                <input
+                  id="imageAlias"
+                  v-model="imageAlias"
+                  type="text"
+                  class="input-field"
+                  placeholder="e.g. companyLogo"
+                />
+              </div>
+              <div class="input-group" style="flex: 2;">
+                <label for="imageFile" class="input-label">Image File (max 1MB)</label>
+                <input
+                  id="imageFile"
+                  ref="imageFileInput"
+                  type="file"
+                  accept="image/png,image/jpeg,image/gif,image/svg+xml,image/webp"
+                  class="file-input"
+                  @change="handleImageFileSelected"
+                />
+              </div>
+              <div style="align-self: flex-end;">
+                <button
+                  @click="handleUploadImage"
+                  :disabled="!canUpload || imageUploading"
+                  class="btn-primary"
+                >
+                  {{ imageUploading ? 'Uploading...' : '⬆ Upload' }}
+                </button>
+              </div>
+            </div>
+            <p v-if="imageUploadError" class="error-text mt-2">{{ imageUploadError }}</p>
+          </div>
+
+          <!-- Image list -->
+          <div v-if="imageAssetsLoading" class="loading-state">
+            <div class="spinner"></div>
+            <p class="mt-2">Loading images...</p>
+          </div>
+
+          <div v-else-if="imageAssets.length === 0" class="empty-state">
+            No image assets uploaded yet.
+          </div>
+
+          <div v-else class="image-grid">
+            <div v-for="asset in imageAssets" :key="asset.id" class="image-card">
+              <div class="image-preview">
+                <img
+                  v-if="imageDataCache[asset.id]"
+                  :src="`data:${asset.contentType};base64,${imageDataCache[asset.id]}`"
+                  :alt="asset.alias"
+                />
+                <div v-else class="image-placeholder" @click="loadImageData(asset.id)">
+                  Click to preview
+                </div>
+              </div>
+              <div class="image-info">
+                <div class="image-alias">
+                  <code>[[ Image "{{ asset.alias }}" ]]</code>
+                </div>
+                <div class="image-meta">
+                  {{ asset.fileName }} · {{ formatFileSize(asset.fileSize) }}
+                </div>
+              </div>
+              <div class="image-actions">
+                <button @click="handleDeleteImage(asset)" class="btn-icon btn-danger-icon" title="Delete">
+                  🗑
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Data Management (Import/Export) -->
       <section class="settings-card">
         <div class="card-header">
@@ -215,8 +303,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { invoicesApi, importExportApi } from '@/api'
+import { ref, computed, onMounted, reactive } from 'vue'
+import { invoicesApi, importExportApi, imageAssetsApi } from '@/api'
+import type { ImageAssetDto } from '@/api/imageAssets'
 import type { DataExport } from '@/api/importExport'
 import { useSettingsStore } from '@/stores/settings'
 
@@ -249,6 +338,7 @@ const firstDayOfWeekName = computed(() => {
 onMounted(() => {
   loadSequence()
   settingsStore.fetchInvoiceSettings()
+  loadImageAssets()
 })
 
 async function loadSequence() {
@@ -317,6 +407,83 @@ async function handleResetSequence() {
     alert(`Failed to reset sequence: ${sequenceError.value}`)
   } finally {
     sequenceUpdating.value = false
+  }
+}
+
+// Image Assets state
+const imageAssets = ref<ImageAssetDto[]>([])
+const imageAssetsLoading = ref(false)
+const imageAlias = ref('')
+const imageFile = ref<File | null>(null)
+const imageFileInput = ref<HTMLInputElement | null>(null)
+const imageUploading = ref(false)
+const imageUploadError = ref<string | null>(null)
+const imageDataCache = reactive<Record<number, string>>({})
+
+const canUpload = computed(() => imageAlias.value.trim() && imageFile.value)
+
+function handleImageFileSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  imageFile.value = input.files?.[0] ?? null
+  imageUploadError.value = null
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1048576).toFixed(1)} MB`
+}
+
+async function loadImageAssets() {
+  imageAssetsLoading.value = true
+  try {
+    imageAssets.value = await imageAssetsApi.getAll()
+    // Auto-load previews for all images
+    for (const asset of imageAssets.value) {
+      loadImageData(asset.id)
+    }
+  } catch (error: any) {
+    console.error('Failed to load image assets:', error)
+  } finally {
+    imageAssetsLoading.value = false
+  }
+}
+
+async function loadImageData(id: number) {
+  if (imageDataCache[id]) return
+  try {
+    const data = await imageAssetsApi.getById(id)
+    imageDataCache[id] = data.base64Data
+  } catch (error: any) {
+    console.error('Failed to load image data:', error)
+  }
+}
+
+async function handleUploadImage() {
+  if (!imageAlias.value.trim() || !imageFile.value) return
+  imageUploading.value = true
+  imageUploadError.value = null
+  try {
+    await imageAssetsApi.upload(imageAlias.value.trim(), imageFile.value)
+    imageAlias.value = ''
+    imageFile.value = null
+    if (imageFileInput.value) imageFileInput.value.value = ''
+    await loadImageAssets()
+  } catch (error: any) {
+    imageUploadError.value = error.response?.data?.error || error.message || 'Upload failed'
+  } finally {
+    imageUploading.value = false
+  }
+}
+
+async function handleDeleteImage(asset: ImageAssetDto) {
+  if (!confirm(`Delete image "${asset.alias}"? Any templates using it will show a placeholder.`)) return
+  try {
+    await imageAssetsApi.delete(asset.id)
+    delete imageDataCache[asset.id]
+    await loadImageAssets()
+  } catch (error: any) {
+    alert(`Failed to delete: ${error.message}`)
   }
 }
 
@@ -718,5 +885,115 @@ async function handleImport(type: 'customers' | 'invoices') {
 
 .error-list li {
   margin-bottom: 0.25rem;
+}
+
+/* Image Assets styles */
+.upload-form {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.upload-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.error-text {
+  font-size: 0.875rem;
+  color: #dc2626;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.image-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.image-preview {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  overflow: hidden;
+}
+
+.image-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.image-placeholder {
+  color: #9ca3af;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.image-placeholder:hover {
+  color: #2563eb;
+}
+
+.image-info {
+  padding: 0.75rem;
+}
+
+.image-alias code {
+  font-size: 0.75rem;
+  background: #e0e7ff;
+  color: #3730a3;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.image-meta {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 0.375rem;
+}
+
+.image-actions {
+  padding: 0 0.75rem 0.75rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-icon {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.btn-danger-icon:hover {
+  background: #fee2e2;
+}
+
+@media (max-width: 600px) {
+  .upload-row {
+    flex-direction: column;
+  }
 }
 </style>
