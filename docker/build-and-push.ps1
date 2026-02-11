@@ -20,7 +20,8 @@ param(
     [string]$ApiUrl = "",
     [string]$KeycloakRealm = "ninvoices",
     [string]$KeycloakClientId = "ninvoices-web",
-    [string]$Base = "/"
+    [string]$Base = "/",
+    [string]$Version = ""
 )
 
 # Configuration
@@ -47,10 +48,13 @@ if (-not $dockerInfo) {
 Write-Host "Docker Hub authentication OK`n" -ForegroundColor Green
 
 # Get version tag
-$version = Read-Host "Enter version tag (default: latest)"
-if ([string]::IsNullOrWhiteSpace($version)) {
-    $version = "latest"
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    $Version = Read-Host "Enter version tag (default: latest)"
+    if ([string]::IsNullOrWhiteSpace($Version)) {
+        $Version = "latest"
+    }
 }
+$version = $Version
 
 Write-Host "`n================================================================" -ForegroundColor Cyan
 Write-Host "[2/6] Building API Image" -ForegroundColor Yellow

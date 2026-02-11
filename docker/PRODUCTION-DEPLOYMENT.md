@@ -51,27 +51,33 @@ Enter your Docker Hub credentials:
 - Username: `algiro`
 - Password: [Your Docker Hub password]
 
-### Step 2: Run Build and Push Script
+### Step 2: Deploy with One Command
 
 ```powershell
-# Windows PowerShell
+# Windows PowerShell — from the docker/ directory
 cd docker
-.\build-and-push.ps1
-```
 
-```bash
-# Linux/Mac
-cd docker
-chmod +x build-and-push.sh
-./build-and-push.sh
+# Full deploy (build + push + pull on remote + restart)
+.\deploy.ps1
+
+# Deploy only API changes
+.\deploy.ps1 -ApiOnly
+
+# Deploy only frontend changes
+.\deploy.ps1 -WebOnly
+
+# Skip build, just pull and restart on remote server
+.\deploy.ps1 -SkipBuild
 ```
 
 The script will:
-1. ✅ Verify Docker Hub authentication
-2. ✅ Build API image
-3. ✅ Build Web image
-4. ✅ Tag images with version and 'latest'
-5. ✅ Push all images to Docker Hub
+1. ✅ Build API and Web Docker images with correct production config
+2. ✅ Push images to Docker Hub
+3. ✅ SSH to the remote server and pull new images
+4. ✅ Restart containers
+5. ✅ Run health checks
+
+> ⚠️ **Do NOT run `build-and-push.ps1` without parameters for production!** It defaults to localhost URLs. Always use `deploy.ps1` which has production values hardcoded.
 
 **Expected output:**
 ```
@@ -503,10 +509,9 @@ chmod +x /opt/ninvoices/healthcheck.sh
 
 **On development machine:**
 ```powershell
-# Build and push new version
+# Build, push, and deploy in one step
 cd docker
-.\build-and-push.ps1
-# Enter version: 1.1.0
+.\deploy.ps1
 ```
 
 **On production server:**

@@ -1,0 +1,92 @@
+# Local Development - No Authentication
+#
+# Runs PostgreSQL + API + Web without Keycloak.
+# Auth is bypassed: all requests auto-authenticate as a dev user.
+#
+# Usage:
+#   cd docker
+#   docker compose -f docker-compose.local.yml up --build
+#   docker compose -f docker-compose.local.yml down
+#
+# Access:
+#   Web UI:  http://localhost:3000
+#   API:     http://localhost:5000/api
+#
+# Data is persisted in ./volumes/postgres-local/
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: ninvoices-postgres-local
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ninvoices_user
+      POSTGRES_PASSWORD: local_dev_password
+      POSTGRES_DB: ninvoices_db
+    volumes:
+      - ./volumes/postgres-local:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - ninvoices-local
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ninvoices_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: ninvoices-api-local
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - Authentication__UseDevAuth=true
+      - ConnectionStrings__Default=Host=postgres;Port=5432;Database=ninvoices_db;Username=ninvoices_user;Password=local_dev_password
+      - Database__Type=PostgreSQL
+      - Cors__Origins=http://localhost:3000,http://localhost:5173
+    volumes:
+      - ./volumes/logs:/app/logs
+    ports:
+      - "5000:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ninvoices-local
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.web
+      args:
+        VITE_API_URL: http://localhost:5000
+        VITE_AUTH_DISABLED: "true"
+        VITE_BASE: /
+    container_name: ninvoices-web-local
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - ninvoices-local
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  ninvoices-local:
+    driver: bridge

@@ -276,57 +276,59 @@ If this prints the start of a JWT token, Keycloak is working.
 
 ## 8. Building Docker Images
 
-### ⚠️ CRITICAL: Vite build args
+### 8.1 One-Command Deploy (Recommended)
 
-The Vue frontend bakes environment variables at build time. **You MUST pass all `VITE_*` args** when building the web image, otherwise the app will have empty config values and show a blank page.
+From your local dev machine (requires Docker Desktop running):
 
-### 8.1 Build API image
+```powershell
+cd docker
 
-```bash
-cd /tmp && git clone --depth 1 https://github.com/YOUR_USER/YOUR_REPO.git
-cd YOUR_REPO
+# Full deploy (build + push + pull on remote + restart)
+.\deploy.ps1
 
-docker build -t YOUR_USER/ninvoices-api:latest \
-  -f docker/Dockerfile.api .
+# Deploy only API changes
+.\deploy.ps1 -ApiOnly
+
+# Deploy only frontend changes
+.\deploy.ps1 -WebOnly
+
+# Skip build, just pull and restart on remote
+.\deploy.ps1 -SkipBuild
 ```
 
-> ⚠️ **Chromium dependencies**: If your app uses PuppeteerSharp for HTML→PDF conversion, the Dockerfile must install Chromium's system dependencies (`libnss3`, `libgbm1`, `libatk1.0-0t64`, etc.). Without these, PDF generation fails with `Failed to launch browser!` error. See `docker/Dockerfile.api` for the full list.
+The script handles everything: building images, pushing to Docker Hub, pulling on the remote server, restarting containers, and verifying the deployment.
 
-### 8.2 Build Web image
+### 8.2 Manual Build (Alternative)
 
-```bash
-docker build -t YOUR_USER/ninvoices-web:latest \
-  --build-arg VITE_API_URL=https://YOUR_DOMAIN/nInvoices \
-  --build-arg VITE_KEYCLOAK_URL=https://YOUR_DOMAIN \
-  --build-arg VITE_KEYCLOAK_REALM=ninvoices \
-  --build-arg VITE_KEYCLOAK_CLIENT_ID=ninvoices-web \
-  --build-arg VITE_BASE=/nInvoices/ \
-  -f docker/Dockerfile.web .
+If you need more control, use `build-and-push.ps1` directly:
+
+```powershell
+cd docker
+
+# Non-interactive (recommended for scripts)
+.\build-and-push.ps1 `
+    -KeycloakUrl "https://YOUR_DOMAIN" `
+    -ApiUrl "/nInvoices" `
+    -Base "/nInvoices" `
+    -Version "latest"
+
+# Then on the remote server:
+# ssh my-server "cd ~/docker && docker compose pull && docker compose up -d"
 ```
+
+### 8.3 Vite Build Args Reference
+
+The Vue frontend bakes environment variables at build time. The deploy scripts handle this automatically, but for reference:
 
 | Argument | Value | Notes |
 |----------|-------|-------|
-| `VITE_API_URL` | `https://YOUR_DOMAIN/nInvoices` | **No** `/api` suffix — the API client appends `/api/*` paths |
-| `VITE_KEYCLOAK_URL` | `https://YOUR_DOMAIN` | **No** `/auth` or `/nInvoices/auth` — the OIDC library appends `/realms/...` |
+| `VITE_API_URL` | `/nInvoices` | **No** `/api` suffix — the API client appends `/api/*` paths |
+| `VITE_KEYCLOAK_URL` | `https://YOUR_DOMAIN` | **No** `/auth` — the OIDC library appends `/realms/...` |
 | `VITE_KEYCLOAK_REALM` | `ninvoices` | Must match Keycloak realm name exactly |
 | `VITE_KEYCLOAK_CLIENT_ID` | `ninvoices-web` | Must match the **public** Keycloak client ID |
-| `VITE_BASE` | `/nInvoices/` | Must include trailing slash; sets Vite's `base` config |
+| `VITE_BASE` | `/nInvoices` | Sets Vite's `base` config for path-based routing |
 
-### 8.3 Verify the built JavaScript
-
-After building, verify the correct values are baked in:
-```bash
-docker run --rm YOUR_USER/ninvoices-web cat /usr/share/nginx/html/assets/index-*.js \
-  | grep -oP 'authority:"[^"]*"|client_id:"[^"]*"'
-```
-
-Expected: `authority:"https://YOUR_DOMAIN/realms/ninvoices"` and `client_id:"ninvoices-web"`.
-
-### 8.4 Clean up
-
-```bash
-rm -rf /tmp/YOUR_REPO
-```
+> ⚠️ **Verify after building**: `docker run --rm algiro/ninvoices-web cat /usr/share/nginx/html/assets/index-*.js | grep -oP 'client_id:"[^"]*"'` — should show `client_id:"ninvoices-web"`.
 
 ---
 
@@ -392,43 +394,63 @@ The `api/client.ts` Axios interceptor attaches the Bearer token to every request
 
 ## 11. Redeployment Procedure
 
-After code changes:
+After code changes, use the deploy script from your dev machine:
 
-```bash
-# 1. Commit and push
-git add . && git commit -m "description" && git push
+```powershell
+# From the docker/ directory
+cd docker
 
-# 2. SSH to server
-ssh my-server
+# Deploy everything
+.\deploy.ps1
 
-# 3. Clone fresh (or git pull)
-cd /tmp && rm -rf myrepo && git clone --depth 1 https://github.com/USER/REPO.git && cd REPO
-
-# 4. Build images (only the ones that changed)
-# API:
-docker build -t USER/ninvoices-api:latest -f docker/Dockerfile.api .
-# Web (ALWAYS include build args!):
-docker build -t USER/ninvoices-web:latest \
-  --build-arg VITE_API_URL=https://DOMAIN/nInvoices \
-  --build-arg VITE_KEYCLOAK_URL=https://DOMAIN \
-  --build-arg VITE_KEYCLOAK_REALM=ninvoices \
-  --build-arg VITE_KEYCLOAK_CLIENT_ID=ninvoices-web \
-  --build-arg VITE_BASE=/nInvoices/ \
-  -f docker/Dockerfile.web .
-
-# 5. Restart changed containers
-cd ~/docker
-docker compose stop api web
-docker compose rm -f api web
-docker compose up -d api web
-
-# 6. Clean up
-rm -rf /tmp/myrepo
-
-# 7. Verify
-curl -s https://DOMAIN/nInvoices/ | head -5  # Should return HTML
-curl -s -w "%{http_code}" https://DOMAIN/nInvoices/api/health  # Should return 200
+# Deploy only what changed
+.\deploy.ps1 -ApiOnly   # Backend changes only
+.\deploy.ps1 -WebOnly   # Frontend changes only
 ```
+
+The deploy script will:
+1. Build Docker images locally with correct production config
+2. Push to Docker Hub
+3. SSH to the remote server and pull new images
+4. Restart the changed containers
+5. Run health checks to verify the deployment
+
+### 11.1 Fallback: Manual SCP Deploy (No Docker Desktop)
+
+When Docker Desktop is unavailable, you can build the frontend locally and copy files:
+
+```powershell
+# 1. Build frontend locally (reads .env.production)
+cd src/nInvoices.Web
+npm run build
+
+# 2. Copy to remote server
+wsl scp -r dist/* he-it-tudes:/tmp/web-dist/
+
+# 3. Replace files in web container
+wsl ssh he-it-tudes "docker exec ninvoices-web-prod rm -rf /usr/share/nginx/html/assets/*"
+wsl ssh he-it-tudes "docker cp /tmp/web-dist/. ninvoices-web-prod:/usr/share/nginx/html/"
+wsl ssh he-it-tudes "docker exec ninvoices-web-prod nginx -s reload"
+wsl ssh he-it-tudes "rm -rf /tmp/web-dist"
+```
+
+> ⚠️ **Important**: This method reads from `src/nInvoices.Web/.env.production` for Vite config. Ensure it has the correct production values.
+
+### 11.2 Database Migrations
+
+The API container doesn't have EF tools. Apply migrations manually via SQL:
+
+```powershell
+# Check current schema
+wsl ssh he-it-tudes 'docker exec ninvoices-postgres-prod psql -U ninvoices_user -d ninvoices_db -c "\dt"'
+
+# Apply a migration
+wsl ssh he-it-tudes 'docker exec ninvoices-postgres-prod psql -U ninvoices_user -d ninvoices_db -c "ALTER TABLE ..."'
+```
+
+### 11.3 Post-Deploy Verification
+
+After any deployment, users should do a hard refresh (Ctrl+Shift+F5) to bypass browser cache. Vite uses content hashes in filenames, but browsers may cache aggressively.
 
 ---
 
