@@ -79,6 +79,7 @@ export interface CustomerDto {
   id: number;
   name: string;
   fiscalId: string;
+  locale: string;
   address: AddressDto;
   createdAt: string;
   updatedAt?: string;
@@ -88,12 +89,14 @@ export interface CreateCustomerDto {
   name: string;
   fiscalId: string;
   address: AddressDto;
+  locale: string;
 }
 
 export interface UpdateCustomerDto {
   name: string;
   fiscalId: string;
   address: AddressDto;
+  locale: string;
 }
 
 export interface RateDto {

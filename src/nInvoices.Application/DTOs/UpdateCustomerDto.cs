@@ -6,4 +6,5 @@ namespace nInvoices.Application.DTOs;
 public sealed record UpdateCustomerDto(
     string Name,
     string FiscalId,
-    AddressDto Address);
+    AddressDto Address,
+    string Locale = "en-US");

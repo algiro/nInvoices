@@ -7,6 +7,7 @@ public sealed record CustomerDto(
     long Id,
     string Name,
     string FiscalId,
+    string Locale,
     AddressDto Address,
     DateTime CreatedAt,
     DateTime UpdatedAt);

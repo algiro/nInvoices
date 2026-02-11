@@ -9,6 +9,7 @@ public sealed class Customer : EntityBase
 {
     public string Name { get; set; } = string.Empty;
     public string FiscalId { get; set; } = string.Empty;
+    public string Locale { get; set; } = "en-US";
     public Address Address { get; set; } = null!;
 
     // Navigation properties
@@ -22,7 +23,7 @@ public sealed class Customer : EntityBase
         CreatedAt = DateTime.UtcNow;
     }
 
-    public Customer(string name, string fiscalId, Address address) : this()
+    public Customer(string name, string fiscalId, Address address, string locale = "en-US") : this()
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(fiscalId);
@@ -36,9 +37,10 @@ public sealed class Customer : EntityBase
         Name = name;
         FiscalId = fiscalId;
         Address = address;
+        Locale = locale;
     }
 
-    public void Update(string name, string fiscalId, Address address)
+    public void Update(string name, string fiscalId, Address address, string locale = "en-US")
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(fiscalId);
@@ -52,9 +54,10 @@ public sealed class Customer : EntityBase
         Name = name;
         FiscalId = fiscalId;
         Address = address;
+        Locale = locale;
     }
 
-    public void UpdateDetails(string name, string fiscalId, Address address)
+    public void UpdateDetails(string name, string fiscalId, Address address, string locale = "en-US")
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(fiscalId);
@@ -68,6 +71,7 @@ public sealed class Customer : EntityBase
         Name = name;
         FiscalId = fiscalId;
         Address = address;
+        Locale = locale;
         UpdatedAt = DateTime.UtcNow;
     }
 }

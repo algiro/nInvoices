@@ -29,7 +29,7 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
             dto.Address.Country,
             dto.Address.State);
 
-        var customer = new Customer(dto.Name, dto.FiscalId, address);
+        var customer = new Customer(dto.Name, dto.FiscalId, address, dto.Locale);
 
         await _repository.AddAsync(customer, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -38,6 +38,7 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
             customer.Id,
             customer.Name,
             customer.FiscalId,
+            customer.Locale,
             new AddressDto(
                 customer.Address.Street,
                 customer.Address.HouseNumber,

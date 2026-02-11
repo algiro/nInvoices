@@ -35,6 +35,26 @@
           />
           <p v-if="errors.fiscalId" class="error-text">{{ errors.fiscalId }}</p>
         </div>
+
+        <div class="form-group">
+          <label for="locale" class="form-label">
+            Locale
+          </label>
+          <select
+            id="locale"
+            v-model="form.locale"
+            class="form-input"
+          >
+            <option value="en-US">English (US)</option>
+            <option value="en-GB">English (UK)</option>
+            <option value="it-IT">Italiano</option>
+            <option value="de-DE">Deutsch</option>
+            <option value="fr-FR">Français</option>
+            <option value="es-ES">Español</option>
+            <option value="pt-PT">Português</option>
+            <option value="nl-NL">Nederlands</option>
+          </select>
+        </div>
       </div>
 
       <div class="form-section">
@@ -165,6 +185,7 @@ const loading = ref(false)
 const form = reactive<CreateCustomerDto | UpdateCustomerDto>({
   name: '',
   fiscalId: '',
+  locale: 'en-US',
   address: {
     street: '',
     houseNumber: '',
@@ -190,6 +211,7 @@ async function loadCustomer(id: number) {
     if (customer) {
       form.name = customer.name
       form.fiscalId = customer.fiscalId
+      form.locale = customer.locale || 'en-US'
       form.address = { ...customer.address }
     }
   } catch (error) {

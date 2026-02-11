@@ -25,6 +25,7 @@ public sealed class GetCustomerByIdQueryHandler : IRequestHandler<GetCustomerByI
             customer.Id,
             customer.Name,
             customer.FiscalId,
+            customer.Locale,
             new AddressDto(
                 customer.Address.Street,
                 customer.Address.HouseNumber,

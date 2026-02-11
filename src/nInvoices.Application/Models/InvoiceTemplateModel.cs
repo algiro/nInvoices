@@ -48,7 +48,7 @@ public sealed record AddressTemplateModel
 public sealed record LineItemTemplateModel
 {
     public string Description { get; init; } = string.Empty;
-    public int Quantity { get; init; }
+    public decimal Quantity { get; init; }
     public decimal Rate { get; init; }
     public decimal Amount { get; init; }
 }

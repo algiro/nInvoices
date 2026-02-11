@@ -33,7 +33,7 @@ public sealed class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustome
             dto.Address.Country,
             dto.Address.State);
 
-        customer.Update(dto.Name, dto.FiscalId, address);
+        customer.Update(dto.Name, dto.FiscalId, address, dto.Locale);
 
         await _repository.UpdateAsync(customer, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -42,6 +42,7 @@ public sealed class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustome
             customer.Id,
             customer.Name,
             customer.FiscalId,
+            customer.Locale,
             new AddressDto(
                 customer.Address.Street,
                 customer.Address.HouseNumber,

@@ -156,7 +156,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         var customer = await _customerRepository.GetByIdAsync(dto.CustomerId, cancellationToken)
             ?? throw new InvalidOperationException($"Customer {dto.CustomerId} not found");
 
-        var templateModel = BuildTemplateModel(invoice, customer, dto, rate);
+        var templateModel = BuildTemplateModel(invoice, customer, dto, rate, dto.WorkDays);
         var renderedHtml = await _templateRenderer.RenderAsync(template.Content, templateModel, cancellationToken);
 
         invoice.SetRenderedContent(renderedHtml);
@@ -196,6 +196,20 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         var template = await GetTemplateAsync(invoice.CustomerId, invoice.Type, cancellationToken);
         var rate = await GetRateAsync(invoice.CustomerId, invoice.Type, cancellationToken);
 
+        // Load saved work days from the database for per-day line items
+        ICollection<WorkDayDto>? workDayDtos = null;
+        if (invoice.Year.HasValue && invoice.Month.HasValue)
+        {
+            var startDate = new DateOnly(invoice.Year.Value, invoice.Month.Value, 1);
+            var endDate = new DateOnly(invoice.Year.Value, invoice.Month.Value, DateTime.DaysInMonth(invoice.Year.Value, invoice.Month.Value));
+            var savedWorkDays = await _workDayRepository.FindAsync(
+                wd => wd.CustomerId == invoice.CustomerId && wd.Date >= startDate && wd.Date <= endDate,
+                cancellationToken);
+            workDayDtos = savedWorkDays
+                .Select(wd => new WorkDayDto(wd.Date, wd.DayType, wd.HoursWorked, wd.Notes))
+                .ToList();
+        }
+
         // Rebuild the template model from the existing invoice data
         var dto = new GenerateInvoiceDto
         {
@@ -204,7 +218,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             IssueDate = invoice.IssueDate,
             Year = invoice.Year,
             Month = invoice.Month,
-            WorkDays = null, // We don't have the original work days, but we have the count
+            WorkDays = workDayDtos,
             Expenses = invoice.Expenses.Select(e => new ExpenseDto
             {
                 Date = e.Date,
@@ -214,7 +228,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             }).ToList()
         };
 
-        var templateModel = BuildTemplateModel(invoice, customer, dto, rate);
+        var templateModel = BuildTemplateModel(invoice, customer, dto, rate, workDayDtos);
         var renderedHtml = await _templateRenderer.RenderAsync(template.Content, templateModel, cancellationToken);
 
         invoice.SetRenderedContent(renderedHtml);
@@ -366,7 +380,8 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         Invoice invoice,
         Customer customer,
         GenerateInvoiceDto dto,
-        Rate rate)
+        Rate rate,
+        IEnumerable<WorkDayDto>? workDays = null)
     {
         // Calculate monthly-specific values upfront
         int? workedDays = null;
@@ -411,7 +426,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
                 }
             },
 
-            LineItems = BuildLineItems(invoice, dto, rate),
+            LineItems = BuildLineItems(invoice, dto, rate, workDays, customer.Locale),
             Taxes = invoice.TaxLines.Select(t => new TaxTemplateModel
             {
                 Description = t.Description,
@@ -436,38 +451,67 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
     /// <summary>
     /// Builds line items for the template.
-    /// For monthly invoices with worked days, creates a single consolidated line.
-    /// For one-time invoices, could be extended to support multiple line items.
+    /// For Daily/Hourly rates: one line item per worked day (date as description).
+    /// For Monthly rates: a single consolidated line.
+    /// Expenses are added as separate line items.
     /// </summary>
     private List<LineItemTemplateModel> BuildLineItems(
         Invoice invoice,
         GenerateInvoiceDto dto,
-        Rate rate)
+        Rate rate,
+        IEnumerable<WorkDayDto>? workDays,
+        string locale = "en-US")
     {
         var lineItems = new List<LineItemTemplateModel>();
 
         if (dto.InvoiceType == InvoiceType.Monthly && invoice.WorkedDays.HasValue)
         {
-            // Single line item for monthly invoices
-            var description = $"Professional Services - {invoice.WorkedDays.Value} days";
-            if (invoice.Month.HasValue && invoice.Year.HasValue)
-            {
-                var date = new DateTime(invoice.Year.Value, invoice.Month.Value, 1);
-                var monthName = date.ToString("MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("en-US"));
-                description = $"Professional Services for {monthName}";
-            }
+            var workedDaysList = workDays?
+                .Where(wd => wd.DayType == DayType.Worked)
+                .OrderBy(wd => wd.Date)
+                .ToList();
 
-            lineItems.Add(new LineItemTemplateModel
+            if (workedDaysList is { Count: > 0 } && rate.Type is RateType.Daily or RateType.Hourly)
             {
-                Description = description,
-                Quantity = invoice.WorkedDays.Value,
-                Rate = rate.Price.Amount,
-                Amount = invoice.Subtotal.Amount
-            });
+                // One line item per worked day
+                foreach (var wd in workedDaysList)
+                {
+                    var culture = System.Globalization.CultureInfo.GetCultureInfo(locale);
+                    var description = wd.Date.ToString("d", culture);
+                    var quantity = rate.Type == RateType.Hourly ? wd.HoursWorked ?? 0m : 1m;
+                    var amount = rate.Price.Amount * quantity;
+
+                    lineItems.Add(new LineItemTemplateModel
+                    {
+                        Description = description,
+                        Quantity = quantity,
+                        Rate = rate.Price.Amount,
+                        Amount = amount
+                    });
+                }
+            }
+            else
+            {
+                // Monthly rate: single consolidated line item
+                var description = $"Professional Services - {invoice.WorkedDays.Value} days";
+                if (invoice.Month.HasValue && invoice.Year.HasValue)
+                {
+                    var date = new DateTime(invoice.Year.Value, invoice.Month.Value, 1);
+                    var monthName = date.ToString("MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("en-US"));
+                    description = $"Professional Services for {monthName}";
+                }
+
+                lineItems.Add(new LineItemTemplateModel
+                {
+                    Description = description,
+                    Quantity = invoice.WorkedDays.Value,
+                    Rate = rate.Price.Amount,
+                    Amount = invoice.Subtotal.Amount
+                });
+            }
         }
         else if (dto.InvoiceType == InvoiceType.OneTime)
         {
-            // One-time invoice line item
             lineItems.Add(new LineItemTemplateModel
             {
                 Description = "Professional Services",
