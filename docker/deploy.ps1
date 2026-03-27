@@ -77,20 +77,20 @@ if (-not $SkipBuild) {
 Write-Step "2/3" "Pulling and restarting on remote server..."
 
 if ($ApiOnly) {
-    Invoke-Remote "cd $REMOTE_DIR && docker compose pull api && docker compose up -d api"
+    Invoke-Remote "cd $REMOTE_DIR && docker compose pull api && docker compose up -d"
 } elseif ($WebOnly) {
-    Invoke-Remote "cd $REMOTE_DIR && docker compose pull web && docker compose up -d web"
+    Invoke-Remote "cd $REMOTE_DIR && docker compose pull web && docker compose up -d"
 } else {
-    Invoke-Remote "cd $REMOTE_DIR && docker compose pull api web && docker compose up -d api web"
+    Invoke-Remote "cd $REMOTE_DIR && docker compose pull api web && docker compose up -d"
 }
 
 Write-Host "Containers restarted." -ForegroundColor Green
 
 # Step 3: Verify
 Write-Step "3/3" "Verifying deployment..."
-Start-Sleep -Seconds 5
+Start-Sleep -Seconds 15
 
-Invoke-Remote "cd $REMOTE_DIR && docker compose ps api web"
+Invoke-Remote "cd $REMOTE_DIR && docker compose ps"
 
 # Quick health check
 $apiStatus = wsl ssh $SSH_HOST "curl -s -o /dev/null -w '%{http_code}' -k 'https://localhost/nInvoices/api/customers'" 2>$null
