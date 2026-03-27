@@ -299,7 +299,7 @@ const selectedRate = ref<any>(null)
 const form = reactive<GenerateInvoiceDto>({
   customerId: 0,
   invoiceType: InvoiceType.Monthly,
-  issueDate: new Date().toISOString().split('T')[0],
+  issueDate: localDateString(new Date()),
   workDays: [],
   expenses: [],
   monthlyReportTemplateId: undefined
@@ -332,7 +332,15 @@ interface CalendarDay {
   isWeekend: boolean
 }
 
-const dayHeaders = computed(() => {
+// Use local date components to avoid UTC-offset shifting when calling toISOString()
+function localDateString(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+const dayHeaders= computed(() => {
   const allDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const firstDayOfWeek = settingsStore.getFirstDayOfWeek()
   return [...allDays.slice(firstDayOfWeek), ...allDays.slice(0, firstDayOfWeek)]
@@ -353,7 +361,7 @@ const calendarDays = computed((): CalendarDay[] => {
     const date = new Date(firstDay)
     date.setDate(date.getDate() - (startingDayOfWeek - i))
     days.push({
-      date: date.toISOString().split('T')[0],
+      date: localDateString(date),
       day: date.getDate(),
       isCurrentMonth: false,
       isWeekend: date.getDay() === 0 || date.getDay() === 6
@@ -363,7 +371,7 @@ const calendarDays = computed((): CalendarDay[] => {
   for (let day = 1; day <= lastDay.getDate(); day++) {
     const date = new Date(selectedYear.value, selectedMonth.value - 1, day)
     days.push({
-      date: date.toISOString().split('T')[0],
+      date: localDateString(date),
       day,
       isCurrentMonth: true,
       isWeekend: date.getDay() === 0 || date.getDay() === 6
@@ -374,7 +382,7 @@ const calendarDays = computed((): CalendarDay[] => {
     const date = new Date(lastDay)
     date.setDate(date.getDate() + (days.length - lastDay.getDate() - startingDayOfWeek + 1))
     days.push({
-      date: date.toISOString().split('T')[0],
+      date: localDateString(date),
       day: date.getDate(),
       isCurrentMonth: false,
       isWeekend: date.getDay() === 0 || date.getDay() === 6
@@ -515,7 +523,7 @@ function getDayType(date: string): DayType | null {
 }
 
 function isToday(date: string): boolean {
-  return date === new Date().toISOString().split('T')[0]
+  return date === localDateString(new Date())
 }
 
 function formatDate(dateStr: string): string {
