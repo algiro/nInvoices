@@ -2,6 +2,34 @@
 
 This guide covers deploying nInvoices with Docker, including Keycloak authentication and PostgreSQL database.
 
+## Helper scripts
+
+Each helper is provided for both shells. Run the one that matches your OS:
+
+| Task | Windows | Linux / macOS |
+|------|---------|---------------|
+| Build + push + deploy to prod | `deploy.ps1` | `deploy.sh` |
+| Build & push images to Docker Hub | `build-and-push.ps1` | `build-and-push.sh` |
+| Backup the PostgreSQL database | `backup-database.ps1` | `backup-database.sh` |
+| Restore the PostgreSQL database | `restore-database.ps1` | `restore-database.sh` |
+| Move SQLite data to PostgreSQL | `migrate-sqlite-to-postgres.ps1` | `migrate-sqlite-to-postgres.sh` |
+
+Every `.sh` takes `--help`. Defaults target `https://it-tudes.tech/nInvoices`
+(SSH alias `he-it-tudes`, images `algiro/ninvoices-*`); override via environment
+variables (see each script's header).
+
+Typical release from Linux:
+
+```bash
+cd docker
+./deploy.sh --migrate      # build, push, apply DB migrations, pull & restart, health-check
+```
+
+**PostgreSQL schema:** the EF Core migrations are SQLite-scaffolded and cannot be
+applied with `dotnet ef` against Npgsql, so schema changes for PostgreSQL live as
+idempotent SQL in [`migrations-postgres/`](migrations-postgres/README.md).
+`deploy.sh --migrate` applies them.
+
 ## Architecture
 
 ```
