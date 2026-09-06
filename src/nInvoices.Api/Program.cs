@@ -24,6 +24,13 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+// Aspire service defaults: OpenTelemetry (traces + metrics), "/health" + "/alive"
+// health checks, HTTP resilience, and service discovery.
+// Logs continue to flow through Serilog; they are exported over OTLP only once
+// Serilog.Sinks.OpenTelemetry is added (Phase 3). Traces and metrics export
+// automatically when OTEL_EXPORTER_OTLP_ENDPOINT is set.
+builder.AddServiceDefaults();
+
 // Add services to the container
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -177,6 +184,11 @@ app.UseHttpsRedirection();
 app.UseCors("AllowVueApp");
 app.UseAuthentication();
 app.UseAuthorization();
+
+// "/health" (all checks incl. database) and "/alive" (liveness only).
+// Anonymous; used by the container healthchecks.
+app.MapDefaultEndpoints();
+
 app.MapControllers();
 
 try

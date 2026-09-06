@@ -22,6 +22,7 @@
     <ProjectReference Include="..\nInvoices.Core\nInvoices.Core.csproj" />
     <ProjectReference Include="..\nInvoices.Application\nInvoices.Application.csproj" />
     <ProjectReference Include="..\nInvoices.Infrastructure\nInvoices.Infrastructure.csproj" />
+    <ProjectReference Include="..\nInvoices.ServiceDefaults\nInvoices.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

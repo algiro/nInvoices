@@ -81,10 +81,16 @@ against a running API + frontend.
   (`TemplateEngine/`), PDF export (`PdfExport/` — QuestPDF and PuppeteerSharp/HtmlAgilityPack),
   `UserContext` (reads JWT claims).
 - **nInvoices.Api** — thin controllers (`Controllers/`) that dispatch through MediatR.
-  `Program.cs` wires everything via extension methods: `AddDatabase`, `AddTaxHandlers`,
-  `AddTemplateEngine`, `AddPdfExport`, `AddApplicationServices`, `AddMediatR`. Auth is either
-  `DevAuthenticationHandler` (dev) or Keycloak JWT Bearer. Policies: `RequireUser`,
-  `RequireAdmin`.
+  `Program.cs` wires everything via extension methods: `AddServiceDefaults`, `AddDatabase`,
+  `AddTaxHandlers`, `AddTemplateEngine`, `AddPdfExport`, `AddApplicationServices`, `AddMediatR`.
+  Auth is either `DevAuthenticationHandler` (dev) or Keycloak JWT Bearer. Policies:
+  `RequireUser`, `RequireAdmin`.
+- **nInvoices.ServiceDefaults** — Aspire shared project (`AddServiceDefaults()` /
+  `MapDefaultEndpoints()`): OpenTelemetry traces + metrics, HTTP resilience, service discovery,
+  and the `/health` (all checks incl. `AddDbContextCheck`) + `/alive` (liveness) endpoints.
+  Referenced only by `Api`. There is no Aspire AppHost — prod deploy is unchanged (Docker Hub
+  + compose + SSH). OTLP export activates when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; Serilog
+  still owns log sinks (`HealthController` at `/api/health` is kept for the nginx-routed check).
 - **nInvoices.Web** — Vue 3 Composition API. `src/api/` wraps a shared axios `client.ts` with
   one module per resource; `src/stores/` Pinia; `src/services/auth.service.ts` uses
   `oidc-client-ts` for Keycloak. Views in `src/views/`, routing in `src/router/`.
