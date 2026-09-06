@@ -40,9 +40,10 @@ public sealed class InvoiceTemplateConfiguration : IEntityTypeConfiguration<Invo
         builder.Property(t => t.CreatedAt).IsRequired();
         builder.Property(t => t.UpdatedAt);
 
-        // Unique constraint: one active template per customer + invoice type
+        // Unique constraint: one active template per customer + invoice type.
+        // The provider-specific partial-index filter is applied in
+        // ApplicationDbContext.OnModelCreating (SQLite vs PostgreSQL quoting differ).
         builder.HasIndex(t => new { t.CustomerId, t.InvoiceType, t.IsActive })
-            .IsUnique()
-            .HasFilter("[IsActive] = 1");
+            .IsUnique();
     }
 }

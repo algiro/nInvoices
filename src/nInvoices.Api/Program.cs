@@ -1,4 +1,5 @@
 using Serilog;
+using Microsoft.EntityFrameworkCore;
 using nInvoices.Application;
 using nInvoices.Core.Configuration;
 using nInvoices.Infrastructure.Data;
@@ -172,6 +173,18 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Dev-only (Aspire AppHost sets Database:EnsureCreated=true): build the schema for a
+// throwaway PostgreSQL from the current EF model. EF migrations are SQLite-scaffolded
+// and cannot run under Npgsql, so EnsureCreated (model-based) is used instead.
+// Never enabled in production.
+if (app.Configuration.GetValue<bool>("Database:EnsureCreated"))
+{
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    dbContext.Database.EnsureCreated();
+    Log.Information("Database:EnsureCreated — schema ensured from the EF model");
+}
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

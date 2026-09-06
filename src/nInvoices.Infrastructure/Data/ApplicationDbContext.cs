@@ -34,6 +34,15 @@ public sealed class ApplicationDbContext : DbContext
 
         // Apply all configurations from the assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
+        // "One active template per (customer, invoice type)" is a partial unique index.
+        // The filter predicate is provider-specific: SQLite/SQL Server quote with [ ] and
+        // compare bool as = 1; PostgreSQL quotes with " " and uses the bool column directly.
+        // (SQLite keeps the exact existing string, so no migration churn.)
+        modelBuilder.Entity<InvoiceTemplate>()
+            .HasIndex(t => new { t.CustomerId, t.InvoiceType, t.IsActive })
+            .IsUnique()
+            .HasFilter(Database.IsNpgsql() ? "\"IsActive\"" : "[IsActive] = 1");
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

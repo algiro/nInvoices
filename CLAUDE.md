@@ -35,16 +35,35 @@ npm run build     # tsc type-check + vite build
 npm run preview
 ```
 
-### Run locally (no Keycloak)
+### Run locally — fast loop (SQLite + DevAuth, no Docker/Keycloak)
 
-`appsettings.Development.json` sets `Authentication:UseDevAuth = true`, so running the API
-directly auto-authenticates every request as a fake `user`+`admin` dev user and uses a local
-SQLite file. Two terminals:
+`appsettings.Development.json` sets `Authentication:UseDevAuth = true`, so the API
+auto-authenticates every request as a fake `user`+`admin` dev user and uses a local SQLite
+file. `src/nInvoices.Web/.env.development` sets `VITE_AUTH_DISABLED=true`. Two terminals:
 
 ```bash
-cd src/nInvoices.Api && dotnet run     # API on https://localhost:5001
-cd src/nInvoices.Web && npm run dev     # frontend on http://localhost:5173
+cd src/nInvoices.Api && dotnet run     # API on http://localhost:5297 (Properties/launchSettings.json)
+cd src/nInvoices.Web && npm run dev     # frontend on http://localhost:3000, /api proxied to :5297
 ```
+
+`Properties/launchSettings.json` is gitignored — without it `dotnet run` starts in **Production**
+and the Keycloak auth path fails (`MetadataAddress ... must use HTTPS`). Restore it with an `http`
+profile that sets `ASPNETCORE_ENVIRONMENT=Development` and `applicationUrl=http://localhost:5297`.
+Schema: `dotnet ef database update` (SQLite only — see below).
+
+### Run locally — prod parity (PostgreSQL + Keycloak) via Aspire
+
+`src/nInvoices.AppHost` is a **dev-only** .NET Aspire orchestrator. Needs Docker running.
+
+```bash
+cd src/nInvoices.Web && npm install     # once
+aspire run --project src/nInvoices.AppHost      # or: dotnet run --project src/nInvoices.AppHost
+```
+
+Brings up PostgreSQL + Keycloak (realm imported from `src/nInvoices.AppHost/keycloak/`, port
+8088, test user `testuser` / `Test123!`) + the API (real Keycloak auth, `Database:EnsureCreated`
+builds the PG schema from the EF model) + the Vite dev server, with the Aspire dashboard. No data
+volumes — every run starts clean. Never deployed.
 
 ### Run full stack (Docker + Keycloak + PostgreSQL)
 
@@ -88,9 +107,12 @@ against a running API + frontend.
 - **nInvoices.ServiceDefaults** — Aspire shared project (`AddServiceDefaults()` /
   `MapDefaultEndpoints()`): OpenTelemetry traces + metrics, HTTP resilience, service discovery,
   and the `/health` (all checks incl. `AddDbContextCheck`) + `/alive` (liveness) endpoints.
-  Referenced only by `Api`. There is no Aspire AppHost — prod deploy is unchanged (Docker Hub
-  + compose + SSH). OTLP export activates when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; Serilog
-  still owns log sinks (`HealthController` at `/api/health` is kept for the nginx-routed check).
+  Referenced only by `Api`. OTLP export activates when `OTEL_EXPORTER_OTLP_ENDPOINT` is set;
+  Serilog still owns log sinks (`HealthController` at `/api/health` is kept for the nginx-routed
+  check).
+- **nInvoices.AppHost** — dev-only Aspire orchestrator (`aspire run`): PostgreSQL + Keycloak +
+  API + Vite. Not referenced by any deployable project, never published. Production deploy is
+  unchanged (Docker Hub + compose + SSH); Aspire is not used for deployment.
 - **nInvoices.Web** — Vue 3 Composition API. `src/api/` wraps a shared axios `client.ts` with
   one module per resource; `src/stores/` Pinia; `src/services/auth.service.ts` uses
   `oidc-client-ts` for Keycloak. Views in `src/views/`, routing in `src/router/`.
