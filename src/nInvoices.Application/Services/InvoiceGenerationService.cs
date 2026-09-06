@@ -36,8 +36,9 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     private readonly IRepository<Rate> _rateRepository;
     private readonly IRepository<Tax> _taxRepository;
     private readonly IInvoiceRepository _invoiceRepository;
-    private readonly IRepository<WorkDay> _workDayRepository;
+    private readonly IWorkDayRepository _workDayRepository;
     private readonly IRepository<InvoiceSequence> _sequenceRepository;
+    private readonly IProjectResolver _projectResolver;
     private readonly ITemplateRenderer _templateRenderer;
     private readonly IHtmlToPdfConverter _htmlToPdfConverter;
     private readonly ITaxCalculationService _taxCalculationService;
@@ -50,8 +51,9 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         IRepository<Rate> rateRepository,
         IRepository<Tax> taxRepository,
         IInvoiceRepository invoiceRepository,
-        IRepository<WorkDay> workDayRepository,
+        IWorkDayRepository workDayRepository,
         IRepository<InvoiceSequence> sequenceRepository,
+        IProjectResolver projectResolver,
         ITemplateRenderer templateRenderer,
         IHtmlToPdfConverter htmlToPdfConverter,
         ITaxCalculationService taxCalculationService,
@@ -65,6 +67,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         _invoiceRepository = invoiceRepository;
         _workDayRepository = workDayRepository;
         _sequenceRepository = sequenceRepository;
+        _projectResolver = projectResolver;
         _templateRenderer = templateRenderer;
         _htmlToPdfConverter = htmlToPdfConverter;
         _taxCalculationService = taxCalculationService;
@@ -87,13 +90,15 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         {
             if (dto.WorkDays == null || !dto.WorkDays.Any())
                 throw new InvalidOperationException("Work days are required for hourly rate invoices.");
-            
+
             var workedDaysWithoutHours = dto.WorkDays
-                .Where(wd => wd.DayType == DayType.Worked && !wd.HoursWorked.HasValue)
+                .Where(wd => wd.DayType == DayType.Worked && GetDayHours(wd) <= 0)
                 .ToList();
-            
+
             if (workedDaysWithoutHours.Any())
-                throw new InvalidOperationException($"Hours worked must be specified for all worked days when using hourly rates. Missing hours for {workedDaysWithoutHours.Count} day(s).");
+                throw new InvalidOperationException(
+                    $"Hours must be specified for all worked days when using hourly rates " +
+                    $"(via a project allocation or the day's hours). Missing hours for {workedDaysWithoutHours.Count} day(s).");
         }
 
         var subtotal = CalculateSubtotal(dto, rate);
@@ -114,20 +119,24 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             subtotal,
             rate.Price.Currency);
 
-        if (dto.InvoiceType == InvoiceType.Monthly && dto.WorkDays != null)
+        var workDays = dto.WorkDays;
+
+        if (dto.InvoiceType == InvoiceType.Monthly && workDays != null)
         {
             // Count only "Worked" days for invoice calculation
-            var workedDaysCount = dto.WorkDays.Count(wd => wd.DayType == DayType.Worked);
+            var workedDaysCount = workDays.Count(wd => wd.DayType == DayType.Worked);
             invoice.SetMonthlyInvoiceDetails(dto.Year!.Value, dto.Month!.Value, workedDaysCount);
-            
+
             // Store the template ID if provided
             if (dto.MonthlyReportTemplateId.HasValue)
             {
                 invoice.MonthlyReportTemplateId = dto.MonthlyReportTemplateId.Value;
             }
-            
-            // Clear existing work days for this month and save new ones
-            await ClearAndSaveWorkDaysAsync(dto.CustomerId, dto.Year!.Value, dto.Month!.Value, dto.WorkDays, cancellationToken);
+
+            // Clear existing work days for this month and save new ones.
+            // Returns the work days with project names normalized to their canonical form.
+            workDays = await ClearAndSaveWorkDaysAsync(
+                dto.CustomerId, dto.Year!.Value, dto.Month!.Value, workDays, cancellationToken);
         }
 
         if (dto.Expenses != null && dto.Expenses.Count > 0)
@@ -156,7 +165,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         var customer = await _customerRepository.GetByIdAsync(dto.CustomerId, cancellationToken)
             ?? throw new InvalidOperationException($"Customer {dto.CustomerId} not found");
 
-        var templateModel = BuildTemplateModel(invoice, customer, dto, rate, dto.WorkDays);
+        var templateModel = BuildTemplateModel(invoice, customer, dto, rate, workDays);
         var renderedHtml = await _templateRenderer.RenderAsync(template.Content, templateModel, cancellationToken);
 
         invoice.SetRenderedContent(renderedHtml);
@@ -196,17 +205,21 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         var template = await GetTemplateAsync(invoice.CustomerId, invoice.Type, cancellationToken);
         var rate = await GetRateAsync(invoice.CustomerId, invoice.Type, cancellationToken);
 
-        // Load saved work days from the database for per-day line items
+        // Load saved work days (with project allocations) from the database for line items
         ICollection<WorkDayDto>? workDayDtos = null;
         if (invoice.Year.HasValue && invoice.Month.HasValue)
         {
-            var startDate = new DateOnly(invoice.Year.Value, invoice.Month.Value, 1);
-            var endDate = new DateOnly(invoice.Year.Value, invoice.Month.Value, DateTime.DaysInMonth(invoice.Year.Value, invoice.Month.Value));
-            var savedWorkDays = await _workDayRepository.FindAsync(
-                wd => wd.CustomerId == invoice.CustomerId && wd.Date >= startDate && wd.Date <= endDate,
-                cancellationToken);
+            var savedWorkDays = await _workDayRepository.GetByCustomerAndMonthAsync(
+                invoice.CustomerId, invoice.Year.Value, invoice.Month.Value, cancellationToken);
             workDayDtos = savedWorkDays
-                .Select(wd => new WorkDayDto(wd.Date, wd.DayType, wd.HoursWorked, wd.Notes))
+                .Select(wd => new WorkDayDto(
+                    wd.Date,
+                    wd.DayType,
+                    wd.HoursWorked,
+                    wd.Notes,
+                    wd.Projects
+                        .Select(p => new WorkDayProjectDto(p.Project.Name, p.Hours, p.ProjectId))
+                        .ToList()))
                 .ToList();
         }
 
@@ -312,12 +325,13 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             InvoiceType.Monthly when rate.Type == RateType.Monthly =>
                 rate.Price,
             
-            // Hourly rate: sum of (hourly_rate × hours_worked per day)
+            // Hourly rate: sum of (hourly_rate × hours per day), hours taken from
+            // project allocations when present, otherwise the day's HoursWorked
             InvoiceType.Monthly when rate.Type == RateType.Hourly && dto.WorkDays != null =>
                 new Money(
                     rate.Price.Amount * dto.WorkDays
-                        .Where(wd => wd.DayType == DayType.Worked && wd.HoursWorked.HasValue)
-                        .Sum(wd => wd.HoursWorked!.Value),
+                        .Where(wd => wd.DayType == DayType.Worked)
+                        .Sum(GetDayHours),
                     rate.Price.Currency),
             
             // Daily rate: daily_rate × number of worked days
@@ -427,6 +441,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             },
 
             LineItems = BuildLineItems(invoice, dto, rate, workDays, customer.Locale),
+            ProjectSummary = BuildProjectSummary(workDays, rate),
             Taxes = invoice.TaxLines.Select(t => new TaxTemplateModel
             {
                 Description = t.Description,
@@ -450,8 +465,21 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     }
 
     /// <summary>
+    /// Hours recorded for a work day: the sum of its project allocations when present,
+    /// otherwise the day-level <see cref="WorkDayDto.HoursWorked"/> (0 when neither is set).
+    /// </summary>
+    private static decimal GetDayHours(WorkDayDto workDay)
+    {
+        if (workDay.Projects is { Count: > 0 })
+            return workDay.Projects.Where(p => p.Hours > 0).Sum(p => p.Hours);
+
+        return workDay.HoursWorked ?? 0m;
+    }
+
+    /// <summary>
     /// Builds line items for the template.
-    /// For Daily/Hourly rates: one line item per worked day (date as description).
+    /// For Daily/Hourly rates with project allocations: one line item per project.
+    /// For Daily/Hourly rates without allocations: one line item per worked day (date as description).
     /// For Monthly rates: a single consolidated line.
     /// Expenses are added as separate line items.
     /// </summary>
@@ -471,14 +499,22 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
                 .OrderBy(wd => wd.Date)
                 .ToList();
 
-            if (workedDaysList is { Count: > 0 } && rate.Type is RateType.Daily or RateType.Hourly)
+            var perDayRate = rate.Type is RateType.Daily or RateType.Hourly;
+            var hasAllocations = workedDaysList?.Any(wd => wd.Projects is { Count: > 0 }) == true;
+
+            if (workedDaysList is { Count: > 0 } && perDayRate && hasAllocations)
+            {
+                // One line item per project (time grouped across the month)
+                lineItems.AddRange(BuildProjectLineItems(workedDaysList, rate));
+            }
+            else if (workedDaysList is { Count: > 0 } && perDayRate)
             {
                 // One line item per worked day
                 foreach (var wd in workedDaysList)
                 {
                     var culture = System.Globalization.CultureInfo.GetCultureInfo(locale);
                     var description = wd.Date.ToString("d", culture);
-                    var quantity = rate.Type == RateType.Hourly ? wd.HoursWorked ?? 0m : 1m;
+                    var quantity = rate.Type == RateType.Hourly ? GetDayHours(wd) : 1m;
                     var amount = rate.Price.Amount * quantity;
 
                     lineItems.Add(new LineItemTemplateModel
@@ -538,12 +574,147 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
         return lineItems;
     }
-    
+
     /// <summary>
-    /// Clears all work days for the specified month and saves new ones.
-    /// This ensures the calendar is accurate for the month being invoiced.
+    /// One billed line per project. For hourly rates the quantity is total hours;
+    /// for daily rates each day is split across its projects pro-rata by hours, so the
+    /// quantities still sum to the worked-day count. Worked days with no allocation are
+    /// grouped into a single "Unassigned" line.
     /// </summary>
-    private async Task ClearAndSaveWorkDaysAsync(
+    private static IEnumerable<LineItemTemplateModel> BuildProjectLineItems(
+        List<WorkDayDto> workedDays,
+        Rate rate)
+    {
+        var order = new List<string>();
+        var byProject = new Dictionary<string, (decimal Hours, decimal Days, decimal Amount)>(StringComparer.OrdinalIgnoreCase);
+        var unassignedDays = 0m;
+        var unassignedHours = 0m;
+
+        foreach (var wd in workedDays)
+        {
+            var allocations = wd.Projects?.Where(p => p.Hours > 0).ToList() ?? [];
+
+            if (allocations.Count == 0)
+            {
+                unassignedDays += 1m;
+                unassignedHours += GetDayHours(wd);
+                continue;
+            }
+
+            var dayHours = allocations.Sum(a => a.Hours);
+
+            foreach (var allocation in allocations)
+            {
+                var name = allocation.ProjectName.Trim();
+                if (!byProject.TryGetValue(name, out var acc))
+                {
+                    order.Add(name);
+                    acc = (0m, 0m, 0m);
+                }
+
+                var dayFraction = dayHours > 0 ? allocation.Hours / dayHours : 0m;
+                var amount = rate.Type == RateType.Hourly
+                    ? rate.Price.Amount * allocation.Hours
+                    : rate.Price.Amount * dayFraction;
+
+                byProject[name] = (
+                    acc.Hours + allocation.Hours,
+                    acc.Days + dayFraction,
+                    acc.Amount + amount);
+            }
+        }
+
+        foreach (var name in order)
+        {
+            var acc = byProject[name];
+            yield return new LineItemTemplateModel
+            {
+                Description = name,
+                Quantity = rate.Type == RateType.Hourly ? acc.Hours : decimal.Round(acc.Days, 3),
+                Rate = rate.Price.Amount,
+                Amount = acc.Amount
+            };
+        }
+
+        if (unassignedDays > 0m || unassignedHours > 0m)
+        {
+            yield return new LineItemTemplateModel
+            {
+                Description = "Unassigned",
+                Quantity = rate.Type == RateType.Hourly ? unassignedHours : unassignedDays,
+                Rate = rate.Price.Amount,
+                Amount = rate.Type == RateType.Hourly
+                    ? rate.Price.Amount * unassignedHours
+                    : rate.Price.Amount * unassignedDays
+            };
+        }
+    }
+
+    /// <summary>
+    /// Per-project totals for the billed month. <see cref="ProjectSummaryTemplateModel.Amount"/>
+    /// is null for a flat monthly rate (time is not billed per project).
+    /// </summary>
+    private static List<ProjectSummaryTemplateModel> BuildProjectSummary(
+        IEnumerable<WorkDayDto>? workDays,
+        Rate rate)
+    {
+        if (workDays is null)
+            return [];
+
+        var order = new List<string>();
+        var byProject = new Dictionary<string, (decimal Hours, HashSet<DateOnly> Days, decimal Amount)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var wd in workDays.Where(wd => wd.DayType == DayType.Worked))
+        {
+            var allocations = wd.Projects?.Where(p => p.Hours > 0).ToList() ?? [];
+            if (allocations.Count == 0)
+                continue;
+
+            var dayHours = allocations.Sum(a => a.Hours);
+
+            foreach (var allocation in allocations)
+            {
+                var name = allocation.ProjectName.Trim();
+                if (!byProject.TryGetValue(name, out var acc))
+                {
+                    order.Add(name);
+                    acc = (0m, new HashSet<DateOnly>(), 0m);
+                }
+
+                var amount = rate.Type switch
+                {
+                    RateType.Hourly => rate.Price.Amount * allocation.Hours,
+                    RateType.Daily => dayHours > 0 ? rate.Price.Amount * (allocation.Hours / dayHours) : 0m,
+                    _ => 0m
+                };
+
+                acc.Days.Add(wd.Date);
+                byProject[name] = (acc.Hours + allocation.Hours, acc.Days, acc.Amount + amount);
+            }
+        }
+
+        return order
+            .Select(name =>
+            {
+                var acc = byProject[name];
+                return new ProjectSummaryTemplateModel
+                {
+                    Name = name,
+                    TotalHours = acc.Hours,
+                    WorkedDays = acc.Days.Count,
+                    Amount = rate.Type == RateType.Monthly ? null : acc.Amount
+                };
+            })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Clears all work days for the specified month and saves new ones, resolving each
+    /// project allocation (creating projects typed on the calendar for the first time).
+    /// Returns the work days with project names normalized to their canonical form and
+    /// day hours set to the sum of their allocations.
+    /// </summary>
+    private async Task<ICollection<WorkDayDto>> ClearAndSaveWorkDaysAsync(
         long customerId,
         int year,
         int month,
@@ -551,12 +722,12 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         CancellationToken cancellationToken)
     {
         if (workDayDtos == null || workDayDtos.Count == 0)
-            return;
+            return workDayDtos ?? [];
 
         // Delete all work days for this customer in this month
         var startDate = new DateOnly(year, month, 1);
         var endDate = new DateOnly(year, month, DateTime.DaysInMonth(year, month));
-        
+
         var existingWorkDays = await _workDayRepository.FindAsync(
             wd => wd.CustomerId == customerId && wd.Date >= startDate && wd.Date <= endDate,
             cancellationToken);
@@ -566,52 +737,43 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             await _workDayRepository.DeleteAsync(existing, cancellationToken);
         }
 
-        // Insert new work days
+        var normalized = new List<WorkDayDto>(workDayDtos.Count);
+
         foreach (var dto in workDayDtos)
         {
             var workDay = new WorkDay(customerId, dto.Date, dto.DayType, dto.HoursWorked, dto.Notes);
-            await _workDayRepository.AddAsync(workDay, cancellationToken);
-        }
-    }
-    
-    /// <summary>
-    /// Saves or updates work days for a customer.
-    /// Existing work days for the same dates are updated with new day types.
-    /// </summary>
-    private async Task SaveWorkDaysAsync(
-        long customerId,
-        ICollection<WorkDayDto> workDayDtos,
-        CancellationToken cancellationToken)
-    {
-        if (workDayDtos == null || workDayDtos.Count == 0)
-            return;
+            List<WorkDayProjectDto>? normalizedAllocations = null;
 
-        var dates = workDayDtos.Select(wd => wd.Date).ToList();
-        var existingWorkDays = await _workDayRepository.FindAsync(
-            wd => wd.CustomerId == customerId && dates.Contains(wd.Date),
-            cancellationToken);
-
-        var existingDict = existingWorkDays.ToDictionary(wd => wd.Date);
-
-        foreach (var dto in workDayDtos)
-        {
-            if (existingDict.TryGetValue(dto.Date, out var existing))
+            if (dto.Projects is { Count: > 0 })
             {
-                // Update existing work day
-                existing.UpdateDayType(dto.DayType);
-                existing.UpdateHoursWorked(dto.HoursWorked);
-                if (dto.Notes != null)
+                normalizedAllocations = [];
+                var totalHours = 0m;
+
+                // Merge duplicate references to the same project within a single day
+                var groups = dto.Projects
+                    .Where(p => p.Hours > 0)
+                    .GroupBy(p => new { p.ProjectId, Name = (p.ProjectName ?? string.Empty).Trim() });
+
+                foreach (var group in groups)
                 {
-                    existing.UpdateNotes(dto.Notes);
+                    var hours = group.Sum(p => p.Hours);
+                    var project = await _projectResolver.ResolveOrCreateAsync(
+                        customerId, group.Key.ProjectId, group.Key.Name, cancellationToken);
+
+                    workDay.Projects.Add(new WorkDayProject(project, hours));
+                    normalizedAllocations.Add(new WorkDayProjectDto(
+                        project.Name, hours, project.Id > 0 ? project.Id : null));
+                    totalHours += hours;
                 }
-                await _workDayRepository.UpdateAsync(existing, cancellationToken);
+
+                if (totalHours > 0m)
+                    workDay.HoursWorked = totalHours;
             }
-            else
-            {
-                // Create new work day
-                var workDay = new WorkDay(customerId, dto.Date, dto.DayType, dto.HoursWorked, dto.Notes);
-                await _workDayRepository.AddAsync(workDay, cancellationToken);
-            }
+
+            await _workDayRepository.AddAsync(workDay, cancellationToken);
+            normalized.Add(dto with { Projects = normalizedAllocations });
         }
+
+        return normalized;
     }
 }

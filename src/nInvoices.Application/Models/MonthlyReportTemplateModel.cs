@@ -16,7 +16,10 @@ public sealed record MonthlyReportTemplateModel
     public int MonthNumber { get; init; }
     
     public List<MonthDayTemplateModel> MonthDays { get; init; } = [];
-    
+
+    /// <summary>Per-project totals for the month (empty when no projects were tracked).</summary>
+    public List<ProjectSummaryTemplateModel> ProjectSummary { get; init; } = [];
+
     // Summary counters
     public int WorkedDaysCount { get; init; }
     public int PublicHolidayCount { get; init; }
@@ -42,4 +45,17 @@ public sealed record MonthDayTemplateModel
     public bool IsPublicHoliday { get; init; }
     public bool IsUnpaidLeave { get; init; }
     public string? Notes { get; init; }
+
+    /// <summary>Total hours recorded for the day (null when not tracked).</summary>
+    public decimal? Hours { get; init; }
+
+    /// <summary>Per-project time breakdown for the day (empty when no projects were tracked).</summary>
+    public List<DayProjectTemplateModel> Projects { get; init; } = [];
+}
+
+/// <summary>Time spent on a single project on a given day.</summary>
+public sealed record DayProjectTemplateModel
+{
+    public string Name { get; init; } = string.Empty;
+    public decimal Hours { get; init; }
 }

@@ -22,6 +22,8 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<InvoiceTaxLine> InvoiceTaxLines => Set<InvoiceTaxLine>();
     public DbSet<WorkDay> WorkDays => Set<WorkDay>();
+    public DbSet<WorkDayProject> WorkDayProjects => Set<WorkDayProject>();
+    public DbSet<Project> Projects => Set<Project>();
     public DbSet<Expense> Expenses => Set<Expense>();
     public DbSet<InvoiceSequence> InvoiceSequences => Set<InvoiceSequence>();
     public DbSet<ImageAsset> ImageAssets => Set<ImageAsset>();

@@ -81,6 +81,10 @@
           <RatesList :customer-id="customerId" />
         </div>
 
+        <div v-if="activeTab === 'projects'" class="tab-pane">
+          <ProjectsList :customer-id="customerId" />
+        </div>
+
         <div v-if="activeTab === 'taxes'" class="tab-pane">
           <TaxesList :customer-id="customerId" />
         </div>
@@ -110,6 +114,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCustomersStore } from '@/stores/customers'
 import RatesList from '@/components/rates/RatesList.vue'
+import ProjectsList from '@/components/projects/ProjectsList.vue'
 import TaxesList from '@/components/taxes/TaxesList.vue'
 import TemplatesList from '@/components/templates/TemplatesList.vue'
 import MonthlyReportTemplatesList from '@/components/monthlyreports/MonthlyReportTemplatesList.vue'
@@ -128,6 +133,7 @@ const activeTab = ref('overview')
 const tabs = [
   { id: 'overview', label: 'Overview' },
   { id: 'rates', label: 'Rates' },
+  { id: 'projects', label: 'Projects' },
   { id: 'taxes', label: 'Taxes' },
   { id: 'templates', label: 'Invoice Templates' },
   { id: 'monthly-reports', label: 'Monthly Reports' },

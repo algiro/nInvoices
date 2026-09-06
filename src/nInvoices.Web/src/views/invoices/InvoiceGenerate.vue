@@ -163,7 +163,7 @@
               <span class="stat-label">Unpaid Leave:</span>
               <span class="stat-value">{{ unpaidLeaveCount }}</span>
             </div>
-            <div v-if="isHourlyRate" class="stat">
+            <div class="stat">
               <span class="stat-label">Total Hours:</span>
               <span class="stat-value">{{ totalHours.toFixed(1) }}h</span>
             </div>
@@ -173,28 +173,70 @@
             </div>
           </div>
 
-          <!-- Hours input for hourly rates -->
-          <div v-if="isHourlyRate && workedDaysCount > 0" class="hours-input-section">
-            <h4 class="text-md font-semibold mb-2">Hours per Day</h4>
-            <p class="text-sm text-gray-600 mb-3">Specify hours worked for each day:</p>
-            <div class="hours-grid">
-              <div 
-                v-for="workDay in form.workDays.filter(wd => (wd.dayType ?? DayType.Worked) === DayType.Worked)" 
-                :key="workDay.date"
-                class="hours-row"
+          <!-- Per-day project time breakdown -->
+          <div v-if="workedDaysCount > 0" class="worked-days-section">
+            <h4 class="text-md font-semibold mb-1">Projects per Day</h4>
+            <p class="text-sm text-gray-600 mb-3">
+              Split each worked day across one or more projects. New project names are saved
+              automatically.
+              <span v-if="isHourlyRate"> Hours drive the hourly billing.</span>
+            </p>
+
+            <datalist id="project-suggestions">
+              <option v-for="p in projectSuggestions" :key="p" :value="p" />
+            </datalist>
+
+            <div
+              v-for="workDay in sortedWorkedDays"
+              :key="workDay.date"
+              class="worked-day-card"
+            >
+              <div class="worked-day-header">
+                <span class="worked-day-date">{{ formatDate(workDay.date) }}</span>
+                <span
+                  class="worked-day-total"
+                  :class="{ 'text-red-500': isHourlyRate && dayHours(workDay) <= 0 }"
+                >
+                  {{ dayHours(workDay).toFixed(1) }}h
+                </span>
+              </div>
+
+              <div
+                v-for="(alloc, index) in (workDay.projects ?? [])"
+                :key="index"
+                class="alloc-row"
               >
-                <span class="hours-date">{{ formatDate(workDay.date) }}</span>
-                <input 
-                  v-model.number="workDay.hoursWorked"
+                <input
+                  v-model.trim="alloc.projectName"
+                  type="text"
+                  list="project-suggestions"
+                  placeholder="Project name"
+                  class="form-control alloc-name"
+                />
+                <input
+                  v-model.number="alloc.hours"
                   type="number"
                   step="0.5"
                   min="0"
                   max="24"
                   placeholder="Hours"
-                  class="form-control hours-input"
-                  required
+                  class="form-control alloc-hours"
                 />
+                <button
+                  type="button"
+                  class="btn-icon text-red-600"
+                  title="Remove project"
+                  @click="removeAllocation(workDay, index)"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
+
+              <button type="button" class="btn-link" @click="addAllocation(workDay)">
+                + Add project
+              </button>
             </div>
           </div>
         </div>
@@ -279,6 +321,7 @@ import { useRouter } from 'vue-router'
 import { useInvoicesStore } from '@/stores/invoices'
 import { useCustomersStore } from '@/stores/customers'
 import { useRatesStore } from '@/stores/rates'
+import { useProjectsStore } from '@/stores/projects'
 import { useSettingsStore } from '@/stores/settings'
 import { useMonthlyReportTemplatesStore } from '@/stores/monthlyReportTemplates'
 import { InvoiceType, RateType, DayType, DayTypeNames } from '@/types'
@@ -288,6 +331,7 @@ const router = useRouter()
 const invoicesStore = useInvoicesStore()
 const customersStore = useCustomersStore()
 const ratesStore = useRatesStore()
+const projectsStore = useProjectsStore()
 const settingsStore = useSettingsStore()
 const monthlyReportTemplatesStore = useMonthlyReportTemplatesStore()
 
@@ -408,11 +452,26 @@ const isHourlyRate = computed(() => {
   return selectedRate.value?.type === RateType.Hourly
 })
 
-const totalHours = computed(() => {
-  if (!isHourlyRate.value) return 0
-  return form.workDays
+function dayHours(workDay: WorkDayDto): number {
+  return (workDay.projects ?? []).reduce((sum, p) => sum + (Number(p.hours) || 0), 0)
+}
+
+const sortedWorkedDays = computed(() =>
+  form.workDays
     .filter(wd => (wd.dayType ?? DayType.Worked) === DayType.Worked)
-    .reduce((sum, wd) => sum + (wd.hoursWorked ?? 0), 0)
+    .sort((a, b) => a.date.localeCompare(b.date))
+)
+
+const projectSuggestions = computed(() => {
+  if (!form.customerId) return []
+  return projectsStore
+    .activeProjectsByCustomer(form.customerId)
+    .map(p => p.name)
+    .sort((a, b) => a.localeCompare(b))
+})
+
+const totalHours = computed(() => {
+  return sortedWorkedDays.value.reduce((sum, wd) => sum + dayHours(wd), 0)
 })
 
 const estimatedAmount = computed(() => {
@@ -443,6 +502,13 @@ const isFormValid = computed(() => {
 
   if (form.invoiceType === InvoiceType.Monthly && form.workDays.length === 0) {
     return false
+  }
+
+  // Hourly billing needs at least some hours on every worked day
+  if (form.invoiceType === InvoiceType.Monthly && isHourlyRate.value) {
+    if (sortedWorkedDays.value.some(wd => dayHours(wd) <= 0)) {
+      return false
+    }
   }
 
   return true
@@ -507,6 +573,9 @@ async function loadCustomerData() {
       console.warn('No Daily/Monthly/Hourly rate found, using first available rate', rates[0])
     }
 
+    // Load the customer's projects for calendar suggestions
+    await projectsStore.fetchByCustomerId(form.customerId, false)
+
     // Load monthly report templates for this customer
     if (form.invoiceType === InvoiceType.Monthly) {
       await monthlyReportTemplatesStore.fetchByCustomer(form.customerId)
@@ -538,11 +607,12 @@ function cycleWorkDayType(day: CalendarDay) {
   
   if (existingIndex >= 0) {
     const currentType = form.workDays[existingIndex].dayType ?? DayType.Worked
-    
+
     // Cycle: Worked (0) → PublicHoliday (1) → UnpaidLeave (2) → unselected
     if (currentType === DayType.Worked) {
       form.workDays[existingIndex].dayType = DayType.PublicHoliday
       form.workDays[existingIndex].hoursWorked = undefined // Clear hours when not worked
+      form.workDays[existingIndex].projects = [] // Clear project time when not worked
     } else if (currentType === DayType.PublicHoliday) {
       form.workDays[existingIndex].dayType = DayType.UnpaidLeave
     } else {
@@ -550,15 +620,22 @@ function cycleWorkDayType(day: CalendarDay) {
       form.workDays.splice(existingIndex, 1)
     }
   } else {
-    // First click: add as Worked day
-    // For hourly rates, default to 8 hours
-    const defaultHours = isHourlyRate.value ? 8 : undefined
+    // First click: add as Worked day with a single 8h project row to fill in
     form.workDays.push({
       date: day.date,
       dayType: DayType.Worked,
-      hoursWorked: defaultHours
+      projects: [{ projectName: '', hours: 8 }]
     })
   }
+}
+
+function addAllocation(workDay: WorkDayDto) {
+  if (!workDay.projects) workDay.projects = []
+  workDay.projects.push({ projectName: '', hours: 0 })
+}
+
+function removeAllocation(workDay: WorkDayDto, index: number) {
+  workDay.projects?.splice(index, 1)
 }
 
 function addExpense() {
@@ -578,14 +655,26 @@ async function handleSubmit() {
 
   try {
     loading.value = true
-    
+
+    const payload: GenerateInvoiceDto = {
+      ...form,
+      // Drop incomplete project rows; keep a day even if it ends up with no projects
+      workDays: form.workDays.map(wd => ({
+        ...wd,
+        hoursWorked: undefined,
+        projects: (wd.projects ?? [])
+          .filter(p => p.projectName.trim().length > 0 && Number(p.hours) > 0)
+          .map(p => ({ projectName: p.projectName.trim(), hours: Number(p.hours), projectId: p.projectId ?? null }))
+      }))
+    }
+
     // Add year and month for monthly invoices
     if (form.invoiceType === InvoiceType.Monthly) {
-      form.year = selectedYear.value
-      form.month = selectedMonth.value
+      payload.year = selectedYear.value
+      payload.month = selectedMonth.value
     }
-    
-    const invoice = await invoicesStore.generate(form)
+
+    const invoice = await invoicesStore.generate(payload)
     router.push(`/invoices/${invoice.id}`)
   } catch (error: any) {
     alert(`Failed to generate invoice: ${error.message}`)
@@ -801,38 +890,70 @@ function handleCancel() {
   color: #1f2937;
 }
 
-.hours-input-section {
+.worked-days-section {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid #e5e7eb;
 }
 
-.hours-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 0.75rem;
-}
-
-.hours-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem;
+.worked-day-card {
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
   background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 0.375rem;
 }
 
-.hours-date {
-  flex: 1;
+.worked-day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.worked-day-date {
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #374151;
 }
 
-.hours-input {
-  width: 100px;
+.worked-day-total {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.alloc-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.alloc-name {
+  flex: 1;
   padding: 0.375rem 0.5rem;
   font-size: 0.875rem;
+}
+
+.alloc-hours {
+  width: 90px;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.25rem 0;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
 }
 
 .expenses-list {
