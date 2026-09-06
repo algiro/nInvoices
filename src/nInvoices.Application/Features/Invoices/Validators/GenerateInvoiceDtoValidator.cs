@@ -80,5 +80,26 @@ public sealed class WorkDayDtoValidator : AbstractValidator<WorkDayDto>
             .MaximumLength(500)
             .When(x => x.Notes != null)
             .WithMessage("Notes must not exceed 500 characters");
+
+        RuleForEach(x => x.Projects)
+            .SetValidator(new WorkDayProjectDtoValidator())
+            .When(x => x.Projects != null);
+    }
+}
+
+public sealed class WorkDayProjectDtoValidator : AbstractValidator<WorkDayProjectDto>
+{
+    public WorkDayProjectDtoValidator()
+    {
+        RuleFor(x => x.Hours)
+            .GreaterThan(0)
+            .WithMessage("Project hours must be greater than zero");
+
+        RuleFor(x => x.ProjectName)
+            .NotEmpty()
+            .WithMessage("Project name is required")
+            .MaximumLength(200)
+            .WithMessage("Project name must not exceed 200 characters")
+            .When(x => x.ProjectId is null or <= 0);
     }
 }

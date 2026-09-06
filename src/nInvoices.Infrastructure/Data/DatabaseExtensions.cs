@@ -49,6 +49,7 @@ public static class DatabaseExtensions
         
         // Register specialized repositories
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+        services.AddScoped<IWorkDayRepository, WorkDayRepository>();
         
         // Register User Context
         services.AddScoped<IUserContext, UserContext>();

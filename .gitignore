@@ -1,5 +1,7 @@
 # Build results
 [Dd]ebug/
+[Bb]in\\[Dd]ebug/
+[Bb]in\\[Rr]elease/
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/

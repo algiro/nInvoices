@@ -16,7 +16,7 @@ namespace nInvoices.Infrastructure.Data.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.2");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
             modelBuilder.Entity("nInvoices.Core.Entities.Customer", b =>
                 {
@@ -369,6 +369,39 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.ToTable("MonthlyReportTemplates", (string)null);
                 });
 
+            modelBuilder.Entity("nInvoices.Core.Entities.Project", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Projects", (string)null);
+                });
+
             modelBuilder.Entity("nInvoices.Core.Entities.Rate", b =>
                 {
                     b.Property<long>("Id")
@@ -496,6 +529,38 @@ namespace nInvoices.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("WorkDays", (string)null);
+                });
+
+            modelBuilder.Entity("nInvoices.Core.Entities.WorkDayProject", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Hours")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("ProjectId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("WorkDayId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("WorkDayId", "ProjectId")
+                        .IsUnique();
+
+                    b.ToTable("WorkDayProjects", (string)null);
                 });
 
             modelBuilder.Entity("nInvoices.Core.Entities.Customer", b =>
@@ -765,6 +830,17 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.Navigation("Customer");
                 });
 
+            modelBuilder.Entity("nInvoices.Core.Entities.Project", b =>
+                {
+                    b.HasOne("nInvoices.Core.Entities.Customer", "Customer")
+                        .WithMany("Projects")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+                });
+
             modelBuilder.Entity("nInvoices.Core.Entities.Rate", b =>
                 {
                     b.HasOne("nInvoices.Core.Entities.Customer", "Customer")
@@ -832,9 +908,30 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.Navigation("Customer");
                 });
 
+            modelBuilder.Entity("nInvoices.Core.Entities.WorkDayProject", b =>
+                {
+                    b.HasOne("nInvoices.Core.Entities.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("nInvoices.Core.Entities.WorkDay", "WorkDay")
+                        .WithMany("Projects")
+                        .HasForeignKey("WorkDayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+
+                    b.Navigation("WorkDay");
+                });
+
             modelBuilder.Entity("nInvoices.Core.Entities.Customer", b =>
                 {
                     b.Navigation("Invoices");
+
+                    b.Navigation("Projects");
 
                     b.Navigation("Rates");
 
@@ -848,6 +945,11 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.Navigation("Expenses");
 
                     b.Navigation("TaxLines");
+                });
+
+            modelBuilder.Entity("nInvoices.Core.Entities.WorkDay", b =>
+                {
+                    b.Navigation("Projects");
                 });
 #pragma warning restore 612, 618
         }

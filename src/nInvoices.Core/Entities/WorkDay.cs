@@ -14,8 +14,9 @@ public sealed class WorkDay : EntityBase
     public decimal? HoursWorked { get; set; }
     public string? Notes { get; set; }
 
-    // Navigation property
+    // Navigation properties
     public Customer Customer { get; set; } = null!;
+    public ICollection<WorkDayProject> Projects { get; set; } = [];
 
     public WorkDay()
     {

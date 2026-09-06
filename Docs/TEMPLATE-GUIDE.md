@@ -91,6 +91,17 @@ taxes                 - Collection of taxes
   - amount            - Tax amount (can be negative for withholdings)
 ```
 
+**`projectSummary`** (List&lt;ProjectSummaryTemplateModel&gt;) - empty when no projects were tracked:
+```
+projectSummary        - Per-project totals for the billed month
+  - name              - Project name
+  - totalHours        - Total hours across the month
+  - workedDays        - Number of distinct worked days touching the project
+  - amount            - Billed amount (null for a flat monthly rate)
+```
+When any worked day has project allocations, `lineItems` contains one line per project
+(days without an allocation are grouped into an "Unassigned" line) instead of one line per day.
+
 ### Monthly Report Template Model
 
 | Property | Type | Description | Example |
@@ -121,6 +132,19 @@ monthDays              - Collection of all days in the month
   - isPublicHoliday    - Boolean: true if holiday
   - isUnpaidLeave      - Boolean: true if leave
   - notes              - Optional notes/description
+  - hours              - Total hours recorded for the day (null when not tracked)
+  - projects           - Per-project breakdown for the day:
+      - name           - Project name
+      - hours          - Hours on that project
+```
+
+**`projectSummary`** (List&lt;ProjectSummaryTemplateModel&gt;) - month totals per project:
+```
+projectSummary
+  - name               - Project name
+  - totalHours         - Total hours in the month
+  - workedDays         - Distinct worked days touching the project
+  - amount             - Subtotal share for the project (null when no hours tracked)
 ```
 
 ---

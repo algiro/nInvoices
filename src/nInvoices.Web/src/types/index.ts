@@ -180,11 +180,43 @@ export interface UpdateInvoiceTemplateDto {
   isActive: boolean;
 }
 
+export interface ProjectDto {
+  id: number;
+  customerId: number;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateProjectDto {
+  customerId: number;
+  name: string;
+}
+
+export interface UpdateProjectDto {
+  name: string;
+  isActive: boolean;
+}
+
+export interface DeleteProjectResultDto {
+  found: boolean;
+  deleted: boolean;
+  deactivated: boolean;
+}
+
+export interface WorkDayProjectDto {
+  projectName: string;
+  hours: number;
+  projectId?: number | null;
+}
+
 export interface WorkDayDto {
   date: string;
   dayType?: DayType;
   hoursWorked?: number;
   notes?: string;
+  projects?: WorkDayProjectDto[];
 }
 
 export interface ExpenseDto {

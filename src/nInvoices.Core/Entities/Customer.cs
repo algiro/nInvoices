@@ -17,6 +17,7 @@ public sealed class Customer : EntityBase
     public ICollection<Tax> Taxes { get; set; } = [];
     public ICollection<InvoiceTemplate> Templates { get; set; } = [];
     public ICollection<Invoice> Invoices { get; set; } = [];
+    public ICollection<Project> Projects { get; set; } = [];
 
     public Customer()
     {

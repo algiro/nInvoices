@@ -80,6 +80,12 @@
               <code class="inline-code">[[ day.isWorked ]]</code>
               <code class="inline-code">[[ day.isPublicHoliday ]]</code>
               <code class="inline-code">[[ day.isUnpaidLeave ]]</code>
+              <code class="inline-code">[[ day.hours ]]</code>
+            </div>
+            <div class="syntax-example">
+              <strong>Projects:</strong>
+              <code class="inline-code">[[ for p in day.projects ]][[ p.name ]] [[ p.hours ]][[ end ]]</code>
+              <code class="inline-code">[[ for p in projectSummary ]][[ p.name ]] [[ p.workedDays ]] [[ p.totalHours ]] [[ p.amount ]][[ end ]]</code>
             </div>
             <div class="syntax-example">
               <strong>Conditional Styling:</strong>
@@ -291,6 +297,8 @@ function loadSampleTemplate() {
                 <th>Date</th>
                 <th>Giorno</th>
                 <th>Status</th>
+                <th>Ore</th>
+                <th>Progetti</th>
             </tr>
         </thead>
         <tbody>
@@ -299,10 +307,36 @@ function loadSampleTemplate() {
                 <td>[[ day.dateValue | date.to_string "%Y-%m-%d" ]]</td>
                 <td>[[ LocalizeDayOfWeek day.dateValue locale ]]</td>
                 <td>[[ day.type ]]</td>
+                <td>[[ if day.hours ]][[ day.hours ]][[ end ]]</td>
+                <td>[[ for p in day.projects ]][[ p.name ]] ([[ p.hours ]]h)[[ if !for.last ]], [[ end ]][[ end ]]</td>
             </tr>
             [[ end ]]
         </tbody>
     </table>
+
+    [[ if projectSummary.size > 0 ]]
+    <h2>Riepilogo per Progetto</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Progetto</th>
+                <th>Giorni</th>
+                <th>Ore</th>
+                <th>Importo</th>
+            </tr>
+        </thead>
+        <tbody>
+            [[ for p in projectSummary ]]
+            <tr>
+                <td>[[ p.name ]]</td>
+                <td>[[ p.workedDays ]]</td>
+                <td>[[ p.totalHours ]]</td>
+                <td>[[ if p.amount ]][[ FormatCurrency p.amount (currency ?? "EUR") ]][[ end ]]</td>
+            </tr>
+            [[ end ]]
+        </tbody>
+    </table>
+    [[ end ]]
 </body>
 </html>`
 }

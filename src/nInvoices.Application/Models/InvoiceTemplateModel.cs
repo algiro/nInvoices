@@ -17,6 +17,9 @@ public sealed record InvoiceTemplateModel
     public CustomerTemplateModel Customer { get; init; } = null!;
     public List<LineItemTemplateModel> LineItems { get; init; } = [];
     public List<TaxTemplateModel> Taxes { get; init; } = [];
+
+    /// <summary>Per-project totals for the billed period (empty when no projects were tracked).</summary>
+    public List<ProjectSummaryTemplateModel> ProjectSummary { get; init; } = [];
     
     public decimal Subtotal { get; init; }
     public decimal TotalTax { get; init; }
@@ -58,4 +61,16 @@ public sealed record TaxTemplateModel
     public string Description { get; init; } = string.Empty;
     public decimal Rate { get; init; }
     public decimal Amount { get; init; }
+}
+
+/// <summary>
+/// Aggregated time (and, where applicable, billed amount) for a single project
+/// over the invoiced / reported month.
+/// </summary>
+public sealed record ProjectSummaryTemplateModel
+{
+    public string Name { get; init; } = string.Empty;
+    public decimal TotalHours { get; init; }
+    public int WorkedDays { get; init; }
+    public decimal? Amount { get; init; }
 }
