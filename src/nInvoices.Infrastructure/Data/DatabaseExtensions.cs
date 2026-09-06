@@ -50,9 +50,14 @@ public static class DatabaseExtensions
         // Register specialized repositories
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<IWorkDayRepository, WorkDayRepository>();
-        
+
         // Register User Context
         services.AddScoped<IUserContext, UserContext>();
+
+        // Readiness probe: "/health" fails when the database is unreachable.
+        // Not tagged "live", so it does not affect the "/alive" liveness probe.
+        services.AddHealthChecks()
+            .AddDbContextCheck<ApplicationDbContext>("database");
 
         return services;
     }
