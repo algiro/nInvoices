@@ -112,7 +112,8 @@ against a running API + frontend.
   check).
 - **nInvoices.AppHost** — dev-only Aspire orchestrator (`aspire run`): PostgreSQL + Keycloak +
   API + Vite. Not referenced by any deployable project, never published. Production deploy is
-  unchanged (Docker Hub + compose + SSH); Aspire is not used for deployment.
+  unchanged (Docker Hub + compose + SSH); Aspire is not used for deployment. Full walkthrough
+  (images, wiring, config precedence, ports, troubleshooting): `src/nInvoices.AppHost/README.md`.
 - **nInvoices.Web** — Vue 3 Composition API. `src/api/` wraps a shared axios `client.ts` with
   one module per resource; `src/stores/` Pinia; `src/services/auth.service.ts` uses
   `oidc-client-ts` for Keycloak. Views in `src/views/`, routing in `src/router/`.
