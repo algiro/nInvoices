@@ -308,6 +308,11 @@ import { invoicesApi, importExportApi, imageAssetsApi } from '@/api'
 import type { ImageAssetDto } from '@/api/imageAssets'
 import type { DataExport } from '@/api/importExport'
 import { useSettingsStore } from '@/stores/settings'
+import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
+
+const toast = useToast()
+const { confirm } = useConfirm()
 
 const settingsStore = useSettingsStore()
 
@@ -363,11 +368,12 @@ async function handleUpdateSequence() {
   const value = newSequenceValue.value
 
   if (value < currentSequence.value) {
-    const confirmed = confirm(
-      `⚠️ Warning: You are setting the sequence to ${value}, which is lower than the current value (${currentSequence.value}).\n\n` +
-      `This may cause duplicate invoice numbers!\n\n` +
-      `Are you sure you want to continue?`
-    )
+    const confirmed = await confirm({
+      title: 'Lower the invoice sequence?',
+      message: `The sequence goes from ${currentSequence.value} down to ${value}. New invoices may reuse numbers that already exist.`,
+      confirmLabel: 'Lower sequence',
+      tone: 'danger'
+    })
     if (!confirmed) return
   }
 
@@ -377,22 +383,23 @@ async function handleUpdateSequence() {
     const result = await invoicesApi.setSequence(value)
     currentSequence.value = result.currentValue
     newSequenceValue.value = null
-    alert(`✓ Sequence updated successfully to ${result.currentValue}`)
+    toast.success('Invoice sequence updated', { message: `Next sequence value: ${result.currentValue}` })
   } catch (error: any) {
     sequenceError.value = error.message || 'Failed to update sequence'
-    alert(`Failed to update sequence: ${sequenceError.value}`)
+    toast.error('Failed to update sequence', { message: sequenceError.value ?? undefined })
   } finally {
     sequenceUpdating.value = false
   }
 }
 
 async function handleResetSequence() {
-  const confirmed = confirm(
-    '⚠️ Warning: You are about to reset the invoice sequence to 1.\n\n' +
-    'This will likely cause duplicate invoice numbers!\n\n' +
-    'Are you absolutely sure you want to do this?'
-  )
-  
+  const confirmed = await confirm({
+    title: 'Reset the invoice sequence to 1?',
+    message: 'New invoices will very likely reuse numbers that already exist.',
+    confirmLabel: 'Reset to 1',
+    tone: 'danger'
+  })
+
   if (!confirmed) return
 
   sequenceUpdating.value = true
@@ -401,10 +408,10 @@ async function handleResetSequence() {
     const result = await invoicesApi.setSequence(1)
     currentSequence.value = result.currentValue
     newSequenceValue.value = null
-    alert('✓ Sequence reset to 1')
+    toast.success('Invoice sequence reset to 1')
   } catch (error: any) {
     sequenceError.value = error.message || 'Failed to reset sequence'
-    alert(`Failed to reset sequence: ${sequenceError.value}`)
+    toast.error('Failed to reset sequence', { message: sequenceError.value ?? undefined })
   } finally {
     sequenceUpdating.value = false
   }
@@ -477,13 +484,13 @@ async function handleUploadImage() {
 }
 
 async function handleDeleteImage(asset: ImageAssetDto) {
-  if (!confirm(`Delete image "${asset.alias}"? Any templates using it will show a placeholder.`)) return
+  if (!(await confirm({ title: 'Delete image?', message: `"${asset.alias}" will be deleted. Templates that use it will show a placeholder.`, confirmLabel: 'Delete', tone: 'danger' }))) return
   try {
     await imageAssetsApi.delete(asset.id)
     delete imageDataCache[asset.id]
     await loadImageAssets()
   } catch (error: any) {
-    alert(`Failed to delete: ${error.message}`)
+    toast.failure('Failed to delete image', error)
   }
 }
 

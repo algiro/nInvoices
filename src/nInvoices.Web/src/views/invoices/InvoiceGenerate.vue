@@ -268,6 +268,9 @@ import { useWorkMonth, localDateString, dayHours, billedHours } from '@/composab
 import MonthCalendar from '@/components/time/MonthCalendar.vue'
 import DayInspector from '@/components/time/DayInspector.vue'
 import TimesheetList from '@/components/time/TimesheetList.vue'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const router = useRouter()
 const invoicesStore = useInvoicesStore()
@@ -445,7 +448,7 @@ async function loadCustomerData() {
     console.log('Fetched rates for customer:', form.customerId, rates)
     
     if (rates.length === 0) {
-      alert('No rates found for this customer. Please add rates first.')
+      toast.warning('This customer has no rates', { message: 'Add a rate on the customer page before generating an invoice.' })
       selectedRate.value = null
       return
     }
@@ -531,7 +534,7 @@ async function handleSubmit() {
     const invoice = await invoicesStore.generate(payload)
     router.push(`/invoices/${invoice.id}`)
   } catch (error: any) {
-    alert(`Failed to generate invoice: ${error.message}`)
+    toast.failure('Failed to generate invoice', error)
   } finally {
     loading.value = false
   }

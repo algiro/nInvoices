@@ -85,6 +85,11 @@ import { ref, onMounted, computed } from 'vue'
 import { useProjectsStore } from '@/stores/projects'
 import ProjectForm from './ProjectForm.vue'
 import type { ProjectDto } from '@/types'
+import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
+
+const toast = useToast()
+const { confirm } = useConfirm()
 
 interface Props {
   customerId: number
@@ -125,17 +130,17 @@ function handleEdit(project: ProjectDto) {
 }
 
 async function handleDelete(project: ProjectDto) {
-  if (!confirm(`Delete project "${project.name}"?\n\nIf it is used on any work day it will be deactivated instead of removed.`)) {
+  if (!(await confirm({ title: 'Delete project?', message: `"${project.name}" will be deleted. If it is used on any work day it is deactivated instead.`, confirmLabel: 'Delete', tone: 'danger' }))) {
     return
   }
 
   try {
     const result = await projectsStore.remove(project.id)
     if (result.deactivated) {
-      alert(`"${project.name}" is used on existing work days, so it was deactivated rather than deleted.`)
+      toast.info('Project deactivated', { message: `"${project.name}" is used on existing work days, so it was deactivated instead of deleted.` })
     }
   } catch (error: any) {
-    alert(`Failed to delete project: ${error.message}`)
+    toast.failure('Failed to delete project', error)
   }
 }
 

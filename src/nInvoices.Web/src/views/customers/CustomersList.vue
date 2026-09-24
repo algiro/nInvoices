@@ -101,6 +101,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCustomersStore } from '@/stores/customers'
 import type { CustomerDto } from '@/types'
+import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
+
+const toast = useToast()
+const { confirm } = useConfirm()
 
 const router = useRouter()
 const store = useCustomersStore()
@@ -141,14 +146,14 @@ function handleEdit(id: number) {
 }
 
 async function handleDelete(customer: CustomerDto) {
-  if (!confirm(`Are you sure you want to delete customer "${customer.name}"?\n\nThis action cannot be undone.`)) {
+  if (!(await confirm({ title: 'Delete customer?', message: `"${customer.name}" and all of their data will be permanently deleted.`, confirmLabel: 'Delete customer', tone: 'danger' }))) {
     return
   }
 
   try {
     await store.remove(customer.id)
   } catch (error: any) {
-    alert(`Failed to delete customer: ${error.message}`)
+    toast.failure('Failed to delete customer', error)
   }
 }
 </script>

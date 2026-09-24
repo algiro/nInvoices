@@ -228,7 +228,6 @@ export const useInvoicesStore = defineStore('invoices', () => {
     } catch (e: any) {
       error.value = e.message || 'Failed to download monthly report';
       console.error('Monthly report download error:', e);
-      alert('Failed to download monthly report: ' + e.message);
       throw e;
     } finally {
       loading.value = false;

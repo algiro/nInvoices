@@ -215,6 +215,9 @@
 import { reactive, ref, onMounted } from 'vue'
 import { useTemplatesStore } from '@/stores/templates'
 import type { CreateInvoiceTemplateDto, UpdateInvoiceTemplateDto, InvoiceType, TemplateValidationResultDto } from '@/types'
+import { useConfirm } from '@/composables/useConfirm'
+
+const { confirm } = useConfirm()
 
 interface Props {
   customerId: number
@@ -303,7 +306,7 @@ async function loadTemplate(id: number) {
   }
 }
 
-function loadSampleTemplate() {
+async function loadSampleTemplate() {
   const sample = `<!DOCTYPE html>
 <html>
 <head>
@@ -372,7 +375,7 @@ function loadSampleTemplate() {
 </body>
 </html>`
   
-  if (form.content && !confirm('This will replace your current template. Continue?')) {
+  if (form.content && !(await confirm({ title: 'Replace the template?', message: 'Loading the sample replaces everything currently in the editor.', confirmLabel: 'Replace' }))) {
     return
   }
   

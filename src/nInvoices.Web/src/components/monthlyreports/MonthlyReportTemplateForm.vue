@@ -159,6 +159,11 @@
 import { ref, onMounted } from 'vue'
 import { useMonthlyReportTemplatesStore } from '@/stores/monthlyReportTemplates'
 import type { CreateMonthlyReportTemplateDto, UpdateMonthlyReportTemplateDto, TemplateValidationResultDto } from '@/types'
+import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
+
+const toast = useToast()
+const { confirm } = useConfirm()
 
 const props = defineProps<{
   customerId: number
@@ -196,7 +201,7 @@ async function loadTemplate() {
       content: template.content
     }
   } catch (err: any) {
-    alert(`Failed to load template: ${err.message}`)
+    toast.failure('Failed to load template', err)
   }
 }
 
@@ -204,7 +209,7 @@ async function handleValidate() {
   try {
     validationResult.value = await store.validate(form.value.content)
   } catch (err: any) {
-    alert(`Validation failed: ${err.message}`)
+    toast.failure('Validation failed', err)
   }
 }
 
@@ -236,7 +241,7 @@ async function handleSubmit() {
     emit('success')
   } catch (err: any) {
     console.error('Failed to save template:', err);
-    alert(`Failed to save template: ${err.message}`)
+    toast.failure('Failed to save template', err)
   } finally {
     loading.value = false
     disabled.value = false
@@ -247,8 +252,8 @@ function handleCancel() {
   emit('cancel')
 }
 
-function loadSampleTemplate() {
-  if (form.value.content && !confirm('This will replace your current template. Continue?')) {
+async function loadSampleTemplate() {
+  if (form.value.content && !(await confirm({ title: 'Replace the template?', message: 'Loading the sample replaces everything currently in the editor.', confirmLabel: 'Replace' }))) {
     return
   }
 

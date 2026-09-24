@@ -114,6 +114,11 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useMonthlyReportTemplatesStore } from '@/stores/monthlyReportTemplates'
 import type { MonthlyReportTemplateDto } from '@/types'
 import MonthlyReportTemplateForm from './MonthlyReportTemplateForm.vue'
+import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
+
+const toast = useToast()
+const { confirm } = useConfirm()
 
 const props = defineProps<{
   customerId: number
@@ -164,7 +169,7 @@ async function handleActivate(template: MonthlyReportTemplateDto) {
     await store.activate(template.id)
     await loadTemplates()
   } catch (err: any) {
-    alert(`Failed to activate template: ${err.message}`)
+    toast.failure('Failed to activate template', err)
   }
 }
 
@@ -173,12 +178,12 @@ async function handleDeactivate(template: MonthlyReportTemplateDto) {
     await store.deactivate(template.id)
     await loadTemplates()
   } catch (err: any) {
-    alert(`Failed to deactivate template: ${err.message}`)
+    toast.failure('Failed to deactivate template', err)
   }
 }
 
 async function handleDelete(template: MonthlyReportTemplateDto) {
-  if (!confirm(`Are you sure you want to delete the template "${template.name}"?`)) {
+  if (!(await confirm({ title: 'Delete template?', message: `"${template.name}" will be permanently deleted.`, confirmLabel: 'Delete', tone: 'danger' }))) {
     return
   }
 
@@ -186,7 +191,7 @@ async function handleDelete(template: MonthlyReportTemplateDto) {
     await store.deleteTemplate(template.id)
     await loadTemplates()
   } catch (err: any) {
-    alert(`Failed to delete template: ${err.message}`)
+    toast.failure('Failed to delete template', err)
   }
 }
 
