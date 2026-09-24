@@ -39,8 +39,7 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 # ---- config -----------------------------------------------------------------
-#SSH_HOST="${SSH_HOST:-he-it-tudes}"
-SSH_HOST=algiro@it-tudes.tech
+SSH_HOST="${SSH_HOST:-he-it-tudes}"
 REMOTE_DIR="${REMOTE_DIR:-~/docker}"
 DOCKER_USERNAME="${DOCKER_USERNAME:-algiro}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
@@ -154,6 +153,9 @@ elif [[ $WEB_ONLY -eq 1 ]]; then
 else
   remote "cd ${REMOTE_DIR} && docker compose pull api web && docker compose up -d"
 fi
+# Recreated containers get new internal IPs; the shared proxy keeps the old ones
+# until it reloads, which shows up as 502s (see infra hosts/ittudes/DEPLOY.md).
+remote "docker exec ninvoices-nginx-prod nginx -s reload"
 ok "Containers restarted."
 
 # ---- 4: verify -----------------------------------------------------------------

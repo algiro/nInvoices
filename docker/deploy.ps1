@@ -84,6 +84,10 @@ if ($ApiOnly) {
     Invoke-Remote "cd $REMOTE_DIR && docker compose pull api web && docker compose up -d"
 }
 
+# Recreated containers get new internal IPs; the shared proxy keeps the old ones
+# until it reloads, which shows up as 502s (see infra hosts/ittudes/DEPLOY.md).
+Invoke-Remote "docker exec ninvoices-nginx-prod nginx -s reload"
+
 Write-Host "Containers restarted." -ForegroundColor Green
 
 # Step 3: Verify

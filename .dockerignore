@@ -5,3 +5,15 @@ dist
 *.log
 .env
 .env.local
+
+# Local build output: Windows restore files break the Linux build, and bin/ can hold
+# hundreds of MB (e.g. the headless Chrome PuppeteerSharp downloads for local PDFs)
+**/bin
+**/obj
+
+# Local runtime data
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/*.db.bak*
+**/logs

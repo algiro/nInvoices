@@ -33,6 +33,7 @@ COPY ["src/nInvoices.Api/nInvoices.Api.csproj", "src/nInvoices.Api/"]
 COPY ["src/nInvoices.Application/nInvoices.Application.csproj", "src/nInvoices.Application/"]
 COPY ["src/nInvoices.Core/nInvoices.Core.csproj", "src/nInvoices.Core/"]
 COPY ["src/nInvoices.Infrastructure/nInvoices.Infrastructure.csproj", "src/nInvoices.Infrastructure/"]
+COPY ["src/nInvoices.ServiceDefaults/nInvoices.ServiceDefaults.csproj", "src/nInvoices.ServiceDefaults/"]
 RUN dotnet restore "src/nInvoices.Api/nInvoices.Api.csproj"
 COPY . .
 WORKDIR "/src/src/nInvoices.Api"
