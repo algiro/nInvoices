@@ -1,711 +1,387 @@
 <template>
-  <div class="invoices-list">
-    <div class="header">
-      <h1 class="text-3xl font-bold">Invoices</h1>
-      <button @click="handleGenerate" class="btn-primary">
-        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Generate Invoice
-      </button>
+  <div class="invoices-page">
+    <PageHeader title="Invoices" :subtitle="subtitle">
+      <template #actions>
+        <BaseButton variant="primary" icon="plus" to="/invoices/new">New invoice</BaseButton>
+      </template>
+    </PageHeader>
+
+    <div v-if="invoicesStore.invoices.length > 0" class="tiles">
+      <div class="tile">
+        <span class="tile-label">Outstanding</span>
+        <span class="tile-value">{{ formatTotals(outstanding.totals) }}</span>
+        <span class="tile-note">{{ outstanding.count }} finalized or sent</span>
+      </div>
+      <div class="tile">
+        <span class="tile-label">Paid in {{ currentYear }}</span>
+        <span class="tile-value">{{ formatTotals(paidThisYear.totals) }}</span>
+        <span class="tile-note">{{ paidThisYear.count }} {{ paidThisYear.count === 1 ? 'invoice' : 'invoices' }}</span>
+      </div>
+      <div class="tile">
+        <span class="tile-label">Drafts</span>
+        <span class="tile-value">{{ statusCounts.Draft ?? 0 }}</span>
+        <span class="tile-note">not finalized yet</span>
+      </div>
     </div>
 
     <div class="filters">
-      <input
-        v-model="searchQuery"
-        type="text"
-        placeholder="Search invoices..."
-        class="search-input"
-      />
-      
-      <select v-model="statusFilter" class="filter-select">
-        <option value="">All Statuses</option>
-        <option value="Draft">Draft</option>
-        <option value="Finalized">Finalized</option>
-        <option value="Sent">Sent</option>
-        <option value="Paid">Paid</option>
-        <option value="Cancelled">Cancelled</option>
-      </select>
-
-      <select v-model="typeFilter" class="filter-select">
-        <option value="">All Types</option>
-        <option value="Monthly">Monthly</option>
-        <option value="OneTime">One-Time</option>
-      </select>
+      <div class="status-chips" role="group" aria-label="Filter by status">
+        <button
+          v-for="chip in statusChips"
+          :key="chip.value"
+          type="button"
+          class="chip"
+          :class="{ active: statusFilter === chip.value }"
+          :aria-pressed="statusFilter === chip.value"
+          @click="setStatus(chip.value)"
+        >
+          {{ chip.label }}
+          <span class="chip-count">{{ chip.count }}</span>
+        </button>
+      </div>
+      <div class="filter-controls">
+        <div class="search">
+          <AppIcon name="search" class="search-icon" />
+          <input
+            id="invoice-search"
+            v-model="searchQuery"
+            type="search"
+            class="control"
+            placeholder="Invoice number or customer"
+            aria-label="Search invoices"
+          />
+        </div>
+        <select id="invoice-customer-filter" v-model="customerFilter" class="control" aria-label="Filter by customer">
+          <option :value="0">All customers</option>
+          <option v-for="c in customersWithInvoices" :key="c.id" :value="c.id">{{ c.name }}</option>
+        </select>
+        <select id="invoice-type-filter" v-model="typeFilter" class="control" aria-label="Filter by type">
+          <option value="">All types</option>
+          <option value="Monthly">Monthly</option>
+          <option value="One-time">One-time</option>
+        </select>
+      </div>
     </div>
 
-    <div v-if="invoicesStore.loading" class="loading-state">
-      <div class="spinner"></div>
-      <p class="mt-4">Loading invoices...</p>
-    </div>
+    <LoadingState v-if="invoicesStore.loading && invoicesStore.invoices.length === 0" label="Loading invoices…" />
 
-    <div v-else-if="invoicesStore.error" class="error-state">
-      <p class="text-red-600">{{ invoicesStore.error }}</p>
-      <button @click="loadData" class="btn-primary mt-4">Retry</button>
-    </div>
+    <EmptyState v-else-if="loadError" icon="alert" title="Invoices could not be loaded" :description="loadError">
+      <BaseButton @click="loadData">Try again</BaseButton>
+    </EmptyState>
 
-    <div v-else-if="filteredInvoices.length === 0" class="empty-state">
-      <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-      <p class="text-xl text-gray-600 mb-2">
-        {{ searchQuery || statusFilter || typeFilter ? 'No invoices found' : 'No invoices yet' }}
-      </p>
-      <p class="text-gray-500 mb-4">
-        {{ searchQuery || statusFilter || typeFilter ? 'Try adjusting your filters' : 'Generate your first invoice to get started' }}
-      </p>
-      <button v-if="!searchQuery && !statusFilter && !typeFilter" @click="handleGenerate" class="btn-primary">
-        Generate First Invoice
-      </button>
-    </div>
+    <EmptyState
+      v-else-if="invoicesStore.invoices.length === 0"
+      icon="invoices"
+      title="No invoices yet"
+      description="Pick a customer and a month, mark the worked days, and the invoice and timesheet PDFs are generated for you."
+    >
+      <BaseButton variant="primary" icon="plus" to="/invoices/new">New invoice</BaseButton>
+    </EmptyState>
 
-    <div v-else class="invoices-table-container">
-      <table class="invoices-table">
+    <EmptyState v-else-if="filteredInvoices.length === 0" icon="search" title="No invoice matches these filters" compact>
+      <BaseButton @click="clearFilters">Clear filters</BaseButton>
+    </EmptyState>
+
+    <div v-else class="table-wrap">
+      <table class="data-table">
         <thead>
           <tr>
-            <th>Invoice #</th>
-            <th>Customer</th>
-            <th>Type</th>
-            <th>Issue Date</th>
-            <th>Due Date</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th scope="col">Invoice</th>
+            <th scope="col">Customer</th>
+            <th scope="col">Period</th>
+            <th scope="col">Issued</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="num">Total</th>
+            <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="invoice in filteredInvoices"
-            :key="invoice.id"
-            @click="handleView(invoice.id)"
-            class="invoice-row"
-          >
-            <td class="font-semibold">{{ invoice.invoiceNumber }}</td>
-            <td>{{ getCustomerName(invoice.customerId) }}</td>
+          <tr v-for="invoice in filteredInvoices" :key="invoice.id" class="clickable" @click="router.push(`/invoices/${invoice.id}`)">
             <td>
-              <span class="type-badge" :class="`type-${getTypeCssClass(invoice.type)}`">
-                {{ formatType(invoice.type) }}
-              </span>
+              <router-link :to="`/invoices/${invoice.id}`" class="primary-cell number" @click.stop>{{ invoice.invoiceNumber }}</router-link>
+              <span class="sub">{{ invoiceTypeLabel(invoice.type) }}</span>
             </td>
-            <td>{{ formatDate(invoice.issueDate) }}</td>
-            <td>{{ invoice.dueDate ? formatDate(invoice.dueDate) : '-' }}</td>
-            <td class="font-semibold">{{ formatMoney(invoice.total) }}</td>
-            <td>
-              <span class="status-badge" :class="`status-${getStatusCssClass(invoice.status)}`">
-                {{ formatStatus(invoice.status) }}
-              </span>
-            </td>
-            <td class="actions-cell" @click.stop>
-              <button
-                @click.prevent.stop="handleDownloadPdf(invoice.id)"
-                class="action-btn"
-                title="Download PDF"
+            <td>{{ customerName(invoice.customerId) }}</td>
+            <td>{{ invoice.month ? formatPeriod(invoice.month, invoice.year) : '—' }}</td>
+            <td class="muted">{{ formatDate(invoice.issueDate) }}</td>
+            <td><StatusPill :tone="invoiceStatus(invoice.status).tone">{{ invoiceStatus(invoice.status).label }}</StatusPill></td>
+            <td class="num primary-cell">{{ formatMoney(invoice.total.amount, invoice.total.currency) }}</td>
+            <td class="actions" @click.stop>
+              <BaseButton
+                v-if="actionsFor(invoice).primary"
+                size="sm"
+                variant="ghost"
+                :icon="actionsFor(invoice).primary!.icon"
+                :loading="isBusy(invoice, actionsFor(invoice).primary!.id)"
+                @click="run(actionsFor(invoice).primary!.id, invoice)"
               >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </button>
-              <!-- Status transition buttons -->
-              <button
-                v-if="invoice.status === 'Draft' || invoice.status === 0"
-                @click.prevent.stop="handleFinalize(invoice)"
-                class="action-btn action-finalize"
-                title="Finalize invoice"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
-              <button
-                v-if="invoice.status === 'Finalized' || invoice.status === 1"
-                @click.prevent.stop="handleMarkAsSent(invoice)"
-                class="action-btn action-sent"
-                title="Mark as Sent"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </button>
-              <button
-                v-if="invoice.status === 'Sent' || invoice.status === 2 || invoice.status === 'Finalized' || invoice.status === 1"
-                @click.prevent.stop="handleMarkAsPaid(invoice)"
-                class="action-btn action-paid"
-                title="Mark as Paid"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
-              <button
-                v-if="invoice.status !== 'Paid' && invoice.status !== 3 && invoice.status !== 'Cancelled' && invoice.status !== 4"
-                @click.prevent.stop="handleCancel(invoice)"
-                class="action-btn action-cancel"
-                title="Cancel invoice"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                </svg>
-              </button>
-              <!-- Normal delete button for drafts -->
-              <button
-                v-if="invoice.status === 'Draft' || invoice.status === 0"
-                @click.prevent.stop="handleDelete(invoice)"
-                class="action-btn action-delete"
-                title="Delete draft invoice"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-              <!-- Force delete button for finalized invoices -->
-              <button
-                v-if="invoice.status !== 'Draft' && invoice.status !== 0"
-                @click.prevent.stop="handleForceDelete(invoice)"
-                class="action-btn action-force-delete"
-                title="Force delete finalized invoice"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </button>
+                {{ actionsFor(invoice).primary!.label }}
+              </BaseButton>
+              <ActionMenu :items="menuItems(invoice)" :label="`More actions for ${invoice.invoiceNumber}`" />
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-
-    <div v-if="filteredInvoices.length > 0" class="summary-stats">
-      <div class="stat-card">
-        <p class="stat-label">Total Invoices</p>
-        <p class="stat-value">{{ filteredInvoices.length }}</p>
-      </div>
-      <div class="stat-card">
-        <p class="stat-label">Total Revenue</p>
-        <p class="stat-value">{{ formatMoney(totalRevenue) }}</p>
-      </div>
-      <div class="stat-card">
-        <p class="stat-label">Paid</p>
-        <p class="stat-value">{{ paidCount }}</p>
-      </div>
-      <div class="stat-card">
-        <p class="stat-label">Outstanding</p>
-        <p class="stat-value">{{ outstandingCount }}</p>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useInvoicesStore } from '@/stores/invoices'
 import { useCustomersStore } from '@/stores/customers'
-import { InvoiceTypeNames, InvoiceStatusNames, InvoiceType, InvoiceStatus } from '@/types'
 import type { InvoiceDto } from '@/types'
-import { useToast } from '@/composables/useToast'
-import { useConfirm } from '@/composables/useConfirm'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
+import StatusPill from '@/components/ui/StatusPill.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import LoadingState from '@/components/ui/LoadingState.vue'
+import ActionMenu, { type ActionMenuItem } from '@/components/ui/ActionMenu.vue'
+import { useInvoiceActions, actionsFor } from '@/composables/useInvoiceActions'
+import { formatMoney, formatDate, formatPeriod, invoiceStatus, invoiceTypeLabel } from '@/utils/format'
 
-const toast = useToast()
-const { confirm } = useConfirm()
-
+const route = useRoute()
 const router = useRouter()
 const invoicesStore = useInvoicesStore()
 const customersStore = useCustomersStore()
+const { run, isBusy } = useInvoiceActions()
 
+const loadError = ref<string | null>(null)
 const searchQuery = ref('')
-const statusFilter = ref('')
+const customerFilter = ref(0)
 const typeFilter = ref('')
+const currentYear = new Date().getFullYear()
+
+// The status filter lives in the URL (?status=Sent) so it survives reloads and can be linked to
+const statusFilter = computed(() => (typeof route.query.status === 'string' ? route.query.status : ''))
+
+function setStatus(value: string) {
+  router.replace({ query: { ...route.query, status: value || undefined } })
+}
+
+function clearFilters() {
+  searchQuery.value = ''
+  customerFilter.value = 0
+  typeFilter.value = ''
+  setStatus('')
+}
+
+const statusCounts = computed(() => {
+  const counts: Record<string, number> = {}
+  for (const invoice of invoicesStore.invoices) {
+    const name = invoiceStatus(invoice.status).name
+    counts[name] = (counts[name] ?? 0) + 1
+  }
+  return counts
+})
+
+const statusChips = computed(() => [
+  { value: '', label: 'All', count: invoicesStore.invoices.length },
+  ...['Draft', 'Finalized', 'Sent', 'Paid', 'Cancelled'].map(name => ({
+    value: name,
+    label: invoiceStatus(name).label,
+    count: statusCounts.value[name] ?? 0
+  }))
+])
+
+const customersWithInvoices = computed(() => {
+  const ids = new Set(invoicesStore.invoices.map(i => i.customerId))
+  return customersStore.customers.filter(c => ids.has(c.id)).sort((a, b) => a.name.localeCompare(b.name))
+})
+
+function customerName(customerId: number): string {
+  return customersStore.getCustomerById(customerId)?.name ?? 'Unknown customer'
+}
 
 const filteredInvoices = computed(() => {
-  let result = invoicesStore.invoices
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(invoice =>
+  const query = searchQuery.value.trim().toLowerCase()
+  return invoicesStore.invoices
+    .filter(invoice => !statusFilter.value || invoiceStatus(invoice.status).name === statusFilter.value)
+    .filter(invoice => !customerFilter.value || invoice.customerId === customerFilter.value)
+    .filter(invoice => !typeFilter.value || invoiceTypeLabel(invoice.type) === typeFilter.value)
+    .filter(invoice =>
+      !query ||
       invoice.invoiceNumber.toLowerCase().includes(query) ||
-      getCustomerName(invoice.customerId).toLowerCase().includes(query)
-    )
-  }
-
-  if (statusFilter.value) {
-    result = result.filter(invoice => {
-      // Backend returns string values like "Draft", "Finalized"
-      if (typeof invoice.status === 'string') {
-        return invoice.status === statusFilter.value
-      }
-      // Handle numeric enum values
-      const statusNum = Object.entries(InvoiceStatusNames).find(
-        ([_, name]) => name === statusFilter.value
-      )?.[0]
-      return statusNum !== undefined && invoice.status === Number(statusNum)
-    })
-  }
-
-  if (typeFilter.value) {
-    result = result.filter(invoice => {
-      // Backend returns string values like "Monthly", "OneTime"
-      if (typeof invoice.type === 'string') {
-        // Handle "One-Time" filter matching "OneTime" backend value
-        const backendValue = typeFilter.value === 'One-Time' ? 'OneTime' : typeFilter.value
-        return invoice.type === backendValue
-      }
-      // Handle numeric enum values
-      const typeNum = Object.entries(InvoiceTypeNames).find(
-        ([_, name]) => name === typeFilter.value
-      )?.[0]
-      return typeNum !== undefined && invoice.type === Number(typeNum)
-    })
-  }
-
-  return result.sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime())
+      customerName(invoice.customerId).toLowerCase().includes(query))
+    .sort((a, b) => b.issueDate.localeCompare(a.issueDate) || b.id - a.id)
 })
 
-const totalRevenue = computed(() => {
-  const paidInvoices = filteredInvoices.value
-    .filter(inv => inv.status === 'Paid' || inv.status === InvoiceStatus.Paid)
-  if (paidInvoices.length === 0) return undefined
-  const amount = paidInvoices.reduce((sum, inv) => sum + inv.total.amount, 0)
-  const currency = paidInvoices[0].total.currency
-  return { amount, currency }
+const subtitle = computed(() => {
+  const total = invoicesStore.invoices.length
+  const shown = filteredInvoices.value.length
+  if (total === 0) return 'Nothing invoiced yet'
+  return shown === total ? `${total} ${total === 1 ? 'invoice' : 'invoices'}` : `Showing ${shown} of ${total}`
 })
 
-const paidCount = computed(() =>
-  filteredInvoices.value.filter(inv => inv.status === 'Paid' || inv.status === InvoiceStatus.Paid).length
+// Money totals are kept per currency; adding EUR to USD would be meaningless
+function summarize(invoices: InvoiceDto[]) {
+  const totals = new Map<string, number>()
+  for (const invoice of invoices) {
+    totals.set(invoice.total.currency, (totals.get(invoice.total.currency) ?? 0) + invoice.total.amount)
+  }
+  return { count: invoices.length, totals }
+}
+
+function formatTotals(totals: Map<string, number>): string {
+  if (totals.size === 0) return formatMoney(0, 'EUR')
+  return [...totals.entries()].map(([currency, amount]) => formatMoney(amount, currency)).join(' + ')
+}
+
+const outstanding = computed(() =>
+  summarize(invoicesStore.invoices.filter(i => ['Finalized', 'Sent'].includes(invoiceStatus(i.status).name)))
 )
 
-const outstandingCount = computed(() =>
-  filteredInvoices.value.filter(inv => 
-    inv.status === 'Finalized' || inv.status === 'Sent' ||
-    inv.status === InvoiceStatus.Finalized || inv.status === InvoiceStatus.Sent
-  ).length
+const paidThisYear = computed(() =>
+  summarize(invoicesStore.invoices.filter(i =>
+    invoiceStatus(i.status).name === 'Paid' && i.issueDate.startsWith(String(currentYear))))
 )
 
-onMounted(() => {
-  loadData()
-})
+function menuItems(invoice: InvoiceDto): ActionMenuItem[] {
+  return actionsFor(invoice).more.map(action =>
+    action === 'separator'
+      ? { separator: true }
+      : { label: action.label, icon: action.icon, danger: action.danger, run: () => run(action.id, invoice) }
+  )
+}
 
 async function loadData() {
-  await Promise.all([
-    invoicesStore.fetchAll(),
-    customersStore.fetchAll()
-  ])
-  console.log('Invoices loaded:', invoicesStore.invoices.length);
-  if (invoicesStore.invoices.length > 0) {
-    console.log('First invoice:', JSON.stringify(invoicesStore.invoices[0], null, 2));
-  }
-}
-
-function getCustomerName(customerId: number): string {
-  const customer = customersStore.getCustomerById(customerId)
-  return customer?.name || 'Unknown'
-}
-
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString()
-}
-
-function formatMoney(money: { amount: number; currency: string } | undefined): string {
-  if (!money || money.amount === undefined) {
-    return '0.00 N/A'
-  }
-  return `${money.amount.toFixed(2)} ${money.currency}`
-}
-
-function formatType(type: InvoiceType | string): string {
-  console.log('formatType called with:', type, 'Type:', typeof type);
-  
-  // Handle string enum values from backend
-  if (typeof type === 'string') {
-    // Backend returns "Monthly", "OneTime", etc as strings
-    return type === 'OneTime' ? 'One-Time' : type;
-  }
-  
-  // Handle numeric enum values
-  const result = InvoiceTypeNames[type as InvoiceType];
-  console.log('Result:', result);
-  return result || 'Unknown'
-}
-
-function formatStatus(status: InvoiceStatus | string): string {
-  console.log('formatStatus called with:', status, 'Type:', typeof status);
-  
-  // Handle string enum values from backend
-  if (typeof status === 'string') {
-    return status;
-  }
-  
-  // Handle numeric enum values
-  const result = InvoiceStatusNames[status as InvoiceStatus];
-  console.log('Result:', result);
-  return result || 'Unknown'
-}
-
-function getTypeCssClass(type: InvoiceType | string): string {
-  if (typeof type === 'string') return type.toLowerCase().replace('-', '')
-  return InvoiceTypeNames[type]?.toLowerCase().replace('-', '') || 'unknown'
-}
-
-function getStatusCssClass(status: InvoiceStatus | string): string {
-  if (typeof status === 'string') return status.toLowerCase()
-  return InvoiceStatusNames[status]?.toLowerCase() || 'unknown'
-}
-
-function handleGenerate() {
-  router.push('/invoices/new')
-}
-
-function handleView(id: number) {
-  router.push(`/invoices/${id}`)
-}
-
-async function handleDownloadPdf(id: number) {
+  loadError.value = null
   try {
-    await invoicesStore.downloadPdf(id)
+    await Promise.all([invoicesStore.fetchAll(), customersStore.fetchAll()])
   } catch (error: any) {
-    toast.failure('Failed to download PDF', error)
+    loadError.value = error?.message ?? 'Unknown error'
   }
 }
 
-async function handleFinalize(invoice: InvoiceDto) {
-  if (!(await confirm({ title: 'Finalize invoice?', message: `${invoice.invoiceNumber} will be locked and can no longer be edited.`, confirmLabel: 'Finalize' }))) return
-  try {
-    await invoicesStore.finalize(invoice.id)
-    await invoicesStore.fetchAll()
-  } catch (error: any) {
-    toast.failure('Failed to finalize invoice', error)
-  }
-}
+onMounted(loadData)
 
-async function handleMarkAsSent(invoice: InvoiceDto) {
-  if (!(await confirm({ title: 'Mark as sent?', message: `${invoice.invoiceNumber} will be marked as sent to the customer.`, confirmLabel: 'Mark as sent' }))) return
-  try {
-    await invoicesStore.markAsSent(invoice.id)
-  } catch (error: any) {
-    toast.failure('Failed to mark invoice as sent', error)
-  }
-}
-
-async function handleMarkAsPaid(invoice: InvoiceDto) {
-  if (!(await confirm({ title: 'Mark as paid?', message: `${invoice.invoiceNumber} will be marked as paid.`, confirmLabel: 'Mark as paid' }))) return
-  try {
-    await invoicesStore.markAsPaid(invoice.id)
-  } catch (error: any) {
-    toast.failure('Failed to mark invoice as paid', error)
-  }
-}
-
-async function handleCancel(invoice: InvoiceDto) {
-  if (!(await confirm({ title: 'Cancel invoice?', message: `${invoice.invoiceNumber} will be cancelled. You can reverse this later.`, confirmLabel: 'Cancel invoice', cancelLabel: 'Keep invoice' }))) return
-  try {
-    await invoicesStore.cancelInvoice(invoice.id)
-  } catch (error: any) {
-    toast.failure('Failed to cancel invoice', error)
-  }
-}
-
-async function handleDelete(invoice: InvoiceDto) {
-  console.log('handleDelete called for invoice:', invoice.id, 'Status:', invoice.status);
-  
-  if (!(await confirm({ title: 'Delete invoice?', message: `${invoice.invoiceNumber} will be permanently deleted.`, confirmLabel: 'Delete', tone: 'danger' }))) {
-    console.log('Delete cancelled by user');
-    return
-  }
-
-  try {
-    console.log('Calling invoicesStore.remove with force=false');
-    await invoicesStore.remove(invoice.id, false)
-    console.log('Delete successful');
-  } catch (error: any) {
-    console.error('Delete failed:', error);
-    toast.failure('Failed to delete invoice', error)
-  }
-}
-
-async function handleForceDelete(invoice: InvoiceDto) {
-  console.log('handleForceDelete called for invoice:', invoice.id, 'Status:', invoice.status);
-  
-  if (!(await confirm({
-    title: 'Force delete invoice?',
-    message: `${invoice.invoiceNumber} is ${formatStatus(invoice.status)} and normally can't be deleted. Only force delete to clean up a failed generation. This can't be undone.`,
-    confirmLabel: 'Force delete',
-    tone: 'danger'
-  }))) {
-    console.log('Force delete cancelled by user');
-    return
-  }
-
-  try {
-    console.log('Calling invoicesStore.remove with force=true');
-    await invoicesStore.remove(invoice.id, true)
-    console.log('Force delete successful');
-  } catch (error: any) {
-    console.error('Force delete failed:', error);
-    toast.failure('Failed to delete invoice', error)
-  }
-}
+// A customer link such as /invoices?customerId=3 preselects that customer
+watch(() => route.query.customerId, value => {
+  customerFilter.value = Number(value) || 0
+}, { immediate: true })
 </script>
 
 <style scoped>
-.invoices-list {
-  padding: 2rem;
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
 }
 
-.header {
+.tile {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.tile-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.tile-value {
+  font-size: 1.35rem;
+  font-weight: 650;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.tile-note {
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
 }
 
 .filters {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
-.search-input,
-.filter-select {
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  font-size: 1rem;
+.status-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
 }
 
-.search-input {
-  flex: 1;
-  max-width: 400px;
-}
-
-.filter-select {
-  min-width: 150px;
-}
-
-.search-input:focus,
-.filter-select:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-.btn-primary {
+.chip {
   display: inline-flex;
   align-items: center;
-  padding: 0.75rem 1.5rem;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
   font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
 }
 
-.btn-primary:hover {
-  background: #1d4ed8;
+.chip:hover {
+  border-color: var(--color-primary-line);
+  color: var(--color-primary);
 }
 
-.loading-state,
-.error-state,
-.empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
+.chip.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
-.spinner {
-  border: 4px solid #f3f4f6;
-  border-top: 4px solid #2563eb;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.invoices-table-container {
-  background: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  margin-bottom: 2rem;
-}
-
-.invoices-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.invoices-table thead {
-  background: #f9fafb;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.invoices-table th {
-  padding: 1rem;
-  text-align: left;
+.chip-count {
+  font-size: var(--text-xs);
   font-weight: 600;
-  color: #374151;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
 }
 
-.invoices-table td {
-  padding: 1rem;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.invoice-row {
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.invoice-row:hover {
-  background: #f9fafb;
-}
-
-.type-badge,
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.type-monthly {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.type-onetime {
-  background: #e0e7ff;
-  color: #4338ca;
-}
-
-.status-draft {
-  background: #f3f4f6;
-  color: #4b5563;
-}
-
-.status-finalized {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.status-sent {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.status-paid {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.status-cancelled {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.actions-cell {
+.filter-controls {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.action-btn {
-  padding: 0.5rem;
-  border: none;
-  background: transparent;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  color: #6b7280;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.filter-controls > .control {
+  width: auto;
+  min-width: 11rem;
 }
 
-.action-btn svg {
-  width: 1.25rem;
-  height: 1.25rem;
-  stroke: currentColor;
+.search {
+  position: relative;
+  flex: 1 1 18rem;
+  max-width: 26rem;
 }
 
-.action-btn:hover {
-  background: #f3f4f6;
-  color: #1f2937;
+.search-icon {
+  position: absolute;
+  left: 0.7rem;
+  top: 50%;
+  width: 1rem;
+  height: 1rem;
+  transform: translateY(-50%);
+  color: var(--color-text-subtle);
+  pointer-events: none;
 }
 
-.action-finalize {
-  color: #1e40af;
-}
-.action-finalize:hover {
-  background: #dbeafe;
+.search .control {
+  padding-left: 2.1rem;
 }
 
-.action-sent {
-  color: #92400e;
-}
-.action-sent:hover {
-  background: #fef3c7;
+.number {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
 
-.action-paid {
-  color: #065f46;
-}
-.action-paid:hover {
-  background: #d1fae5;
-}
-
-.action-cancel {
-  color: #991b1b;
-}
-.action-cancel:hover {
-  background: #fee2e2;
-}
-
-.action-delete {
-  color: #dc2626;
-}
-.action-delete:hover {
-  background: #fee2e2;
-}
-
-.action-force-delete {
-  color: #ea580c;
-}
-.action-force-delete:hover {
-  background: #ffedd5;
-}
-
-.summary-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-}
-
-.stat-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-bottom: 0.5rem;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1f2937;
+.number:hover {
+  color: var(--color-primary);
 }
 </style>

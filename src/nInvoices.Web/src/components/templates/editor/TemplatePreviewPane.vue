@@ -1,10 +1,10 @@
 <template>
   <div class="preview-pane">
     <div class="preview-toolbar">
-      <span class="preview-title">Preview</span>
+      <span class="preview-title">{{ title ?? 'Preview' }}</span>
       <span v-if="loading" class="status muted">Rendering…</span>
       <span v-else-if="stale" class="status warn">Showing the last version that rendered</span>
-      <span v-else-if="html" class="status muted">Sample data{{ customerName ? ` for ${customerName}` : '' }}</span>
+      <span v-else-if="html" class="status muted">{{ caption ?? `Sample data${customerName ? ` for ${customerName}` : ''}` }}</span>
       <span class="spacer"></span>
       <div class="zoom" role="group" aria-label="Zoom">
         <button type="button" :class="{ active: zoom === 'fit' }" @click="zoom = 'fit'">Fit</button>
@@ -46,6 +46,10 @@ defineProps<{
   /** The shown HTML is from an earlier version because the current one doesn't render. */
   stale: boolean
   customerName?: string
+  /** Replaces the "Sample data for …" note, e.g. for a real invoice. */
+  caption?: string
+  /** Title of the toolbar; defaults to "Preview". */
+  title?: string
 }>()
 
 // A4 at 96 dpi, the width Chrome uses when the PDF is produced

@@ -304,20 +304,3 @@ textarea.control {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
-
-/*
- * Legacy shim: a few screens still size their inline icons with utility classes from an
- * uninstalled CSS framework. These rules keep those icons at the intended size until each
- * screen moves to the shared components; remove them once no template uses the classes.
- */
-:where(svg.w-3) { width: 0.75rem; }
-:where(svg.h-3) { height: 0.75rem; }
-:where(svg.w-4) { width: 1rem; }
-:where(svg.h-4) { height: 1rem; }
-:where(svg.w-5) { width: 1.25rem; }
-:where(svg.h-5) { height: 1.25rem; }
-:where(svg.w-6) { width: 1.5rem; }
-:where(svg.h-6) { height: 1.5rem; }
-:where(svg.w-16) { width: 4rem; }
-:where(svg.h-16) { height: 4rem; }
-:where(.text-red-500, .text-red-600) { color: var(--color-danger); }

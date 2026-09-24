@@ -1,303 +1,164 @@
 <template>
   <div class="settings-page">
-    <h1 class="text-3xl font-bold mb-8">Settings</h1>
+    <PageHeader title="Settings" subtitle="Invoice numbering, images for templates, and backups." />
 
-    <div class="settings-sections">
-      <!-- Invoice Sequence Management -->
-      <section class="settings-card">
-        <div class="card-header">
-          <h2 class="text-xl font-semibold">Invoice Number Sequence</h2>
-          <p class="text-gray-600 text-sm mt-1">
-            Manage the global invoice number sequence
-          </p>
-        </div>
+    <div class="sections">
+      <BasePanel title="Invoice numbering" description="Every new invoice takes the next number in the sequence, formatted with the pattern below.">
+        <LoadingState v-if="sequenceLoading" label="Loading the sequence…" />
 
-        <div class="card-body">
-          <div v-if="sequenceLoading" class="loading-state">
-            <div class="spinner"></div>
-            <p class="mt-2">Loading...</p>
+        <EmptyState v-else-if="sequenceError && !sequenceLoaded" icon="alert" title="The sequence could not be loaded" :description="sequenceError" compact>
+          <BaseButton @click="loadSequence">Try again</BaseButton>
+        </EmptyState>
+
+        <div v-else class="numbering">
+          <div class="next-number">
+            <span class="label">Next invoice number</span>
+            <span class="value mono">{{ nextInvoiceNumber }}</span>
+            <span class="hint">Sequence value {{ currentSequence }} · pattern <code>{{ numberFormat }}</code></span>
           </div>
 
-          <div v-else-if="sequenceError" class="error-message">
-            {{ sequenceError }}
-            <button @click="loadSequence" class="btn-secondary mt-2">Retry</button>
-          </div>
-
-          <div v-else class="sequence-content">
-            <div class="current-sequence">
-              <div class="sequence-label">Current Sequence Number</div>
-              <div class="sequence-value">{{ currentSequence }}</div>
-              <p class="sequence-hint">
-                The next invoice will be numbered: {{ nextInvoiceNumber }}
-              </p>
-            </div>
-
-            <div class="sequence-actions">
-              <div class="input-group">
-                <label for="newSequence" class="input-label">
-                  Set New Sequence Value
-                </label>
+          <form class="sequence-form" novalidate @submit.prevent="handleUpdateSequence">
+            <BaseField
+              label="Change the next sequence value"
+              for="newSequence"
+              :help="newSequenceValue && newSequenceValue < currentSequence ? 'Lower than the current value: numbers already used may be issued again.' : 'Use this after importing invoices or when moving from another tool.'"
+            >
+              <div class="inline">
                 <input
                   id="newSequence"
                   v-model.number="newSequenceValue"
                   type="number"
                   min="1"
-                  class="input-field"
-                  placeholder="Enter new sequence number"
+                  class="control num"
+                  :placeholder="String(currentSequence)"
                 />
-                <p class="input-hint">
-                  ⚠️ Warning: Setting this too low may cause duplicate invoice numbers
-                </p>
+                <BaseButton type="submit" variant="primary" :loading="sequenceUpdating" :disabled="!isSequenceValid">Save</BaseButton>
               </div>
-
-              <div class="button-group">
-                <button
-                  @click="handleUpdateSequence"
-                  :disabled="!isSequenceValid || sequenceUpdating"
-                  class="btn-primary"
-                >
-                  {{ sequenceUpdating ? 'Updating...' : 'Update Sequence' }}
-                </button>
-                <button
-                  @click="handleResetSequence"
-                  :disabled="sequenceUpdating"
-                  class="btn-danger"
-                >
-                  Reset to 1
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Invoice Number Format -->
-      <section class="settings-card">
-        <div class="card-header">
-          <h2 class="text-xl font-semibold">Invoice Number Format</h2>
-          <p class="text-gray-600 text-sm mt-1">
-            The invoice number format is configured in appsettings.json
-          </p>
+            </BaseField>
+            <BaseButton variant="ghost-danger" :disabled="sequenceUpdating" @click="handleResetSequence">Reset to 1…</BaseButton>
+          </form>
         </div>
 
-        <div class="card-body">
-          <div class="info-box">
-            <svg class="info-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div>
-              <p class="font-semibold mb-2">Current Format Pattern:</p>
-              <code class="code-block">INV-{YEAR}-{MONTH:00}-{NUMBER:000}</code>
-              <p class="mt-3 text-sm">
-                To change the format, edit the <code>Invoice.NumberFormat</code> setting in appsettings.json and restart the API.
-              </p>
-              <details class="mt-3">
-                <summary class="cursor-pointer text-blue-600 hover:text-blue-800 font-medium">
-                  Available tokens
-                </summary>
-                <ul class="token-list">
-                  <li><code>{YEAR}</code> - Full year (2026)</li>
-                  <li><code>{YEAR:yy}</code> - Short year (26)</li>
-                  <li><code>{MONTH}</code> - Month (1-12)</li>
-                  <li><code>{MONTH:00}</code> - Month with padding (01-12)</li>
-                  <li><code>{NUMBER}</code> - Sequence number</li>
-                  <li><code>{NUMBER:000}</code> - Sequence with padding</li>
-                  <li><code>{CUSTOMER}</code> - Customer fiscal ID</li>
-                  <li><code>{CUSTOMER:3}</code> - First 3 chars of fiscal ID</li>
-                </ul>
-              </details>
-            </div>
+        <details class="tokens">
+          <summary>How the pattern works</summary>
+          <p>The pattern is set in <code>Invoice.NumberFormat</code> in the API's appsettings.json; restart the API after changing it.</p>
+          <table class="data-table compact">
+            <thead><tr><th scope="col">Token</th><th scope="col">Becomes</th><th scope="col">Example</th></tr></thead>
+            <tbody>
+              <tr v-for="token in tokens" :key="token.code">
+                <td><code>{{ token.code }}</code></td>
+                <td>{{ token.meaning }}</td>
+                <td class="mono">{{ token.example }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </BasePanel>
+
+      <BasePanel title="Calendar" description="How the worked-days calendar lays out weeks.">
+        <dl class="facts">
+          <div>
+            <dt>Weeks start on</dt>
+            <dd>{{ firstDayOfWeekName }}</dd>
           </div>
-        </div>
-      </section>
+        </dl>
+        <p class="note">Set by <code>Invoice.FirstDayOfWeek</code> in the API's appsettings.json (0 = Sunday, 1 = Monday … 6 = Saturday); restart the API after changing it.</p>
+      </BasePanel>
 
-      <!-- First Day of Week -->
-      <section class="settings-card">
-        <div class="card-header">
-          <h2 class="text-xl font-semibold">Calendar Settings</h2>
-          <p class="text-gray-600 text-sm mt-1">
-            Configure calendar display preferences
-          </p>
-        </div>
+      <BasePanel title="Images for templates" description="Logos and signatures you can place in invoice and timesheet templates.">
+        <form class="upload" novalidate @submit.prevent="handleUploadImage">
+          <BaseField label="Name to use in templates" for="imageAlias" help="Letters and numbers, e.g. companyLogo.">
+            <input id="imageAlias" v-model="imageAlias" type="text" class="control" placeholder="companyLogo" />
+          </BaseField>
+          <BaseField label="Image" for="imageFile" help="PNG, JPEG, GIF, SVG or WebP, up to 1 MB." :error="imageUploadError">
+            <input
+              id="imageFile"
+              ref="imageFileInput"
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/svg+xml,image/webp"
+              class="control file"
+              @change="handleImageFileSelected"
+            />
+          </BaseField>
+          <BaseButton type="submit" variant="primary" icon="plus" :loading="imageUploading" :disabled="!canUpload" class="upload-btn">Upload</BaseButton>
+        </form>
 
-        <div class="card-body">
-          <div class="info-box">
-            <svg class="info-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <div>
-              <p class="font-semibold mb-2">First Day of Week:</p>
-              <p class="text-sm mb-3">
-                Currently configured to start on: <strong>{{ firstDayOfWeekName }}</strong>
-              </p>
-              <p class="mt-3 text-sm">
-                To change this setting, edit the <code>Invoice.FirstDayOfWeek</code> value in appsettings.json:
-              </p>
-              <ul class="token-list">
-                <li><code>0</code> - Sunday</li>
-                <li><code>1</code> - Monday (default)</li>
-                <li><code>2</code> - Tuesday</li>
-                <li><code>3</code> - Wednesday</li>
-                <li><code>4</code> - Thursday</li>
-                <li><code>5</code> - Friday</li>
-                <li><code>6</code> - Saturday</li>
-              </ul>
-              <p class="mt-3 text-sm text-gray-600">
-                After changing this value, restart the API for it to take effect.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Image Assets -->
-      <section class="settings-card">
-        <div class="card-header">
-          <h2 class="text-xl font-semibold">Image Assets</h2>
-          <p class="text-gray-600 text-sm mt-1">
-            Upload logos and graphic elements to use in invoice templates.
-            Use <code>[[ Image "alias" width height ]]</code> in your templates.
-          </p>
-        </div>
-
-        <div class="card-body">
-          <!-- Upload form -->
-          <div class="upload-form">
-            <div class="upload-row">
-              <div class="input-group" style="flex: 1;">
-                <label for="imageAlias" class="input-label">Alias</label>
-                <input
-                  id="imageAlias"
-                  v-model="imageAlias"
-                  type="text"
-                  class="input-field"
-                  placeholder="e.g. companyLogo"
-                />
-              </div>
-              <div class="input-group" style="flex: 2;">
-                <label for="imageFile" class="input-label">Image File (max 1MB)</label>
-                <input
-                  id="imageFile"
-                  ref="imageFileInput"
-                  type="file"
-                  accept="image/png,image/jpeg,image/gif,image/svg+xml,image/webp"
-                  class="file-input"
-                  @change="handleImageFileSelected"
-                />
-              </div>
-              <div style="align-self: flex-end;">
-                <button
-                  @click="handleUploadImage"
-                  :disabled="!canUpload || imageUploading"
-                  class="btn-primary"
-                >
-                  {{ imageUploading ? 'Uploading...' : '⬆ Upload' }}
-                </button>
-              </div>
-            </div>
-            <p v-if="imageUploadError" class="error-text mt-2">{{ imageUploadError }}</p>
-          </div>
-
-          <!-- Image list -->
-          <div v-if="imageAssetsLoading" class="loading-state">
-            <div class="spinner"></div>
-            <p class="mt-2">Loading images...</p>
-          </div>
-
-          <div v-else-if="imageAssets.length === 0" class="empty-state">
-            No image assets uploaded yet.
-          </div>
-
-          <div v-else class="image-grid">
-            <div v-for="asset in imageAssets" :key="asset.id" class="image-card">
-              <div class="image-preview">
-                <img
-                  v-if="imageDataCache[asset.id]"
-                  :src="`data:${asset.contentType};base64,${imageDataCache[asset.id]}`"
-                  :alt="asset.alias"
-                />
-                <div v-else class="image-placeholder" @click="loadImageData(asset.id)">
-                  Click to preview
-                </div>
-              </div>
-              <div class="image-info">
-                <div class="image-alias">
-                  <code>[[ Image "{{ asset.alias }}" ]]</code>
-                </div>
-                <div class="image-meta">
-                  {{ asset.fileName }} · {{ formatFileSize(asset.fileSize) }}
-                </div>
-              </div>
-              <div class="image-actions">
-                <button @click="handleDeleteImage(asset)" class="btn-icon btn-danger-icon" title="Delete">
-                  🗑
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Data Management (Import/Export) -->
-      <section class="settings-card">
-        <div class="card-header">
-          <h2 class="section-heading">Data Management</h2>
-          <p class="section-description">
-            Import and export data for backup or migration between environments
-          </p>
-        </div>
-
-        <div class="card-body">
-          <div class="data-section">
-            <h3 class="subsection-title">Export</h3>
-            <p class="subsection-description">Download your data as JSON files</p>
-            <div class="button-group">
-              <button @click="handleExportCustomers" :disabled="exporting" class="btn-primary">
-                {{ exporting === 'customers' ? 'Exporting...' : '⬇ Export Customers' }}
-              </button>
-              <button @click="handleExportInvoices" :disabled="exporting" class="btn-primary">
-                {{ exporting === 'invoices' ? 'Exporting...' : '⬇ Export Invoices' }}
-              </button>
-            </div>
-          </div>
-
-          <div class="data-divider"></div>
-
-          <div class="data-section">
-            <h3 class="subsection-title">Import</h3>
-            <p class="subsection-description">
-              Upload a previously exported JSON file. Existing records (matched by Fiscal ID or Invoice Number) will be skipped.
-            </p>
-            <div class="import-area">
-              <input
-                ref="importFileInput"
-                type="file"
-                accept=".json"
-                class="file-input"
-                @change="handleFileSelected"
+        <LoadingState v-if="imageAssetsLoading" label="Loading images…" />
+        <EmptyState
+          v-else-if="imageAssets.length === 0"
+          icon="template"
+          title="No images yet"
+          description="Upload a logo, then add it to a template with the snippet shown on its card."
+          compact
+        />
+        <ul v-else class="images">
+          <li v-for="asset in imageAssets" :key="asset.id" class="image-card">
+            <div class="thumb">
+              <img
+                v-if="imageDataCache[asset.id]"
+                :src="`data:${asset.contentType};base64,${imageDataCache[asset.id]}`"
+                :alt="asset.alias"
               />
-              <div v-if="importFile" class="import-preview">
-                <p class="file-name">📄 {{ importFile.name }}</p>
-                <div class="button-group">
-                  <button @click="handleImport('customers')" :disabled="importing" class="btn-primary">
-                    {{ importing === 'customers' ? 'Importing...' : 'Import as Customers' }}
-                  </button>
-                  <button @click="handleImport('invoices')" :disabled="importing" class="btn-primary">
-                    {{ importing === 'invoices' ? 'Importing...' : 'Import as Invoices' }}
-                  </button>
-                </div>
+              <button v-else type="button" class="load-thumb" @click="loadImageData(asset.id)">Show preview</button>
+            </div>
+            <div class="image-body">
+              <strong>{{ asset.alias }}</strong>
+              <span class="muted">{{ asset.fileName }} · {{ formatFileSize(asset.fileSize) }}</span>
+              <div class="snippet">
+                <code>[[ Image "{{ asset.alias }}" ]]</code>
+                <BaseButton size="sm" variant="ghost" @click="copySnippet(asset.alias)">Copy</BaseButton>
               </div>
             </div>
-          </div>
+            <BaseButton
+              size="sm"
+              variant="ghost-danger"
+              icon="trash"
+              icon-only
+              class="image-delete"
+              :aria-label="`Delete ${asset.alias}`"
+              title="Delete"
+              @click="handleDeleteImage(asset)"
+            />
+          </li>
+        </ul>
+      </BasePanel>
 
-          <div v-if="importExportMessage" class="import-result" :class="importExportError ? 'result-error' : 'result-success'">
-            <p>{{ importExportMessage }}</p>
-            <ul v-if="importErrors.length" class="error-list">
-              <li v-for="(err, i) in importErrors" :key="i">{{ err }}</li>
-            </ul>
-          </div>
+      <BasePanel title="Backup and transfer" description="Export customers or invoices as JSON, for backups or to move them to another installation.">
+        <div class="transfer">
+          <section>
+            <h3>Export</h3>
+            <div class="buttons">
+              <BaseButton icon="download" :loading="exporting === 'customers'" :disabled="!!exporting" @click="handleExportCustomers">Customers</BaseButton>
+              <BaseButton icon="download" :loading="exporting === 'invoices'" :disabled="!!exporting" @click="handleExportInvoices">Invoices</BaseButton>
+            </div>
+          </section>
+
+          <section>
+            <h3>Import</h3>
+            <p class="note">Records that already exist (same VAT number, or same invoice number) are skipped.</p>
+            <input
+              id="importFile"
+              ref="importFileInput"
+              type="file"
+              accept=".json"
+              class="control file"
+              aria-label="Exported JSON file"
+              @change="handleFileSelected"
+            />
+            <div v-if="importFile" class="buttons">
+              <BaseButton variant="primary" :loading="importing === 'customers'" :disabled="!!importing" @click="handleImport('customers')">Import customers</BaseButton>
+              <BaseButton variant="primary" :loading="importing === 'invoices'" :disabled="!!importing" @click="handleImport('invoices')">Import invoices</BaseButton>
+            </div>
+          </section>
         </div>
-      </section>
+
+        <div v-if="importExportMessage" class="result" :class="importExportError ? 'error' : 'success'" role="status">
+          <p>{{ importExportMessage }}</p>
+          <ul v-if="importErrors.length">
+            <li v-for="(err, i) in importErrors" :key="i">{{ err }}</li>
+          </ul>
+        </div>
+      </BasePanel>
     </div>
   </div>
 </template>
@@ -310,6 +171,12 @@ import type { DataExport } from '@/api/importExport'
 import { useSettingsStore } from '@/stores/settings'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import BasePanel from '@/components/ui/BasePanel.vue'
+import BaseField from '@/components/ui/BaseField.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import LoadingState from '@/components/ui/LoadingState.vue'
 
 const toast = useToast()
 const { confirm } = useConfirm()
@@ -326,12 +193,41 @@ const isSequenceValid = computed(() => {
   return newSequenceValue.value !== null && newSequenceValue.value >= 1
 })
 
-const nextInvoiceNumber = computed(() => {
-  // This is a preview - actual format comes from backend
-  const num = (currentSequence.value + 1).toString().padStart(3, '0')
-  const month = new Date().getMonth() + 1
-  const year = new Date().getFullYear()
-  return `INV-${year}-${month.toString().padStart(2, '0')}-${num}`
+const sequenceLoaded = ref(false)
+
+// The pattern configured in the API (Invoice.NumberFormat)
+const numberFormat = computed(() => settingsStore.invoiceSettings?.numberFormat || '{YEAR:yy}-{MONTH:00}-{NUMBER:000}')
+
+/**
+ * Mirrors InvoiceNumber.Format in the backend. The stored sequence value is the number the
+ * next invoice receives (the backend hands it out, then increments it).
+ */
+function formatInvoiceNumber(pattern: string, sequence: number, date = new Date(), customerCode = 'NEA'): string {
+  return pattern
+    .replace(/\{YEAR:yy\}/g, String(date.getFullYear()).slice(-2))
+    .replace(/\{YEAR\}/g, String(date.getFullYear()))
+    .replace(/\{MONTH:00\}/g, String(date.getMonth() + 1).padStart(2, '0'))
+    .replace(/\{MONTH\}/g, String(date.getMonth() + 1))
+    .replace(/\{CUSTOMER:3\}/g, customerCode.slice(0, 3).toUpperCase())
+    .replace(/\{CUSTOMER\}/g, customerCode.toUpperCase())
+    .replace(/\{NUMBER:(0+)\}/g, (_, zeros: string) => String(sequence).padStart(zeros.length, '0'))
+    .replace(/\{NUMBER\}/g, String(sequence))
+}
+
+const nextInvoiceNumber = computed(() => formatInvoiceNumber(numberFormat.value, currentSequence.value))
+
+const tokens = computed(() => {
+  const now = new Date()
+  return [
+    { code: '{YEAR}', meaning: 'Year of the issue date', example: String(now.getFullYear()) },
+    { code: '{YEAR:yy}', meaning: 'Two-digit year', example: String(now.getFullYear()).slice(-2) },
+    { code: '{MONTH}', meaning: 'Month number', example: String(now.getMonth() + 1) },
+    { code: '{MONTH:00}', meaning: 'Month number, two digits', example: String(now.getMonth() + 1).padStart(2, '0') },
+    { code: '{NUMBER}', meaning: 'Sequence value', example: String(currentSequence.value) },
+    { code: '{NUMBER:000}', meaning: 'Sequence value padded with zeros (one 0 per digit)', example: String(currentSequence.value).padStart(3, '0') },
+    { code: '{CUSTOMER}', meaning: 'Customer VAT number / fiscal ID, upper case', example: 'IT0123…' },
+    { code: '{CUSTOMER:3}', meaning: 'First three characters of it', example: 'IT0' }
+  ]
 })
 
 const firstDayOfWeekName = computed(() => {
@@ -353,6 +249,7 @@ async function loadSequence() {
     const result = await invoicesApi.getSequence()
     currentSequence.value = result.currentValue
     newSequenceValue.value = null
+    sequenceLoaded.value = true
   } catch (error: any) {
     sequenceError.value = error.message || 'Failed to load sequence'
   } finally {
@@ -483,6 +380,16 @@ async function handleUploadImage() {
   }
 }
 
+async function copySnippet(alias: string) {
+  const snippet = `[[ Image "${alias}" ]]`
+  try {
+    await navigator.clipboard.writeText(snippet)
+    toast.success('Snippet copied', { message: snippet })
+  } catch {
+    toast.info('Copy this into your template', { message: snippet })
+  }
+}
+
 async function handleDeleteImage(asset: ImageAssetDto) {
   if (!(await confirm({ title: 'Delete image?', message: `"${asset.alias}" will be deleted. Templates that use it will show a placeholder.`, confirmLabel: 'Delete', tone: 'danger' }))) return
   try {
@@ -584,423 +491,297 @@ async function handleImport(type: 'customers' | 'invoices') {
 
 <style scoped>
 .settings-page {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: 60rem;
 }
 
-.settings-sections {
+.sections {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1rem;
 }
 
-.settings-card {
-  background: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+.mono {
+  font-family: var(--font-mono);
 }
 
-.card-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+code {
+  padding: 0.05rem 0.3rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+  font-size: 0.85em;
 }
 
-.card-body {
-  padding: 1.5rem;
+.note {
+  margin: 0.75rem 0 0;
+  font-size: var(--text-md);
+  color: var(--color-text-muted);
 }
 
-.loading-state {
-  text-align: center;
-  padding: 2rem;
-  color: #6b7280;
+/* numbering */
+.numbering {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 1.25rem;
+  align-items: start;
 }
 
-.spinner {
-  border: 3px solid #f3f4f6;
-  border-top: 3px solid #2563eb;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto;
+@media (max-width: 760px) {
+  .numbering {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.error-message {
-  padding: 1rem;
-  background: #fee2e2;
-  color: #991b1b;
-  border-radius: 0.5rem;
-}
-
-.sequence-content {
+.next-number {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 0.2rem;
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
 }
 
-.current-sequence {
-  padding: 1.5rem;
-  background: #f9fafb;
-  border-radius: 0.5rem;
-  text-align: center;
+.next-number .label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
 }
 
-.sequence-label {
-  font-size: 0.875rem;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
+.next-number .value {
+  font-size: 1.6rem;
+  font-weight: 650;
+  color: var(--color-primary);
 }
 
-.sequence-value {
-  font-size: 3rem;
-  font-weight: 700;
-  color: #2563eb;
-  margin-bottom: 0.5rem;
+.next-number .hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
 }
 
-.sequence-hint {
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.sequence-actions {
+.sequence-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  align-items: flex-start;
+  gap: 0.6rem;
 }
 
-.input-group {
+.sequence-form :deep(.field) {
+  width: 100%;
+}
+
+.inline {
   display: flex;
-  flex-direction: column;
   gap: 0.5rem;
 }
 
-.input-label {
-  font-weight: 500;
-  color: #374151;
+.inline .control {
+  max-width: 10rem;
 }
 
-.input-field {
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  max-width: 300px;
+.tokens {
+  margin-top: 1.25rem;
+  font-size: var(--text-md);
 }
 
-.input-field:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-.input-hint {
-  font-size: 0.875rem;
-  color: #f59e0b;
-}
-
-.button-group {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.btn-primary,
-.btn-secondary,
-.btn-danger {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 0.5rem;
-  font-weight: 500;
+.tokens summary {
   cursor: pointer;
-  transition: all 0.2s;
+  color: var(--color-primary);
+  font-weight: 500;
 }
 
-.btn-primary {
-  background: #2563eb;
-  color: white;
+.tokens p {
+  color: var(--color-text-muted);
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: #1d4ed8;
+.data-table.compact td,
+.data-table.compact th {
+  padding: 0.4rem 0.7rem;
 }
 
-.btn-primary:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
+/* calendar */
+.facts {
+  margin: 0;
 }
 
-.btn-secondary {
-  background: #6b7280;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: #4b5563;
-}
-
-.btn-danger {
-  background: #dc2626;
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: #b91c1c;
-}
-
-.btn-danger:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
-}
-
-.info-box {
+.facts div {
   display: flex;
   gap: 1rem;
-  padding: 1rem;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  border-radius: 0.5rem;
 }
 
-.info-icon {
-  width: 24px;
-  height: 24px;
-  color: #2563eb;
-  flex-shrink: 0;
+.facts dt {
+  color: var(--color-text-muted);
 }
 
-.code-block {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  background: white;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-family: monospace;
-  font-size: 0.875rem;
-}
-
-.token-list {
-  list-style: none;
-  padding: 0;
-  margin-top: 0.75rem;
-}
-
-.token-list li {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.token-list li:last-child {
-  border-bottom: none;
-}
-
-.token-list code {
-  background: #f3f4f6;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  font-family: monospace;
-  margin-right: 0.5rem;
-}
-
-/* Data Management styles */
-.section-heading {
-  font-size: 1.25rem;
+.facts dd {
+  margin: 0;
   font-weight: 600;
+  color: var(--color-text);
 }
 
-.section-description {
-  color: #6b7280;
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
-}
-
-.data-section {
-  margin-bottom: 1rem;
-}
-
-.subsection-title {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-}
-
-.subsection-description {
-  color: #6b7280;
-  font-size: 0.875rem;
-  margin-bottom: 0.75rem;
-}
-
-.button-group {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.data-divider {
-  border-top: 1px solid #e5e7eb;
-  margin: 1.5rem 0;
-}
-
-.file-input {
-  display: block;
-  margin-bottom: 0.75rem;
-  font-size: 0.875rem;
-}
-
-.import-preview {
-  margin-top: 0.5rem;
-}
-
-.file-name {
-  font-size: 0.875rem;
-  margin-bottom: 0.5rem;
-}
-
-.import-result {
-  margin-top: 1rem;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-}
-
-.result-success {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #166534;
-}
-
-.result-error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
-}
-
-.error-list {
-  margin-top: 0.5rem;
-  padding-left: 1.25rem;
-  list-style: disc;
-}
-
-.error-list li {
-  margin-bottom: 0.25rem;
-}
-
-/* Image Assets styles */
-.upload-form {
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.upload-row {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-start;
-}
-
-.error-text {
-  font-size: 0.875rem;
-  color: #dc2626;
-}
-
-.mt-2 {
-  margin-top: 0.5rem;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 2rem;
-  color: #9ca3af;
-  font-size: 0.875rem;
-}
-
-.image-grid {
+/* images */
+.upload {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+  gap: 0.75rem;
+  align-items: start;
+  margin-bottom: 1.25rem;
+}
+
+.upload-btn {
+  margin-top: 1.55rem;
+}
+
+@media (max-width: 760px) {
+  .upload {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .upload-btn {
+    margin-top: 0;
+    justify-self: start;
+  }
+}
+
+.control.file {
+  padding: 0.35rem 0.5rem;
+}
+
+.images {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .image-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  overflow: hidden;
-  background: #fafafa;
-}
-
-.image-preview {
-  height: 120px;
+  position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f3f4f6;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   overflow: hidden;
+  background: var(--color-surface);
 }
 
-.image-preview img {
+.thumb {
+  height: 7.5rem;
+  display: grid;
+  place-items: center;
+  padding: 0.75rem;
+  background:
+    repeating-conic-gradient(var(--color-surface-sunken) 0% 25%, var(--color-surface) 0% 50%) 0 0 / 16px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.thumb img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
 
-.image-placeholder {
-  color: #9ca3af;
-  font-size: 0.75rem;
-  cursor: pointer;
+.load-thumb {
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: var(--text-sm);
 }
 
-.image-placeholder:hover {
-  color: #2563eb;
-}
-
-.image-info {
-  padding: 0.75rem;
-}
-
-.image-alias code {
-  font-size: 0.75rem;
-  background: #e0e7ff;
-  color: #3730a3;
-  padding: 0.2rem 0.5rem;
-  border-radius: 0.25rem;
-}
-
-.image-meta {
-  font-size: 0.75rem;
-  color: #9ca3af;
-  margin-top: 0.375rem;
-}
-
-.image-actions {
-  padding: 0 0.75rem 0.75rem;
+.image-body {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.65rem 0.75rem 0.7rem;
+  font-size: var(--text-md);
 }
 
-.btn-icon {
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-size: 1rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
+.image-body strong {
+  color: var(--color-text);
 }
 
-.btn-danger-icon:hover {
-  background: #fee2e2;
+.image-body .muted {
+  font-size: var(--text-sm);
 }
 
-@media (max-width: 600px) {
-  .upload-row {
-    flex-direction: column;
+.snippet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.snippet code {
+  overflow-wrap: anywhere;
+}
+
+.image-delete {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  background: var(--color-surface);
+}
+
+/* backup */
+.transfer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 760px) {
+  .transfer {
+    grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.transfer section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.transfer h3 {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.transfer .note {
+  margin: 0;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.result {
+  margin-top: 1.25rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid;
+  border-radius: var(--radius-md);
+  font-size: var(--text-md);
+}
+
+.result p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.result ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.result.success {
+  border-color: var(--color-success-line);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.result.error {
+  border-color: var(--color-danger-line);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 </style>
