@@ -1,137 +1,96 @@
 <template>
   <div class="invoice-generate">
-    <div class="header">
-      <h1 class="text-3xl font-bold">Generate Invoice</h1>
-    </div>
+    <PageHeader title="New invoice" subtitle="Choose the customer and period, check the worked days, then generate the invoice and its timesheet." />
 
-    <form @submit.prevent="handleSubmit" class="generate-form">
-      <div class="form-section">
-        <h3 class="section-title">Invoice Information</h3>
-        
-        <div class="form-group">
-          <label for="customer" class="form-label">
-            Customer <span class="text-red-500">*</span>
-          </label>
-          <select
-            id="customer"
-            v-model="form.customerId"
-            required
-            class="form-control"
-            @change="loadCustomerData"
-          >
-            <option value="">Select a customer</option>
-            <option
-              v-for="customer in customersStore.customers"
-              :key="customer.id"
-              :value="customer.id"
-            >
-              {{ customer.name }}
-            </option>
-          </select>
-        </div>
+    <form class="generate-form" novalidate @submit.prevent="handleSubmit">
+      <BasePanel title="Customer &amp; period">
+        <div class="grid">
+          <BaseField label="Customer" for="customer" required class="span-2">
+            <select id="customer" v-model="form.customerId" class="control">
+              <option :value="0" disabled>Select a customer</option>
+              <option v-for="customer in sortedCustomers" :key="customer.id" :value="customer.id">
+                {{ customer.name }}
+              </option>
+            </select>
+          </BaseField>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div class="form-group">
-            <label for="type" class="form-label">
-              Invoice Type <span class="text-red-500">*</span>
-            </label>
-            <select
-              id="type"
-              v-model="form.invoiceType"
-              required
-              class="form-control"
-            >
+          <BaseField label="Invoice type" for="type" required>
+            <select id="type" v-model="form.invoiceType" class="control">
               <option :value="InvoiceType.Monthly">Monthly</option>
-              <option :value="InvoiceType.OneTime">One-Time</option>
+              <option :value="InvoiceType.OneTime">One-time</option>
             </select>
-          </div>
+          </BaseField>
 
-          <div class="form-group">
-            <label for="issueDate" class="form-label">
-              Issue Date <span class="text-red-500">*</span>
-            </label>
-            <input
-              id="issueDate"
-              v-model="form.issueDate"
-              type="date"
-              required
-              class="form-control"
-            />
-          </div>
-        </div>
+          <BaseField label="Issue date" for="issueDate" required>
+            <input id="issueDate" v-model="form.issueDate" type="date" class="control" />
+          </BaseField>
 
-        <div v-if="form.invoiceType === InvoiceType.Monthly" class="form-group">
-          <label class="form-label">
-            Select Month & Year <span class="text-red-500">*</span>
-          </label>
-          <div class="grid grid-cols-2 gap-4">
-            <select v-model="selectedMonth" class="form-control" required>
-              <option v-for="month in months" :key="month.value" :value="month.value">
-                {{ month.label }}
-              </option>
-            </select>
-            <select v-model="selectedYear" class="form-control" required>
-              <option v-for="year in years" :key="year" :value="year">
-                {{ year }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <div v-if="form.invoiceType === InvoiceType.Monthly && availableTemplates.length > 0" class="form-group">
-          <label for="monthlyReportTemplate" class="form-label">
-            Monthly Report Template
-          </label>
-          <select
-            id="monthlyReportTemplate"
-            v-model="form.monthlyReportTemplateId"
-            class="form-control"
-          >
-            <option :value="undefined">Use active template (default)</option>
-            <option
-              v-for="template in availableTemplates"
-              :key="template.id"
-              :value="template.id"
-            >
-              {{ template.name }} {{ template.isActive ? '(Active)' : '' }}
-            </option>
-          </select>
-          <p class="text-xs text-gray-500 mt-1">
-            Select which template to use for the monthly report PDF. If not selected, the active template will be used.
-          </p>
-        </div>
-      </div>
-
-      <div v-if="form.invoiceType === InvoiceType.Monthly" class="form-section">
-        <div class="time-header">
-          <div>
-            <h3 class="section-title">Worked Days</h3>
-            <p class="section-help">
-              <template v-if="timeView === 'calendar'">
-                Weekdays start as full worked days. Select the days that differ and edit them on the right.
-              </template>
-              <template v-else>
-                Edit any day inline. Click a day number to select it (Shift for a range) and split it across projects on the right.
-              </template>
-            </p>
-          </div>
-          <div class="time-actions">
-            <div class="view-switch" role="group" aria-label="View">
-              <button
-                v-for="view in timeViews"
-                :key="view.value"
-                type="button"
-                :class="{ active: timeView === view.value }"
-                :aria-pressed="timeView === view.value"
-                @click="timeView = view.value"
-              >
-                {{ view.label }}
-              </button>
+          <BaseField v-if="form.invoiceType === InvoiceType.Monthly" label="Billing period" for="period-month" required class="span-2">
+            <div class="period">
+              <BaseButton icon="arrowLeft" icon-only variant="secondary" aria-label="Previous month" title="Previous month" @click="shiftMonth(-1)" />
+              <select id="period-month" v-model="selectedMonth" class="control" aria-label="Month">
+                <option v-for="month in months" :key="month.value" :value="month.value">{{ month.label }}</option>
+              </select>
+              <select id="period-year" v-model="selectedYear" class="control year" aria-label="Year">
+                <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
+              </select>
+              <BaseButton icon="chevronRight" icon-only variant="secondary" aria-label="Next month" title="Next month" @click="shiftMonth(1)" />
             </div>
-            <button type="button" class="btn-secondary btn-sm" @click="fillWeekdays">Fill weekdays (8h)</button>
-            <button type="button" class="btn-secondary btn-sm" @click="workMonth.clearMonth">Clear month</button>
-          </div>
+          </BaseField>
+
+          <BaseField
+            v-if="form.invoiceType === InvoiceType.Monthly && availableTemplates.length > 0"
+            label="Timesheet template"
+            for="monthlyReportTemplate"
+            class="span-2"
+            help="Layout of the monthly report PDF."
+          >
+            <select id="monthlyReportTemplate" v-model="form.monthlyReportTemplateId" class="control">
+              <option :value="undefined">Active template{{ activeTemplateName ? ` (${activeTemplateName})` : '' }}</option>
+              <option v-for="template in availableTemplates" :key="template.id" :value="template.id">
+                {{ template.name }}{{ template.isActive ? ' (active)' : '' }}
+              </option>
+            </select>
+          </BaseField>
         </div>
+
+        <div v-if="form.customerId" class="rate-line" :class="{ missing: noRate }">
+          <template v-if="selectedRate">
+            <AppIcon name="coins" />
+            <span>Billed at <strong>{{ formatMoney(selectedRate.price.amount, selectedRate.price.currency) }}</strong> {{ rateUnit }}</span>
+          </template>
+          <template v-else-if="noRate">
+            <AppIcon name="alert" />
+            <span>This customer has no rate yet, so nothing can be billed.</span>
+            <router-link :to="{ path: `/customers/${form.customerId}`, query: { tab: 'rates' } }">Add a rate</router-link>
+          </template>
+        </div>
+      </BasePanel>
+
+      <BasePanel v-if="form.invoiceType === InvoiceType.Monthly" title="Worked days">
+        <template #header>
+          <h2 class="panel-heading">Worked days · {{ periodLabel }}</h2>
+          <p class="panel-help">
+            <template v-if="timeView === 'calendar'">Weekdays start as full days. Select the days that differ and edit them on the right.</template>
+            <template v-else>Edit any day in its row. Click a day number to select it (Shift for a range) and split it across projects on the right.</template>
+          </p>
+        </template>
+        <template #actions>
+          <div class="view-switch" role="group" aria-label="View">
+            <button
+              v-for="view in timeViews"
+              :key="view.value"
+              type="button"
+              :class="{ active: timeView === view.value }"
+              :aria-pressed="timeView === view.value"
+              @click="timeView = view.value"
+            >
+              {{ view.label }}
+            </button>
+          </div>
+          <BaseButton size="sm" @click="fillWeekdays">Fill weekdays</BaseButton>
+          <BaseButton size="sm" variant="ghost" @click="workMonth.clearMonth">Clear</BaseButton>
+        </template>
 
         <div class="time-layout">
           <MonthCalendar v-if="timeView === 'calendar'" :month="workMonth" />
@@ -151,103 +110,60 @@
             :project-suggestions="projectSuggestions"
           />
         </div>
+      </BasePanel>
 
-        <div class="calendar-summary">
-          <div class="stat">
-            <span class="stat-label">Worked Days</span>
-            <span class="stat-value">{{ totals.workedDays }}</span>
-          </div>
-          <div v-if="isDailyRate" class="stat">
-            <span class="stat-label">Effective Days</span>
-            <span class="stat-value">{{ totals.effectiveDays.toFixed(2) }}</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Total Hours</span>
-            <span class="stat-value">{{ totals.totalHours.toFixed(1) }}h</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Holidays · Leave</span>
-            <span class="stat-value">{{ totals.publicHolidays }} · {{ totals.unpaidLeave }}</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Notes</span>
-            <span class="stat-value">{{ totals.notes }}</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Estimated Amount</span>
-            <span class="stat-value">{{ estimatedAmount }}</span>
-          </div>
-        </div>
-      </div>
+      <BasePanel title="Expenses" description="Costs passed on to the customer, added after the worked time.">
+        <template #actions>
+          <BaseButton size="sm" icon="plus" @click="addExpense">Add expense</BaseButton>
+        </template>
 
-      <div class="form-section">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="section-title mb-0">Expenses</h3>
-          <button type="button" @click="addExpense" class="btn-secondary">
-            Add Expense
-          </button>
-        </div>
+        <p v-if="(form.expenses ?? []).length === 0" class="muted no-expenses">No expenses on this invoice.</p>
 
-        <div v-if="form.expenses.length === 0" class="text-center py-8 text-gray-500">
-          No expenses added yet
-        </div>
-
-        <div v-else class="expenses-list">
-          <div
-            v-for="(expense, index) in form.expenses"
-            :key="index"
-            class="expense-row"
-          >
+        <div v-else class="expenses">
+          <div v-for="(expense, index) in form.expenses" :key="index" class="expense-row">
             <input
+              :id="`expense-description-${index}`"
               v-model="expense.description"
               type="text"
-              placeholder="Description"
-              class="form-control flex-1"
-              required
+              placeholder="Description, e.g. Train to Milan"
+              class="control"
+              :class="{ invalid: submitted && !expense.description.trim() }"
+              :aria-label="`Expense ${index + 1} description`"
             />
             <input
+              :id="`expense-amount-${index}`"
               v-model.number="expense.amount"
               type="number"
               step="0.01"
-              placeholder="Amount"
-              class="form-control w-32"
-              required
+              min="0"
+              class="control num amount"
+              :class="{ invalid: submitted && !(expense.amount > 0) }"
+              :aria-label="`Expense ${index + 1} amount`"
             />
-            <select v-model="expense.currency" class="form-control w-24">
-              <option>EUR</option>
-              <option>USD</option>
-              <option>GBP</option>
+            <select :id="`expense-currency-${index}`" v-model="expense.currency" class="control currency" :aria-label="`Expense ${index + 1} currency`">
+              <option v-for="code in currencies" :key="code">{{ code }}</option>
             </select>
-            <button
-              type="button"
-              @click="removeExpense(index)"
-              class="btn-icon text-red-600"
-              title="Remove expense"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <BaseButton variant="ghost-danger" icon="trash" icon-only :aria-label="`Remove expense ${index + 1}`" title="Remove" @click="removeExpense(index)" />
           </div>
         </div>
-      </div>
+      </BasePanel>
 
-      <div class="form-actions">
-        <button
-          type="button"
-          @click="handleCancel"
-          class="btn-secondary"
-          :disabled="loading"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          class="btn-primary"
-          :disabled="loading || !isFormValid"
-        >
-          {{ loading ? 'Generating...' : 'Generate Invoice' }}
-        </button>
+      <div class="summary-bar">
+        <dl class="summary">
+          <template v-if="form.invoiceType === InvoiceType.Monthly">
+            <div><dt>Worked days</dt><dd>{{ totals.workedDays }}</dd></div>
+            <div v-if="isDailyRate"><dt>Billable days</dt><dd>{{ totals.effectiveDays.toFixed(2) }}</dd></div>
+            <div><dt>Hours</dt><dd>{{ totals.totalHours.toFixed(1) }}</dd></div>
+            <div v-if="totals.publicHolidays || totals.unpaidLeave"><dt>Holiday · leave</dt><dd>{{ totals.publicHolidays }} · {{ totals.unpaidLeave }}</dd></div>
+          </template>
+          <div v-if="expensesTotal"><dt>Expenses</dt><dd>{{ expensesTotal }}</dd></div>
+          <div class="estimate"><dt>Estimated subtotal</dt><dd>{{ estimatedAmount }}</dd></div>
+        </dl>
+        <div class="summary-actions">
+          <span v-if="blocker" class="blocker">{{ blocker }}</span>
+          <BaseButton :disabled="loading" @click="handleCancel">Cancel</BaseButton>
+          <BaseButton type="submit" variant="primary" :loading="loading" :disabled="!!blocker">Generate invoice</BaseButton>
+        </div>
       </div>
     </form>
   </div>
@@ -269,6 +185,12 @@ import MonthCalendar from '@/components/time/MonthCalendar.vue'
 import DayInspector from '@/components/time/DayInspector.vue'
 import TimesheetList from '@/components/time/TimesheetList.vue'
 import { useToast } from '@/composables/useToast'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import BasePanel from '@/components/ui/BasePanel.vue'
+import BaseField from '@/components/ui/BaseField.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
+import { formatMoney, invoiceTypeLabel } from '@/utils/format'
 
 const toast = useToast()
 
@@ -285,6 +207,9 @@ const loading = ref(false)
 const selectedMonth = ref(new Date().getMonth() + 1)
 const selectedYear = ref(new Date().getFullYear())
 const selectedRate = ref<any>(null)
+const noRate = ref(false)
+const submitted = ref(false)
+const currencies = ['EUR', 'USD', 'GBP', 'CHF']
 
 const form = reactive<GenerateInvoiceDto>({
   customerId: 0,
@@ -372,11 +297,11 @@ const estimatedAmount = computed(() => {
   const currency = selectedRate.value.price.currency
 
   if (selectedRate.value.type === RateType.Hourly) {
-    return `${(totals.value.totalHours * rate).toFixed(2)} ${currency}`
+    return formatMoney(totals.value.totalHours * rate, currency)
   } else if (selectedRate.value.type === RateType.Daily) {
-    return `${(totals.value.effectiveDays * rate).toFixed(2)} ${currency}`
+    return formatMoney(totals.value.effectiveDays * rate, currency)
   } else if (selectedRate.value.type === RateType.Monthly) {
-    return `${rate.toFixed(2)} ${currency}`
+    return formatMoney(rate, currency)
   }
 
   return '-'
@@ -387,7 +312,7 @@ const isFormValid = computed(() => {
     return false
   }
 
-  if (form.invoiceType === InvoiceType.Monthly && form.workDays.length === 0) {
+  if (form.invoiceType === InvoiceType.Monthly && (form.workDays ?? []).length === 0) {
     return false
   }
 
@@ -404,8 +329,49 @@ const isFormValid = computed(() => {
 const availableTemplates = computed(() => {
   if (!form.customerId) return []
   return monthlyReportTemplatesStore.templates.filter(
-    t => t.customerId === form.customerId && t.invoiceType === InvoiceType.Monthly
+    t => t.customerId === form.customerId && invoiceTypeLabel(t.invoiceType) === 'Monthly'
   )
+})
+
+const activeTemplateName = computed(() => availableTemplates.value.find(t => t.isActive)?.name ?? '')
+
+const sortedCustomers = computed(() => [...customersStore.customers].sort((a, b) => a.name.localeCompare(b.name)))
+
+const periodLabel = computed(() =>
+  new Date(selectedYear.value, selectedMonth.value - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+)
+
+const rateUnit = computed(() => {
+  const type = selectedRate.value?.type
+  return type === RateType.Hourly ? 'per hour' : type === RateType.Monthly ? 'per month' : 'per day'
+})
+
+function shiftMonth(offset: number) {
+  const date = new Date(selectedYear.value, selectedMonth.value - 1 + offset, 1)
+  if (!years.value.includes(date.getFullYear())) return
+  selectedYear.value = date.getFullYear()
+  selectedMonth.value = date.getMonth() + 1
+}
+
+// Sum per currency: an EUR invoice may carry a USD expense
+const expensesTotal = computed(() => {
+  const totals = new Map<string, number>()
+  for (const e of form.expenses ?? []) {
+    if (Number(e.amount) > 0) totals.set(e.currency, (totals.get(e.currency) ?? 0) + Number(e.amount))
+  }
+  return [...totals.entries()].map(([currency, amount]) => formatMoney(amount, currency)).join(' + ')
+})
+
+/** Why the invoice can't be generated yet, in words; null when it can. */
+const blocker = computed((): string | null => {
+  if (!form.customerId) return 'Select a customer.'
+  if (noRate.value) return 'The customer needs a rate.'
+  if (!form.issueDate) return 'Set the issue date.'
+  if (form.invoiceType === InvoiceType.Monthly) {
+    if ((form.workDays ?? []).length === 0) return 'Mark at least one day.'
+    if (!isFormValid.value) return 'Every worked day needs more than 0 hours.'
+  }
+  return null
 })
 
 function fillWeekdays() {
@@ -444,6 +410,8 @@ onMounted(async () => {
 })
 
 async function loadCustomerData() {
+  selectedRate.value = null
+  noRate.value = false
   if (!form.customerId) return
 
   try {
@@ -451,11 +419,9 @@ async function loadCustomerData() {
     await ratesStore.fetchByCustomerId(form.customerId)
     const rates = ratesStore.ratesByCustomer(form.customerId)
     
-    console.log('Fetched rates for customer:', form.customerId, rates)
     
     if (rates.length === 0) {
-      toast.warning('This customer has no rates', { message: 'Add a rate on the customer page before generating an invoice.' })
-      selectedRate.value = null
+      noRate.value = true
       return
     }
 
@@ -470,14 +436,12 @@ async function loadCustomerData() {
       matchingRate = rates.find(r => r.type === RateType.Hourly)
     }
     
-    console.log('Selected rate:', matchingRate)
     
     if (matchingRate) {
       selectedRate.value = matchingRate
     } else {
       // Fallback: use first available rate
       selectedRate.value = rates[0]
-      console.warn('No Daily/Monthly/Hourly rate found, using first available rate', rates[0])
     }
 
     // Load the customer's projects for calendar suggestions
@@ -488,25 +452,32 @@ async function loadCustomerData() {
       await monthlyReportTemplatesStore.fetchByCustomer(form.customerId)
     }
   } catch (error) {
-    console.error('Failed to load customer data:', error)
-    selectedRate.value = null
+    toast.failure('Could not load the customer’s rates and projects', error)
   }
 }
 
 function addExpense() {
-  form.expenses.push({
+  form.expenses?.push({
     description: '',
     amount: 0,
-    currency: 'EUR'
+    currency: selectedRate.value?.price?.currency ?? 'EUR'
   })
+  requestAnimationFrame(() => document.getElementById(`expense-description-${(form.expenses?.length ?? 1) - 1}`)?.focus())
 }
 
 function removeExpense(index: number) {
-  form.expenses.splice(index, 1)
+  form.expenses?.splice(index, 1)
 }
 
 async function handleSubmit() {
-  if (!isFormValid.value) return
+  submitted.value = true
+  if (blocker.value) return
+  const incomplete = (form.expenses ?? []).findIndex(e => !e.description.trim() || !(Number(e.amount) > 0))
+  if (incomplete >= 0) {
+    toast.warning('Complete or remove the unfinished expense', { message: 'Each expense needs a description and an amount above 0.' })
+    document.getElementById(`expense-description-${incomplete}`)?.focus()
+    return
+  }
 
   try {
     loading.value = true
@@ -516,7 +487,7 @@ async function handleSubmit() {
       // Drop incomplete project rows; keep a day even if it ends up with no projects.
       // hoursWorked mirrors what the backend persists: the named projects' total when there are any,
       // otherwise the hours typed on unnamed rows (so partial days bill correctly without project names).
-      workDays: form.workDays.map(wd => {
+      workDays: (form.workDays ?? []).map(wd => {
         const rows = (wd.projects ?? []).filter(p => Number(p.hours) > 0)
         const projects = rows
           .filter(p => p.projectName.trim().length > 0)
@@ -553,126 +524,123 @@ function handleCancel() {
 
 <style scoped>
 .invoice-generate {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.header {
-  margin-bottom: 2rem;
+  max-width: 82rem;
 }
 
 .generate-form {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-}
-
-.form-section {
-  background: white;
-  padding: 2rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.section-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-  color: #1f2937;
-}
-
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-group:last-child {
-  margin-bottom: 0;
-}
-
-.form-label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-.form-control {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 1rem;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-
-.section-help {
-  margin: 0.25rem 0 0;
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.time-header {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-start;
   gap: 1rem;
-  margin-bottom: 1.25rem;
 }
 
-.time-header .section-title {
-  margin-bottom: 0;
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem 1.1rem;
 }
 
-.time-actions {
+.span-2 {
+  grid-column: span 2;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .span-2 {
+    grid-column: auto;
+  }
+}
+
+.period {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.period .control {
+  flex: 1;
+}
+
+.period .year {
+  flex: 0 0 6.5rem;
+}
+
+.rate-line {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  font-size: var(--text-md);
+  color: var(--color-text-secondary);
+}
+
+.rate-line .app-icon {
+  color: var(--color-primary);
+}
+
+.rate-line.missing {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.rate-line.missing .app-icon {
+  color: var(--color-warning);
+}
+
+.rate-line strong {
+  color: var(--color-text);
+}
+
+.panel-heading {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.panel-help {
+  margin: 0.2rem 0 0;
+  max-width: 70ch;
+  font-size: var(--text-md);
+  color: var(--color-text-muted);
 }
 
 .view-switch {
   display: inline-flex;
   gap: 2px;
   padding: 2px;
-  border: 1px solid #d1d5db;
-  border-radius: 0.4rem;
-  background: #ffffff;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .view-switch button {
-  padding: 0.3rem 0.75rem;
+  padding: 0.25rem 0.7rem;
   border: 0;
-  border-radius: 0.3rem;
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: #374151;
-  font: inherit;
-  font-size: 0.85rem;
-  line-height: 1.3;
-  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
 }
 
 .view-switch button:hover {
-  background: #f3f4f6;
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
 }
 
 .view-switch button.active {
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
   font-weight: 600;
-}
-
-.btn-sm {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.85rem;
 }
 
 .time-layout {
@@ -682,102 +650,97 @@ function handleCancel() {
   align-items: start;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1000px) {
   .time-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
-.calendar-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+.no-expenses {
+  margin: 0;
+  font-size: var(--text-md);
 }
 
-.stat {
+.expenses {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.expenses-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .expense-row {
-  display: flex;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 9rem 6rem auto;
+  gap: 0.5rem;
   align-items: center;
 }
 
-.btn-icon {
-  padding: 0.5rem;
-  border: none;
-  background: transparent;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  transition: all 0.2s;
+@media (max-width: 640px) {
+  .expense-row {
+    grid-template-columns: minmax(0, 1fr) 6rem auto;
+  }
+
+  .expense-row .control:first-child {
+    grid-column: 1 / -1;
+  }
 }
 
-.btn-icon:hover {
-  background: #fee2e2;
-}
-
-.form-actions {
+/* sticks to the bottom of the viewport while the form scrolls */
+.summary-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
   display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  margin: 0 -0.25rem;
+  padding: 0.8rem 1.1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 -4px 18px rgba(20, 26, 38, 0.08);
 }
 
-.btn-primary,
-.btn-secondary {
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.6rem;
+  margin: 0;
 }
 
-.btn-primary {
-  background: #2563eb;
-  color: white;
+.summary div {
+  display: flex;
+  flex-direction: column;
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: #1d4ed8;
+.summary dt {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }
 
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.summary dd {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
 
-.btn-secondary {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
+.summary .estimate dd {
+  font-size: 1.15rem;
+  color: var(--color-primary);
 }
 
-.btn-secondary:hover {
-  background: #f9fafb;
+.summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.blocker {
+  font-size: var(--text-sm);
+  color: var(--color-warning);
 }
 </style>

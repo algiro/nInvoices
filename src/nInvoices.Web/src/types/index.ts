@@ -223,7 +223,7 @@ export interface ExpenseDto {
   description: string;
   amount: number;
   currency: string;
-  date: string;
+  date?: string; // the API defaults to today
 }
 
 export interface InvoiceDto {

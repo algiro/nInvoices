@@ -1,251 +1,175 @@
 <template>
   <div class="invoice-details">
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p class="mt-4">Loading invoice...</p>
-    </div>
+    <LoadingState v-if="loading && !invoice" label="Loading invoice…" />
 
-    <div v-else-if="error" class="error-state">
-      <p class="text-red-600">{{ error }}</p>
-      <button @click="loadData" class="btn-primary mt-4">Retry</button>
-    </div>
+    <EmptyState v-else-if="error && !invoice" icon="alert" title="Invoice could not be loaded" :description="error">
+      <BaseButton @click="loadData">Try again</BaseButton>
+      <BaseButton variant="ghost" to="/invoices">Back to invoices</BaseButton>
+    </EmptyState>
 
-    <div v-else-if="invoice" class="invoice-content">
-      <!-- Success/Error Messages -->
-      <div class="invoice-header">
-        <div>
-          <h1 class="text-3xl font-bold">Invoice {{ invoice.invoiceNumber }}</h1>
-          <p class="text-gray-600 mt-2">
-            <span class="status-badge" :class="`status-${getStatusCssClass(invoice.status)}`">
-              {{ formatStatus(invoice.status) }}
-            </span>
-          </p>
-        </div>
-        <div class="header-actions">
-          <button
-            @click.prevent.stop="handleDownloadPdf"
-            class="btn-primary"
-            :disabled="downloadingPdf"
+    <template v-else-if="invoice">
+      <PageHeader :title="`Invoice ${invoice.invoiceNumber}`">
+        <template #subtitle>
+          <span class="meta">
+            <StatusPill :tone="status.tone">{{ status.label }}</StatusPill>
+            <router-link :to="`/customers/${invoice.customerId}`">{{ customerName }}</router-link>
+            <span class="dot" aria-hidden="true">·</span>
+            <span>{{ invoiceTypeLabel(invoice.type) }}{{ invoice.month ? `, ${formatPeriod(invoice.month, invoice.year)}` : '' }}</span>
+          </span>
+        </template>
+        <template #actions>
+          <BaseButton
+            icon="download"
+            :loading="isBusy(invoice, 'downloadPdf')"
+            @click="run('downloadPdf', invoice)"
           >
-            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            {{ downloadingPdf ? 'Downloading...' : 'Download PDF' }}
-          </button>
-          <button
-            v-if="invoice && (invoice.type === 'Monthly' || invoice.type === 0)"
-            @click.prevent.stop="handleDownloadMonthlyReport"
-            class="btn-primary"
-            :disabled="downloadingMonthlyReport"
+            PDF
+          </BaseButton>
+          <BaseButton
+            v-if="isMonthly(invoice)"
+            icon="calendar"
+            :loading="isBusy(invoice, 'downloadReport')"
+            @click="run('downloadReport', invoice)"
           >
-            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            {{ downloadingMonthlyReport ? 'Downloading...' : 'Download Monthly Report' }}
-          </button>
-          <button
-            @click.prevent.stop="handleRegenerateInvoicePdf"
-            class="btn-secondary"
-            :disabled="regeneratingInvoice"
-            title="Regenerate PDF with current template"
+            Monthly report
+          </BaseButton>
+          <BaseButton
+            v-if="actions.primary"
+            variant="primary"
+            :icon="actions.primary.icon"
+            :loading="isBusy(invoice, actions.primary.id)"
+            @click="runAndFollow(actions.primary.id)"
           >
-            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {{ regeneratingInvoice ? 'Regenerating...' : 'Regenerate Invoice PDF' }}
-          </button>
-          <button
-            v-if="invoice && (invoice.type === 'Monthly' || invoice.type === 0)"
-            @click.prevent.stop="handleRegenerateMonthlyReport"
-            class="btn-secondary"
-            :disabled="regeneratingMonthlyReport"
-            title="Verify monthly report template"
-          >
-            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {{ regeneratingMonthlyReport ? 'Verifying...' : 'Verify Monthly Report' }}
-          </button>
-          <button
-            v-if="invoice.status === InvoiceStatus.Draft"
-            @click.prevent.stop="handleFinalize"
-            class="btn-secondary"
-          >
-            Finalize
-          </button>
-          <button
-            v-if="invoice.status === InvoiceStatus.Draft"
-            @click.prevent.stop="handleDelete"
-            class="btn-danger"
-          >
-            Delete
-          </button>
-        </div>
+            {{ actions.primary.label }}
+          </BaseButton>
+          <ActionMenu :items="menuItems" label="More invoice actions" />
+        </template>
+      </PageHeader>
+
+      <ol v-if="status.name !== 'Cancelled'" class="lifecycle" aria-label="Invoice progress">
+        <li
+          v-for="(step, index) in lifecycle"
+          :key="step"
+          :class="{ done: index < stepIndex, current: index === stepIndex }"
+          :aria-current="index === stepIndex ? 'step' : undefined"
+        >
+          <span class="marker"><AppIcon v-if="index < stepIndex" name="check" /><template v-else>{{ index + 1 }}</template></span>
+          {{ step }}
+        </li>
+      </ol>
+      <div v-else class="cancelled-note" role="status">
+        <AppIcon name="ban" />
+        This invoice was cancelled. It stays on record but isn't counted as outstanding.
       </div>
 
-      <div class="invoice-body">
-        <div class="info-section">
-          <div class="info-card">
-            <h3 class="card-title">Customer Information</h3>
-            <dl class="info-list">
-              <div>
-                <dt>Name</dt>
-                <dd>{{ customerName }}</dd>
-              </div>
-              <div>
-                <dt>Customer ID</dt>
-                <dd>{{ invoice.customerId }}</dd>
-              </div>
+      <div class="layout">
+        <TemplatePreviewPane
+          class="document"
+          title="Invoice document"
+          :html="invoice.renderedContent ?? null"
+          :loading="false"
+          :stale="false"
+          caption="As generated; regenerate from the ⋯ menu to apply template changes"
+        />
+
+        <div class="side">
+          <BasePanel title="Amounts">
+            <dl class="amounts">
+              <div><dt>Subtotal</dt><dd>{{ money(invoice.subtotal) }}</dd></div>
+              <div v-if="invoice.totalExpenses?.amount"><dt>Expenses</dt><dd>{{ money(invoice.totalExpenses) }}</dd></div>
+              <div><dt>Taxes</dt><dd>{{ money(invoice.totalTaxes) }}</dd></div>
+              <div class="total"><dt>Total</dt><dd>{{ money(invoice.total) }}</dd></div>
             </dl>
-          </div>
+          </BasePanel>
 
-          <div class="info-card">
-            <h3 class="card-title">Invoice Details</h3>
-            <dl class="info-list">
-              <div>
-                <dt>Type</dt>
-                <dd>{{ formatType(invoice.type) }}</dd>
-              </div>
-              <div>
-                <dt>Issue Date</dt>
-                <dd>{{ formatDate(invoice.issueDate) }}</dd>
-              </div>
-              <div v-if="invoice.dueDate">
-                <dt>Due Date</dt>
-                <dd>{{ formatDate(invoice.dueDate) }}</dd>
-              </div>
+          <BasePanel title="Details">
+            <dl class="facts">
+              <div><dt>Customer</dt><dd><router-link :to="`/customers/${invoice.customerId}`">{{ customerName }}</router-link></dd></div>
+              <div><dt>Invoice number</dt><dd class="mono">{{ invoice.invoiceNumber }}</dd></div>
+              <div><dt>Issue date</dt><dd>{{ formatDate(invoice.issueDate) }}</dd></div>
+              <div><dt>Due date</dt><dd>{{ invoice.dueDate ? formatDate(invoice.dueDate) : 'Not set' }}</dd></div>
+              <div v-if="invoice.month"><dt>Period</dt><dd>{{ formatPeriod(invoice.month, invoice.year) }}</dd></div>
+              <div v-if="invoice.workedDays !== undefined && invoice.workedDays !== null"><dt>Worked days</dt><dd>{{ invoice.workedDays }}</dd></div>
+              <div><dt>Created</dt><dd>{{ formatDate(invoice.createdAt) }}</dd></div>
+              <div v-if="invoice.updatedAt && invoice.updatedAt !== invoice.createdAt"><dt>Last changed</dt><dd>{{ formatDate(invoice.updatedAt) }}</dd></div>
             </dl>
-          </div>
-        </div>
+          </BasePanel>
 
-        <div v-if="invoice.type === 'Monthly' && invoice.monthlyDetails" class="monthly-details">
-          <h3 class="section-title">Monthly Details</h3>
-          <div class="details-grid">
-            <div class="detail-item">
-              <span class="detail-label">Month</span>
-              <span class="detail-value">{{ invoice.monthlyDetails.monthNumber }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Year</span>
-              <span class="detail-value">{{ invoice.monthlyDetails.year }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Worked Days</span>
-              <span class="detail-value">{{ invoice.monthlyDetails.workedDays }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="invoice.expenses && invoice.expenses.length > 0" class="expenses-section">
-          <h3 class="section-title">Expenses</h3>
-          <table class="expenses-table">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th class="text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(expense, index) in invoice.expenses" :key="index">
-                <td>{{ expense.description }}</td>
-                <td class="text-right">{{ formatMoney(expense.price) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div v-if="invoice.taxLines && invoice.taxLines.length > 0" class="tax-section">
-          <h3 class="section-title">Tax Breakdown</h3>
-          <table class="tax-table">
-            <thead>
-              <tr>
-                <th>Tax</th>
-                <th>Rate</th>
-                <th class="text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(taxLine, index) in invoice.taxLines" :key="index">
-                <td>{{ taxLine.taxDescription }}</td>
-                <td>{{ formatTaxRate(taxLine.rate) }}</td>
-                <td class="text-right">{{ formatMoney(taxLine.amount) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="totals-section">
-          <div class="totals-card">
-            <div class="total-row">
-              <span class="total-label">Subtotal</span>
-              <span class="total-value">{{ formatMoney(invoice.subtotal) }}</span>
-            </div>
-            <div v-if="invoice.totalTax" class="total-row">
-              <span class="total-label">Total Tax</span>
-              <span class="total-value">{{ formatMoney(invoice.totalTax) }}</span>
-            </div>
-            <div class="total-row final">
-              <span class="total-label">Total</span>
-              <span class="total-value">{{ formatMoney(invoice.total) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="invoice.notes" class="notes-section">
-          <h3 class="section-title">Notes</h3>
-          <p class="notes-content">{{ invoice.notes }}</p>
+          <BasePanel v-if="invoice.notes" title="Notes">
+            <p class="notes">{{ invoice.notes }}</p>
+          </BasePanel>
         </div>
       </div>
-    </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useInvoicesStore } from '@/stores/invoices'
 import { useCustomersStore } from '@/stores/customers'
-import { InvoiceStatusNames, InvoiceTypeNames, InvoiceStatus, InvoiceType } from '@/types'
 import type { MoneyDto } from '@/types'
-import { useToast } from '@/composables/useToast'
-import { useConfirm } from '@/composables/useConfirm'
-
-const toast = useToast()
-const { confirm } = useConfirm()
+import PageHeader from '@/components/ui/PageHeader.vue'
+import BasePanel from '@/components/ui/BasePanel.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import StatusPill from '@/components/ui/StatusPill.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import LoadingState from '@/components/ui/LoadingState.vue'
+import ActionMenu, { type ActionMenuItem } from '@/components/ui/ActionMenu.vue'
+import TemplatePreviewPane from '@/components/templates/editor/TemplatePreviewPane.vue'
+import { useInvoiceActions, actionsFor, isMonthly, type InvoiceActionId } from '@/composables/useInvoiceActions'
+import { setPageTitle } from '@/composables/usePageTitle'
+import { formatMoney, formatDate, formatPeriod, invoiceStatus, invoiceTypeLabel } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
 const invoicesStore = useInvoicesStore()
 const customersStore = useCustomersStore()
+const { run, isBusy } = useInvoiceActions()
 
 const invoiceId = computed(() => Number(route.params.id))
-const invoice = computed(() => invoicesStore.selectedInvoice)
+// The store may still hold the previously opened invoice
+const invoice = computed(() =>
+  invoicesStore.selectedInvoice?.id === invoiceId.value ? invoicesStore.selectedInvoice : null
+)
 const loading = ref(false)
 const error = ref<string | null>(null)
-const downloadingPdf = ref(false)
-const downloadingMonthlyReport = ref(false)
-const regeneratingInvoice = ref(false)
-const regeneratingMonthlyReport = ref(false)
 
-// Message system for user feedback
+const status = computed(() => invoiceStatus(invoice.value?.status ?? 'Draft'))
+const actions = computed(() => (invoice.value ? actionsFor(invoice.value) : { primary: null, more: [] }))
 
-function showSuccess(message: string) {
-  toast.success(message)
-}
-
-function showError(message: string) {
-  toast.error(message)
-}
+const lifecycle = ['Draft', 'Finalized', 'Sent', 'Paid']
+const stepIndex = computed(() => lifecycle.indexOf(status.value.name))
 
 const customerName = computed(() => {
   if (!invoice.value) return ''
-  const customer = customersStore.getCustomerById(invoice.value.customerId)
-  return customer?.name || 'Unknown'
+  return customersStore.getCustomerById(invoice.value.customerId)?.name ?? 'Unknown customer'
 })
 
-onMounted(() => {
-  loadData()
+// PDF downloads have their own buttons in the header
+const menuItems = computed<ActionMenuItem[]>(() => {
+  const items: ActionMenuItem[] = []
+  for (const action of actions.value.more) {
+    if (action === 'separator') {
+      if (items.length && !items[items.length - 1].separator) items.push({ separator: true })
+    } else if (action.id !== 'downloadPdf' && action.id !== 'downloadReport') {
+      items.push({ label: action.label, icon: action.icon, danger: action.danger, run: () => runAndFollow(action.id) })
+    }
+  }
+  return items[0]?.separator ? items.slice(1) : items
 })
+
+function money(value: MoneyDto | undefined): string {
+  return value ? formatMoney(value.amount, value.currency) : '—'
+}
+
+async function runAndFollow(action: InvoiceActionId) {
+  if (!invoice.value) return
+  const done = await run(action, invoice.value)
+  if (done && (action === 'delete' || action === 'forceDelete')) router.push('/invoices')
+}
 
 async function loadData() {
   try {
@@ -253,7 +177,7 @@ async function loadData() {
     error.value = null
     await Promise.all([
       invoicesStore.fetchById(invoiceId.value),
-      customersStore.fetchAll()
+      customersStore.customers.length ? Promise.resolve() : customersStore.fetchAll()
     ])
   } catch (err: any) {
     error.value = err.message || 'Failed to load invoice'
@@ -262,460 +186,178 @@ async function loadData() {
   }
 }
 
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString()
-}
-
-function formatMoney(money: MoneyDto | undefined): string {
-  if (!money || money.amount === undefined) {
-    return '0.00 N/A'
-  }
-  return `${money.amount.toFixed(2)} ${money.currency}`
-}
-
-function formatType(type: InvoiceType | string): string {
-  if (typeof type === 'string') return type === 'OneTime' ? 'One-Time' : type
-  return InvoiceTypeNames[type] || 'Unknown'
-}
-
-function formatStatus(status: InvoiceStatus | string): string {
-  if (typeof status === 'string') return status
-  return InvoiceStatusNames[status] || 'Unknown'
-}
-
-function getStatusCssClass(status: InvoiceStatus | string): string {
-  if (typeof status === 'string') return status.toLowerCase()
-  return InvoiceStatusNames[status]?.toLowerCase() || 'unknown'
-}
-
-function formatTaxRate(rate: number): string {
-  return `${rate.toFixed(2)}%`
-}
-
-async function handleDownloadPdf() {
-  try {
-    downloadingPdf.value = true
-    await invoicesStore.downloadPdf(invoiceId.value)
-  } catch (err: any) {
-    toast.failure('Failed to download PDF', err)
-  } finally {
-    downloadingPdf.value = false
-  }
-}
-
-async function handleDownloadMonthlyReport() {
-  try {
-    downloadingMonthlyReport.value = true
-    await invoicesStore.downloadMonthlyReportPdf(invoiceId.value)
-  } catch (err: any) {
-    toast.failure('Failed to download monthly report', err)
-  } finally {
-    downloadingMonthlyReport.value = false
-  }
-}
-
-async function handleRegenerateInvoicePdf() {
-  console.log('handleRegenerateInvoicePdf called for invoice:', invoiceId.value);
-  
-  try {
-    console.log('Calling invoicesStore.regenerateInvoicePdf');
-    regeneratingInvoice.value = true
-    const result = await invoicesStore.regenerateInvoicePdf(invoiceId.value)
-    console.log('Regenerate successful:', result);
-    showSuccess(result.message || 'Invoice PDF regenerated successfully! You can now download the updated version.')
-    await loadData()
-  } catch (err: any) {
-    console.error('Regenerate failed:', err);
-    showError(`Failed to regenerate invoice PDF: ${err.message}`)
-  } finally {
-    regeneratingInvoice.value = false
-  }
-}
-
-async function handleRegenerateMonthlyReport() {
-  try {
-    regeneratingMonthlyReport.value = true
-    const result = await invoicesStore.regenerateMonthlyReportPdf(invoiceId.value)
-    toast.success('Monthly report verified', { message: result.message })
-  } catch (err: any) {
-    toast.failure('Failed to verify monthly report', err)
-  } finally {
-    regeneratingMonthlyReport.value = false
-  }
-}
-
-async function handleFinalize() {
-  if (!(await confirm({ title: 'Finalize invoice?', message: 'A finalized invoice is locked and can no longer be edited.', confirmLabel: 'Finalize' }))) {
-    return
-  }
-
-  try {
-    await invoicesStore.finalize(invoiceId.value)
-    await loadData()
-  } catch (err: any) {
-    toast.failure('Failed to finalize invoice', err)
-  }
-}
-
-async function handleDelete() {
-  if (!(await confirm({ title: 'Delete invoice?', message: 'This invoice will be permanently deleted.', confirmLabel: 'Delete', tone: 'danger' }))) {
-    return
-  }
-
-  try {
-    await invoicesStore.remove(invoiceId.value)
-    router.push('/invoices')
-  } catch (err: any) {
-    toast.failure('Failed to delete invoice', err)
-  }
-}
+onMounted(loadData)
+watch(invoiceId, loadData)
+watch(() => invoice.value?.invoiceNumber, number => setPageTitle(number ? `Invoice ${number}` : null), { immediate: true })
 </script>
 
 <style scoped>
-.invoice-details {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+.meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.55rem;
 }
 
-.loading-state,
-.error-state {
-  text-align: center;
-  padding: 4rem 2rem;
+.dot {
+  color: var(--color-text-subtle);
 }
 
-.spinner {
-  border: 4px solid #f3f4f6;
-  border-top: 4px solid #2563eb;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.invoice-header {
+.lifecycle {
   display: flex;
-  justify-content: space-between;
-  align-items: start;
-  background: white;
-  padding: 2rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: 2rem;
-}
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.status-draft {
-  background: #f3f4f6;
-  color: #4b5563;
-}
-
-.status-finalized {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.status-sent {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.status-paid {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.status-cancelled {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.invoice-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.info-section {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-}
-
-.info-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.card-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  color: #1f2937;
-}
-
-.info-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.info-list dt {
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.info-list dd {
-  font-weight: 500;
-  color: #1f2937;
-}
-
-.monthly-details,
-.expenses-section,
-.tax-section,
-.notes-section {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.section-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  color: #1f2937;
-}
-
-.details-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 0.25rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
 }
 
-.detail-label {
-  font-size: 0.875rem;
-  color: #6b7280;
+.lifecycle li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.85rem 0.3rem 0.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
 }
 
-.detail-value {
-  font-size: 1.25rem;
+.marker {
+  width: 1.3rem;
+  height: 1.3rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-surface-sunken);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.marker .app-icon {
+  width: 0.8rem;
+  height: 0.8rem;
+  stroke-width: 3;
+}
+
+.lifecycle li.done {
+  color: var(--color-text-secondary);
+}
+
+.lifecycle li.done .marker {
+  background: var(--color-success);
+  color: #ffffff;
+}
+
+.lifecycle li.current {
+  border-color: var(--color-primary-line);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
   font-weight: 600;
-  color: #1f2937;
 }
 
-.expenses-table,
-.tax-table {
-  width: 100%;
-  border-collapse: collapse;
+.lifecycle li.current .marker {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
-.expenses-table thead,
-.tax-table thead {
-  background: #f9fafb;
+.cancelled-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--color-danger-line);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  font-size: var(--text-md);
 }
 
-.expenses-table th,
-.tax-table th,
-.expenses-table td,
-.tax-table td {
-  padding: 0.75rem;
-  text-align: left;
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(18rem, 1fr);
+  gap: 1rem;
+  align-items: start;
 }
 
-.expenses-table tbody tr,
-.tax-table tbody tr {
-  border-bottom: 1px solid #f3f4f6;
+.document {
+  height: calc(100vh - 16rem);
+  min-height: 30rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
-.totals-section {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.totals-card {
-  max-width: 400px;
-  margin-left: auto;
+@media (max-width: 1000px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .document {
+    height: 70vh;
+  }
 }
 
-.total-row {
+.amounts,
+.facts {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.amounts div,
+.facts div {
   display: flex;
   justify-content: space-between;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #f3f4f6;
+  gap: 1rem;
 }
 
-.total-row.final {
-  border-bottom: none;
-  border-top: 2px solid #1f2937;
-  padding-top: 1rem;
-  margin-top: 0.5rem;
+.amounts dt,
+.facts dt {
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
 }
 
-.total-label {
+.amounts dd,
+.facts dd {
+  margin: 0;
+  text-align: right;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
-.total-row.final .total-label {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #1f2937;
+.amounts .total {
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-border);
 }
 
-.total-value {
-  font-weight: 600;
-  color: #1f2937;
+.amounts .total dt,
+.amounts .total dd {
+  font-size: var(--text-base);
+  font-weight: 650;
+  color: var(--color-text);
 }
 
-.total-row.final .total-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #2563eb;
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
 }
 
-.notes-content {
-  color: #4b5563;
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-
-.btn-primary,
-.btn-secondary,
-.btn-danger {
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-primary {
-  background: #2563eb;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #1d4ed8;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-.btn-secondary:hover {
-  background: #f9fafb;
-}
-
-.btn-danger {
-  background: #ef4444;
-  color: white;
-}
-
-.btn-danger:hover {
-  background: #dc2626;
-}
-
-/* Message Banners */
-.message-banner {
-  display: flex;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  border-radius: 0.375rem;
-  margin-bottom: 1rem;
-  position: relative;
-  animation: slideIn 0.3s ease-out;
-  font-size: 0.875rem;
-}
-
-.message-banner svg {
-  width: 1.25rem;
-  height: 1.25rem;
-  flex-shrink: 0;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.success-banner {
-  background: #d1fae5;
-  color: #065f46;
-  border-left: 4px solid #10b981;
-}
-
-.error-banner {
-  background: #fee2e2;
-  color: #991b1b;
-  border-left: 4px solid #ef4444;
-}
-
-.message-banner .close-btn {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  font-size: 1.25rem;
-  font-weight: bold;
-  cursor: pointer;
-  color: inherit;
-  opacity: 0.6;
-  padding: 0;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.2s;
-}
-
-.message-banner .close-btn:hover {
-  opacity: 1;
+.notes {
+  margin: 0;
+  white-space: pre-line;
+  color: var(--color-text-secondary);
 }
 </style>

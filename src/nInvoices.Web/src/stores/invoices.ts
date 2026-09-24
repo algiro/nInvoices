@@ -76,6 +76,15 @@ export const useInvoicesStore = defineStore('invoices', () => {
     }
   }
 
+  // After a change, refresh that invoice both in the list and as the open invoice
+  async function reload(id: number) {
+    const fresh = await invoicesApi.getById(id);
+    const index = invoices.value.findIndex(i => i.id === id);
+    if (index >= 0) invoices.value.splice(index, 1, fresh);
+    if (selectedInvoice.value?.id === id) selectedInvoice.value = fresh;
+    return fresh;
+  }
+
   async function generate(data: GenerateInvoiceDto) {
     loading.value = true;
     error.value = null;
@@ -96,7 +105,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
     error.value = null;
     try {
       await invoicesApi.update(id, data);
-      await fetchById(id); // Refresh
+      await reload(id);
     } catch (e: any) {
       error.value = e.message || 'Failed to update invoice';
       throw e;
@@ -110,7 +119,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
     error.value = null;
     try {
       await invoicesApi.finalize(id);
-      await fetchById(id); // Refresh
+      await reload(id);
     } catch (e: any) {
       error.value = e.message || 'Failed to finalize invoice';
       throw e;
@@ -124,7 +133,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
     error.value = null;
     try {
       await invoicesApi.markAsSent(id);
-      await fetchAll();
+      await reload(id);
     } catch (e: any) {
       error.value = e.message || 'Failed to mark invoice as sent';
       throw e;
@@ -138,7 +147,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
     error.value = null;
     try {
       await invoicesApi.markAsPaid(id);
-      await fetchAll();
+      await reload(id);
     } catch (e: any) {
       error.value = e.message || 'Failed to mark invoice as paid';
       throw e;
@@ -152,7 +161,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
     error.value = null;
     try {
       await invoicesApi.cancel(id);
-      await fetchAll();
+      await reload(id);
     } catch (e: any) {
       error.value = e.message || 'Failed to cancel invoice';
       throw e;
@@ -162,20 +171,15 @@ export const useInvoicesStore = defineStore('invoices', () => {
   }
 
   async function remove(id: number, force: boolean = false) {
-    console.log(`[Store] remove called - ID: ${id}, Force: ${force}`);
     loading.value = true;
     error.value = null;
     try {
-      console.log('[Store] Calling invoicesApi.delete');
       await invoicesApi.delete(id, force);
-      console.log('[Store] Delete API call successful, updating local state');
       invoices.value = invoices.value.filter(i => i.id !== id);
       if (selectedInvoice.value?.id === id) {
         selectedInvoice.value = null;
       }
-      console.log('[Store] Local state updated');
     } catch (e: any) {
-      console.error('[Store] Delete failed:', e);
       error.value = e.message || 'Failed to delete invoice';
       throw e;
     } finally {
@@ -227,7 +231,6 @@ export const useInvoicesStore = defineStore('invoices', () => {
       window.URL.revokeObjectURL(url);
     } catch (e: any) {
       error.value = e.message || 'Failed to download monthly report';
-      console.error('Monthly report download error:', e);
       throw e;
     } finally {
       loading.value = false;
@@ -235,17 +238,13 @@ export const useInvoicesStore = defineStore('invoices', () => {
   }
 
   async function regenerateInvoicePdf(id: number) {
-    console.log('[Store] regenerateInvoicePdf called for ID:', id);
     loading.value = true;
     error.value = null;
     try {
-      console.log('[Store] Calling invoicesApi.regenerateInvoicePdf');
       const result = await invoicesApi.regenerateInvoicePdf(id);
-      console.log('[Store] Regenerate API call successful:', result);
-      await fetchById(id); // Refresh invoice data
+      await reload(id);
       return result;
     } catch (e: any) {
-      console.error('[Store] Regenerate failed:', e);
       error.value = e.message || 'Failed to regenerate invoice PDF';
       throw e;
     } finally {
