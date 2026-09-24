@@ -1,49 +1,40 @@
 <template>
-  <div class="project-form">
-    <form @submit.prevent="handleSubmit" class="form-content">
-      <div class="form-group">
-        <label for="name" class="form-label">
-          Project Name <span class="text-red-500">*</span>
-        </label>
-        <input
-          id="name"
-          v-model.trim="form.name"
-          type="text"
-          required
-          maxlength="200"
-          class="form-control"
-          :class="{ 'border-red-500': errors.name }"
-          placeholder="e.g. Website redesign"
-        />
-        <p v-if="errors.name" class="text-red-500 text-sm mt-1">{{ errors.name }}</p>
-      </div>
+  <form class="project-form" novalidate @submit.prevent="handleSubmit">
+    <BaseField label="Name" for="project-name" required :error="errors.name">
+      <input
+        id="project-name"
+        v-model.trim="form.name"
+        type="text"
+        maxlength="200"
+        class="control"
+        placeholder="e.g. Website redesign"
+      />
+    </BaseField>
 
-      <div v-if="projectId" class="form-group">
-        <label class="form-label checkbox-label">
-          <input v-model="form.isActive" type="checkbox" />
-          Active
-        </label>
-        <p class="text-xs text-gray-500 mt-1">
-          Inactive projects are hidden from the calendar suggestions but kept on past reports.
-        </p>
-      </div>
+    <label v-if="projectId" class="toggle" for="project-active">
+      <input id="project-active" v-model="form.isActive" type="checkbox" />
+      <span>
+        <strong>Active</strong>
+        <small>Inactive projects aren't suggested when entering days, but stay on past invoices and reports.</small>
+      </span>
+    </label>
 
-      <div class="form-actions">
-        <button type="button" @click="handleCancel" class="btn-secondary" :disabled="loading">
-          Cancel
-        </button>
-        <button type="submit" class="btn-primary" :disabled="loading">
-          {{ loading ? 'Saving...' : 'Save Project' }}
-        </button>
-      </div>
-    </form>
-  </div>
+    <div class="form-actions">
+      <BaseButton :disabled="saving" @click="emit('cancel')">Cancel</BaseButton>
+      <BaseButton type="submit" variant="primary" :loading="saving">
+        {{ projectId ? 'Save changes' : 'Add project' }}
+      </BaseButton>
+    </div>
+  </form>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useProjectsStore } from '@/stores/projects'
 import type { CreateProjectDto } from '@/types'
+import BaseField from '@/components/ui/BaseField.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import { errorMessage } from '@/composables/useToast'
 
 interface Props {
   customerId: number
@@ -59,9 +50,8 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 const projectsStore = useProjectsStore()
 
-const loading = ref(false)
+const saving = ref(false)
 const errors = reactive<Record<string, string>>({})
-
 const form = reactive({
   name: '',
   isActive: true
@@ -77,130 +67,70 @@ onMounted(() => {
   }
 })
 
-function validate(): boolean {
-  Object.keys(errors).forEach(key => delete errors[key])
-  if (!form.name || form.name.trim().length === 0) {
-    errors.name = 'Project name is required'
-    return false
-  }
-  return true
-}
-
 async function handleSubmit() {
-  if (!validate()) return
+  delete errors.name
+  if (!form.name.trim()) {
+    errors.name = 'Enter a project name.'
+    document.getElementById('project-name')?.focus()
+    return
+  }
 
   try {
-    loading.value = true
+    saving.value = true
     if (props.projectId) {
-      await projectsStore.update(props.projectId, {
-        name: form.name.trim(),
-        isActive: form.isActive
-      })
+      await projectsStore.update(props.projectId, { name: form.name.trim(), isActive: form.isActive })
     } else {
-      await projectsStore.create({
-        customerId: props.customerId,
-        name: form.name.trim()
-      } as CreateProjectDto)
+      await projectsStore.create({ customerId: props.customerId, name: form.name.trim() } as CreateProjectDto)
     }
     emit('success')
-  } catch (error: any) {
-    errors.name = error.message || 'Failed to save project'
+  } catch (error) {
+    errors.name = `The project could not be saved: ${errorMessage(error)}`
   } finally {
-    loading.value = false
+    saving.value = false
   }
-}
-
-function handleCancel() {
-  emit('cancel')
 }
 </script>
 
 <style scoped>
 .project-form {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.form-content {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
-.form-group {
+.toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.toggle input {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.15rem;
+  accent-color: var(--color-primary);
+}
+
+.toggle span {
   display: flex;
   flex-direction: column;
+  gap: 0.1rem;
+  font-size: var(--text-md);
 }
 
-.form-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-.checkbox-label {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.form-control {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 1rem;
-  transition: all 0.2s;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+.toggle small {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.btn-primary,
-.btn-secondary {
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-primary {
-  background: #2563eb;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #1d4ed8;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #f9fafb;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
 }
 </style>

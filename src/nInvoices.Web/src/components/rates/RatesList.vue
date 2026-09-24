@@ -1,87 +1,77 @@
 <template>
-  <div class="rates-list">
-    <div class="list-header">
-      <h3 class="text-lg font-semibold">Rates</h3>
-      <button @click="handleAdd" class="btn-primary">
-        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Add Rate
-      </button>
-    </div>
-
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p class="mt-2 text-sm text-gray-600">Loading rates...</p>
-    </div>
-
-    <div v-else-if="error" class="error-state">
-      <p class="text-red-600 text-sm">{{ error }}</p>
-      <button @click="loadRates" class="btn-secondary mt-2">Retry</button>
-    </div>
-
-    <div v-else-if="rates.length === 0" class="empty-state">
-      <p class="text-gray-600 text-sm">No rates configured yet</p>
-      <button @click="handleAdd" class="btn-primary mt-2">Add First Rate</button>
-    </div>
-
-    <div v-else class="rates-grid">
-      <div v-for="rate in rates" :key="rate.id" class="rate-card">
-        <div class="rate-header">
-          <span class="rate-type-badge" :class="`type-${getRateTypeCssClass(rate.type)}`">
-            {{ formatRateType(rate.type) }}
-          </span>
-          <div class="rate-actions">
-            <button
-              @click="handleEdit(rate)"
-              class="action-btn"
-              title="Edit rate"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
-            <button
-              @click="handleDelete(rate)"
-              class="action-btn text-red-600 hover:bg-red-50"
-              title="Delete rate"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
-          </div>
-        </div>
-        <div class="rate-amount">
-          {{ formatMoney(rate.price) }}
-        </div>
-        <div class="rate-description">
-          per {{ formatRateType(rate.type).toLowerCase() }}
-        </div>
+  <section class="section">
+    <header class="section-header">
+      <div>
+        <h3>Rates</h3>
+        <p class="help">The price used to bill this customer. Monthly invoices use the daily rate first, then monthly, then hourly.</p>
       </div>
+      <BaseButton variant="primary" icon="plus" @click="handleAdd">New rate</BaseButton>
+    </header>
+
+    <LoadingState v-if="loading && rates.length === 0" label="Loading rates…" />
+
+    <EmptyState v-else-if="error" icon="alert" title="Rates could not be loaded" :description="error" compact>
+      <BaseButton @click="loadRates">Try again</BaseButton>
+    </EmptyState>
+
+    <EmptyState
+      v-else-if="rates.length === 0"
+      icon="coins"
+      title="No rates yet"
+      description="Invoices can't be generated until the customer has a rate."
+      compact
+    >
+      <BaseButton variant="primary" icon="plus" @click="handleAdd">Add a rate</BaseButton>
+    </EmptyState>
+
+    <div v-else class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Type</th>
+            <th scope="col" class="num">Price</th>
+            <th scope="col">Billed</th>
+            <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="rate in rates" :key="rate.id">
+            <td class="primary-cell">{{ rateTypeName(rate.type) }}</td>
+            <td class="num primary-cell">{{ formatMoney(rate.price.amount, rate.price.currency) }}</td>
+            <td class="muted">per {{ unitFor(rate.type) }}</td>
+            <td class="actions">
+              <BaseButton size="sm" variant="ghost" icon="edit" @click="handleEdit(rate)">Edit</BaseButton>
+              <BaseButton
+                size="sm"
+                variant="ghost-danger"
+                icon="trash"
+                icon-only
+                title="Delete"
+                :aria-label="`Delete ${rateTypeName(rate.type).toLowerCase()} rate`"
+                @click="handleDelete(rate)"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
-    <teleport to="body">
-      <div v-if="showForm" class="modal-overlay" @click="handleCloseForm">
-        <div class="modal-content" @click.stop>
-          <div class="modal-header">
-            <h3 class="text-xl font-semibold">{{ editingRate ? 'Edit Rate' : 'Add Rate' }}</h3>
-            <button @click="handleCloseForm" class="close-btn">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <RateForm
-            :customer-id="customerId"
-            :rate-id="editingRate?.id"
-            @success="handleFormSuccess"
-            @cancel="handleCloseForm"
-          />
-        </div>
-      </div>
-    </teleport>
-  </div>
+    <BaseDialog
+      :open="showForm"
+      :title="editingRate ? 'Edit rate' : 'New rate'"
+      size="sm"
+      :close-on-overlay="false"
+      @close="handleCloseForm"
+    >
+      <RateForm
+        v-if="showForm"
+        :customer-id="customerId"
+        :rate-id="editingRate?.id"
+        @success="handleFormSuccess"
+        @cancel="handleCloseForm"
+      />
+    </BaseDialog>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -89,15 +79,14 @@ import { ref, onMounted, computed } from 'vue'
 import { useRatesStore } from '@/stores/rates'
 import RateForm from './RateForm.vue'
 import { RateTypeNames, RateType } from '@/types'
-import type { RateDto, MoneyDto } from '@/types'
+import type { RateDto } from '@/types'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
-
-const toast = useToast()
-const { confirm } = useConfirm()
-
-// 🔍 DEBUG: Component loaded
-console.log('🔍 RatesList component loaded!')
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseDialog from '@/components/ui/BaseDialog.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import LoadingState from '@/components/ui/LoadingState.vue'
+import { formatMoney } from '@/utils/format'
 
 interface Props {
   customerId: number
@@ -105,41 +94,36 @@ interface Props {
 
 const props = defineProps<Props>()
 const ratesStore = useRatesStore()
+const toast = useToast()
+const { confirm } = useConfirm()
 
 const showForm = ref(false)
 const editingRate = ref<RateDto | null>(null)
 
-const rates = computed(() => {
-  const result = ratesStore.ratesByCustomer(props.customerId)
-  console.log('🔍 rates computed:', result.length, 'rates', result)
-  return result
-})
-const loading = computed(() => {
-  console.log('🔍 loading computed:', ratesStore.loading)
-  return ratesStore.loading
-})
-const error = computed(() => {
-  console.log('🔍 error computed:', ratesStore.error)
-  return ratesStore.error
-})
+const rates = computed(() => ratesStore.ratesByCustomer(props.customerId))
+const loading = computed(() => ratesStore.loading)
+const error = computed(() => ratesStore.error)
 
 onMounted(() => {
-  console.log('🔍 RatesList mounted, customerId:', props.customerId)
   loadRates()
 })
 
 async function loadRates() {
-  console.log('🔍 loadRates called for customerId:', props.customerId)
   try {
     await ratesStore.fetchByCustomerId(props.customerId)
-    console.log('🔍 Rates loaded:', rates.value.length, 'rates')
-  } catch (error) {
-    console.error('Failed to load rates:', error)
+  } catch {
+    // the store keeps the message; the empty state shows it
   }
 }
 
-function formatMoney(money: MoneyDto): string {
-  return `${money.amount.toFixed(2)} ${money.currency}`
+function rateTypeName(type: RateType | string): string {
+  if (typeof type === 'string') return type
+  return RateTypeNames[type] || 'Unknown'
+}
+
+function unitFor(type: RateType | string): string {
+  const name = rateTypeName(type)
+  return name === 'Hourly' ? 'hour' : name === 'Monthly' ? 'month' : 'day'
 }
 
 function handleAdd() {
@@ -148,42 +132,26 @@ function handleAdd() {
 }
 
 function handleEdit(rate: RateDto) {
-  console.log('handleEdit called with rate:', rate)
   editingRate.value = rate
   showForm.value = true
-  console.log('Edit form should be visible now, showForm:', showForm.value)
-}
-
-function formatRateType(type: RateType | string): string {
-  if (typeof type === 'string') return type
-  return RateTypeNames[type] || 'Unknown'
-}
-
-function getRateTypeCssClass(type: RateType | string): string {
-  if (typeof type === 'string') return type.toLowerCase()
-  return RateTypeNames[type]?.toLowerCase() || 'unknown'
 }
 
 async function handleDelete(rate: RateDto) {
-  console.log('handleDelete called with rate:', rate)
-  const typeName = formatRateType(rate.type).toLowerCase()
+  const typeName = rateTypeName(rate.type).toLowerCase()
   if (!(await confirm({ title: 'Delete rate?', message: `This ${typeName} rate will be permanently deleted.`, confirmLabel: 'Delete', tone: 'danger' }))) {
-    console.log('Delete cancelled by user')
     return
   }
 
-  console.log('Delete confirmed, calling ratesStore.remove...')
   try {
     await ratesStore.remove(rate.id)
-    console.log('Rate deleted successfully')
+    toast.success('Rate deleted')
   } catch (error: any) {
-    console.error('Delete failed with error:', error)
     toast.failure('Failed to delete rate', error)
   }
 }
 
 function handleFormSuccess() {
-  console.log('handleFormSuccess called')
+  toast.success(editingRate.value ? 'Rate updated' : 'Rate added')
   showForm.value = false
   editingRate.value = null
   loadRates()
@@ -196,197 +164,28 @@ function handleCloseForm() {
 </script>
 
 <style scoped>
-.rates-list {
-  padding: 1rem;
-}
-
-.list-header {
+.section {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.loading-state,
-.error-state,
-.empty-state {
-  text-align: center;
-  padding: 3rem 1rem;
-}
-
-.spinner {
-  border: 3px solid #f3f4f6;
-  border-top: 3px solid #2563eb;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.rates-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  flex-direction: column;
   gap: 1rem;
 }
 
-.rate-card {
-  background: #f9fafb;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
-  transition: all 0.2s;
-}
-
-.rate-card:hover {
-  border-color: #2563eb;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
-}
-
-.rate-header {
+.section-header {
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+  gap: 0.75rem;
 }
 
-.rate-type-badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
+.section-header h3 {
+  font-size: 1rem;
 }
 
-.type-daily {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.type-monthly {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.type-hourly {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.rate-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.action-btn {
-  padding: 0.25rem;
-  border: none;
-  background: red !important; /* DEBUG: Make visible */
-  border-radius: 0.375rem;
-  cursor: pointer;
-  color: white !important; /* DEBUG: Contrast */
-  transition: all 0.2s;
-  position: relative;
-  z-index: 100;
-  width: 32px;
-  height: 32px;
-}
-
-.action-btn:hover {
-  background: darkred !important; /* DEBUG */
-  color: white !important;
-}
-
-.rate-amount {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 0.25rem;
-}
-
-.rate-description {
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.btn-primary,
-.btn-secondary {
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  font-size: 0.875rem;
-}
-
-.btn-primary {
-  background: #2563eb;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #1d4ed8;
-}
-
-.btn-secondary {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-.btn-secondary:hover {
-  background: #f9fafb;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 0.5rem;
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.close-btn {
-  padding: 0.5rem;
-  border: none;
-  background: transparent;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  color: #6b7280;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background: #f3f4f6;
-  color: #1f2937;
+.help {
+  margin: 0.2rem 0 0;
+  max-width: 65ch;
+  font-size: var(--text-md);
+  color: var(--color-text-muted);
 }
 </style>

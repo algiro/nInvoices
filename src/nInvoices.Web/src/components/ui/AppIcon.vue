@@ -37,7 +37,13 @@ const paths = {
   chevronRight: ['M9 6l6 6-6 6'],
   chevronDown: ['M6 9l6 6 6-6'],
   template: ['M4 4h16v16H4z', 'M4 9h16', 'M9 9v11'],
-  calendar: ['M4 5h16v15H4z', 'M4 10h16', 'M8 3v4', 'M16 3v4']
+  calendar: ['M4 5h16v15H4z', 'M4 10h16', 'M8 3v4', 'M16 3v4'],
+  search: ['M11 18a7 7 0 100-14 7 7 0 000 14z', 'M20 20l-4-4'],
+  mapPin: ['M12 21s-7-6.2-7-11.5a7 7 0 0114 0C19 14.8 12 21 12 21z', 'M12 12a2.5 2.5 0 100-5 2.5 2.5 0 000 5z'],
+  arrowLeft: ['M19 12H5', 'M11 18l-6-6 6-6'],
+  folder: ['M3 6h6l2 2h10v11H3z'],
+  percent: ['M19 5L5 19', 'M7 9a2 2 0 100-4 2 2 0 000 4z', 'M17 19a2 2 0 100-4 2 2 0 000 4z'],
+  coins: ['M9 11c3.3 0 6-1.3 6-3s-2.7-3-6-3-6 1.3-6 3 2.7 3 6 3z', 'M3 8v4c0 1.7 2.7 3 6 3s6-1.3 6-3V8', 'M15 13c3.3 0 6-1.3 6-3', 'M15 16c3.3 0 6-1.3 6-3V9', 'M3 12v4c0 1.7 2.7 3 6 3s6-1.3 6-3v-1']
 } as const
 
 export type IconName = keyof typeof paths

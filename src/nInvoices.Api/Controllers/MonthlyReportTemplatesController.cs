@@ -245,6 +245,16 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
         if (template == null)
             return NotFound();
 
+        // One active template per customer and type: the previous one is switched off
+        var previouslyActive = await _repository.FindAsync(
+            t => t.CustomerId == template.CustomerId && t.InvoiceType == template.InvoiceType && t.IsActive && t.Id != id,
+            cancellationToken);
+        foreach (var other in previouslyActive)
+        {
+            other.Deactivate();
+            await _repository.UpdateAsync(other, cancellationToken);
+        }
+
         template.Activate();
         await _repository.UpdateAsync(template, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

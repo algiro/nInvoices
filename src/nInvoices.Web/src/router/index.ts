@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { clearPageTitle } from '../composables/usePageTitle';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -118,7 +119,10 @@ router.beforeEach(async (to) => {
 });
 
 // Browser tab title follows the page title
-router.afterEach((to) => {
+router.afterEach((to, from) => {
+  // Query-only changes (e.g. switching tabs) keep the page's own title
+  if (to.path === from.path && from.matched.length > 0) return;
+  clearPageTitle();
   const title = to.meta.title as string | undefined;
   document.title = title ? `${title} · nInvoices` : 'nInvoices';
 });

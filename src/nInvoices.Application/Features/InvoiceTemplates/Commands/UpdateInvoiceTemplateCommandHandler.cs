@@ -40,10 +40,19 @@ public sealed class UpdateInvoiceTemplateCommandHandler : IRequestHandler<Update
         }
 
         template.UpdateContent(dto.Name, dto.Content);
-        template.IsActive = dto.IsActive;
 
-        await _repository.UpdateAsync(template, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (dto.IsActive && !template.IsActive)
+        {
+            // Turning a template on replaces the customer's active one of the same type
+            await InvoiceTemplateActivation.ActivateAsync(template, _repository, _unitOfWork, cancellationToken);
+        }
+        else
+        {
+            if (!dto.IsActive)
+                template.Deactivate();
+            await _repository.UpdateAsync(template, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         return MapToDto(template);
     }

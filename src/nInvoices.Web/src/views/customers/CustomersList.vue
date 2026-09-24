@@ -1,97 +1,85 @@
 <template>
-  <div class="customers-list">
-    <div class="header">
-      <h1 class="text-3xl font-bold">Customers</h1>
-      <button @click="handleCreate" class="btn-primary">
-        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Add Customer
-      </button>
-    </div>
+  <div class="customers-page">
+    <PageHeader title="Customers" :subtitle="subtitle">
+      <template #actions>
+        <BaseButton variant="primary" icon="plus" to="/customers/new">New customer</BaseButton>
+      </template>
+    </PageHeader>
 
-    <div class="search-bar">
-      <input
-        v-model="searchQuery"
-        type="text"
-        placeholder="Search customers by name, fiscal ID, or city..."
-        class="search-input"
-      />
-    </div>
-
-    <div v-if="store.loading" class="loading-state">
-      <div class="spinner"></div>
-      <p class="mt-4">Loading customers...</p>
-    </div>
-
-    <div v-else-if="store.error" class="error-state">
-      <p class="text-red-600">{{ store.error }}</p>
-      <button @click="loadData" class="btn-primary mt-4">Retry</button>
-    </div>
-
-    <div v-else-if="filteredCustomers.length === 0" class="empty-state">
-      <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-      </svg>
-      <p class="text-xl text-gray-600 mb-2">
-        {{ searchQuery ? 'No customers found' : 'No customers yet' }}
-      </p>
-      <p class="text-gray-500 mb-4">
-        {{ searchQuery ? 'Try adjusting your search criteria' : 'Get started by adding your first customer' }}
-      </p>
-      <button v-if="!searchQuery" @click="handleCreate" class="btn-primary">Add Your First Customer</button>
-    </div>
-
-    <div v-else class="customers-grid">
-      <div
-        v-for="customer in filteredCustomers"
-        :key="customer.id"
-        class="customer-card"
-        @click="handleView(customer.id)"
-      >
-        <div class="card-header">
-          <div>
-            <h3 class="text-xl font-semibold">{{ customer.name }}</h3>
-            <p class="text-gray-600 text-sm">{{ customer.fiscalId }}</p>
-          </div>
-          <div class="card-actions" @click.stop>
-            <button
-              @click="handleEdit(customer.id)"
-              class="action-btn"
-              title="Edit customer"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
-            <button
-              @click="handleDelete(customer)"
-              class="action-btn text-red-600 hover:bg-red-50"
-              title="Delete customer"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="card-body">
-          <div class="address-info">
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <p class="text-sm text-gray-500">
-              {{ customer.address.city }}, {{ customer.address.country }}
-            </p>
-          </div>
-        </div>
-
-        <div class="card-footer">
-          <span class="view-details">View Details →</span>
-        </div>
+    <div class="toolbar">
+      <div class="search">
+        <AppIcon name="search" class="search-icon" />
+        <input
+          id="customer-search"
+          v-model="searchQuery"
+          type="search"
+          class="control"
+          placeholder="Search by name, VAT number or city"
+          aria-label="Search customers"
+        />
       </div>
+    </div>
+
+    <LoadingState v-if="store.loading && store.customers.length === 0" label="Loading customers…" />
+
+    <EmptyState v-else-if="store.error" icon="alert" title="Customers could not be loaded" :description="store.error">
+      <BaseButton @click="loadData">Try again</BaseButton>
+    </EmptyState>
+
+    <EmptyState
+      v-else-if="store.customers.length === 0"
+      icon="customers"
+      title="No customers yet"
+      description="Add a customer, then their rates and templates, before generating the first invoice."
+    >
+      <BaseButton variant="primary" icon="plus" to="/customers/new">New customer</BaseButton>
+    </EmptyState>
+
+    <EmptyState
+      v-else-if="filteredCustomers.length === 0"
+      icon="search"
+      title="No customer matches your search"
+      :description="`Nothing found for “${searchQuery}”.`"
+      compact
+    >
+      <BaseButton @click="searchQuery = ''">Clear search</BaseButton>
+    </EmptyState>
+
+    <div v-else class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Customer</th>
+            <th scope="col">Location</th>
+            <th scope="col">Language</th>
+            <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="customer in filteredCustomers" :key="customer.id" class="clickable" @click="handleView(customer.id)">
+            <td>
+              <router-link :to="`/customers/${customer.id}`" class="primary-cell name-link" @click.stop>
+                {{ customer.name }}
+              </router-link>
+              <span class="sub">{{ customer.fiscalId }}</span>
+            </td>
+            <td>{{ [customer.address.city, customer.address.country].filter(Boolean).join(', ') }}</td>
+            <td class="muted">{{ localeLabel(customer.locale) }}</td>
+            <td class="actions" @click.stop>
+              <BaseButton size="sm" variant="ghost" icon="edit" :to="`/customers/${customer.id}/edit`">Edit</BaseButton>
+              <BaseButton
+                size="sm"
+                variant="ghost-danger"
+                icon="trash"
+                icon-only
+                title="Delete"
+                :aria-label="`Delete ${customer.name}`"
+                @click="handleDelete(customer)"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>
@@ -103,6 +91,12 @@ import { useCustomersStore } from '@/stores/customers'
 import type { CustomerDto } from '@/types'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import LoadingState from '@/components/ui/LoadingState.vue'
+import { localeLabel } from '@/utils/format'
 
 const toast = useToast()
 const { confirm } = useConfirm()
@@ -111,19 +105,23 @@ const router = useRouter()
 const store = useCustomersStore()
 const searchQuery = ref('')
 
-const filteredCustomers = computed(() => {
-  if (!searchQuery.value) {
-    return store.customers
-  }
+const subtitle = computed(() => {
+  const count = store.customers.length
+  return count === 1 ? '1 customer' : `${count} customers`
+})
 
-  const query = searchQuery.value.toLowerCase()
-  return store.customers.filter(customer =>
+const filteredCustomers = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  const list = [...store.customers].sort((a, b) => a.name.localeCompare(b.name))
+  if (!query) return list
+  return list.filter(customer =>
     customer.name.toLowerCase().includes(query) ||
     customer.fiscalId.toLowerCase().includes(query) ||
     customer.address.city.toLowerCase().includes(query) ||
     customer.address.country.toLowerCase().includes(query)
   )
 })
+
 
 onMounted(() => {
   loadData()
@@ -133,16 +131,8 @@ function loadData() {
   store.fetchAll()
 }
 
-function handleCreate() {
-  router.push('/customers/new')
-}
-
 function handleView(id: number) {
   router.push(`/customers/${id}`)
-}
-
-function handleEdit(id: number) {
-  router.push(`/customers/${id}/edit`)
 }
 
 async function handleDelete(customer: CustomerDto) {
@@ -152,6 +142,7 @@ async function handleDelete(customer: CustomerDto) {
 
   try {
     await store.remove(customer.id)
+    toast.success('Customer deleted')
   } catch (error: any) {
     toast.failure('Failed to delete customer', error)
   }
@@ -159,142 +150,39 @@ async function handleDelete(customer: CustomerDto) {
 </script>
 
 <style scoped>
-.customers-list {
-  padding: 2rem;
-}
-
-.header {
+.toolbar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
-.search-bar {
-  margin-bottom: 2rem;
+.search {
+  position: relative;
+  flex: 0 1 26rem;
 }
 
-.search-input {
-  width: 100%;
-  max-width: 500px;
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  font-size: 1rem;
+.search-icon {
+  position: absolute;
+  left: 0.7rem;
+  top: 50%;
+  width: 1rem;
+  height: 1rem;
+  transform: translateY(-50%);
+  color: var(--color-text-subtle);
+  pointer-events: none;
 }
 
-.search-input:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+.search .control {
+  padding-left: 2.1rem;
 }
 
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.75rem 1.5rem;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
+.name-link {
+  color: var(--color-text);
 }
 
-.btn-primary:hover {
-  background: #1d4ed8;
+.name-link:hover {
+  color: var(--color-primary);
 }
 
-.loading-state,
-.error-state,
-.empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
-}
-
-.spinner {
-  border: 4px solid #f3f4f6;
-  border-top: 4px solid #2563eb;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.customers-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.5rem;
-}
-
-.customer-card {
-  background: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
-  cursor: pointer;
-  overflow: hidden;
-}
-
-.customer-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  padding: 1.5rem 1.5rem 1rem;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.card-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.action-btn {
-  padding: 0.5rem;
-  border: none;
-  background: transparent;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  color: #6b7280;
-  transition: all 0.2s;
-}
-
-.action-btn:hover {
-  background: #f3f4f6;
-  color: #1f2937;
-}
-
-.card-body {
-  padding: 1rem 1.5rem;
-}
-
-.address-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.card-footer {
-  padding: 1rem 1.5rem;
-  background: #f9fafb;
-  text-align: right;
-}
-
-.view-details {
-  color: #2563eb;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
 </style>

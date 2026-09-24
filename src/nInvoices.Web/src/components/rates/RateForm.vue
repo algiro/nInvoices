@@ -1,81 +1,44 @@
 <template>
-  <div class="rate-form">
-    <form @submit.prevent="handleSubmit" class="form-content">
-      <div class="form-group">
-        <label for="type" class="form-label">
-          Rate Type <span class="text-red-500">*</span>
-        </label>
-        <select
-          id="type"
-          v-model.number="form.type"
-          required
-          class="form-control"
-          :disabled="disabled"
-        >
-          <option :value="RateType.Daily">Daily</option>
-          <option :value="RateType.Monthly">Monthly</option>
-          <option :value="RateType.Hourly">Hourly</option>
-        </select>
-      </div>
+  <LoadingState v-if="loadingRate" label="Loading rate…" />
 
-      <div class="form-group">
-        <label for="amount" class="form-label">
-          Amount <span class="text-red-500">*</span>
-        </label>
+  <form v-else class="rate-form" novalidate @submit.prevent="handleSubmit">
+    <BaseField label="Billed" for="rate-type" required>
+      <select id="rate-type" v-model.number="form.type" class="control" :disabled="disabled">
+        <option :value="RateType.Daily">Per day</option>
+        <option :value="RateType.Hourly">Per hour</option>
+        <option :value="RateType.Monthly">Per month</option>
+      </select>
+    </BaseField>
+
+    <div class="price-row">
+      <BaseField label="Price" for="rate-amount" required :error="errors.amount" class="amount">
         <input
-          id="amount"
+          id="rate-amount"
           v-model.number="form.price.amount"
           type="number"
           step="0.01"
           min="0"
-          required
-          class="form-control"
-          :class="{ 'border-red-500': errors.amount }"
+          inputmode="decimal"
+          class="control num"
           :disabled="disabled"
         />
-        <p v-if="errors.amount" class="text-red-500 text-sm mt-1">{{ errors.amount }}</p>
-      </div>
-
-      <div class="form-group">
-        <label for="currency" class="form-label">
-          Currency <span class="text-red-500">*</span>
-        </label>
-        <select
-          id="currency"
-          v-model="form.price.currency"
-          required
-          class="form-control"
-          :disabled="disabled"
-        >
-          <option value="EUR">EUR - Euro</option>
-          <option value="USD">USD - US Dollar</option>
-          <option value="GBP">GBP - British Pound</option>
-          <option value="CHF">CHF - Swiss Franc</option>
-          <option value="JPY">JPY - Japanese Yen</option>
-          <option value="CAD">CAD - Canadian Dollar</option>
-          <option value="AUD">AUD - Australian Dollar</option>
+      </BaseField>
+      <BaseField label="Currency" for="rate-currency" required>
+        <select id="rate-currency" v-model="form.price.currency" class="control" :disabled="disabled">
+          <option v-for="code in currencies" :key="code" :value="code">{{ code }}</option>
         </select>
-      </div>
+      </BaseField>
+    </div>
 
-      <div class="form-actions">
-        <button
-          type="button"
-          @click="handleCancel"
-          class="btn-secondary"
-          :disabled="loading"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          class="btn-primary"
-          :disabled="loading || disabled"
-        >
-          {{ loading ? 'Saving...' : 'Save Rate' }}
-        </button>
-      </div>
-    </form>
-  </div>
+    <p v-if="errors.form" class="form-error" role="alert">{{ errors.form }}</p>
+
+    <div class="form-actions">
+      <BaseButton :disabled="saving" @click="emit('cancel')">Cancel</BaseButton>
+      <BaseButton type="submit" variant="primary" :loading="saving" :disabled="disabled">
+        {{ rateId ? 'Save changes' : 'Add rate' }}
+      </BaseButton>
+    </div>
+  </form>
 </template>
 
 <script setup lang="ts">
@@ -83,6 +46,10 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRatesStore } from '@/stores/rates'
 import { RateType } from '@/types'
 import type { CreateRateDto, UpdateRateDto } from '@/types'
+import BaseField from '@/components/ui/BaseField.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import LoadingState from '@/components/ui/LoadingState.vue'
+import { errorMessage } from '@/composables/useToast'
 
 interface Props {
   customerId: number
@@ -99,11 +66,13 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 const ratesStore = useRatesStore()
 
-const loading = ref(false)
+const currencies = ['EUR', 'USD', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD']
+const loadingRate = ref(false)
+const saving = ref(false)
 
 const form = reactive<CreateRateDto | UpdateRateDto>({
   customerId: props.customerId,
-  type: RateType.Daily, // Default to Daily (numeric 0)
+  type: RateType.Daily,
   price: {
     amount: 0,
     currency: 'EUR'
@@ -120,10 +89,10 @@ onMounted(async () => {
 
 async function loadRate(id: number) {
   try {
-    loading.value = true
+    loadingRate.value = true
     const rate = await ratesStore.fetchById(id)
     if (rate) {
-      // Handle string enum values from backend
+      // The API sends the type's name ("Daily"); the form works with the enum value
       if (typeof rate.type === 'string') {
         const typeMap: Record<string, RateType> = { Daily: RateType.Daily, Monthly: RateType.Monthly, Hourly: RateType.Hourly }
         form.type = typeMap[rate.type] ?? RateType.Daily
@@ -133,147 +102,64 @@ async function loadRate(id: number) {
       form.price = { ...rate.price }
     }
   } catch (error) {
-    console.error('Failed to load rate:', error)
+    errors.form = `The rate could not be loaded: ${errorMessage(error)}`
   } finally {
-    loading.value = false
+    loadingRate.value = false
   }
 }
 
 function validateForm(): boolean {
   Object.keys(errors).forEach(key => delete errors[key])
-
-  if (form.price.amount <= 0) {
-    errors.amount = 'Amount must be greater than 0'
-    return false
+  if (!(Number(form.price.amount) > 0)) {
+    errors.amount = 'Enter a price greater than 0.'
+    document.getElementById('rate-amount')?.focus()
   }
-
-  if (!['EUR', 'USD', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD'].includes(form.price.currency)) {
-    errors.amount = 'Invalid currency'
-    return false
-  }
-
-  return true
+  return Object.keys(errors).length === 0
 }
 
 async function handleSubmit() {
-  if (!validateForm()) {
-    return
-  }
+  if (!validateForm()) return
 
   try {
-    loading.value = true
-
+    saving.value = true
     if (props.rateId) {
-      // For update, send only type and price (no customerId)
-      const updateDto: UpdateRateDto = {
-        type: form.type,
-        price: form.price
-      }
+      const updateDto: UpdateRateDto = { type: form.type, price: form.price }
       await ratesStore.update(props.rateId, updateDto)
     } else {
-      // For create, send full form with customerId
       await ratesStore.create(form as CreateRateDto)
     }
-
     emit('success')
-  } catch (error: any) {
-    console.error('Failed to save rate:', error)
-    errors.amount = error.message || 'Failed to save rate'
+  } catch (error) {
+    errors.form = `The rate could not be saved: ${errorMessage(error)}`
   } finally {
-    loading.value = false
+    saving.value = false
   }
-}
-
-function handleCancel() {
-  emit('cancel')
 }
 </script>
 
 <style scoped>
 .rate-form {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.form-content {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
+.price-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7rem;
+  gap: 0.75rem;
 }
 
-.form-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-.form-control {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 1rem;
-  transition: all 0.2s;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-.form-control:disabled {
-  background: #f3f4f6;
-  cursor: not-allowed;
+.form-error {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-danger);
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.btn-primary,
-.btn-secondary {
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-primary {
-  background: #2563eb;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #1d4ed8;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #f9fafb;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
 }
 </style>
