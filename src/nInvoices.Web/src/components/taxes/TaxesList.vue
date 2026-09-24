@@ -105,6 +105,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useTaxesStore } from '@/stores/taxes'
 import TaxForm from './TaxForm.vue'
 import type { TaxDto } from '@/types'
+import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
+
+const toast = useToast()
+const { confirm } = useConfirm()
 
 interface Props {
   customerId: number
@@ -166,14 +171,14 @@ function handleEdit(tax: TaxDto) {
 }
 
 async function handleDelete(tax: TaxDto) {
-  if (!confirm(`Are you sure you want to delete tax "${tax.description}"?\n\nThis action cannot be undone.`)) {
+  if (!(await confirm({ title: 'Delete tax?', message: `"${tax.description}" will be permanently deleted.`, confirmLabel: 'Delete', tone: 'danger' }))) {
     return
   }
 
   try {
     await taxesStore.remove(tax.id)
   } catch (error: any) {
-    alert(`Failed to delete tax: ${error.message}`)
+    toast.failure('Failed to delete tax', error)
   }
 }
 

@@ -119,6 +119,9 @@ import TaxesList from '@/components/taxes/TaxesList.vue'
 import TemplatesList from '@/components/templates/TemplatesList.vue'
 import MonthlyReportTemplatesList from '@/components/monthlyreports/MonthlyReportTemplatesList.vue'
 import type { AddressDto } from '@/types'
+import { useConfirm } from '@/composables/useConfirm'
+
+const { confirm } = useConfirm()
 
 const route = useRoute()
 const router = useRouter()
@@ -171,7 +174,7 @@ function handleEdit() {
 }
 
 async function handleDelete() {
-  if (!confirm(`Are you sure you want to delete customer "${customer.value?.name}"?`)) {
+  if (!(await confirm({ title: 'Delete customer?', message: `"${customer.value?.name}" and all of their data will be permanently deleted.`, confirmLabel: 'Delete customer', tone: 'danger' }))) {
     return
   }
 

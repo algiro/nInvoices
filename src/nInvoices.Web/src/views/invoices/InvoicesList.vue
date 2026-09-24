@@ -202,6 +202,11 @@ import { useInvoicesStore } from '@/stores/invoices'
 import { useCustomersStore } from '@/stores/customers'
 import { InvoiceTypeNames, InvoiceStatusNames, InvoiceType, InvoiceStatus } from '@/types'
 import type { InvoiceDto } from '@/types'
+import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
+
+const toast = useToast()
+const { confirm } = useConfirm()
 
 const router = useRouter()
 const invoicesStore = useInvoicesStore()
@@ -357,51 +362,51 @@ async function handleDownloadPdf(id: number) {
   try {
     await invoicesStore.downloadPdf(id)
   } catch (error: any) {
-    alert(`Failed to download PDF: ${error.message}`)
+    toast.failure('Failed to download PDF', error)
   }
 }
 
 async function handleFinalize(invoice: InvoiceDto) {
-  if (!confirm(`Finalize invoice "${invoice.invoiceNumber}"?\n\nThis will lock the invoice from further edits.`)) return
+  if (!(await confirm({ title: 'Finalize invoice?', message: `${invoice.invoiceNumber} will be locked and can no longer be edited.`, confirmLabel: 'Finalize' }))) return
   try {
     await invoicesStore.finalize(invoice.id)
     await invoicesStore.fetchAll()
   } catch (error: any) {
-    alert(`Failed to finalize invoice: ${error.message}`)
+    toast.failure('Failed to finalize invoice', error)
   }
 }
 
 async function handleMarkAsSent(invoice: InvoiceDto) {
-  if (!confirm(`Mark invoice "${invoice.invoiceNumber}" as Sent?`)) return
+  if (!(await confirm({ title: 'Mark as sent?', message: `${invoice.invoiceNumber} will be marked as sent to the customer.`, confirmLabel: 'Mark as sent' }))) return
   try {
     await invoicesStore.markAsSent(invoice.id)
   } catch (error: any) {
-    alert(`Failed to mark invoice as sent: ${error.message}`)
+    toast.failure('Failed to mark invoice as sent', error)
   }
 }
 
 async function handleMarkAsPaid(invoice: InvoiceDto) {
-  if (!confirm(`Mark invoice "${invoice.invoiceNumber}" as Paid?`)) return
+  if (!(await confirm({ title: 'Mark as paid?', message: `${invoice.invoiceNumber} will be marked as paid.`, confirmLabel: 'Mark as paid' }))) return
   try {
     await invoicesStore.markAsPaid(invoice.id)
   } catch (error: any) {
-    alert(`Failed to mark invoice as paid: ${error.message}`)
+    toast.failure('Failed to mark invoice as paid', error)
   }
 }
 
 async function handleCancel(invoice: InvoiceDto) {
-  if (!confirm(`Cancel invoice "${invoice.invoiceNumber}"?\n\nThis action can be reversed.`)) return
+  if (!(await confirm({ title: 'Cancel invoice?', message: `${invoice.invoiceNumber} will be cancelled. You can reverse this later.`, confirmLabel: 'Cancel invoice', cancelLabel: 'Keep invoice' }))) return
   try {
     await invoicesStore.cancelInvoice(invoice.id)
   } catch (error: any) {
-    alert(`Failed to cancel invoice: ${error.message}`)
+    toast.failure('Failed to cancel invoice', error)
   }
 }
 
 async function handleDelete(invoice: InvoiceDto) {
   console.log('handleDelete called for invoice:', invoice.id, 'Status:', invoice.status);
   
-  if (!confirm(`Are you sure you want to delete invoice "${invoice.invoiceNumber}"?\n\nThis action cannot be undone.`)) {
+  if (!(await confirm({ title: 'Delete invoice?', message: `${invoice.invoiceNumber} will be permanently deleted.`, confirmLabel: 'Delete', tone: 'danger' }))) {
     console.log('Delete cancelled by user');
     return
   }
@@ -412,20 +417,19 @@ async function handleDelete(invoice: InvoiceDto) {
     console.log('Delete successful');
   } catch (error: any) {
     console.error('Delete failed:', error);
-    alert(`Failed to delete invoice: ${error.message}`)
+    toast.failure('Failed to delete invoice', error)
   }
 }
 
 async function handleForceDelete(invoice: InvoiceDto) {
   console.log('handleForceDelete called for invoice:', invoice.id, 'Status:', invoice.status);
   
-  if (!confirm(
-    `⚠️ WARNING: Force Delete\n\n` +
-    `You are about to force delete invoice "${invoice.invoiceNumber}".\n\n` +
-    `This invoice is ${formatStatus(invoice.status)} and normally cannot be deleted.\n\n` +
-    `Force delete should only be used to fix generation errors.\n\n` +
-    `This action cannot be undone. Are you sure?`
-  )) {
+  if (!(await confirm({
+    title: 'Force delete invoice?',
+    message: `${invoice.invoiceNumber} is ${formatStatus(invoice.status)} and normally can't be deleted. Only force delete to clean up a failed generation. This can't be undone.`,
+    confirmLabel: 'Force delete',
+    tone: 'danger'
+  }))) {
     console.log('Force delete cancelled by user');
     return
   }
@@ -436,7 +440,7 @@ async function handleForceDelete(invoice: InvoiceDto) {
     console.log('Force delete successful');
   } catch (error: any) {
     console.error('Force delete failed:', error);
-    alert(`Failed to delete invoice: ${error.message}`)
+    toast.failure('Failed to delete invoice', error)
   }
 }
 </script>

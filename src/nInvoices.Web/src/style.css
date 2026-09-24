@@ -1,37 +1,90 @@
+/*
+ * nInvoices design tokens and base styles.
+ * Components style themselves with these variables; nothing here targets a specific screen.
+ */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  /* surfaces */
+  --color-bg: #f3f4f7;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8f9fb;
+  --color-surface-sunken: #eef0f4;
+
+  /* text */
+  --color-text: #141a26;
+  --color-text-secondary: #3b4455;
+  --color-text-muted: #5d6678;
+  --color-text-subtle: #8a93a4;
+
+  /* lines */
+  --color-border: #e1e4ea;
+  --color-border-strong: #cfd4dd;
+
+  /* brand */
+  --color-primary: #2451c9;
+  --color-primary-hover: #1d43ad;
+  --color-primary-soft: #e8eeff;
+  --color-primary-line: #b9c8f5;
+  --color-on-primary: #ffffff;
+
+  /* semantic */
+  --color-success: #15803d;
+  --color-success-soft: #e7f6ec;
+  --color-success-line: #9fd4b7;
+  --color-warning: #b45309;
+  --color-warning-soft: #fdf3e1;
+  --color-warning-line: #efc98b;
+  --color-danger: #b42318;
+  --color-danger-hover: #971d14;
+  --color-danger-soft: #fdecea;
+  --color-danger-line: #f1b3ad;
+
+  /* shape & depth */
+  --radius-sm: 0.3rem;
+  --radius-md: 0.45rem;
+  --radius-lg: 0.7rem;
+  --shadow-sm: 0 1px 2px rgba(20, 26, 38, 0.06);
+  --shadow-md: 0 1px 2px rgba(20, 26, 38, 0.06), 0 6px 20px rgba(20, 26, 38, 0.08);
+  --shadow-lg: 0 10px 40px rgba(20, 26, 38, 0.18);
+  --focus-ring: 0 0 0 3px rgba(36, 81, 201, 0.18);
+
+  /* type */
+  --font-sans: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'Cascadia Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.875rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+
+  /* layout */
+  --sidebar-width: 15rem;
+  --topbar-height: 3.25rem;
 
   color-scheme: light;
-  color: #213547;
-  background-color: #ffffff;
-
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--color-text);
+  background-color: var(--color-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #747bff;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #f3f4f6;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  background: var(--color-bg);
+  font-size: var(--text-base);
 }
 
 #app {
@@ -39,21 +92,90 @@ h1 {
   min-height: 100vh;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #f9f9f9;
+h1, h2, h3, h4 {
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  text-wrap: balance;
+}
+
+h1 { font-size: var(--text-xl); font-weight: 650; }
+h2 { font-size: var(--text-lg); font-weight: 600; }
+h3 { font-size: 1rem; font-weight: 600; }
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+code, kbd, pre {
+  font-family: var(--font-mono);
+}
+
+input, select, textarea, button {
+  font: inherit;
+  color: inherit;
+}
+
+/*
+ * Neutral default for buttons that don't style themselves. :where() keeps specificity at zero,
+ * so any component class overrides it.
+ */
+:where(button) {
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--text-md);
+  line-height: 1.3;
   cursor: pointer;
-  transition: border-color 0.25s;
 }
-button:hover {
-  border-color: #646cff;
+
+:where(button:hover:not(:disabled)) {
+  border-color: var(--color-primary-line);
+  color: var(--color-primary);
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+
+:where(button:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-primary-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * Legacy shim: a few screens still size their inline icons with utility classes from an
+ * uninstalled CSS framework. These rules keep those icons at the intended size until each
+ * screen moves to the shared components; remove them once no template uses the classes.
+ */
+:where(svg.w-3) { width: 0.75rem; }
+:where(svg.h-3) { height: 0.75rem; }
+:where(svg.w-4) { width: 1rem; }
+:where(svg.h-4) { height: 1rem; }
+:where(svg.w-5) { width: 1.25rem; }
+:where(svg.h-5) { height: 1.25rem; }
+:where(svg.w-6) { width: 1.5rem; }
+:where(svg.h-6) { height: 1.5rem; }
+:where(svg.w-16) { width: 4rem; }
+:where(svg.h-16) { height: 4rem; }
+:where(.text-red-500, .text-red-600) { color: var(--color-danger); }

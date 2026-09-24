@@ -12,22 +12,6 @@
 
     <div v-else-if="invoice" class="invoice-content">
       <!-- Success/Error Messages -->
-      <div v-if="successMessage" class="message-banner success-banner">
-        <svg class="mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        {{ successMessage }}
-        <button @click="successMessage = null" class="close-btn">×</button>
-      </div>
-      
-      <div v-if="errorMessage" class="message-banner error-banner">
-        <svg class="mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        {{ errorMessage }}
-        <button @click="errorMessage = null" class="close-btn">×</button>
-      </div>
-
       <div class="invoice-header">
         <div>
           <h1 class="text-3xl font-bold">Invoice {{ invoice.invoiceNumber }}</h1>
@@ -223,6 +207,11 @@ import { useInvoicesStore } from '@/stores/invoices'
 import { useCustomersStore } from '@/stores/customers'
 import { InvoiceStatusNames, InvoiceTypeNames, InvoiceStatus, InvoiceType } from '@/types'
 import type { MoneyDto } from '@/types'
+import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
+
+const toast = useToast()
+const { confirm } = useConfirm()
 
 const route = useRoute()
 const router = useRouter()
@@ -239,19 +228,13 @@ const regeneratingInvoice = ref(false)
 const regeneratingMonthlyReport = ref(false)
 
 // Message system for user feedback
-const successMessage = ref<string | null>(null)
-const errorMessage = ref<string | null>(null)
 
 function showSuccess(message: string) {
-  successMessage.value = message
-  errorMessage.value = null
-  setTimeout(() => { successMessage.value = null }, 5000) // Auto-hide after 5 seconds
+  toast.success(message)
 }
 
 function showError(message: string) {
-  errorMessage.value = message
-  successMessage.value = null
-  setTimeout(() => { errorMessage.value = null }, 5000) // Auto-hide after 5 seconds
+  toast.error(message)
 }
 
 const customerName = computed(() => {
@@ -314,7 +297,7 @@ async function handleDownloadPdf() {
     downloadingPdf.value = true
     await invoicesStore.downloadPdf(invoiceId.value)
   } catch (err: any) {
-    alert(`Failed to download PDF: ${err.message}`)
+    toast.failure('Failed to download PDF', err)
   } finally {
     downloadingPdf.value = false
   }
@@ -325,7 +308,7 @@ async function handleDownloadMonthlyReport() {
     downloadingMonthlyReport.value = true
     await invoicesStore.downloadMonthlyReportPdf(invoiceId.value)
   } catch (err: any) {
-    alert(`Failed to download monthly report: ${err.message}`)
+    toast.failure('Failed to download monthly report', err)
   } finally {
     downloadingMonthlyReport.value = false
   }
@@ -353,16 +336,16 @@ async function handleRegenerateMonthlyReport() {
   try {
     regeneratingMonthlyReport.value = true
     const result = await invoicesStore.regenerateMonthlyReportPdf(invoiceId.value)
-    alert(result.message || 'Monthly report verified successfully!')
+    toast.success('Monthly report verified', { message: result.message })
   } catch (err: any) {
-    alert(`Failed to verify monthly report: ${err.message}`)
+    toast.failure('Failed to verify monthly report', err)
   } finally {
     regeneratingMonthlyReport.value = false
   }
 }
 
 async function handleFinalize() {
-  if (!confirm('Are you sure you want to finalize this invoice? This action cannot be undone.')) {
+  if (!(await confirm({ title: 'Finalize invoice?', message: 'A finalized invoice is locked and can no longer be edited.', confirmLabel: 'Finalize' }))) {
     return
   }
 
@@ -370,12 +353,12 @@ async function handleFinalize() {
     await invoicesStore.finalize(invoiceId.value)
     await loadData()
   } catch (err: any) {
-    alert(`Failed to finalize invoice: ${err.message}`)
+    toast.failure('Failed to finalize invoice', err)
   }
 }
 
 async function handleDelete() {
-  if (!confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) {
+  if (!(await confirm({ title: 'Delete invoice?', message: 'This invoice will be permanently deleted.', confirmLabel: 'Delete', tone: 'danger' }))) {
     return
   }
 
@@ -383,7 +366,7 @@ async function handleDelete() {
     await invoicesStore.remove(invoiceId.value)
     router.push('/invoices')
   } catch (err: any) {
-    alert(`Failed to delete invoice: ${err.message}`)
+    toast.failure('Failed to delete invoice', err)
   }
 }
 </script>

@@ -1,0 +1,56 @@
+<template>
+  <svg
+    class="app-icon"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path v-for="(d, i) in paths[name]" :key="i" :d="d" />
+  </svg>
+</template>
+
+<script lang="ts">
+// Outline icons on a 24px grid, drawn as plain paths so no icon library is needed
+const paths = {
+  dashboard: ['M3 12l9-8 9 8', 'M5 10v10h14V10', 'M10 20v-6h4v6'],
+  customers: ['M9 11a4 4 0 100-8 4 4 0 000 8z', 'M2.5 21c.8-3.8 3.4-6 6.5-6s5.7 2.2 6.5 6', 'M16 3.5a4 4 0 010 7.5', 'M21.5 21c-.5-2.6-1.8-4.4-3.6-5.3'],
+  invoices: ['M6 3h9l4 4v14H6z', 'M14 3v5h5', 'M9 13h7', 'M9 17h5'],
+  settings: ['M12 15a3 3 0 100-6 3 3 0 000 6z', 'M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z'],
+  plus: ['M12 5v14', 'M5 12h14'],
+  close: ['M6 6l12 12', 'M18 6L6 18'],
+  check: ['M5 12.5l4.5 4.5L19 7'],
+  alert: ['M12 3l9.5 17h-19z', 'M12 10v4', 'M12 17.5v.01'],
+  info: ['M12 21a9 9 0 100-18 9 9 0 000 18z', 'M12 11v5', 'M12 7.5v.01'],
+  error: ['M12 21a9 9 0 100-18 9 9 0 000 18z', 'M15 9l-6 6', 'M9 9l6 6'],
+  success: ['M12 21a9 9 0 100-18 9 9 0 000 18z', 'M8 12.5l2.7 2.7L16 10'],
+  trash: ['M4 7h16', 'M10 11v6', 'M14 11v6', 'M5 7l1 13h12l1-13', 'M9 7V4h6v3'],
+  edit: ['M4 20h4L19 9l-4-4L4 16z', 'M13.5 6.5l4 4'],
+  eye: ['M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z', 'M12 15a3 3 0 100-6 3 3 0 000 6z'],
+  download: ['M12 4v11', 'M7 10l5 5 5-5', 'M5 20h14'],
+  menu: ['M4 6h16', 'M4 12h16', 'M4 18h16'],
+  logout: ['M15 4h4v16h-4', 'M10 16l4-4-4-4', 'M14 12H4'],
+  chevronRight: ['M9 6l6 6-6 6'],
+  chevronDown: ['M6 9l6 6 6-6'],
+  template: ['M4 4h16v16H4z', 'M4 9h16', 'M9 9v11'],
+  calendar: ['M4 5h16v15H4z', 'M4 10h16', 'M8 3v4', 'M16 3v4']
+} as const
+
+export type IconName = keyof typeof paths
+</script>
+
+<script setup lang="ts">
+defineProps<{ name: IconName }>()
+</script>
+
+<style scoped>
+.app-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: none;
+}
+</style>

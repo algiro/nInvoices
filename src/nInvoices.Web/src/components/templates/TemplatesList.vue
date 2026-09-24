@@ -143,6 +143,11 @@ import { useTemplatesStore } from '@/stores/templates'
 import TemplateForm from './TemplateForm.vue'
 import { InvoiceType, InvoiceTypeNames } from '@/types'
 import type { InvoiceTemplateDto } from '@/types'
+import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
+
+const toast = useToast()
+const { confirm } = useConfirm()
 
 interface Props {
   customerId: number
@@ -221,14 +226,14 @@ function handlePreview(template: InvoiceTemplateDto) {
 }
 
 async function handleDelete(template: InvoiceTemplateDto) {
-  if (!confirm(`Are you sure you want to delete this ${formatType(template.invoiceType)} template?\n\nThis action cannot be undone.`)) {
+  if (!(await confirm({ title: 'Delete template?', message: `This ${formatType(template.invoiceType)} template will be permanently deleted.`, confirmLabel: 'Delete', tone: 'danger' }))) {
     return
   }
 
   try {
     await templatesStore.remove(template.id)
   } catch (error: any) {
-    alert(`Failed to delete template: ${error.message}`)
+    toast.failure('Failed to delete template', error)
   }
 }
 
@@ -237,7 +242,7 @@ async function handleActivate(template: InvoiceTemplateDto) {
     await templatesStore.activate(template.id)
     await loadTemplates()
   } catch (error: any) {
-    alert(`Failed to activate template: ${error.message}`)
+    toast.failure('Failed to activate template', error)
   }
 }
 
@@ -246,7 +251,7 @@ async function handleDeactivate(template: InvoiceTemplateDto) {
     await templatesStore.deactivate(template.id)
     await loadTemplates()
   } catch (error: any) {
-    alert(`Failed to deactivate template: ${error.message}`)
+    toast.failure('Failed to deactivate template', error)
   }
 }
 

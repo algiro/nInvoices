@@ -1,18 +1,10 @@
 <template>
   <router-view />
+  <ToastHost />
+  <ConfirmHost />
 </template>
 
-<style>
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-}
-
-#app {
-  min-height: 100vh;
-}
-</style>
+<script setup lang="ts">
+import ToastHost from '@/components/ui/ToastHost.vue'
+import ConfirmHost from '@/components/ui/ConfirmHost.vue'
+</script>

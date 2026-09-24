@@ -90,6 +90,11 @@ import { useRatesStore } from '@/stores/rates'
 import RateForm from './RateForm.vue'
 import { RateTypeNames, RateType } from '@/types'
 import type { RateDto, MoneyDto } from '@/types'
+import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
+
+const toast = useToast()
+const { confirm } = useConfirm()
 
 // 🔍 DEBUG: Component loaded
 console.log('🔍 RatesList component loaded!')
@@ -162,7 +167,7 @@ function getRateTypeCssClass(type: RateType | string): string {
 async function handleDelete(rate: RateDto) {
   console.log('handleDelete called with rate:', rate)
   const typeName = formatRateType(rate.type).toLowerCase()
-  if (!confirm(`Are you sure you want to delete this ${typeName} rate?\n\nThis action cannot be undone.`)) {
+  if (!(await confirm({ title: 'Delete rate?', message: `This ${typeName} rate will be permanently deleted.`, confirmLabel: 'Delete', tone: 'danger' }))) {
     console.log('Delete cancelled by user')
     return
   }
@@ -173,7 +178,7 @@ async function handleDelete(rate: RateDto) {
     console.log('Rate deleted successfully')
   } catch (error: any) {
     console.error('Delete failed with error:', error)
-    alert(`Failed to delete rate: ${error.message}`)
+    toast.failure('Failed to delete rate', error)
   }
 }
 
