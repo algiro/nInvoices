@@ -13,6 +13,14 @@ using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
+// Build-time hook (docker/Dockerfile.api): download the headless Chrome used for PDF export, then exit
+if (args.Contains("--download-chrome"))
+{
+    await PuppeteerPdfConverter.EnsureBrowserDownloadedAsync();
+    Console.WriteLine("Headless Chrome is ready for PDF export.");
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog

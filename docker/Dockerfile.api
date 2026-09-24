@@ -44,4 +44,7 @@ RUN dotnet publish "nInvoices.Api.csproj" -c Release -o /app/publish /p:UseAppHo
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+# Bake the headless Chrome used for PDF export into the image (PuppeteerSharp's pinned build,
+# stored next to the binaries), so the first PDF request after a deploy doesn't time out downloading it.
+RUN dotnet nInvoices.Api.dll --download-chrome
 ENTRYPOINT ["dotnet", "nInvoices.Api.dll"]

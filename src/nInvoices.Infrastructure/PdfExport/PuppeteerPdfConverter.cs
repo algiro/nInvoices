@@ -44,6 +44,17 @@ public sealed class PuppeteerPdfConverter : IHtmlToPdfConverter, IAsyncDisposabl
         return pdfData;
     }
 
+    /// <summary>
+    /// Downloads the headless Chrome build PuppeteerSharp expects, next to the application binaries,
+    /// unless it is already there. Called at image build time (see docker/Dockerfile.api) so the first
+    /// PDF request doesn't have to wait for a ~150 MB download.
+    /// </summary>
+    public static async Task EnsureBrowserDownloadedAsync()
+    {
+        var browserFetcher = new BrowserFetcher();
+        await browserFetcher.DownloadAsync();
+    }
+
     private async Task<IBrowser> GetBrowserAsync(CancellationToken cancellationToken)
     {
         if (_browser != null)
@@ -55,9 +66,7 @@ public sealed class PuppeteerPdfConverter : IHtmlToPdfConverter, IAsyncDisposabl
             if (_browser != null)
                 return _browser;
 
-            // Download Chromium if not already present
-            var browserFetcher = new BrowserFetcher();
-            await browserFetcher.DownloadAsync();
+            await EnsureBrowserDownloadedAsync();
 
             // Launch browser in headless mode
             _browser = await Puppeteer.LaunchAsync(new LaunchOptions
