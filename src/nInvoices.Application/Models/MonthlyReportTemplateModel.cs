@@ -44,6 +44,7 @@ public sealed record MonthDayTemplateModel
     public bool IsWorked { get; init; }
     public bool IsPublicHoliday { get; init; }
     public bool IsUnpaidLeave { get; init; }
+    public decimal? Hours { get; init; } // null for non-worked days, 8 for full day, partial otherwise
     public string? Notes { get; init; }
 
     /// <summary>Total hours recorded for the day (null when not tracked).</summary>

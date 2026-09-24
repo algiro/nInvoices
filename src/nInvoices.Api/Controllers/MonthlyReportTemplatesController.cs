@@ -203,13 +203,13 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
     [ProducesResponseType(typeof(TemplateValidationResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Validate(
-        [FromBody] string content,
+        [FromBody] ValidateTemplateDto dto,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(content))
+        if (string.IsNullOrWhiteSpace(dto.Content))
             return BadRequest(new { errors = new[] { "Template content cannot be empty" } });
 
-        var result = await _templateRenderer.ValidateAsync(content, cancellationToken);
+        var result = await _templateRenderer.ValidateAsync(dto.Content, cancellationToken);
 
         return Ok(result);
     }
