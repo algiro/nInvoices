@@ -40,7 +40,7 @@
         <button
           v-for="tab in tabs"
           :key="tab.id"
-          @click="activeTab = tab.id"
+          @click="selectTab(tab.id)"
           class="tab-button"
           :class="{ active: activeTab === tab.id }"
         >
@@ -90,11 +90,11 @@
         </div>
 
         <div v-if="activeTab === 'templates'" class="tab-pane">
-          <TemplatesList :customer-id="customerId" />
+          <TemplateListPanel kind="invoice" :customer-id="customerId" />
         </div>
 
         <div v-if="activeTab === 'monthly-reports'" class="tab-pane">
-          <MonthlyReportTemplatesList :customer-id="customerId" />
+          <TemplateListPanel kind="monthly-report" :customer-id="customerId" />
         </div>
 
         <div v-if="activeTab === 'invoices'" class="tab-pane">
@@ -116,8 +116,7 @@ import { useCustomersStore } from '@/stores/customers'
 import RatesList from '@/components/rates/RatesList.vue'
 import ProjectsList from '@/components/projects/ProjectsList.vue'
 import TaxesList from '@/components/taxes/TaxesList.vue'
-import TemplatesList from '@/components/templates/TemplatesList.vue'
-import MonthlyReportTemplatesList from '@/components/monthlyreports/MonthlyReportTemplatesList.vue'
+import TemplateListPanel from '@/components/templates/TemplateListPanel.vue'
 import type { AddressDto } from '@/types'
 import { useConfirm } from '@/composables/useConfirm'
 
@@ -131,7 +130,6 @@ const customerId = computed(() => Number(route.params.id))
 const customer = computed(() => customersStore.selectedCustomer)
 const loading = ref(false)
 const error = ref<string | null>(null)
-const activeTab = ref('overview')
 
 const tabs = [
   { id: 'overview', label: 'Overview' },
@@ -142,6 +140,16 @@ const tabs = [
   { id: 'monthly-reports', label: 'Monthly Reports' },
   { id: 'invoices', label: 'Invoices' }
 ]
+
+// The open tab lives in the URL (?tab=…) so links such as the template editor's "back" land on it
+const activeTab = computed(() => {
+  const tab = route.query.tab
+  return typeof tab === 'string' && tabs.some(t => t.id === tab) ? tab : 'overview'
+})
+
+function selectTab(id: string) {
+  router.replace({ query: { ...route.query, tab: id === 'overview' ? undefined : id } })
+}
 
 onMounted(() => {
   loadData()

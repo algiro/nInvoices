@@ -272,6 +272,12 @@ export interface TemplateValidationResultDto {
   placeholders: string[];
 }
 
+export interface TemplatePreviewDto {
+  /** Rendered HTML, or null when the template could not be rendered. */
+  html: string | null;
+  errors: string[];
+}
+
 export interface MonthlyReportTemplateDto {
   id: number;
   customerId: number;
