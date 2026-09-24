@@ -46,6 +46,27 @@
   --shadow-md: 0 1px 2px rgba(20, 26, 38, 0.06), 0 6px 20px rgba(20, 26, 38, 0.08);
   --shadow-lg: 0 10px 40px rgba(20, 26, 38, 0.18);
   --focus-ring: 0 0 0 3px rgba(36, 81, 201, 0.18);
+  --shadow-up: 0 -4px 18px rgba(20, 26, 38, 0.08);
+  --color-scrim: rgba(15, 20, 30, 0.45);
+  --color-topbar: rgba(255, 255, 255, 0.92);
+  /* text on solid status fills (success/warning/danger buttons and chips) */
+  --color-on-status: #ffffff;
+
+  /* template code editor */
+  --code-expr: #7a2fb5;
+  --code-expr-bg: rgba(138, 63, 194, 0.09);
+  --code-active-line: rgba(36, 81, 201, 0.04);
+  --code-selection: rgba(36, 81, 201, 0.16);
+  --code-tag: #2451c9;
+  --code-attr: #9a4a06;
+  --code-string: #15803d;
+  --code-comment: #8a93a4;
+  --code-keyword: #b42318;
+  --code-number: #0f766e;
+  --code-property: #0e6f86;
+
+  /* charts */
+  --chart-bar: #2451c9;
 
   /* type */
   --font-sans: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -71,6 +92,67 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/*
+ * Dark theme. The resolved theme is stamped on <html data-theme="…"> (see useTheme.ts and the
+ * inline script in index.html), so only the tokens change here; components stay the same.
+ */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-bg: #0d1117;
+  --color-surface: #151a23;
+  --color-surface-muted: #1a202b;
+  --color-surface-sunken: #10141b;
+
+  --color-text: #e8ebf1;
+  --color-text-secondary: #c9cfda;
+  --color-text-muted: #98a2b3;
+  --color-text-subtle: #838da0;
+
+  --color-border: #262d3a;
+  --color-border-strong: #353d4d;
+
+  --color-primary: #7d9bff;
+  --color-primary-hover: #9cb3ff;
+  --color-primary-soft: #1b2644;
+  --color-primary-line: #34458a;
+  --color-on-primary: #0d1117;
+
+  --color-success: #4cc28a;
+  --color-success-soft: #12291d;
+  --color-success-line: #2a5c41;
+  --color-warning: #e0a54a;
+  --color-warning-soft: #2c2210;
+  --color-warning-line: #5e4518;
+  --color-danger: #ef7b70;
+  --color-danger-hover: #f4988f;
+  --color-danger-soft: #331816;
+  --color-danger-line: #6a2e28;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.55);
+  --shadow-up: 0 -4px 18px rgba(0, 0, 0, 0.4);
+  --focus-ring: 0 0 0 3px rgba(125, 155, 255, 0.3);
+  --color-scrim: rgba(0, 0, 0, 0.6);
+  --color-topbar: rgba(21, 26, 35, 0.9);
+  --color-on-status: #0d1117;
+
+  --code-expr: #c79bf2;
+  --code-expr-bg: rgba(199, 155, 242, 0.13);
+  --code-active-line: rgba(125, 155, 255, 0.06);
+  --code-selection: rgba(125, 155, 255, 0.28);
+  --code-tag: #8fb0ff;
+  --code-attr: #e7b163;
+  --code-string: #62d19c;
+  --code-comment: #838da0;
+  --code-keyword: #f28b82;
+  --code-number: #5fd4c4;
+  --code-property: #6fd3e8;
+
+  --chart-bar: #6a88ee;
 }
 
 *,
@@ -186,7 +268,7 @@ input, select, textarea, button {
 }
 
 .control:hover:not(:disabled) {
-  border-color: #b9c0cc;
+  border-color: var(--color-text-subtle);
 }
 
 .control:focus {
@@ -206,7 +288,7 @@ input, select, textarea, button {
 }
 
 .control.invalid:focus {
-  box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.15);
+  box-shadow: 0 0 0 3px var(--color-danger-soft);
 }
 
 textarea.control {

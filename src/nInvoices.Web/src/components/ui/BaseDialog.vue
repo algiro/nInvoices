@@ -91,7 +91,7 @@ onBeforeUnmount(() => {
   align-items: flex-start;
   justify-content: center;
   padding: 6vh 1rem 1rem;
-  background: rgba(15, 20, 30, 0.45);
+  background: var(--color-scrim);
   overflow-y: auto;
 }
 

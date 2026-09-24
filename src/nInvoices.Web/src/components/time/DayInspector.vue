@@ -232,8 +232,8 @@ const calculation = computed(() => {
 .inspector {
   display: flex;
   flex-direction: column;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
   position: sticky;
   top: 1rem;
@@ -244,7 +244,7 @@ const calculation = computed(() => {
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.75rem 0.875rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .section:last-child {
@@ -257,25 +257,25 @@ const calculation = computed(() => {
   gap: 0.375rem;
   padding: 1.5rem 1rem;
   text-align: center;
-  color: #6b7280;
+  color: var(--color-text-muted);
   font-size: 0.875rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .empty strong {
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 .title {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 .subtitle {
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .label {
@@ -283,7 +283,7 @@ const calculation = computed(() => {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 /* explicit button styling: the global stylesheet styles every <button> */
@@ -300,9 +300,9 @@ const calculation = computed(() => {
   display: flex;
   gap: 2px;
   padding: 2px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-strong);
   border-radius: 0.4rem;
-  background: #ffffff;
+  background: var(--color-surface);
 }
 
 .seg-btn {
@@ -311,25 +311,25 @@ const calculation = computed(() => {
   border: 0;
   border-radius: 0.3rem;
   background: transparent;
-  color: #374151;
+  color: var(--color-text-secondary);
   font-size: 0.8rem;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .seg-btn:hover {
-  background: #f3f4f6;
+  background: var(--color-surface-sunken);
 }
 
 .seg-btn.active {
-  color: #ffffff;
+  color: var(--color-on-status);
   font-weight: 600;
 }
 
-.seg-btn.active.worked { background: #15803d; }
-.seg-btn.active.holiday { background: #b45309; }
-.seg-btn.active.leave { background: #b91c1c; }
-.seg-btn.active.none { background: #4b5563; }
+.seg-btn.active.worked { background: var(--color-success); }
+.seg-btn.active.holiday { background: var(--color-warning); }
+.seg-btn.active.leave { background: var(--color-danger); }
+.seg-btn.active.none { background: var(--color-text-secondary); }
 
 .chips {
   display: flex;
@@ -340,10 +340,10 @@ const calculation = computed(() => {
 
 .chip {
   padding: 0.25rem 0.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-strong);
   border-radius: 0.375rem;
-  background: #ffffff;
-  color: #374151;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   font-size: 0.8rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -352,34 +352,34 @@ const calculation = computed(() => {
 
 .chip small {
   font-weight: 400;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .chip:hover {
-  border-color: #93b4f5;
+  border-color: var(--color-primary-line);
 }
 
 .chip.active {
-  background: #eff6ff;
-  border-color: #2563eb;
-  color: #1d4ed8;
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .input {
   width: 100%;
   min-width: 0;
   padding: 0.375rem 0.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-strong);
   border-radius: 0.375rem;
   font: inherit;
   font-size: 0.875rem;
-  background: #ffffff;
+  background: var(--color-surface);
 }
 
 .input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
 }
 
 .hours-input {
@@ -404,13 +404,13 @@ const calculation = computed(() => {
   border: 0;
   border-radius: 0.25rem;
   background: transparent;
-  color: #9ca3af;
+  color: var(--color-text-subtle);
   cursor: pointer;
 }
 
 .icon-btn:hover:not(:disabled) {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
 .icon-btn:disabled {
@@ -422,7 +422,7 @@ const calculation = computed(() => {
   padding: 0;
   border: 0;
   background: none;
-  color: #2563eb;
+  color: var(--color-primary);
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
@@ -440,16 +440,16 @@ const calculation = computed(() => {
 .error {
   margin: 0;
   font-size: 0.8rem;
-  color: #b91c1c;
+  color: var(--color-danger);
 }
 
 .calc {
   padding: 0.4rem 0.5rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 0.375rem;
-  background: #f9fafb;
+  background: var(--color-surface-muted);
   font-size: 0.75rem;
-  color: #4b5563;
+  color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
@@ -458,17 +458,17 @@ const calculation = computed(() => {
   flex-wrap: wrap;
   gap: 0.25rem 0.75rem;
   font-size: 0.72rem;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 kbd {
   font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
   font-size: 0.68rem;
   padding: 0 0.3rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-strong);
   border-bottom-width: 2px;
   border-radius: 0.25rem;
-  background: #ffffff;
-  color: #374151;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
 }
 </style>

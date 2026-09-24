@@ -168,7 +168,7 @@ svg {
 }
 
 .bar {
-  fill: var(--color-primary);
+  fill: var(--chart-bar);
   transition: opacity 0.12s;
 }
 

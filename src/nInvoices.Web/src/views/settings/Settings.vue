@@ -1,8 +1,12 @@
 <template>
   <div class="settings-page">
-    <PageHeader title="Settings" subtitle="Invoice numbering, images for templates, and backups." />
+    <PageHeader title="Settings" subtitle="Appearance, invoice numbering, images for templates, and backups." />
 
     <div class="sections">
+      <BasePanel title="Appearance" description="Saved in this browser. “System” follows your operating system and switches with it.">
+        <ThemeSwitch />
+      </BasePanel>
+
       <BasePanel title="Invoice numbering" description="Every new invoice takes the next number in the sequence, formatted with the pattern below.">
         <LoadingState v-if="sequenceLoading" label="Loading the sequence…" />
 
@@ -177,6 +181,7 @@ import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
+import ThemeSwitch from '@/components/ui/ThemeSwitch.vue'
 
 const toast = useToast()
 const { confirm } = useConfirm()

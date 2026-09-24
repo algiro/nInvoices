@@ -4,6 +4,9 @@ import router from './router';
 import './style.css';
 import App from './App.vue';
 import { useAuthStore } from './stores/auth';
+import { initTheme } from './composables/useTheme';
+
+initTheme();
 
 const app = createApp(App);
 

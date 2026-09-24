@@ -125,7 +125,7 @@ const filtered = computed(() => {
 
 .item code {
   font-size: 0.75rem;
-  color: #7a2fb5;
+  color: var(--code-expr);
   overflow-wrap: anywhere;
 }
 

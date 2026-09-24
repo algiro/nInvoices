@@ -249,7 +249,7 @@ watch(() => invoice.value?.invoiceNumber, number => setPageTitle(number ? `Invoi
 
 .lifecycle li.done .marker {
   background: var(--color-success);
-  color: #ffffff;
+  color: var(--color-on-status);
 }
 
 .lifecycle li.current {

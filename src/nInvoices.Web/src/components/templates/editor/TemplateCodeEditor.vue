@@ -8,6 +8,8 @@ import { EditorView, basicSetup } from 'codemirror'
 import { EditorState, type Extension } from '@codemirror/state'
 import { Decoration, MatchDecorator, ViewPlugin, keymap, type DecorationSet, type ViewUpdate } from '@codemirror/view'
 import { html } from '@codemirror/lang-html'
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
+import { tags } from '@lezer/highlight'
 import { autocompletion, type CompletionContext, type CompletionResult, type Completion } from '@codemirror/autocomplete'
 import { setDiagnostics, type Diagnostic } from '@codemirror/lint'
 import type { VariableGroup } from './templateVariables'
@@ -87,31 +89,78 @@ function templateCompletions(context: CompletionContext): CompletionResult | nul
 }
 
 // ---------- theme ----------
+// Every colour is a CSS variable from style.css, so the editor follows the light/dark theme
+// without being rebuilt.
 
 const theme = EditorView.theme({
-  '&': { height: '100%', fontSize: '13px', backgroundColor: 'var(--color-surface)' },
+  '&': { height: '100%', fontSize: '13px', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' },
   '.cm-scroller': { fontFamily: 'var(--font-mono)', lineHeight: '1.55' },
+  '.cm-content': { caretColor: 'var(--color-text)' },
+  '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--color-text)' },
+  '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection':
+    { backgroundColor: 'var(--code-selection)' },
   '.cm-gutters': {
     backgroundColor: 'var(--color-surface-muted)',
     color: 'var(--color-text-subtle)',
     borderRight: '1px solid var(--color-border)'
   },
   '.cm-activeLineGutter': { backgroundColor: 'var(--color-primary-soft)', color: 'var(--color-primary)' },
-  '.cm-activeLine': { backgroundColor: 'rgba(36, 81, 201, 0.04)' },
+  '.cm-activeLine': { backgroundColor: 'var(--code-active-line)' },
   '&.cm-focused': { outline: 'none' },
+  '.cm-matchingBracket': { backgroundColor: 'var(--color-primary-soft)', outline: '1px solid var(--color-primary-line)' },
   '.cm-tpl-expr': {
-    backgroundColor: 'rgba(138, 63, 194, 0.09)',
-    color: '#7a2fb5',
+    backgroundColor: 'var(--code-expr-bg)',
+    color: 'var(--code-expr)',
     borderRadius: '3px'
   },
-  '.cm-tooltip-autocomplete ul li[aria-selected]': { backgroundColor: 'var(--color-primary)' }
+  // panels and popups (search, autocomplete, lint) use CodeMirror's light defaults otherwise
+  '.cm-panels': { backgroundColor: 'var(--color-surface-muted)', color: 'var(--color-text)' },
+  '.cm-panels.cm-panels-top': { borderBottom: '1px solid var(--color-border)' },
+  '.cm-panels.cm-panels-bottom': { borderTop: '1px solid var(--color-border)' },
+  '.cm-textfield': {
+    backgroundColor: 'var(--color-surface)',
+    color: 'var(--color-text)',
+    border: '1px solid var(--color-border-strong)',
+    borderRadius: '4px'
+  },
+  '.cm-button': {
+    backgroundImage: 'none',
+    backgroundColor: 'var(--color-surface)',
+    color: 'var(--color-text-secondary)',
+    border: '1px solid var(--color-border-strong)'
+  },
+  '.cm-tooltip': {
+    backgroundColor: 'var(--color-surface)',
+    color: 'var(--color-text)',
+    border: '1px solid var(--color-border)',
+    borderRadius: '6px',
+    boxShadow: 'var(--shadow-md)'
+  },
+  '.cm-tooltip-autocomplete ul li[aria-selected]': { backgroundColor: 'var(--color-primary)', color: 'var(--color-on-primary)' },
+  '.cm-completionDetail': { color: 'var(--color-text-muted)' },
+  '.cm-searchMatch': { backgroundColor: 'var(--color-warning-soft)', outline: '1px solid var(--color-warning-line)' },
+  '.cm-searchMatch.cm-searchMatch-selected': { backgroundColor: 'var(--color-primary-soft)' }
 })
+
+// Syntax colours for HTML/CSS/JS inside templates, from the --code-* tokens
+const highlighting = HighlightStyle.define([
+  { tag: [tags.tagName, tags.angleBracket], color: 'var(--code-tag)' },
+  { tag: tags.attributeName, color: 'var(--code-attr)' },
+  { tag: [tags.attributeValue, tags.string], color: 'var(--code-string)' },
+  { tag: tags.comment, color: 'var(--code-comment)', fontStyle: 'italic' },
+  { tag: [tags.keyword, tags.operatorKeyword, tags.modifier], color: 'var(--code-keyword)' },
+  { tag: [tags.number, tags.bool, tags.null, tags.unit], color: 'var(--code-number)' },
+  { tag: [tags.propertyName, tags.className], color: 'var(--code-property)' },
+  { tag: [tags.typeName, tags.variableName], color: 'var(--color-text)' },
+  { tag: tags.invalid, color: 'var(--color-danger)' }
+])
 
 // ---------- lifecycle ----------
 
 function extensions(): Extension[] {
   return [
     basicSetup,
+    syntaxHighlighting(highlighting),
     html(),
     expressionHighlight,
     autocompletion({ override: [templateCompletions], activateOnTyping: true }),

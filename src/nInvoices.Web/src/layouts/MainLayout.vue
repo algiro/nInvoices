@@ -62,6 +62,10 @@
               <strong>{{ authStore.username }}</strong>
               <span v-if="authStore.email">{{ authStore.email }}</span>
             </div>
+            <div class="menu-section">
+              <span class="menu-label">Theme</span>
+              <ThemeSwitch compact />
+            </div>
             <button type="button" class="menu-item" role="menuitem" :disabled="loggingOut" @click="logout">
               <AppIcon name="logout" />
               {{ loggingOut ? 'Signing out…' : 'Sign out' }}
@@ -83,6 +87,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import AppIcon, { type IconName } from '@/components/ui/AppIcon.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import ThemeSwitch from '@/components/ui/ThemeSwitch.vue'
 import { useToast } from '@/composables/useToast'
 import { usePageTitle } from '@/composables/usePageTitle'
 
@@ -268,7 +273,7 @@ watch(() => route.fullPath, () => {
   align-items: center;
   gap: 0.75rem;
   padding: 0 1.5rem;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--color-topbar);
   backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--color-border);
 }
@@ -378,6 +383,23 @@ watch(() => route.fullPath, () => {
   font-size: var(--text-sm);
 }
 
+.menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.4rem 0.45rem 0.6rem;
+  margin-bottom: 0.3rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.menu-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
 .menu-item {
   width: 100%;
   display: flex;
@@ -427,7 +449,7 @@ watch(() => route.fullPath, () => {
     position: fixed;
     inset: 0;
     z-index: 45;
-    background: rgba(15, 20, 30, 0.35);
+    background: var(--color-scrim);
   }
 
   .menu-btn {

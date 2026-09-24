@@ -271,14 +271,14 @@ function onDayPointerDown(event: PointerEvent, date: string) {
   align-items: center;
   gap: 0.375rem;
   padding: 0.4rem 0.625rem;
-  border: 1px solid #bfd3fb;
+  border: 1px solid var(--color-primary-line);
   border-radius: 0.5rem;
-  background: #eff6ff;
+  background: var(--color-primary-soft);
   font-size: 0.85rem;
 }
 
 .bulk-bar strong {
-  color: #1d4ed8;
+  color: var(--color-primary);
 }
 
 .spacer {
@@ -287,10 +287,10 @@ function onDayPointerDown(event: PointerEvent, date: string) {
 
 .bulk-btn {
   padding: 0.2rem 0.6rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-strong);
   border-radius: 0.375rem;
-  background: #ffffff;
-  color: #374151;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   font: inherit;
   font-size: 0.8rem;
   line-height: 1.3;
@@ -298,8 +298,8 @@ function onDayPointerDown(event: PointerEvent, date: string) {
 }
 
 .bulk-btn:hover {
-  border-color: #93b4f5;
-  color: #1d4ed8;
+  border-color: var(--color-primary-line);
+  color: var(--color-primary);
 }
 
 .bulk-btn.ghost {
@@ -310,9 +310,9 @@ function onDayPointerDown(event: PointerEvent, date: string) {
 .table-wrap {
   max-height: 34rem;
   overflow: auto;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
 }
 
 table {
@@ -326,20 +326,20 @@ th {
   top: 0;
   z-index: 1;
   padding: 0.5rem 0.5rem;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
   text-align: left;
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #6b7280;
+  color: var(--color-text-muted);
   white-space: nowrap;
 }
 
 td {
   padding: 0.25rem 0.5rem;
-  border-bottom: 1px solid #f1f2f4;
+  border-bottom: 1px solid var(--color-border);
   vertical-align: middle;
 }
 
@@ -348,15 +348,15 @@ td {
 }
 
 tr.selected td {
-  background: #eff6ff;
+  background: var(--color-primary-soft);
 }
 
 tr.weekend td {
-  background: #fafafa;
+  background: var(--color-surface-muted);
 }
 
 tr.selected.weekend td {
-  background: #eff6ff;
+  background: var(--color-primary-soft);
 }
 
 .day-cell {
@@ -374,13 +374,13 @@ tr.selected.weekend td {
 }
 
 .day-name {
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .weekend-row td {
   padding-block: 0.2rem;
-  background: #fafafa;
-  color: #9ca3af;
+  background: var(--color-surface-muted);
+  color: var(--color-text-subtle);
   font-size: 0.78rem;
 }
 
@@ -388,21 +388,21 @@ tr.selected.weekend td {
   width: 100%;
   min-width: 0;
   padding: 0.25rem 0.45rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 0.3rem;
-  background: #ffffff;
+  background: var(--color-surface);
   font: inherit;
   font-size: 0.85rem;
 }
 
 .input:hover {
-  border-color: #d1d5db;
+  border-color: var(--color-border-strong);
 }
 
 .input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
 }
 
 .type-select {
@@ -410,10 +410,10 @@ tr.selected.weekend td {
   font-weight: 500;
 }
 
-.type-select.worked { color: #15803d; }
-.type-select.holiday { color: #b45309; }
-.type-select.leave { color: #b91c1c; }
-.type-select.none { color: #6b7280; }
+.type-select.worked { color: var(--color-success); }
+.type-select.holiday { color: var(--color-warning); }
+.type-select.leave { color: var(--color-danger); }
+.type-select.none { color: var(--color-text-muted); }
 
 .hours-input {
   width: 4.75rem;
@@ -422,21 +422,21 @@ tr.selected.weekend td {
 }
 
 .hours-input[readonly] {
-  background: #f9fafb;
-  color: #6b7280;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
 }
 
 .hours-input.invalid {
-  border-color: #dc2626;
+  border-color: var(--color-danger);
 }
 
 .split-chip {
   max-width: 16rem;
   padding: 0.2rem 0.5rem;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed var(--color-border-strong);
   border-radius: 0.3rem;
-  background: #ffffff;
-  color: #374151;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   font: inherit;
   font-size: 0.78rem;
   line-height: 1.3;
@@ -447,17 +447,17 @@ tr.selected.weekend td {
 }
 
 .split-chip:hover {
-  border-color: #2563eb;
+  border-color: var(--color-primary);
 }
 
 .amount {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-  color: #374151;
+  color: var(--color-text-secondary);
 }
 
 .dash {
-  color: #d1d5db;
+  color: var(--color-border-strong);
 }
 
 .link-btn {
@@ -465,7 +465,7 @@ tr.selected.weekend td {
   margin-right: 0.5rem;
   border: 0;
   background: none;
-  color: #2563eb;
+  color: var(--color-primary);
   font: inherit;
   font-size: 0.78rem;
   cursor: pointer;

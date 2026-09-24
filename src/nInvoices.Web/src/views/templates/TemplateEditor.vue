@@ -556,7 +556,7 @@ watch(templateId, (next, previous) => {
   margin-left: 0.25rem;
   padding: 0 0.3rem;
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, var(--color-on-primary) 16%, transparent);
   font-size: 0.68rem;
   font-family: var(--font-mono);
 }
@@ -645,7 +645,7 @@ watch(templateId, (next, previous) => {
 }
 
 .problem:hover:not(:disabled) {
-  background: rgba(180, 35, 24, 0.06);
+  background: color-mix(in srgb, var(--color-danger) 8%, transparent);
   color: var(--color-text);
 }
 

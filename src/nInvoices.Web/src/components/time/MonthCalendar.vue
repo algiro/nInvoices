@@ -186,7 +186,7 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 .calendar-grid:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--color-primary);
   outline-offset: 4px;
 }
 
@@ -196,7 +196,7 @@ function onKeydown(event: KeyboardEvent) {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .cell {
@@ -206,28 +206,29 @@ function onKeydown(event: KeyboardEvent) {
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 0.125rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
   cursor: pointer;
   overflow: hidden;
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 .cell:hover {
-  border-color: #93b4f5;
+  border-color: var(--color-primary-line);
 }
 
 .cell.outside {
   cursor: default;
   border-color: transparent;
   background: transparent;
-  color: #d1d5db;
+  color: var(--color-text-subtle);
+  opacity: 0.55;
   font-size: 0.8rem;
 }
 
 .cell.weekend {
-  background: #f9fafb;
+  background: var(--color-surface-muted);
 }
 
 .cell-top {
@@ -244,7 +245,7 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 .cell.today .cell-num {
-  color: #2563eb;
+  color: var(--color-primary);
 }
 
 .cell.today .cell-num::after {
@@ -260,15 +261,15 @@ function onKeydown(event: KeyboardEvent) {
   font-weight: 600;
   line-height: 1;
   padding: 0.1rem 0.2rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border-strong);
   border-radius: 0.2rem;
-  color: #475569;
+  color: var(--color-text-secondary);
 }
 
 .note-icon {
   width: 0.85rem;
   height: 0.85rem;
-  color: #475569;
+  color: var(--color-text-secondary);
   flex: none;
 }
 
@@ -281,7 +282,7 @@ function onKeydown(event: KeyboardEvent) {
 
 .cell-project {
   font-size: 0.7rem;
-  color: #4b5563;
+  color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -295,52 +296,52 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 .cell-label.muted {
-  color: #9ca3af;
+  color: var(--color-text-subtle);
   font-weight: 400;
 }
 
 .cell.worked {
-  background: #ecfdf3;
-  border-color: #86d3a8;
+  background: var(--color-success-soft);
+  border-color: var(--color-success-line);
 }
 
 .cell.worked .cell-hours {
-  color: #15803d;
+  color: var(--color-success);
 }
 
 .cell.worked.partial {
-  background: linear-gradient(to top, #ecfdf3 var(--fill, 50%), #ffffff var(--fill, 50%));
+  background: linear-gradient(to top, var(--color-success-soft) var(--fill, 50%), var(--color-surface) var(--fill, 50%));
 }
 
 .cell.worked.partial .cell-hours {
-  color: #b45309;
+  color: var(--color-warning);
 }
 
 .cell.worked.no-hours {
-  border-color: #dc2626;
+  border-color: var(--color-danger);
 }
 
 .cell.holiday {
-  background: #fff7e6;
-  border-color: #f5c26b;
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning-line);
 }
 
 .cell.holiday .cell-label {
-  color: #b45309;
+  color: var(--color-warning);
 }
 
 .cell.leave {
-  background: #fef2f2;
-  border-color: #f3a5a0;
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger-line);
 }
 
 .cell.leave .cell-label {
-  color: #b91c1c;
+  color: var(--color-danger);
 }
 
 .cell.selected {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px #2563eb;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
 }
 
 .legend {
@@ -348,7 +349,7 @@ function onKeydown(event: KeyboardEvent) {
   flex-wrap: wrap;
   gap: 0.375rem 1rem;
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .legend span {
@@ -369,10 +370,10 @@ function onKeydown(event: KeyboardEvent) {
   display: inline-block;
 }
 
-.swatch.worked { background: #ecfdf3; border-color: #86d3a8; }
-.swatch.partial { background: linear-gradient(to top, #ecfdf3 50%, #ffffff 50%); border-color: #86d3a8; }
-.swatch.holiday { background: #fff7e6; border-color: #f5c26b; }
-.swatch.leave { background: #fef2f2; border-color: #f3a5a0; }
+.swatch.worked { background: var(--color-success-soft); border-color: var(--color-success-line); }
+.swatch.partial { background: linear-gradient(to top, var(--color-success-soft) 50%, var(--color-surface) 50%); border-color: var(--color-success-line); }
+.swatch.holiday { background: var(--color-warning-soft); border-color: var(--color-warning-line); }
+.swatch.leave { background: var(--color-danger-soft); border-color: var(--color-danger-line); }
 
 @media (max-width: 640px) {
   .cell { min-height: 3.75rem; padding: 0.25rem 0.3rem; }

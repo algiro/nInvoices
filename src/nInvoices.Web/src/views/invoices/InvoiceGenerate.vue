@@ -699,7 +699,7 @@ function handleCancel() {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 -4px 18px rgba(20, 26, 38, 0.08);
+  box-shadow: var(--shadow-up);
 }
 
 .summary {
