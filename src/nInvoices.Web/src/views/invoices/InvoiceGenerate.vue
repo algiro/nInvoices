@@ -107,17 +107,42 @@
           <div>
             <h3 class="section-title">Worked Days</h3>
             <p class="section-help">
-              Weekdays start as full worked days. Select the days that differ and edit them on the right.
+              <template v-if="timeView === 'calendar'">
+                Weekdays start as full worked days. Select the days that differ and edit them on the right.
+              </template>
+              <template v-else>
+                Edit any day inline. Click a day number to select it (Shift for a range) and split it across projects on the right.
+              </template>
             </p>
           </div>
           <div class="time-actions">
+            <div class="view-switch" role="group" aria-label="View">
+              <button
+                v-for="view in timeViews"
+                :key="view.value"
+                type="button"
+                :class="{ active: timeView === view.value }"
+                :aria-pressed="timeView === view.value"
+                @click="timeView = view.value"
+              >
+                {{ view.label }}
+              </button>
+            </div>
             <button type="button" class="btn-secondary btn-sm" @click="fillWeekdays">Fill weekdays (8h)</button>
             <button type="button" class="btn-secondary btn-sm" @click="workMonth.clearMonth">Clear month</button>
           </div>
         </div>
 
         <div class="time-layout">
-          <MonthCalendar :month="workMonth" />
+          <MonthCalendar v-if="timeView === 'calendar'" :month="workMonth" />
+          <TimesheetList
+            v-else
+            :month="workMonth"
+            :rate-type="selectedRate?.type ?? null"
+            :rate-amount="selectedRate?.price?.amount ?? null"
+            :currency="selectedRate?.price?.currency ?? null"
+            :project-suggestions="projectSuggestions"
+          />
           <DayInspector
             :month="workMonth"
             :rate-type="selectedRate?.type ?? null"
@@ -242,6 +267,7 @@ import type { GenerateInvoiceDto, WorkDayDto } from '@/types'
 import { useWorkMonth, localDateString, dayHours, billedHours } from '@/composables/useWorkMonth'
 import MonthCalendar from '@/components/time/MonthCalendar.vue'
 import DayInspector from '@/components/time/DayInspector.vue'
+import TimesheetList from '@/components/time/TimesheetList.vue'
 
 const router = useRouter()
 const invoicesStore = useInvoicesStore()
@@ -304,6 +330,31 @@ const workMonth = useWorkMonth({
   defaultProjectName: () => defaultProjectName.value
 })
 const totals = workMonth.totals
+
+// Calendar and List edit the same data; the chosen view is remembered per browser
+type TimeView = 'calendar' | 'list'
+const TIME_VIEW_KEY = 'ninvoices.timeView'
+const timeViews: { value: TimeView; label: string }[] = [
+  { value: 'calendar', label: 'Calendar' },
+  { value: 'list', label: 'List' }
+]
+const timeView = ref<TimeView>(readTimeView())
+
+function readTimeView(): TimeView {
+  try {
+    return localStorage.getItem(TIME_VIEW_KEY) === 'list' ? 'list' : 'calendar'
+  } catch {
+    return 'calendar'
+  }
+}
+
+watch(timeView, view => {
+  try {
+    localStorage.setItem(TIME_VIEW_KEY, view)
+  } catch {
+    // storage unavailable (private mode): the choice just isn't remembered
+  }
+})
 
 const isHourlyRate = computed(() => selectedRate.value?.type === RateType.Hourly)
 const isDailyRate = computed(() => selectedRate.value?.type === RateType.Daily)
@@ -574,7 +625,40 @@ function handleCancel() {
 
 .time-actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
+}
+
+.view-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid #d1d5db;
+  border-radius: 0.4rem;
+  background: #ffffff;
+}
+
+.view-switch button {
+  padding: 0.3rem 0.75rem;
+  border: 0;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: #374151;
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.view-switch button:hover {
+  background: #f3f4f6;
+}
+
+.view-switch button.active {
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .btn-sm {
