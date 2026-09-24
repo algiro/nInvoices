@@ -1,165 +1,61 @@
 <template>
   <div class="customer-form">
-    <h2 class="form-title">{{ isEditMode ? 'Edit Customer' : 'New Customer' }}</h2>
+    <PageHeader
+      :title="isEditMode ? (loadedName ? `Edit ${loadedName}` : 'Edit customer') : 'New customer'"
+      :subtitle="isEditMode ? 'Changes apply to invoices generated from now on.' : 'Who you bill, and where invoices are addressed.'"
+    />
 
-    <form @submit.prevent="handleSubmit">
-      <div class="form-section">
-        <h3 class="section-title">Basic Information</h3>
-        
-        <div class="form-group">
-          <label for="name" class="form-label">
-            Customer Name <span class="required">*</span>
-          </label>
-          <input
-            id="name"
-            v-model="form.name"
-            type="text"
-            required
-            class="form-input"
-            :class="{ 'input-error': errors.name }"
-          />
-          <p v-if="errors.name" class="error-text">{{ errors.name }}</p>
-        </div>
+    <LoadingState v-if="loadingCustomer" label="Loading customer…" />
 
-        <div class="form-group">
-          <label for="fiscalId" class="form-label">
-            Fiscal ID / VAT <span class="required">*</span>
-          </label>
-          <input
-            id="fiscalId"
-            v-model="form.fiscalId"
-            type="text"
-            required
-            class="form-input"
-            :class="{ 'input-error': errors.fiscalId }"
-          />
-          <p v-if="errors.fiscalId" class="error-text">{{ errors.fiscalId }}</p>
-        </div>
-
-        <div class="form-group">
-          <label for="locale" class="form-label">
-            Locale
-          </label>
-          <select
-            id="locale"
-            v-model="form.locale"
-            class="form-input"
+    <form v-else class="form" novalidate @submit.prevent="handleSubmit">
+      <BasePanel title="Customer" description="Shown in the “Bill to” block of every invoice.">
+        <div class="grid">
+          <BaseField label="Name" for="customer-name" required :error="errors.name" class="span-2">
+            <input id="customer-name" v-model="form.name" type="text" class="control" autocomplete="organization" />
+          </BaseField>
+          <BaseField label="VAT number / fiscal ID" for="customer-fiscal-id" required :error="errors.fiscalId">
+            <input id="customer-fiscal-id" v-model="form.fiscalId" type="text" class="control" />
+          </BaseField>
+          <BaseField
+            label="Document language"
+            for="customer-locale"
+            help="Used for dates and for month and day names in templates."
           >
-            <option value="en-US">English (US)</option>
-            <option value="en-GB">English (UK)</option>
-            <option value="it-IT">Italiano</option>
-            <option value="de-DE">Deutsch</option>
-            <option value="fr-FR">Français</option>
-            <option value="es-ES">Español</option>
-            <option value="pt-PT">Português</option>
-            <option value="nl-NL">Nederlands</option>
-          </select>
+            <select id="customer-locale" v-model="form.locale" class="control">
+              <option v-for="option in localeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+            </select>
+          </BaseField>
         </div>
-      </div>
+      </BasePanel>
 
-      <div class="form-section">
-        <h3 class="section-title">Address</h3>
-        
-        <div class="form-row">
-          <div class="form-group col-3">
-            <label for="street" class="form-label">
-              Street <span class="required">*</span>
-            </label>
-            <input
-              id="street"
-              v-model="form.address.street"
-              type="text"
-              required
-              class="form-input"
-            />
-          </div>
-
-          <div class="form-group col-1">
-            <label for="houseNumber" class="form-label">
-              House Number <span class="required">*</span>
-            </label>
-            <input
-              id="houseNumber"
-              v-model="form.address.houseNumber"
-              type="text"
-              required
-              class="form-input"
-            />
-          </div>
+      <BasePanel title="Billing address">
+        <div class="grid address-grid">
+          <BaseField label="Street" for="customer-street" required :error="errors.street" class="span-3">
+            <input id="customer-street" v-model="form.address.street" type="text" class="control" autocomplete="address-line1" />
+          </BaseField>
+          <BaseField label="Number" for="customer-house-number" required :error="errors.houseNumber">
+            <input id="customer-house-number" v-model="form.address.houseNumber" type="text" class="control" />
+          </BaseField>
+          <BaseField label="Postal code" for="customer-zip" required :error="errors.zipCode">
+            <input id="customer-zip" v-model="form.address.zipCode" type="text" class="control" autocomplete="postal-code" />
+          </BaseField>
+          <BaseField label="City" for="customer-city" required :error="errors.city" class="span-3">
+            <input id="customer-city" v-model="form.address.city" type="text" class="control" autocomplete="address-level2" />
+          </BaseField>
+          <BaseField label="State / province" for="customer-state" optional class="span-2">
+            <input id="customer-state" v-model="stateValue" type="text" class="control" autocomplete="address-level1" />
+          </BaseField>
+          <BaseField label="Country" for="customer-country" required :error="errors.country" class="span-2">
+            <input id="customer-country" v-model="form.address.country" type="text" class="control" autocomplete="country-name" />
+          </BaseField>
         </div>
-
-        <div class="form-row">
-          <div class="form-group col-2">
-            <label for="city" class="form-label">
-              City <span class="required">*</span>
-            </label>
-            <input
-              id="city"
-              v-model="form.address.city"
-              type="text"
-              required
-              class="form-input"
-            />
-          </div>
-
-          <div class="form-group col-1">
-            <label for="zipCode" class="form-label">
-              ZIP Code <span class="required">*</span>
-            </label>
-            <input
-              id="zipCode"
-              v-model="form.address.zipCode"
-              type="text"
-              required
-              class="form-input"
-            />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group col-2">
-            <label for="country" class="form-label">
-              Country <span class="required">*</span>
-            </label>
-            <input
-              id="country"
-              v-model="form.address.country"
-              type="text"
-              required
-              class="form-input"
-            />
-          </div>
-
-          <div class="form-group col-2">
-            <label for="state" class="form-label">
-              State / Province
-            </label>
-            <input
-              id="state"
-              v-model="form.address.state"
-              type="text"
-              class="form-input"
-            />
-          </div>
-        </div>
-      </div>
+      </BasePanel>
 
       <div class="form-actions">
-        <button
-          type="button"
-          @click="handleCancel"
-          class="btn btn-cancel"
-          :disabled="loading"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          class="btn btn-primary"
-          :disabled="loading"
-        >
-          {{ loading ? 'Saving...' : 'Save Customer' }}
-        </button>
+        <BaseButton :disabled="saving" @click="handleCancel">Cancel</BaseButton>
+        <BaseButton type="submit" variant="primary" :loading="saving">
+          {{ isEditMode ? 'Save changes' : 'Create customer' }}
+        </BaseButton>
       </div>
     </form>
   </div>
@@ -169,7 +65,15 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCustomersStore } from '@/stores/customers'
-import type { CustomerDto, CreateCustomerDto, UpdateCustomerDto } from '@/types'
+import type { CreateCustomerDto, UpdateCustomerDto } from '@/types'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import BasePanel from '@/components/ui/BasePanel.vue'
+import BaseField from '@/components/ui/BaseField.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import LoadingState from '@/components/ui/LoadingState.vue'
+import { useToast } from '@/composables/useToast'
+import { setPageTitle } from '@/composables/usePageTitle'
+import { localeLabel } from '@/utils/format'
 
 interface Props {
   customerId?: number
@@ -178,9 +82,12 @@ interface Props {
 const props = defineProps<Props>()
 const router = useRouter()
 const customersStore = useCustomersStore()
+const toast = useToast()
 
 const isEditMode = computed(() => !!props.customerId)
-const loading = ref(false)
+const loadingCustomer = ref(false)
+const saving = ref(false)
+const loadedName = ref('')
 
 const form = reactive<CreateCustomerDto | UpdateCustomerDto>({
   name: '',
@@ -192,8 +99,23 @@ const form = reactive<CreateCustomerDto | UpdateCustomerDto>({
     city: '',
     zipCode: '',
     country: '',
-    state: null
+    state: undefined
   }
+})
+
+// An empty state is sent as absent; the input works with strings
+const stateValue = computed({
+  get: () => form.address.state ?? '',
+  set: (value: string) => { form.address.state = value.trim() ? value : undefined }
+})
+
+const baseLocales = ['en-US', 'en-GB', 'it-IT', 'es-ES', 'de-DE', 'fr-FR', 'pt-PT', 'nl-NL']
+
+const localeOptions = computed(() => {
+  // keep a customer's existing locale selectable even if it isn't in the usual list
+  const values = !form.locale || baseLocales.includes(form.locale) ? baseLocales : [form.locale, ...baseLocales]
+  const options = values.map(value => ({ value, label: `${localeLabel(value)} (${value})` }))
+  return form.locale ? options : [{ value: '', label: 'Not set, choose a language' }, ...options]
 })
 
 const errors = reactive<Record<string, string>>({})
@@ -206,205 +128,113 @@ onMounted(async () => {
 
 async function loadCustomer(id: number) {
   try {
-    loading.value = true
+    loadingCustomer.value = true
     const customer = await customersStore.fetchById(id)
     if (customer) {
       form.name = customer.name
       form.fiscalId = customer.fiscalId
-      form.locale = customer.locale || 'en-US'
+      form.locale = customer.locale ?? '' // keep an unset language unset until the user picks one
       form.address = { ...customer.address }
+      loadedName.value = customer.name
+      setPageTitle(`Edit ${customer.name}`)
     }
   } catch (error) {
-    console.error('Failed to load customer:', error)
+    toast.failure('Could not load the customer', error)
   } finally {
-    loading.value = false
+    loadingCustomer.value = false
   }
 }
 
 function validateForm(): boolean {
   Object.keys(errors).forEach(key => delete errors[key])
-
-  if (!form.name.trim()) {
-    errors.name = 'Name is required'
+  const required: [keyof typeof errors | string, string, string][] = [
+    ['name', form.name, 'Enter the customer’s name.'],
+    ['fiscalId', form.fiscalId, 'Enter the VAT number or fiscal ID.'],
+    ['street', form.address.street, 'Enter the street.'],
+    ['houseNumber', form.address.houseNumber, 'Enter the number.'],
+    ['zipCode', form.address.zipCode, 'Enter the postal code.'],
+    ['city', form.address.city, 'Enter the city.'],
+    ['country', form.address.country, 'Enter the country.']
+  ]
+  for (const [key, value, message] of required) {
+    if (!String(value ?? '').trim()) errors[key as string] = message
   }
-
-  if (!form.fiscalId.trim()) {
-    errors.fiscalId = 'Fiscal ID is required'
+  const first = Object.keys(errors)[0]
+  if (first) {
+    const ids: Record<string, string> = {
+      name: 'customer-name', fiscalId: 'customer-fiscal-id', street: 'customer-street', houseNumber: 'customer-house-number',
+      zipCode: 'customer-zip', city: 'customer-city', country: 'customer-country'
+    }
+    document.getElementById(ids[first])?.focus()
   }
-
-  return Object.keys(errors).length === 0
+  return !first
 }
 
 async function handleSubmit() {
-  if (!validateForm()) {
-    return
-  }
+  if (!validateForm()) return
 
   try {
-    loading.value = true
-
+    saving.value = true
     if (isEditMode.value && props.customerId) {
       await customersStore.update(props.customerId, form as UpdateCustomerDto)
+      toast.success('Customer updated')
+      router.push(`/customers/${props.customerId}`)
     } else {
-      await customersStore.create(form as CreateCustomerDto)
+      const created = await customersStore.create(form as CreateCustomerDto)
+      toast.success('Customer created', { message: 'Next, add a rate so you can invoice them.' })
+      router.push(created?.id ? { path: `/customers/${created.id}`, query: { tab: 'rates' } } : '/customers')
     }
-
-    router.push('/customers')
-  } catch (error: any) {
-    console.error('Failed to save customer:', error)
-    errors.name = error.message || 'Failed to save customer'
+  } catch (error) {
+    toast.failure('Could not save the customer', error)
   } finally {
-    loading.value = false
+    saving.value = false
   }
 }
 
 function handleCancel() {
-  router.push('/customers')
+  router.push(isEditMode.value ? `/customers/${props.customerId}` : '/customers')
 }
 </script>
 
 <style scoped>
 .customer-form {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
+  max-width: 52rem;
 }
 
-.form-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  color: #1f2937;
-}
-
-.form-section {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1.5rem;
-}
-
-.section-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin-bottom: 1.25rem;
-  color: #374151;
-}
-
-.form-row {
+.form {
   display: flex;
+  flex-direction: column;
   gap: 1rem;
-  margin-bottom: 0;
 }
 
-.form-group {
-  margin-bottom: 1rem;
-  flex: 1;
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.1rem;
 }
 
-.form-group:last-child {
-  margin-bottom: 0;
+.address-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.form-row .form-group {
-  margin-bottom: 1rem;
-}
+.span-2 { grid-column: span 2; }
+.span-3 { grid-column: span 3; }
 
-.col-1 { flex: 1; }
-.col-2 { flex: 2; }
-.col-3 { flex: 3; }
+@media (max-width: 640px) {
+  .grid,
+  .address-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 
-.form-label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 0.375rem;
-}
-
-.required {
-  color: #ef4444;
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  color: #1f2937;
-  background: white;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-.form-input.input-error {
-  border-color: #ef4444;
-}
-
-.error-text {
-  font-size: 0.8rem;
-  color: #ef4444;
-  margin-top: 0.25rem;
+  .span-2,
+  .span-3 {
+    grid-column: auto;
+  }
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.btn {
-  padding: 0.5rem 1.25rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.15s;
-  border: none;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-cancel {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-.btn-cancel:hover:not(:disabled) {
-  background: #f9fafb;
-}
-
-.btn-primary {
-  background: #2563eb;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #1d4ed8;
-}
-
-@media (max-width: 600px) {
-  .form-row {
-    flex-direction: column;
-    gap: 0;
-  }
-  
-  .col-1, .col-2, .col-3 {
-    flex: none;
-  }
+  gap: 0.5rem;
 }
 </style>

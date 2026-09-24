@@ -24,9 +24,8 @@ public sealed class ActivateInvoiceTemplateCommandHandler : IRequestHandler<Acti
         if (template == null)
             return false;
 
-        template.Activate();
-        await _repository.UpdateAsync(template, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        // Also deactivates the template that was active for this customer and type
+        await InvoiceTemplateActivation.ActivateAsync(template, _repository, _unitOfWork, cancellationToken);
 
         return true;
     }

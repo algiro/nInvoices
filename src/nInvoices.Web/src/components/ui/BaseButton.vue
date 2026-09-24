@@ -19,7 +19,7 @@ import { RouterLink, type RouteLocationRaw } from 'vue-router'
 import AppIcon, { type IconName } from './AppIcon.vue'
 
 withDefaults(defineProps<{
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'ghost-danger'
   size?: 'sm' | 'md'
   type?: 'button' | 'submit' | 'reset'
   icon?: IconName
@@ -92,6 +92,15 @@ withDefaults(defineProps<{
 .variant-ghost:hover:not(:disabled) {
   background: var(--color-surface-sunken);
   color: var(--color-text);
+}
+
+.variant-ghost-danger {
+  background: transparent;
+  color: var(--color-text-muted);
+}
+.variant-ghost-danger:hover:not(:disabled) {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
 .variant-danger {

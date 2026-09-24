@@ -1,121 +1,75 @@
 <template>
-  <div class="tax-form">
-    <form @submit.prevent="handleSubmit" class="form-content">
-      <div class="form-group">
-        <label for="description" class="form-label">
-          Description <span class="text-red-500">*</span>
-        </label>
-        <input
-          id="description"
-          v-model="form.description"
-          type="text"
-          required
-          placeholder="e.g., VAT, Sales Tax, Income Tax"
-          class="form-control"
-          :disabled="disabled"
-        />
-      </div>
+  <LoadingState v-if="loadingTax" label="Loading tax…" />
 
-      <div class="form-group">
-        <label for="handlerId" class="form-label">
-          Tax Calculation Type <span class="text-red-500">*</span>
-        </label>
-        <select
-          id="handlerId"
-          v-model="form.handlerId"
-          required
-          class="form-control"
-          :disabled="disabled"
-        >
-          <option value="PERCENTAGE">Percentage Tax (e.g., 21% VAT)</option>
-          <option value="FIXED_AMOUNT">Fixed Amount Tax</option>
-          <option value="COMPOUND">Compound Tax (tax on another tax)</option>
-        </select>
-        <p class="form-hint">
-          {{ getHandlerDescription(form.handlerId) }}
-        </p>
-      </div>
+  <form v-else class="tax-form" novalidate @submit.prevent="handleSubmit">
+    <BaseField label="Name on the invoice" for="tax-description" required :error="errors.description">
+      <input
+        id="tax-description"
+        v-model="form.description"
+        type="text"
+        placeholder="e.g. VAT, IRPF withholding"
+        class="control"
+        :disabled="disabled"
+      />
+    </BaseField>
 
-      <div class="form-group">
-        <label for="rate" class="form-label">
-          Rate (%) <span class="text-red-500">*</span>
-        </label>
+    <BaseField label="Calculation" for="tax-handler" required :help="handlerDescription(form.handlerId)">
+      <select id="tax-handler" v-model="form.handlerId" class="control" :disabled="disabled">
+        <option value="PERCENTAGE">Percentage of the subtotal</option>
+        <option value="FIXED_AMOUNT">Fixed amount</option>
+        <option value="COMPOUND">Percentage of another tax</option>
+      </select>
+    </BaseField>
+
+    <div class="row">
+      <BaseField
+        :label="form.handlerId === 'FIXED_AMOUNT' ? 'Amount' : 'Rate (%)'"
+        for="tax-rate"
+        required
+        :error="errors.rate"
+        :help="form.handlerId === 'FIXED_AMOUNT' ? undefined : 'Negative to subtract, e.g. −15 for withholding.'"
+      >
         <input
-          id="rate"
+          id="tax-rate"
           v-model.number="form.rate"
           type="number"
           step="0.01"
           min="-100"
           max="100"
-          required
-          class="form-control"
-          :class="{ 'border-red-500': errors.rate }"
+          inputmode="decimal"
+          class="control num"
           :disabled="disabled"
         />
-        <p v-if="errors.rate" class="text-red-500 text-sm mt-1">{{ errors.rate }}</p>
-      </div>
+      </BaseField>
 
-      <div class="form-group">
-        <label for="order" class="form-label">
-          Calculation Order <span class="text-red-500">*</span>
-        </label>
-        <input
-          id="order"
-          v-model.number="form.order"
-          type="number"
-          min="1"
-          required
-          class="form-control"
-          :disabled="disabled"
-        />
-        <p class="form-hint">
-          Taxes are calculated in ascending order. Use 1 for first, 2 for second, etc.
-        </p>
-      </div>
+      <BaseField label="Order" for="tax-order" required :error="errors.order" help="Lower numbers are calculated first.">
+        <input id="tax-order" v-model.number="form.order" type="number" min="1" class="control num" :disabled="disabled" />
+      </BaseField>
+    </div>
 
-      <div v-if="form.handlerId === 'COMPOUND'" class="form-group">
-        <label for="appliedToTaxId" class="form-label">
-          Applied To Tax
-        </label>
-        <select
-          id="appliedToTaxId"
-          v-model="form.appliedToTaxId"
-          class="form-control"
-          :disabled="disabled"
-        >
-          <option :value="null">Select a tax (or leave empty for subtotal)</option>
-          <option
-            v-for="tax in availableTaxes"
-            :key="tax.id"
-            :value="tax.id"
-          >
-            {{ tax.description }} ({{ tax.rate }}%)
-          </option>
-        </select>
-        <p class="form-hint">
-          For compound tax: Select which tax this should be applied to, or leave empty to apply to invoice subtotal.
-        </p>
-      </div>
+    <BaseField
+      v-if="form.handlerId === 'COMPOUND'"
+      label="Calculated on"
+      for="tax-applied-to"
+      help="The tax this one is a percentage of. Leave on “Subtotal” to use the invoice subtotal."
+    >
+      <select id="tax-applied-to" v-model="form.appliedToTaxId" class="control" :disabled="disabled">
+        <option :value="null">Subtotal</option>
+        <option v-for="tax in availableTaxes" :key="tax.id" :value="tax.id">
+          {{ tax.description }} ({{ tax.rate }}%)
+        </option>
+      </select>
+    </BaseField>
 
-      <div class="form-actions">
-        <button
-          type="button"
-          @click="handleCancel"
-          class="btn-secondary"
-          :disabled="loading"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          class="btn-primary"
-          :disabled="loading || disabled"
-        >
-          {{ loading ? 'Saving...' : 'Save Tax' }}
-        </button>
-      </div>
-    </form>
-  </div>
+    <p v-if="errors.form" class="form-error" role="alert">{{ errors.form }}</p>
+
+    <div class="form-actions">
+      <BaseButton :disabled="saving" @click="emit('cancel')">Cancel</BaseButton>
+      <BaseButton type="submit" variant="primary" :loading="saving" :disabled="disabled">
+        {{ taxId ? 'Save changes' : 'Add tax' }}
+      </BaseButton>
+    </div>
+  </form>
 </template>
 
 <script setup lang="ts">
@@ -123,6 +77,10 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useTaxesStore } from '@/stores/taxes'
 import { TaxApplicationType } from '@/types'
 import type { CreateTaxDto, UpdateTaxDto } from '@/types'
+import BaseField from '@/components/ui/BaseField.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import LoadingState from '@/components/ui/LoadingState.vue'
+import { errorMessage } from '@/composables/useToast'
 
 interface Props {
   customerId: number
@@ -139,7 +97,8 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 const taxesStore = useTaxesStore()
 
-const loading = ref(false)
+const loadingTax = ref(false)
+const saving = ref(false)
 
 const form = reactive<CreateTaxDto | UpdateTaxDto>({
   customerId: props.customerId,
@@ -161,38 +120,37 @@ const availableTaxes = computed(() => {
 })
 
 onMounted(async () => {
-  await taxesStore.fetchByCustomerId(props.customerId)
-  if (props.taxId) {
-    await loadTax(props.taxId)
+  loadingTax.value = true
+  try {
+    await taxesStore.fetchByCustomerId(props.customerId)
+    if (props.taxId) {
+      const tax = await taxesStore.fetchById(props.taxId)
+      if (tax) {
+        form.description = tax.description
+        form.handlerId = tax.handlerId
+        form.rate = tax.rate
+        form.order = tax.order
+        form.appliedToTaxId = tax.appliedToTaxId
+      }
+    } else {
+      // a new tax goes after the existing ones
+      form.order = Math.max(0, ...availableTaxes.value.map(t => t.order)) + 1
+    }
+  } catch (error) {
+    errors.form = `The tax could not be loaded: ${errorMessage(error)}`
+  } finally {
+    loadingTax.value = false
   }
 })
 
-async function loadTax(id: number) {
-  try {
-    loading.value = true
-    const tax = await taxesStore.fetchById(id)
-    if (tax) {
-      form.description = tax.description
-      form.handlerId = tax.handlerId
-      form.rate = tax.rate
-      form.order = tax.order
-      form.appliedToTaxId = tax.appliedToTaxId
-    }
-  } catch (error) {
-    console.error('Failed to load tax:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-function getHandlerDescription(handlerId: string): string {
+function handlerDescription(handlerId: string): string {
   switch (handlerId) {
     case 'PERCENTAGE':
-      return 'A percentage-based tax applied to the invoice subtotal (e.g., 21% VAT).'
+      return 'A percentage of the invoice subtotal, e.g. 21% VAT.'
     case 'FIXED_AMOUNT':
-      return 'A fixed amount added to the invoice regardless of the subtotal.'
+      return 'The same amount on every invoice, whatever the subtotal.'
     case 'COMPOUND':
-      return 'A tax calculated on top of another tax or the subtotal (e.g., provincial tax on federal tax).'
+      return 'A percentage of another tax line, calculated after it.'
     default:
       return ''
   }
@@ -201,142 +159,75 @@ function getHandlerDescription(handlerId: string): string {
 function validateForm(): boolean {
   Object.keys(errors).forEach(key => delete errors[key])
 
-  if (form.rate < -100 || form.rate > 100) {
-    errors.rate = 'Rate must be between -100 and 100'
-    return false
+  if (!form.description.trim()) {
+    errors.description = 'Enter the name shown on the invoice.'
   }
-
+  if (form.handlerId !== 'FIXED_AMOUNT' && (form.rate < -100 || form.rate > 100)) {
+    errors.rate = 'Enter a rate between −100 and 100.'
+  }
+  if (!(form.order >= 1)) {
+    errors.order = 'Enter 1 or higher.'
+  }
   if (form.handlerId === 'COMPOUND' && form.appliedToTaxId) {
     const appliedToTax = taxesStore.getTaxById(form.appliedToTaxId)
     if (appliedToTax && appliedToTax.order >= form.order) {
-      errors.rate = 'Compound tax must have a higher order than the tax it applies to'
-      return false
+      errors.order = `Must be higher than “${appliedToTax.description}” (order ${appliedToTax.order}), which it's calculated on.`
     }
   }
 
-  return true
+  const first = ['description', 'rate', 'order'].find(key => errors[key])
+  if (first) document.getElementById(`tax-${first}`)?.focus()
+  return !first
 }
 
 async function handleSubmit() {
-  if (!validateForm()) {
-    return
-  }
+  if (!validateForm()) return
 
   try {
-    loading.value = true
-
+    saving.value = true
     if (props.taxId) {
       await taxesStore.update(props.taxId, form as UpdateTaxDto)
     } else {
       await taxesStore.create(form as CreateTaxDto)
     }
-
     emit('success')
-  } catch (error: any) {
-    console.error('Failed to save tax:', error)
-    errors.rate = error.message || 'Failed to save tax'
+  } catch (error) {
+    errors.form = `The tax could not be saved: ${errorMessage(error)}`
   } finally {
-    loading.value = false
+    saving.value = false
   }
-}
-
-function handleCancel() {
-  emit('cancel')
 }
 </script>
 
 <style scoped>
 .tax-form {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.form-content {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
+.row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
-.form-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 0.5rem;
+@media (max-width: 520px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
-.form-hint {
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin-top: 0.25rem;
-  font-style: italic;
-}
-
-.form-control {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 1rem;
-  transition: all 0.2s;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-.form-control:disabled {
-  background: #f3f4f6;
-  cursor: not-allowed;
+.form-error {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-danger);
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.btn-primary,
-.btn-secondary {
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-primary {
-  background: #2563eb;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #1d4ed8;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #f9fafb;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
 }
 </style>

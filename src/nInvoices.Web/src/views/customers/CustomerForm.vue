@@ -1,7 +1,5 @@
 <template>
-  <div class="customer-form-view">
-    <CustomerFormComponent :customer-id="customerId" />
-  </div>
+  <CustomerFormComponent :key="customerId ?? 'new'" :customer-id="customerId" />
 </template>
 
 <script setup lang="ts">
@@ -15,10 +13,3 @@ const customerId = computed(() => {
   return id ? Number(id) : undefined
 })
 </script>
-
-<style scoped>
-.customer-form-view {
-  min-height: calc(100vh - 4rem);
-  background: #f9fafb;
-}
-</style>

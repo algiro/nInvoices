@@ -84,6 +84,7 @@ import { useAuthStore } from '@/stores/auth'
 import AppIcon, { type IconName } from '@/components/ui/AppIcon.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { useToast } from '@/composables/useToast'
+import { usePageTitle } from '@/composables/usePageTitle'
 
 interface NavItem {
   to: string
@@ -102,6 +103,7 @@ const navItems: NavItem[] = [
 const route = useRoute()
 const authStore = useAuthStore()
 const toast = useToast()
+const pageTitle = usePageTitle()
 
 const navOpen = ref(false)
 const userOpen = ref(false)
@@ -115,7 +117,7 @@ const breadcrumbs = computed(() => {
   const crumbs: { label: string; to?: string }[] = []
   const parent = route.meta.parent as { label: string; to: string } | undefined
   if (parent) crumbs.push(parent)
-  crumbs.push({ label: (route.meta.title as string) ?? '' })
+  crumbs.push({ label: pageTitle.value ?? (route.meta.title as string) ?? '' })
   return crumbs
 })
 

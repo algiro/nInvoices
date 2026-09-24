@@ -15,41 +15,43 @@
       <BaseButton variant="primary" icon="plus" :to="editorLink('new')">New template</BaseButton>
     </header>
 
-    <div v-if="loading" class="state">Loading templates…</div>
+    <LoadingState v-if="loading" label="Loading templates…" />
 
-    <div v-else-if="loadError" class="state">
-      <p>{{ loadError }}</p>
-      <BaseButton size="sm" @click="load">Try again</BaseButton>
-    </div>
+    <EmptyState v-else-if="loadError" icon="alert" title="Templates could not be loaded" :description="loadError" compact>
+      <BaseButton @click="load">Try again</BaseButton>
+    </EmptyState>
 
-    <div v-else-if="rows.length === 0" class="empty">
-      <AppIcon name="template" class="empty-icon" />
-      <strong>No templates yet</strong>
-      <span>Start from the sample and adjust it to your layout; the preview updates as you type.</span>
-      <BaseButton variant="primary" :to="editorLink('new')">Create the first template</BaseButton>
-    </div>
+    <EmptyState
+      v-else-if="rows.length === 0"
+      icon="template"
+      title="No templates yet"
+      description="Start from the sample and adjust it to your layout; the preview updates as you type."
+      compact
+    >
+      <BaseButton variant="primary" icon="plus" :to="editorLink('new')">Create the first template</BaseButton>
+    </EmptyState>
 
     <div v-else class="table-wrap">
-      <table>
+      <table class="data-table">
         <thead>
           <tr>
             <th scope="col">Name</th>
             <th v-if="kind === 'invoice'" scope="col">Invoice type</th>
             <th scope="col">Status</th>
             <th scope="col">Last changed</th>
-            <th scope="col" class="actions-col"><span class="sr-only">Actions</span></th>
+            <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="row in rows" :key="row.id">
             <td>
-              <router-link :to="editorLink(row.id)" class="name">
+              <router-link :to="editorLink(row.id)" class="primary-cell name">
                 {{ row.name || `Untitled ${typeLabel(row.invoiceType).toLowerCase()} template` }}
               </router-link>
             </td>
             <td v-if="kind === 'invoice'">{{ typeLabel(row.invoiceType) }}</td>
             <td>
-              <span class="pill" :class="row.isActive ? 'active' : 'inactive'">{{ row.isActive ? 'Active' : 'Inactive' }}</span>
+              <StatusPill :tone="row.isActive ? 'success' : 'neutral'">{{ row.isActive ? 'Active' : 'Inactive' }}</StatusPill>
             </td>
             <td class="muted">{{ formatDate(row.updatedAt ?? row.createdAt) }}</td>
             <td class="actions">
@@ -75,10 +77,9 @@
               </BaseButton>
               <BaseButton
                 size="sm"
-                variant="ghost"
+                variant="ghost-danger"
                 icon="trash"
                 icon-only
-                class="danger-ghost"
                 :aria-label="`Delete ${row.name || 'template'}`"
                 title="Delete"
                 @click="remove(row)"
@@ -93,13 +94,16 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import AppIcon from '@/components/ui/AppIcon.vue'
+import StatusPill from '@/components/ui/StatusPill.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import LoadingState from '@/components/ui/LoadingState.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { templatesApi } from '@/api/templates'
 import { monthlyReportTemplatesApi } from '@/api/monthlyReportTemplates'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import type { TemplateKind } from './editor/templateVariables'
+import { formatDate } from '@/utils/format'
 
 interface TemplateRow {
   id: number
@@ -133,12 +137,6 @@ function typeLabel(type: unknown): string {
   return value === 'OneTime' || value === '1' ? 'One-time' : value === 'Quarterly' ? 'Quarterly' : value === 'Annual' ? 'Annual' : 'Monthly'
 }
 
-function formatDate(value: string): string {
-  const date = new Date(value)
-  return Number.isNaN(date.getTime())
-    ? ''
-    : date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
-}
 
 async function load() {
   loading.value = true
@@ -214,149 +212,16 @@ watch(() => props.customerId, load)
 
 .help {
   margin: 0.2rem 0 0;
-  max-width: 60ch;
+  max-width: 65ch;
   font-size: var(--text-md);
   color: var(--color-text-muted);
-}
-
-.state {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding: 1rem 0;
-  color: var(--color-text-muted);
-  font-size: var(--text-md);
-}
-
-.state p {
-  margin: 0;
-}
-
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 2.5rem 1rem;
-  border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-lg);
-  text-align: center;
-  font-size: var(--text-md);
-  color: var(--color-text-muted);
-}
-
-.empty strong {
-  color: var(--color-text);
-}
-
-.empty .base-btn {
-  margin-top: 0.5rem;
-}
-
-.empty-icon {
-  width: 2rem;
-  height: 2rem;
-  color: var(--color-text-subtle);
-}
-
-.table-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--text-md);
-}
-
-th {
-  padding: 0.55rem 0.9rem;
-  background: var(--color-surface-muted);
-  border-bottom: 1px solid var(--color-border);
-  text-align: left;
-  font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-
-td {
-  padding: 0.55rem 0.9rem;
-  border-bottom: 1px solid var(--color-border);
-  vertical-align: middle;
-}
-
-tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-tbody tr:hover td {
-  background: var(--color-surface-muted);
 }
 
 .name {
-  font-weight: 600;
   color: var(--color-text);
 }
 
 .name:hover {
   color: var(--color-primary);
-}
-
-.muted {
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-
-.pill {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  padding: 0.1rem 0.55rem;
-  border-radius: 999px;
-  border: 1px solid;
-  white-space: nowrap;
-}
-
-.pill.active {
-  color: var(--color-success);
-  background: var(--color-success-soft);
-  border-color: var(--color-success-line);
-}
-
-.pill.inactive {
-  color: var(--color-text-muted);
-  background: var(--color-surface-muted);
-  border-color: var(--color-border-strong);
-}
-
-.actions-col {
-  width: 1%;
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.25rem;
-  white-space: nowrap;
-}
-
-.danger-ghost:hover:not(:disabled) {
-  background: var(--color-danger-soft);
-  color: var(--color-danger);
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
 }
 </style>

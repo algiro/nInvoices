@@ -255,7 +255,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch, toRef } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useInvoicesStore } from '@/stores/invoices'
 import { useCustomersStore } from '@/stores/customers'
 import { useRatesStore } from '@/stores/rates'
@@ -273,6 +273,7 @@ import { useToast } from '@/composables/useToast'
 const toast = useToast()
 
 const router = useRouter()
+const route = useRoute()
 const invoicesStore = useInvoicesStore()
 const customersStore = useCustomersStore()
 const ratesStore = useRatesStore()
@@ -435,6 +436,11 @@ onMounted(async () => {
     customersStore.fetchAll(),
     settingsStore.fetchInvoiceSettings()
   ])
+  // Opened from a customer page ("New invoice"): start with that customer selected
+  const preselected = Number(route.query.customerId)
+  if (preselected && customersStore.customers.some(c => c.id === preselected)) {
+    form.customerId = preselected
+  }
 })
 
 async function loadCustomerData() {

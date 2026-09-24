@@ -164,6 +164,148 @@ input, select, textarea, button {
 }
 
 /*
+ * Shared primitives used across screens. Components add layout on top; these carry the look.
+ */
+
+/* form controls: <input class="control">, <select class="control">, <textarea class="control"> */
+.control {
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: var(--text-md);
+  line-height: 1.4;
+  color: var(--color-text);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.control::placeholder {
+  color: var(--color-text-subtle);
+}
+
+.control:hover:not(:disabled) {
+  border-color: #b9c0cc;
+}
+
+.control:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.control:disabled {
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.control.invalid {
+  border-color: var(--color-danger);
+}
+
+.control.invalid:focus {
+  box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.15);
+}
+
+textarea.control {
+  resize: vertical;
+}
+
+.control.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* tables: <div class="table-wrap"><table class="data-table">…</table></div> */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-md);
+}
+
+.data-table th {
+  padding: 0.55rem 0.9rem;
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+  color: var(--color-text-secondary);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.data-table tbody tr:hover td {
+  background: var(--color-surface-muted);
+}
+
+.data-table tr.clickable {
+  cursor: pointer;
+}
+
+.data-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.data-table .primary-cell {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.data-table .sub {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.data-table .actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.data-table .actions > * + * {
+  margin-left: 0.25rem;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/*
  * Legacy shim: a few screens still size their inline icons with utility classes from an
  * uninstalled CSS framework. These rules keep those icons at the intended size until each
  * screen moves to the shared components; remove them once no template uses the classes.
