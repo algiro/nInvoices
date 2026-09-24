@@ -488,6 +488,12 @@ function dayHours(workDay: WorkDayDto): number {
   return (workDay.projects ?? []).reduce((sum, p) => sum + (Number(p.hours) || 0), 0)
 }
 
+// Hours billed for a worked day: the sum of its project rows (the single source of truth).
+// A day with no rows at all is billed as a full 8h day, matching the backend default.
+function billedHours(workDay: WorkDayDto): number {
+  return (workDay.projects ?? []).length > 0 ? dayHours(workDay) : 8
+}
+
 const sortedWorkedDays = computed(() =>
   form.workDays
     .filter(wd => (wd.dayType ?? DayType.Worked) === DayType.Worked)
@@ -509,14 +515,11 @@ const totalHours = computed(() => {
 const effectiveDays = computed(() => {
   return form.workDays
     .filter(wd => (wd.dayType ?? DayType.Worked) === DayType.Worked)
-    .reduce((sum, wd) => sum + (wd.hoursWorked != null ? wd.hoursWorked / 8 : 1), 0)
+    .reduce((sum, wd) => sum + billedHours(wd) / 8, 0)
 })
 
 const hasPartialDays = computed(() => {
-  return isDailyRate.value && form.workDays.some(
-    wd => (wd.dayType ?? DayType.Worked) === DayType.Worked &&
-          wd.hoursWorked != null && wd.hoursWorked !== 8
-  )
+  return isDailyRate.value && sortedWorkedDays.value.some(wd => billedHours(wd) !== 8)
 })
 const estimatedAmount = computed(() => {
   if (!selectedRate.value || form.invoiceType !== InvoiceType.Monthly) {
@@ -548,9 +551,9 @@ const isFormValid = computed(() => {
     return false
   }
 
-  // Hourly billing needs at least some hours on every worked day
-  if (form.invoiceType === InvoiceType.Monthly && isHourlyRate.value) {
-    if (sortedWorkedDays.value.some(wd => dayHours(wd) <= 0)) {
+  // Hourly and daily billing need some hours on every worked day
+  if (form.invoiceType === InvoiceType.Monthly && (isHourlyRate.value || isDailyRate.value)) {
+    if (sortedWorkedDays.value.some(wd => (isHourlyRate.value ? dayHours(wd) : billedHours(wd)) <= 0)) {
       return false
     }
   }
@@ -639,7 +642,8 @@ function getWorkDayPartialHours(date: string): number | null {
   if (!isDailyRate.value) return null
   const wd = form.workDays.find(w => w.date === date)
   if (!wd || (wd.dayType ?? DayType.Worked) !== DayType.Worked) return null
-  return wd.hoursWorked ?? null
+  const hours = billedHours(wd)
+  return hours !== 8 ? hours : null
 }
 
 function isToday(date: string): boolean {
@@ -708,9 +712,10 @@ function handleDayDblClick(day: CalendarDay) {
     return // Only open for worked days
   }
   if (existingIndex < 0) {
-    form.workDays.push({ date: day.date, dayType: DayType.Worked, hoursWorked: undefined })
+    form.workDays.push({ date: day.date, dayType: DayType.Worked, projects: [{ projectName: '', hours: 8 }] })
   }
-  popoverHours.value = form.workDays.find(w => w.date === day.date)?.hoursWorked ?? 8
+  const workDay = form.workDays.find(w => w.date === day.date)
+  popoverHours.value = workDay ? billedHours(workDay) : 8
   popoverDate.value = day.date
   nextTick(() => {
     const input = document.querySelector<HTMLInputElement>('.popover-input')
@@ -721,10 +726,10 @@ function handleDayDblClick(day: CalendarDay) {
 
 function confirmHoursPopover() {
   if (popoverDate.value) {
-    const idx = form.workDays.findIndex(w => w.date === popoverDate.value)
-    if (idx >= 0) {
+    const workDay = form.workDays.find(w => w.date === popoverDate.value)
+    if (workDay) {
       const hours = Math.min(8, Math.max(0.5, popoverHours.value || 8))
-      form.workDays[idx].hoursWorked = hours === 8 ? undefined : hours
+      setDayHours(workDay, hours)
     }
   }
   popoverDate.value = null
@@ -732,6 +737,27 @@ function confirmHoursPopover() {
 
 function closeHoursPopover() {
   popoverDate.value = null
+}
+
+// Writes the day's total into its project rows so the calendar and the list never disagree.
+// Several rows are scaled proportionally (to the nearest 0.25h); rounding drift goes to the first row.
+function setDayHours(workDay: WorkDayDto, hours: number) {
+  const rows = workDay.projects ?? (workDay.projects = [])
+  if (rows.length === 0) {
+    rows.push({ projectName: '', hours })
+    return
+  }
+  if (rows.length === 1) {
+    rows[0].hours = hours
+    return
+  }
+  const current = dayHours(workDay)
+  if (current <= 0) {
+    rows.forEach((r, i) => { r.hours = i === 0 ? hours : 0 })
+    return
+  }
+  rows.forEach(r => { r.hours = Math.round((Number(r.hours) || 0) / current * hours * 4) / 4 })
+  rows[0].hours = Math.max(0, Number(rows[0].hours) + hours - dayHours(workDay))
 }
 function addExpense() {
   form.expenses.push({
@@ -753,14 +779,21 @@ async function handleSubmit() {
 
     const payload: GenerateInvoiceDto = {
       ...form,
-      // Drop incomplete project rows; keep a day even if it ends up with no projects
-      workDays: form.workDays.map(wd => ({
-        ...wd,
-        hoursWorked: undefined,
-        projects: (wd.projects ?? [])
-          .filter(p => p.projectName.trim().length > 0 && Number(p.hours) > 0)
+      // Drop incomplete project rows; keep a day even if it ends up with no projects.
+      // hoursWorked mirrors what the backend persists: the named projects' total when there are any,
+      // otherwise the hours typed on unnamed rows (so partial days bill correctly without project names).
+      workDays: form.workDays.map(wd => {
+        const rows = (wd.projects ?? []).filter(p => Number(p.hours) > 0)
+        const projects = rows
+          .filter(p => p.projectName.trim().length > 0)
           .map(p => ({ projectName: p.projectName.trim(), hours: Number(p.hours), projectId: p.projectId ?? null }))
-      }))
+        const hoursSource = projects.length > 0 ? projects : rows
+        const isWorked = (wd.dayType ?? DayType.Worked) === DayType.Worked
+        const hoursWorked = isWorked && hoursSource.length > 0
+          ? hoursSource.reduce((sum, p) => sum + Number(p.hours), 0)
+          : undefined
+        return { ...wd, hoursWorked, projects }
+      })
     }
 
     // Add year and month for monthly invoices

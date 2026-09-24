@@ -121,7 +121,7 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
                 IsWorked = workedDay?.DayType == DayType.Worked,
                 IsPublicHoliday = workedDay?.DayType == DayType.PublicHoliday,
                 IsUnpaidLeave = workedDay?.DayType == DayType.UnpaidLeave,
-                Hours = workedDay?.DayType == DayType.Worked ? (workedDay.HoursWorked ?? 8m) : null,
+                Hours = workedDay?.DayType == DayType.Worked ? (dayHours ?? 8m) : null,
                 Notes = workedDay?.Notes,
                 Projects = dayAllocations
             };
