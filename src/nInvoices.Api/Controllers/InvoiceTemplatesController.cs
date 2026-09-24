@@ -105,10 +105,10 @@ public sealed class InvoiceTemplatesController : ControllerBase
     [HttpPost("validate")]
     [ProducesResponseType(typeof(TemplateValidationResultDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<TemplateValidationResultDto>> ValidateTemplate(
-        [FromBody] string content,
+        [FromBody] ValidateTemplateDto dto,
         CancellationToken cancellationToken)
     {
-        var command = new ValidateTemplateCommand(content);
+        var command = new ValidateTemplateCommand(dto.Content);
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
     }

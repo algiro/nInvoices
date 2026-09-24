@@ -334,9 +334,13 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
                         .Sum(GetDayHours),
                     rate.Price.Currency),
             
-            // Daily rate: daily_rate × number of worked days
-            InvoiceType.Monthly when dto.WorkDays != null => 
-                new Money(rate.Price.Amount * dto.WorkDays.Count(wd => wd.DayType == DayType.Worked), rate.Price.Currency),
+            // Daily rate: daily_rate × effective days (partial days counted as hoursWorked/8)
+            InvoiceType.Monthly when dto.WorkDays != null =>
+                new Money(
+                    rate.Price.Amount * dto.WorkDays
+                        .Where(wd => wd.DayType == DayType.Worked)
+                        .Sum(wd => (wd.HoursWorked ?? 8m) / 8m),
+                    rate.Price.Currency),
             
             InvoiceType.OneTime => rate.Price,
             _ => throw new InvalidOperationException($"Cannot calculate subtotal for invoice type {dto.InvoiceType}")
@@ -458,7 +462,18 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             MonthNumber = monthNumber,
             MonthDescription = monthDescription,
             MonthlyRate = monthlyRate,
-            TotalExpenses = totalExpenses
+            TotalExpenses = totalExpenses,
+            WorkedDayItems = dto.InvoiceType == InvoiceType.Monthly && workDays != null
+                ? workDays
+                    .Where(wd => wd.DayType == DayType.Worked)
+                    .OrderBy(wd => wd.Date)
+                    .Select(wd => new WorkedDayTemplateModel
+                    {
+                        Date = wd.Date.ToString("d", System.Globalization.CultureInfo.GetCultureInfo(customer.Locale)),
+                        Hours = wd.HoursWorked ?? 8m
+                    })
+                    .ToList()
+                : []
         };
 
         return model;

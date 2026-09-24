@@ -31,6 +31,7 @@ public sealed record InvoiceTemplateModel
     public string? MonthDescription { get; init; }
     public decimal? MonthlyRate { get; init; }
     public decimal? TotalExpenses { get; init; }
+    public List<WorkedDayTemplateModel> WorkedDayItems { get; init; } = [];
 }
 
 public sealed record CustomerTemplateModel
@@ -54,6 +55,12 @@ public sealed record LineItemTemplateModel
     public decimal Quantity { get; init; }
     public decimal Rate { get; init; }
     public decimal Amount { get; init; }
+}
+
+public sealed record WorkedDayTemplateModel
+{
+    public string Date { get; init; } = string.Empty;
+    public decimal Hours { get; init; }
 }
 
 public sealed record TaxTemplateModel
