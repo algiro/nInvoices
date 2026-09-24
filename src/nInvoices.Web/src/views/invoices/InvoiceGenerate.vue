@@ -103,171 +103,54 @@
       </div>
 
       <div v-if="form.invoiceType === InvoiceType.Monthly" class="form-section">
-        <h3 class="section-title">Mark Worked Days</h3>
-        
-        <div class="calendar">
-          <div class="calendar-header">
-            <h4 class="text-lg font-semibold">
-              {{ months.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }}
-            </h4>
-            <p class="text-sm text-gray-600">Click on days to cycle through: Worked → Public Holiday → Unpaid Leave → Unselected<span v-if="isDailyRate"> · Double-click a worked day to set partial hours</span></p>
-            <div class="day-type-legend">
-              <div class="legend-item">
-                <span class="legend-color worked"></span>
-                <span>Worked</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-color public-holiday"></span>
-                <span>Public Holiday</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-color unpaid-leave"></span>
-                <span>Unpaid Leave</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="calendar-grid">
-            <div v-for="dayName in dayHeaders" :key="dayName" class="day-header">
-              {{ dayName }}
-            </div>
-
-            <div
-              v-for="day in calendarDays"
-              :key="day.date"
-              class="day-cell-wrapper"
-            >
-              <div
-                class="day-cell"
-                :class="{
-                  'empty': !day.isCurrentMonth,
-                  'weekend': day.isWeekend,
-                  'worked': getDayType(day.date) === DayType.Worked,
-                  'public-holiday': getDayType(day.date) === DayType.PublicHoliday,
-                  'unpaid-leave': getDayType(day.date) === DayType.UnpaidLeave,
-                  'today': isToday(day.date),
-                  'partial': getWorkDayPartialHours(day.date) !== null
-                }"
-                @click="handleDayClick(day)"
-                @dblclick.stop="handleDayDblClick(day)"
-              >
-                <span v-if="day.isCurrentMonth">{{ day.day }}</span>
-                <span v-if="day.isCurrentMonth && getWorkDayPartialHours(day.date) !== null" class="partial-badge">
-                  {{ getWorkDayPartialHours(day.date) }}h
-                </span>
-              </div>
-              <div v-if="popoverDate === day.date" class="hours-popover" @click.stop>
-                <div class="popover-title">Partial day</div>
-                <input
-                  v-model.number="popoverHours"
-                  type="number"
-                  step="0.5"
-                  min="0.5"
-                  max="8"
-                  class="popover-input"
-                  @keyup.enter="confirmHoursPopover"
-                  @keyup.escape="closeHoursPopover"
-                />
-                <div class="popover-footer">
-                  <button type="button" @click="confirmHoursPopover" class="btn-popover-primary">Done</button>
-                  <button type="button" @click="closeHoursPopover" class="btn-popover-cancel">Cancel</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="calendar-summary">
-            <div class="stat">
-              <span class="stat-label">Worked Days:</span>
-              <span class="stat-value">{{ workedDaysCount }}</span>
-            </div>
-            <div class="stat">
-              <span class="stat-label">Public Holidays:</span>
-              <span class="stat-value">{{ publicHolidaysCount }}</span>
-            </div>
-            <div class="stat">
-              <span class="stat-label">Unpaid Leave:</span>
-              <span class="stat-value">{{ unpaidLeaveCount }}</span>
-            </div>
-            <div class="stat">
-              <span class="stat-label">Total Hours:</span>
-              <span class="stat-value">{{ totalHours.toFixed(1) }}h</span>
-            </div>
-            <div v-if="hasPartialDays" class="stat">
-              <span class="stat-label">Effective Days:</span>
-              <span class="stat-value">{{ effectiveDays.toFixed(2) }}</span>
-            </div>
-            <div class="stat">
-              <span class="stat-label">Estimated Amount:</span>
-              <span class="stat-value">{{ estimatedAmount }}</span>
-            </div>
-          </div>
-
-          <!-- Per-day project time breakdown -->
-          <div v-if="workedDaysCount > 0" class="worked-days-section">
-            <h4 class="text-md font-semibold mb-1">Projects per Day</h4>
-            <p class="text-sm text-gray-600 mb-3">
-              Split each worked day across one or more projects. New project names are saved
-              automatically.
-              <span v-if="isHourlyRate"> Hours drive the hourly billing.</span>
+        <div class="time-header">
+          <div>
+            <h3 class="section-title">Worked Days</h3>
+            <p class="section-help">
+              Weekdays start as full worked days. Select the days that differ and edit them on the right.
             </p>
+          </div>
+          <div class="time-actions">
+            <button type="button" class="btn-secondary btn-sm" @click="fillWeekdays">Fill weekdays (8h)</button>
+            <button type="button" class="btn-secondary btn-sm" @click="workMonth.clearMonth">Clear month</button>
+          </div>
+        </div>
 
-            <datalist id="project-suggestions">
-              <option v-for="p in projectSuggestions" :key="p" :value="p" />
-            </datalist>
+        <div class="time-layout">
+          <MonthCalendar :month="workMonth" />
+          <DayInspector
+            :month="workMonth"
+            :rate-type="selectedRate?.type ?? null"
+            :rate-amount="selectedRate?.price?.amount ?? null"
+            :currency="selectedRate?.price?.currency ?? null"
+            :project-suggestions="projectSuggestions"
+          />
+        </div>
 
-            <div
-              v-for="workDay in sortedWorkedDays"
-              :key="workDay.date"
-              class="worked-day-card"
-            >
-              <div class="worked-day-header">
-                <span class="worked-day-date">{{ formatDate(workDay.date) }}</span>
-                <span
-                  class="worked-day-total"
-                  :class="{ 'text-red-500': isHourlyRate && dayHours(workDay) <= 0 }"
-                >
-                  {{ dayHours(workDay).toFixed(1) }}h
-                </span>
-              </div>
-
-              <div
-                v-for="(alloc, index) in (workDay.projects ?? [])"
-                :key="index"
-                class="alloc-row"
-              >
-                <input
-                  v-model.trim="alloc.projectName"
-                  type="text"
-                  list="project-suggestions"
-                  placeholder="Project name"
-                  class="form-control alloc-name"
-                />
-                <input
-                  v-model.number="alloc.hours"
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  max="24"
-                  placeholder="Hours"
-                  class="form-control alloc-hours"
-                />
-                <button
-                  type="button"
-                  class="btn-icon text-red-600"
-                  title="Remove project"
-                  @click="removeAllocation(workDay, index)"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <button type="button" class="btn-link" @click="addAllocation(workDay)">
-                + Add project
-              </button>
-            </div>
+        <div class="calendar-summary">
+          <div class="stat">
+            <span class="stat-label">Worked Days</span>
+            <span class="stat-value">{{ totals.workedDays }}</span>
+          </div>
+          <div v-if="isDailyRate" class="stat">
+            <span class="stat-label">Effective Days</span>
+            <span class="stat-value">{{ totals.effectiveDays.toFixed(2) }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Total Hours</span>
+            <span class="stat-value">{{ totals.totalHours.toFixed(1) }}h</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Holidays · Leave</span>
+            <span class="stat-value">{{ totals.publicHolidays }} · {{ totals.unpaidLeave }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Notes</span>
+            <span class="stat-value">{{ totals.notes }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Estimated Amount</span>
+            <span class="stat-value">{{ estimatedAmount }}</span>
           </div>
         </div>
       </div>
@@ -346,7 +229,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, watch, toRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { useInvoicesStore } from '@/stores/invoices'
 import { useCustomersStore } from '@/stores/customers'
@@ -354,8 +237,11 @@ import { useRatesStore } from '@/stores/rates'
 import { useProjectsStore } from '@/stores/projects'
 import { useSettingsStore } from '@/stores/settings'
 import { useMonthlyReportTemplatesStore } from '@/stores/monthlyReportTemplates'
-import { InvoiceType, RateType, DayType, DayTypeNames } from '@/types'
-import type { GenerateInvoiceDto, WorkDayDto, ExpenseDto } from '@/types'
+import { InvoiceType, RateType, DayType } from '@/types'
+import type { GenerateInvoiceDto, WorkDayDto } from '@/types'
+import { useWorkMonth, localDateString, dayHours, billedHours } from '@/composables/useWorkMonth'
+import MonthCalendar from '@/components/time/MonthCalendar.vue'
+import DayInspector from '@/components/time/DayInspector.vue'
 
 const router = useRouter()
 const invoicesStore = useInvoicesStore()
@@ -369,9 +255,6 @@ const loading = ref(false)
 const selectedMonth = ref(new Date().getMonth() + 1)
 const selectedYear = ref(new Date().getFullYear())
 const selectedRate = ref<any>(null)
-const popoverDate = ref<string | null>(null)
-const popoverHours = ref<number>(8)
-let pendingClickTimer: ReturnType<typeof setTimeout> | null = null
 
 const form = reactive<GenerateInvoiceDto>({
   customerId: 0,
@@ -402,104 +285,6 @@ const years = computed(() => {
   return Array.from({ length: 5 }, (_, i) => currentYear - 2 + i)
 })
 
-interface CalendarDay {
-  date: string
-  day: number
-  isCurrentMonth: boolean
-  isWeekend: boolean
-}
-
-// Use local date components to avoid UTC-offset shifting when calling toISOString()
-function localDateString(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-const dayHeaders= computed(() => {
-  const allDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-  const firstDayOfWeek = settingsStore.getFirstDayOfWeek()
-  return [...allDays.slice(firstDayOfWeek), ...allDays.slice(0, firstDayOfWeek)]
-})
-
-const calendarDays = computed((): CalendarDay[] => {
-  const firstDay = new Date(selectedYear.value, selectedMonth.value - 1, 1)
-  const lastDay = new Date(selectedYear.value, selectedMonth.value, 0)
-  const firstDayOfWeek = settingsStore.getFirstDayOfWeek() // 0 = Sunday, 1 = Monday, etc.
-  
-  // Adjust starting day to match configured first day of week
-  let startingDayOfWeek = firstDay.getDay() - firstDayOfWeek
-  if (startingDayOfWeek < 0) startingDayOfWeek += 7
-  
-  const days: CalendarDay[] = []
-  
-  for (let i = 0; i < startingDayOfWeek; i++) {
-    const date = new Date(firstDay)
-    date.setDate(date.getDate() - (startingDayOfWeek - i))
-    days.push({
-      date: localDateString(date),
-      day: date.getDate(),
-      isCurrentMonth: false,
-      isWeekend: date.getDay() === 0 || date.getDay() === 6
-    })
-  }
-  
-  for (let day = 1; day <= lastDay.getDate(); day++) {
-    const date = new Date(selectedYear.value, selectedMonth.value - 1, day)
-    days.push({
-      date: localDateString(date),
-      day,
-      isCurrentMonth: true,
-      isWeekend: date.getDay() === 0 || date.getDay() === 6
-    })
-  }
-  
-  while (days.length % 7 !== 0) {
-    const date = new Date(lastDay)
-    date.setDate(date.getDate() + (days.length - lastDay.getDate() - startingDayOfWeek + 1))
-    days.push({
-      date: localDateString(date),
-      day: date.getDate(),
-      isCurrentMonth: false,
-      isWeekend: date.getDay() === 0 || date.getDay() === 6
-    })
-  }
-  
-  return days
-})
-
-const workedDaysCount = computed(() => {
-  return form.workDays.filter(wd => (wd.dayType ?? DayType.Worked) === DayType.Worked).length
-})
-
-const publicHolidaysCount = computed(() => {
-  return form.workDays.filter(wd => wd.dayType === DayType.PublicHoliday).length
-})
-
-const unpaidLeaveCount = computed(() => {
-  return form.workDays.filter(wd => wd.dayType === DayType.UnpaidLeave).length
-})
-
-const isHourlyRate = computed(() => selectedRate.value?.type === RateType.Hourly)
-const isDailyRate = computed(() => selectedRate.value?.type === RateType.Daily)
-
-function dayHours(workDay: WorkDayDto): number {
-  return (workDay.projects ?? []).reduce((sum, p) => sum + (Number(p.hours) || 0), 0)
-}
-
-// Hours billed for a worked day: the sum of its project rows (the single source of truth).
-// A day with no rows at all is billed as a full 8h day, matching the backend default.
-function billedHours(workDay: WorkDayDto): number {
-  return (workDay.projects ?? []).length > 0 ? dayHours(workDay) : 8
-}
-
-const sortedWorkedDays = computed(() =>
-  form.workDays
-    .filter(wd => (wd.dayType ?? DayType.Worked) === DayType.Worked)
-    .sort((a, b) => a.date.localeCompare(b.date))
-)
-
 const projectSuggestions = computed(() => {
   if (!form.customerId) return []
   return projectsStore
@@ -508,19 +293,21 @@ const projectSuggestions = computed(() => {
     .sort((a, b) => a.localeCompare(b))
 })
 
-const totalHours = computed(() => {
-  return sortedWorkedDays.value.reduce((sum, wd) => sum + dayHours(wd), 0)
-})
+// A customer with a single active project gets it pre-filled on new worked days
+const defaultProjectName = computed(() => (projectSuggestions.value.length === 1 ? projectSuggestions.value[0] : ''))
 
-const effectiveDays = computed(() => {
-  return form.workDays
-    .filter(wd => (wd.dayType ?? DayType.Worked) === DayType.Worked)
-    .reduce((sum, wd) => sum + billedHours(wd) / 8, 0)
+const workMonth = useWorkMonth({
+  workDays: toRef(form, 'workDays') as unknown as import('vue').Ref<WorkDayDto[]>,
+  year: selectedYear,
+  month: selectedMonth,
+  firstDayOfWeek: () => settingsStore.getFirstDayOfWeek(),
+  defaultProjectName: () => defaultProjectName.value
 })
+const totals = workMonth.totals
 
-const hasPartialDays = computed(() => {
-  return isDailyRate.value && sortedWorkedDays.value.some(wd => billedHours(wd) !== 8)
-})
+const isHourlyRate = computed(() => selectedRate.value?.type === RateType.Hourly)
+const isDailyRate = computed(() => selectedRate.value?.type === RateType.Daily)
+
 const estimatedAmount = computed(() => {
   if (!selectedRate.value || form.invoiceType !== InvoiceType.Monthly) {
     return '-'
@@ -530,11 +317,9 @@ const estimatedAmount = computed(() => {
   const currency = selectedRate.value.price.currency
 
   if (selectedRate.value.type === RateType.Hourly) {
-    const hours = totalHours.value
-    return `${(hours * rate).toFixed(2)} ${currency} (${hours.toFixed(1)}h)`
+    return `${(totals.value.totalHours * rate).toFixed(2)} ${currency}`
   } else if (selectedRate.value.type === RateType.Daily) {
-    const days = effectiveDays.value
-    return `${(days * rate).toFixed(2)} ${currency}`
+    return `${(totals.value.effectiveDays * rate).toFixed(2)} ${currency}`
   } else if (selectedRate.value.type === RateType.Monthly) {
     return `${rate.toFixed(2)} ${currency}`
   }
@@ -553,7 +338,7 @@ const isFormValid = computed(() => {
 
   // Hourly and daily billing need some hours on every worked day
   if (form.invoiceType === InvoiceType.Monthly && (isHourlyRate.value || isDailyRate.value)) {
-    if (sortedWorkedDays.value.some(wd => (isHourlyRate.value ? dayHours(wd) : billedHours(wd)) <= 0)) {
+    if (workMonth.workedDays.value.some(wd => (isHourlyRate.value ? dayHours(wd) : billedHours(wd)) <= 0)) {
       return false
     }
   }
@@ -568,8 +353,22 @@ const availableTemplates = computed(() => {
   )
 })
 
-watch([selectedMonth, selectedYear], () => {
-  form.workDays = []
+function fillWeekdays() {
+  workMonth.fillWeekdays()
+}
+
+// A new period starts from a clean month with every weekday pre-filled
+function resetMonth() {
+  workMonth.clearMonth()
+  workMonth.fillWeekdays()
+}
+
+watch([selectedMonth, selectedYear], resetMonth)
+
+// Once the customer's single project is known, put it on rows that don't name a project yet
+watch(defaultProjectName, name => {
+  if (!name) return
+  form.workDays?.forEach(wd => wd.projects?.forEach(p => { if (!p.projectName) p.projectName = name }))
 })
 
 watch(() => form.customerId, () => {
@@ -577,6 +376,7 @@ watch(() => form.customerId, () => {
 })
 
 onMounted(async () => {
+  resetMonth()
   await Promise.all([
     customersStore.fetchAll(),
     settingsStore.fetchInvoiceSettings()
@@ -633,132 +433,6 @@ async function loadCustomerData() {
   }
 }
 
-function getDayType(date: string): DayType | null {
-  const workDay = form.workDays.find(wd => wd.date === date)
-  return workDay ? (workDay.dayType ?? DayType.Worked) : null
-}
-
-function getWorkDayPartialHours(date: string): number | null {
-  if (!isDailyRate.value) return null
-  const wd = form.workDays.find(w => w.date === date)
-  if (!wd || (wd.dayType ?? DayType.Worked) !== DayType.Worked) return null
-  const hours = billedHours(wd)
-  return hours !== 8 ? hours : null
-}
-
-function isToday(date: string): boolean {
-  return date === localDateString(new Date())
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr + 'T00:00:00')
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-}
-
-function cycleWorkDayType(day: CalendarDay) {
-  if (!day.isCurrentMonth) return
-
-  const existingIndex = form.workDays.findIndex(wd => wd.date === day.date)
-
-  if (existingIndex >= 0) {
-    const currentType = form.workDays[existingIndex].dayType ?? DayType.Worked
-
-    // Cycle: Worked → PublicHoliday → UnpaidLeave → unselected
-    if (currentType === DayType.Worked) {
-      form.workDays[existingIndex].dayType = DayType.PublicHoliday
-      form.workDays[existingIndex].hoursWorked = undefined // Clear hours when not worked
-      form.workDays[existingIndex].projects = [] // Clear project time when not worked
-    } else if (currentType === DayType.PublicHoliday) {
-      form.workDays[existingIndex].dayType = DayType.UnpaidLeave
-    } else {
-      form.workDays.splice(existingIndex, 1)
-    }
-  } else {
-    // First click: add as Worked day with a single 8h project row to fill in
-    form.workDays.push({
-      date: day.date,
-      dayType: DayType.Worked,
-      projects: [{ projectName: '', hours: 8 }]
-    })
-  }
-}
-
-function addAllocation(workDay: WorkDayDto) {
-  if (!workDay.projects) workDay.projects = []
-  workDay.projects.push({ projectName: '', hours: 0 })
-}
-
-function removeAllocation(workDay: WorkDayDto, index: number) {
-  workDay.projects?.splice(index, 1)
-}
-
-function handleDayClick(day: CalendarDay) {
-  if (!day.isCurrentMonth) return
-  if (pendingClickTimer) return // Second click of a dblclick — let dblclick handler take over
-  pendingClickTimer = setTimeout(() => {
-    pendingClickTimer = null
-    cycleWorkDayType(day)
-  }, 250)
-}
-
-function handleDayDblClick(day: CalendarDay) {
-  if (!day.isCurrentMonth || !isDailyRate.value) return
-  if (pendingClickTimer) {
-    clearTimeout(pendingClickTimer)
-    pendingClickTimer = null
-  }
-  const existingIndex = form.workDays.findIndex(w => w.date === day.date)
-  if (existingIndex >= 0 && (form.workDays[existingIndex].dayType ?? DayType.Worked) !== DayType.Worked) {
-    return // Only open for worked days
-  }
-  if (existingIndex < 0) {
-    form.workDays.push({ date: day.date, dayType: DayType.Worked, projects: [{ projectName: '', hours: 8 }] })
-  }
-  const workDay = form.workDays.find(w => w.date === day.date)
-  popoverHours.value = workDay ? billedHours(workDay) : 8
-  popoverDate.value = day.date
-  nextTick(() => {
-    const input = document.querySelector<HTMLInputElement>('.popover-input')
-    input?.focus()
-    input?.select()
-  })
-}
-
-function confirmHoursPopover() {
-  if (popoverDate.value) {
-    const workDay = form.workDays.find(w => w.date === popoverDate.value)
-    if (workDay) {
-      const hours = Math.min(8, Math.max(0.5, popoverHours.value || 8))
-      setDayHours(workDay, hours)
-    }
-  }
-  popoverDate.value = null
-}
-
-function closeHoursPopover() {
-  popoverDate.value = null
-}
-
-// Writes the day's total into its project rows so the calendar and the list never disagree.
-// Several rows are scaled proportionally (to the nearest 0.25h); rounding drift goes to the first row.
-function setDayHours(workDay: WorkDayDto, hours: number) {
-  const rows = workDay.projects ?? (workDay.projects = [])
-  if (rows.length === 0) {
-    rows.push({ projectName: '', hours })
-    return
-  }
-  if (rows.length === 1) {
-    rows[0].hours = hours
-    return
-  }
-  const current = dayHours(workDay)
-  if (current <= 0) {
-    rows.forEach((r, i) => { r.hours = i === 0 ? hours : 0 })
-    return
-  }
-  rows.forEach(r => { r.hours = Math.round((Number(r.hours) || 0) / current * hours * 4) / 4 })
-  rows[0].hours = Math.max(0, Number(rows[0].hours) + hours - dayHours(workDay))
-}
 function addExpense() {
   form.expenses.push({
     description: '',
@@ -792,7 +466,8 @@ async function handleSubmit() {
         const hoursWorked = isWorked && hoursSource.length > 0
           ? hoursSource.reduce((sum, p) => sum + Number(p.hours), 0)
           : undefined
-        return { ...wd, hoursWorked, projects }
+        const notes = wd.notes?.trim() ? wd.notes.trim() : undefined
+        return { ...wd, hoursWorked, notes, projects }
       })
     }
 
@@ -877,210 +552,47 @@ function handleCancel() {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-.calendar {
-  margin-top: 1rem;
-}
 
-.calendar-header {
-  margin-bottom: 1.5rem;
-}
-
-.day-type-legend {
-  display: flex;
-  gap: 1.5rem;
-  margin-top: 0.75rem;
-  padding: 0.75rem;
-  background: #f9fafb;
-  border-radius: 0.5rem;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.section-help {
+  margin: 0.25rem 0 0;
   font-size: 0.875rem;
+  color: #6b7280;
 }
 
-.legend-color {
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 0.25rem;
-  border: 1px solid #d1d5db;
+.time-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
 }
 
-.legend-color.worked {
-  background: #e8f5e9;
-  border-color: #4caf50;
+.time-header .section-title {
+  margin-bottom: 0;
 }
 
-.legend-color.public-holiday {
-  background: #fff3e0;
-  border-color: #ff9800;
+.time-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
-.legend-color.unpaid-leave {
-  background: #ffebee;
-  border-color: #f44336;
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
 }
 
-.calendar-grid {
+.time-layout {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0.5rem;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  gap: 1rem;
+  align-items: start;
 }
 
-.day-header {
-  padding: 0.75rem;
-  text-align: center;
-  font-weight: 600;
-  color: #6b7280;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-}
-
-.day-cell-wrapper {
-  position: relative;
-  aspect-ratio: 1;
-}
-
-.day-cell {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  border: 2px solid #e5e7eb;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-  background: white;
-}
-
-.partial-badge {
-  font-size: 0.6rem;
-  font-weight: 700;
-  opacity: 0.85;
-  line-height: 1;
-}
-
-.hours-popover {
-  position: absolute;
-  z-index: 100;
-  top: calc(100% + 4px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: white;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  padding: 0.625rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  width: 140px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.popover-title {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.popover-input {
-  width: 100%;
-  padding: 0.375rem 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  text-align: center;
-  outline: none;
-}
-
-.popover-input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
-}
-
-.popover-footer {
-  display: flex;
-  gap: 0.375rem;
-  justify-content: flex-end;
-}
-
-.btn-popover-primary {
-  padding: 0.2rem 0.6rem;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.btn-popover-primary:hover {
-  background: #1d4ed8;
-}
-
-.btn-popover-cancel {
-  padding: 0.2rem 0.6rem;
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.btn-popover-cancel:hover {
-  background: #f9fafb;
-}
-
-.day-cell:hover:not(.empty) {
-  border-color: #2563eb;
-  background: #eff6ff;
-}
-
-.day-cell.empty {
-  border-color: transparent;
-  color: #d1d5db;
-  cursor: default;
-}
-
-.day-cell.weekend:not(.empty) {
-  background: #f9fafb;
-}
-
-.day-cell.worked {
-  background: #e8f5e9;
-  color: #1b5e20;
-  border-color: #4caf50;
-  font-weight: 600;
-}
-
-.day-cell.public-holiday {
-  background: #fff3e0;
-  color: #e65100;
-  border-color: #ff9800;
-  font-weight: 600;
-}
-
-.day-cell.unpaid-leave {
-  background: #ffebee;
-  color: #b71c1c;
-  border-color: #f44336;
-  font-weight: 600;
-}
-
-.day-cell.today {
-  border-color: #f59e0b;
-  font-weight: 700;
+@media (max-width: 900px) {
+  .time-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .calendar-summary {
@@ -1107,72 +619,6 @@ function handleCancel() {
   font-size: 1.5rem;
   font-weight: 700;
   color: #1f2937;
-}
-
-.worked-days-section {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.worked-day-card {
-  padding: 0.75rem;
-  margin-bottom: 0.75rem;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.375rem;
-}
-
-.worked-day-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.worked-day-date {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #374151;
-}
-
-.worked-day-total {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #6b7280;
-}
-
-.alloc-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.alloc-name {
-  flex: 1;
-  padding: 0.375rem 0.5rem;
-  font-size: 0.875rem;
-}
-
-.alloc-hours {
-  width: 90px;
-  padding: 0.375rem 0.5rem;
-  font-size: 0.875rem;
-}
-
-.btn-link {
-  background: none;
-  border: none;
-  color: #2563eb;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 0.25rem 0;
-}
-
-.btn-link:hover {
-  text-decoration: underline;
 }
 
 .expenses-list {

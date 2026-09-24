@@ -42,6 +42,7 @@ artifacts/
 *.db
 *.db-shm
 *.db-wal
+*.db.bak*
 
 # Node
 node_modules/
