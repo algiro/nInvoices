@@ -52,6 +52,19 @@ const router = createRouter({
           component: () => import('../views/customers/CustomerForm.vue'),
         },
         {
+          // templateId is a number, or 'new' for a template that hasn't been saved yet
+          path: 'customers/:id/templates/invoice/:templateId',
+          name: 'invoice-template-editor',
+          meta: { title: 'Invoice template', section: 'customers', parent: { label: 'Customers', to: '/customers' }, kind: 'invoice' },
+          component: () => import('../views/templates/TemplateEditor.vue'),
+        },
+        {
+          path: 'customers/:id/templates/monthly-report/:templateId',
+          name: 'monthly-report-template-editor',
+          meta: { title: 'Monthly report template', section: 'customers', parent: { label: 'Customers', to: '/customers' }, kind: 'monthly-report' },
+          component: () => import('../views/templates/TemplateEditor.vue'),
+        },
+        {
           path: 'invoices',
           name: 'invoices',
           meta: { title: 'Invoices', section: 'invoices' },

@@ -3,7 +3,8 @@ import type {
   MonthlyReportTemplateDto,
   CreateMonthlyReportTemplateDto,
   UpdateMonthlyReportTemplateDto,
-  TemplateValidationResultDto
+  TemplateValidationResultDto,
+  TemplatePreviewDto
 } from '@/types';
 
 export const monthlyReportTemplatesApi = {
@@ -37,5 +38,10 @@ export const monthlyReportTemplatesApi = {
 
   validate: async (content: string): Promise<TemplateValidationResultDto> => {
     return apiClient.post<TemplateValidationResultDto>('/api/monthlyreporttemplates/validate', { content });
+  },
+
+  /** Renders content with a sample month for the customer, without saving. */
+  preview: async (content: string, customerId?: number): Promise<TemplatePreviewDto> => {
+    return apiClient.post<TemplatePreviewDto>('/api/monthlyreporttemplates/preview', { content, customerId });
   }
 };

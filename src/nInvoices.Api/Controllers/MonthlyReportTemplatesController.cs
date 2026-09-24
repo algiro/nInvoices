@@ -20,17 +20,20 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
     private readonly IRepository<MonthlyReportTemplate> _repository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITemplateRenderer _templateRenderer;
+    private readonly ITemplatePreviewService _previewService;
     private readonly ILogger<MonthlyReportTemplatesController> _logger;
 
     public MonthlyReportTemplatesController(
         IRepository<MonthlyReportTemplate> repository,
         IUnitOfWork unitOfWork,
         ITemplateRenderer templateRenderer,
+        ITemplatePreviewService previewService,
         ILogger<MonthlyReportTemplatesController> logger)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _templateRenderer = templateRenderer;
+        _previewService = previewService;
         _logger = logger;
     }
 
@@ -212,6 +215,22 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
         var result = await _templateRenderer.ValidateAsync(dto.Content, cancellationToken);
 
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Renders template content with a sample month (optionally the given customer's details)
+    /// without saving anything. Syntax and rendering problems come back as errors, not as a failure.
+    /// </summary>
+    [HttpPost("preview")]
+    [ProducesResponseType(typeof(TemplatePreviewResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Preview(
+        [FromBody] PreviewTemplateDto dto,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Content))
+            return Ok(new TemplatePreviewResult(null, ["Template content cannot be empty"]));
+
+        return Ok(await _previewService.PreviewMonthlyReportAsync(dto.Content, dto.CustomerId, cancellationToken));
     }
 
     /// <summary>

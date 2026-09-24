@@ -16,6 +16,7 @@ public static class ApplicationServicesExtensions
         services.AddScoped<IInvoiceGenerationService, InvoiceGenerationService>();
         services.AddScoped<IMonthlyReportGenerationService, MonthlyReportGenerationService>();
         services.AddScoped<ITemplateRenderer, ScribanTemplateRenderer>();
+        services.AddScoped<ITemplatePreviewService, TemplatePreviewService>();
         services.AddScoped<IProjectResolver, ProjectResolver>();
         return services;
     }

@@ -3,7 +3,8 @@ import type {
   InvoiceTemplateDto, 
   CreateInvoiceTemplateDto, 
   UpdateInvoiceTemplateDto,
-  TemplateValidationResultDto 
+  TemplateValidationResultDto,
+  TemplatePreviewDto
 } from '@/types'
 
 export const templatesApi = {
@@ -51,5 +52,10 @@ export const templatesApi = {
 
   async validate(content: string): Promise<TemplateValidationResultDto> {
     return apiClient.post<TemplateValidationResultDto>('/api/invoicetemplates/validate', { content })
+  },
+
+  /** Renders content with sample invoice data for the customer, without saving. */
+  async preview(content: string, customerId?: number): Promise<TemplatePreviewDto> {
+    return apiClient.post<TemplatePreviewDto>('/api/invoicetemplates/preview', { content, customerId })
   }
 }

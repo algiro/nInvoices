@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.InvoiceTemplates.Commands;
 using nInvoices.Application.Features.InvoiceTemplates.Queries;
+using nInvoices.Application.Services;
 using nInvoices.Core.Enums;
 
 namespace nInvoices.Api.Controllers;
@@ -18,11 +19,16 @@ namespace nInvoices.Api.Controllers;
 public sealed class InvoiceTemplatesController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly ITemplatePreviewService _previewService;
     private readonly ILogger<InvoiceTemplatesController> _logger;
 
-    public InvoiceTemplatesController(IMediator mediator, ILogger<InvoiceTemplatesController> logger)
+    public InvoiceTemplatesController(
+        IMediator mediator,
+        ITemplatePreviewService previewService,
+        ILogger<InvoiceTemplatesController> logger)
     {
         _mediator = mediator;
+        _previewService = previewService;
         _logger = logger;
     }
 
@@ -111,6 +117,22 @@ public sealed class InvoiceTemplatesController : ControllerBase
         var command = new ValidateTemplateCommand(dto.Content);
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Renders template content with sample invoice data (optionally the given customer's details)
+    /// without saving anything. Syntax and rendering problems come back as errors, not as a failure.
+    /// </summary>
+    [HttpPost("preview")]
+    [ProducesResponseType(typeof(TemplatePreviewResult), StatusCodes.Status200OK)]
+    public async Task<ActionResult<TemplatePreviewResult>> Preview(
+        [FromBody] PreviewTemplateDto dto,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Content))
+            return Ok(new TemplatePreviewResult(null, ["Template content cannot be empty"]));
+
+        return Ok(await _previewService.PreviewInvoiceAsync(dto.Content, dto.CustomerId, cancellationToken));
     }
 
     /// <summary>
