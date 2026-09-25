@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { invoicesApi } from '../api';
 import type { InvoiceDto, GenerateInvoiceDto, UpdateInvoiceDto } from '../types';
 
@@ -13,27 +13,6 @@ export const useInvoicesStore = defineStore('invoices', () => {
   const selectedInvoice = ref<InvoiceDto | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
-
-  // Getters
-  const invoiceCount = computed(() => invoices.value.length);
-  
-  const draftInvoices = computed(() => 
-    invoices.value.filter(i => i.status === 'Draft')
-  );
-
-  const finalizedInvoices = computed(() => 
-    invoices.value.filter(i => i.status === 'Finalized')
-  );
-
-  const paidInvoices = computed(() => 
-    invoices.value.filter(i => i.status === 'Paid')
-  );
-
-  const totalRevenue = computed(() => 
-    invoices.value
-      .filter(i => i.status === 'Paid')
-      .reduce((sum, inv) => sum + inv.total.amount, 0)
-  );
 
   // Actions
   async function fetchAll() {
@@ -276,12 +255,6 @@ export const useInvoicesStore = defineStore('invoices', () => {
     selectedInvoice,
     loading,
     error,
-    // Getters
-    invoiceCount,
-    draftInvoices,
-    finalizedInvoices,
-    paidInvoices,
-    totalRevenue,
     // Actions
     fetchAll,
     fetchById,

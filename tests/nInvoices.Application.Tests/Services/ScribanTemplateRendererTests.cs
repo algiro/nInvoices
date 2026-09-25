@@ -104,13 +104,13 @@ Standard Customer
     {
         // Arrange
         var template = "Total: [[ FormatCurrency amount currency ]]";
-        var model = new { Amount = 123.456m, Currency = "EUR" };
+        var model = new { Amount = 1234.567m, Currency = "EUR" };
 
         // Act
         var result = await _renderer.RenderAsync(template, model);
 
-        // Assert
-        result.ShouldBe("Total: 123.46 EUR");
+        // Assert: always Italian formatting, whatever the machine's regional settings
+        result.ShouldBe("Total: 1.234,57 EUR");
     }
 
     [Test]

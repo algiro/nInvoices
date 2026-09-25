@@ -28,9 +28,15 @@
 #   ./deploy.sh --no-push       # build locally but do not push (dry run-ish)
 #   ./deploy.sh --migrate       # also apply pending DB migrations (idempotent)
 #
+# Image tags: images are tagged with the short commit hash (plus "-dirty-<timestamp>" when
+# the working tree has uncommitted changes) and also as :latest, and the server runs that
+# exact tag. Each deploy is appended to $REMOTE_DIR/DEPLOYED-TAGS on the server. To roll
+# back, redeploy an earlier tag without building:
+#   IMAGE_TAG=4655aed ./deploy.sh --skip-build
+#
 # Config (override via environment):
 #   SSH_HOST=he-it-tudes  REMOTE_DIR=~/docker
-#   DOCKER_USERNAME=algiro  IMAGE_TAG=latest
+#   DOCKER_USERNAME=algiro  IMAGE_TAG=<commit, see above>
 #   KEYCLOAK_URL=https://it-tudes.tech  API_URL=/nInvoices  BASE=/nInvoices
 #   KEYCLOAK_REALM=ninvoices  KEYCLOAK_CLIENT_ID=ninvoices-web
 #   PG_CONTAINER=ninvoices-postgres-prod  PG_USER=ninvoices_user  PG_DB=ninvoices_db
@@ -42,7 +48,19 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 SSH_HOST="${SSH_HOST:-he-it-tudes}"
 REMOTE_DIR="${REMOTE_DIR:-~/docker}"
 DOCKER_USERNAME="${DOCKER_USERNAME:-algiro}"
-IMAGE_TAG="${IMAGE_TAG:-latest}"
+
+# The commit being deployed; uncommitted changes get a unique suffix so a tag never
+# claims to be a commit it doesn't match
+commit_tag() {
+  local sha
+  sha=$(git -C .. rev-parse --short HEAD 2>/dev/null) || { echo "latest"; return; }
+  if [[ -n "$(git -C .. status --porcelain 2>/dev/null)" ]]; then
+    echo "${sha}-dirty-$(date +%Y%m%d%H%M)"
+  else
+    echo "$sha"
+  fi
+}
+IMAGE_TAG="${IMAGE_TAG:-$(commit_tag)}"
 
 KEYCLOAK_URL="${KEYCLOAK_URL:-https://it-tudes.tech}"
 API_URL="${API_URL:-/nInvoices}"
@@ -74,7 +92,7 @@ for arg in "$@"; do
     --web-only)   WEB_ONLY=1 ;;
     --no-push)    NO_PUSH=1 ;;
     --migrate)    MIGRATE=1 ;;
-    -h|--help)    sed -n '2,37p' "$0"; exit 0 ;;
+    -h|--help)    sed -n '2,44p' "$0"; exit 0 ;;
     *) die "Unknown option: $arg (try --help)" ;;
   esac
 done
@@ -99,7 +117,8 @@ if [[ $SKIP_BUILD -eq 0 ]]; then
   if [[ $API_ONLY -eq 1 ]]; then
     step "1/4" "Building API image only..."
     docker build -t "${API_IMAGE}:${IMAGE_TAG}" -f Dockerfile.api .. || die "API build failed."
-    [[ $NO_PUSH -eq 0 ]] && { docker push "${API_IMAGE}:${IMAGE_TAG}" || die "API push failed."; }
+    docker tag "${API_IMAGE}:${IMAGE_TAG}" "${API_IMAGE}:latest"
+    [[ $NO_PUSH -eq 0 ]] && { docker push "${API_IMAGE}:${IMAGE_TAG}" && docker push "${API_IMAGE}:latest" || die "API push failed."; }
   elif [[ $WEB_ONLY -eq 1 ]]; then
     step "1/4" "Building Web image only..."
     docker build \
@@ -110,7 +129,8 @@ if [[ $SKIP_BUILD -eq 0 ]]; then
       --build-arg "VITE_API_URL=${API_URL}" \
       --build-arg "VITE_BASE=${BASE}" \
       -f Dockerfile.web .. || die "Web build failed."
-    [[ $NO_PUSH -eq 0 ]] && { docker push "${WEB_IMAGE}:${IMAGE_TAG}" || die "Web push failed."; }
+    docker tag "${WEB_IMAGE}:${IMAGE_TAG}" "${WEB_IMAGE}:latest"
+    [[ $NO_PUSH -eq 0 ]] && { docker push "${WEB_IMAGE}:${IMAGE_TAG}" && docker push "${WEB_IMAGE}:latest" || die "Web push failed."; }
   else
     step "1/4" "Building and pushing all images..."
     KEYCLOAK_URL="$KEYCLOAK_URL" API_URL="$API_URL" BASE="$BASE" \
@@ -145,14 +165,14 @@ else
 fi
 
 # ---- 3: pull & restart on the server -----------------------------------------------------------------
-step "3/4" "Pulling and restarting on ${SSH_HOST}:${REMOTE_DIR}..."
-if [[ $API_ONLY -eq 1 ]]; then
-  remote "cd ${REMOTE_DIR} && docker compose pull api && docker compose up -d"
-elif [[ $WEB_ONLY -eq 1 ]]; then
-  remote "cd ${REMOTE_DIR} && docker compose pull web && docker compose up -d"
-else
-  remote "cd ${REMOTE_DIR} && docker compose pull api web && docker compose up -d"
-fi
+# The server's compose file reads ${IMAGE_TAG:-latest}; only the services being deployed are
+# recreated, so --api-only doesn't look for a web image with the new tag
+step "3/4" "Pulling and restarting ${IMAGE_TAG} on ${SSH_HOST}:${REMOTE_DIR}..."
+if [[ $API_ONLY -eq 1 ]]; then services="api"
+elif [[ $WEB_ONLY -eq 1 ]]; then services="web"
+else services="api web"; fi
+remote "cd ${REMOTE_DIR} && IMAGE_TAG=${IMAGE_TAG} docker compose pull ${services} && IMAGE_TAG=${IMAGE_TAG} docker compose up -d ${services}"
+remote "echo \"\$(date -u +%Y-%m-%dT%H:%M:%SZ) ${IMAGE_TAG} ${services}\" >> ${REMOTE_DIR}/DEPLOYED-TAGS"
 # Recreated containers get new internal IPs; the shared proxy keeps the old ones
 # until it reloads, which shows up as 502s (see infra hosts/ittudes/DEPLOY.md).
 remote "docker exec ninvoices-nginx-prod nginx -s reload"
@@ -175,6 +195,6 @@ printf '\n%sHealth check:%s\n' "$C_Y" "$C_0"
                                             || printf '%s  API auth   HTTP %s  CHECK%s\n' "$C_R" "$api" "$C_0"
 
 printf '\n%s================================================================%s\n' "$C_C" "$C_0"
-ok   "   Deployment complete."
+ok   "   Deployment complete: ${IMAGE_TAG}"
 printf '%s   https://it-tudes.tech%s%s\n' "$C_C" "$BASE" "$C_0"
 printf '%s================================================================%s\n\n' "$C_C" "$C_0"
