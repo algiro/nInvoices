@@ -33,6 +33,7 @@
 # exact tag. Each deploy is appended to $REMOTE_DIR/DEPLOYED-TAGS on the server. To roll
 # back, redeploy an earlier tag without building:
 #   IMAGE_TAG=4655aed ./deploy.sh --skip-build
+# --skip-build without IMAGE_TAG redeploys the tag the server is already running.
 #
 # Config (override via environment):
 #   SSH_HOST=he-it-tudes  REMOTE_DIR=~/docker
@@ -60,7 +61,7 @@ commit_tag() {
     echo "$sha"
   fi
 }
-IMAGE_TAG="${IMAGE_TAG:-$(commit_tag)}"
+IMAGE_TAG="${IMAGE_TAG:-}"   # resolved once the options are known, see below
 
 KEYCLOAK_URL="${KEYCLOAK_URL:-https://it-tudes.tech}"
 API_URL="${API_URL:-/nInvoices}"
@@ -109,6 +110,19 @@ ssh -o BatchMode=yes -o ConnectTimeout=8 "$SSH_HOST" true 2>/dev/null || die \
   - add it to ~/.ssh/config, or
   - run with the real host:  SSH_HOST=user@host ./deploy.sh $*
   (deploy.ps1 uses WSL's ssh config; 'wsl -- ssh -G $SSH_HOST' shows its hostname/user/key)"
+
+# Without a build there is no new image: redeploy the tag the server already runs (last line of
+# DEPLOYED-TAGS). A commit tag computed now could name an image that was never built, e.g. a new
+# "-dirty-" timestamp.
+if [[ -z "$IMAGE_TAG" ]]; then
+  if [[ $SKIP_BUILD -eq 1 ]]; then
+    IMAGE_TAG=$(ssh "$SSH_HOST" "tail -n 1 ${REMOTE_DIR}/DEPLOYED-TAGS 2>/dev/null" | awk '{print $2}')
+    IMAGE_TAG="${IMAGE_TAG:-latest}"
+  else
+    IMAGE_TAG=$(commit_tag)
+  fi
+fi
+info "Image tag: ${IMAGE_TAG}"
 
 # ---- 1: build & push -----------------------------------------------------------------
 if [[ $SKIP_BUILD -eq 0 ]]; then
