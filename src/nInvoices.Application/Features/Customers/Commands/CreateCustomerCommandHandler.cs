@@ -1,5 +1,6 @@
 using MediatR;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
@@ -30,23 +31,11 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
             dto.Address.State);
 
         var customer = new Customer(dto.Name, dto.FiscalId, address, dto.Locale);
+        CustomerContact.Apply(customer, dto.Email, dto.CcEmails);
 
         await _repository.AddAsync(customer, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new CustomerDto(
-            customer.Id,
-            customer.Name,
-            customer.FiscalId,
-            customer.Locale,
-            new AddressDto(
-                customer.Address.Street,
-                customer.Address.HouseNumber,
-                customer.Address.City,
-                customer.Address.ZipCode,
-                customer.Address.Country,
-                customer.Address.State),
-            customer.CreatedAt,
-            customer.UpdatedAt ?? customer.CreatedAt);
+        return CustomerMapper.ToDto(customer);
     }
 }

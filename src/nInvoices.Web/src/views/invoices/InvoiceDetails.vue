@@ -33,6 +33,7 @@
           >
             Monthly report
           </BaseButton>
+          <BaseButton v-if="canEmail" icon="send" @click="emailOpen = true">Email</BaseButton>
           <BaseButton
             v-if="actions.primary"
             variant="primary"
@@ -95,11 +96,35 @@
             </dl>
           </BasePanel>
 
+          <BasePanel v-if="canEmail || emails.length" title="Emails" description="Drafts created in your Gmail for this invoice.">
+            <ul v-if="emails.length" class="emails">
+              <li v-for="email in emails" :key="email.id">
+                <div class="email-line">
+                  <span class="email-subject">{{ email.subject }}</span>
+                  <a :href="email.gmailUrl" target="_blank" rel="noopener" class="email-open">Open in Gmail</a>
+                </div>
+                <span class="muted">To {{ email.to }} · {{ formatDate(email.createdAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }}</span>
+              </li>
+            </ul>
+            <p v-else class="muted">
+              None yet. <button type="button" class="link-button" @click="emailOpen = true">Create the email</button>
+              and it opens as a draft in Gmail, ready to send.
+            </p>
+          </BasePanel>
+
           <BasePanel v-if="invoice.notes" title="Notes">
             <p class="notes">{{ invoice.notes }}</p>
           </BasePanel>
         </div>
       </div>
+
+      <InvoiceEmailDialog
+        :open="emailOpen"
+        :invoice="invoice"
+        @close="emailOpen = false"
+        @created="email => emails.unshift(email)"
+        @mark-sent="markSentAfterEmail"
+      />
     </template>
   </div>
 </template>
@@ -109,7 +134,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useInvoicesStore } from '@/stores/invoices'
 import { useCustomersStore } from '@/stores/customers'
-import type { MoneyDto } from '@/types'
+import type { MoneyDto, InvoiceEmailDto } from '@/types'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import BasePanel from '@/components/ui/BasePanel.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -119,6 +144,8 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import ActionMenu, { type ActionMenuItem } from '@/components/ui/ActionMenu.vue'
 import TemplatePreviewPane from '@/components/templates/editor/TemplatePreviewPane.vue'
+import InvoiceEmailDialog from '@/components/invoices/InvoiceEmailDialog.vue'
+import { invoicesApi } from '@/api/invoices'
 import { useInvoiceActions, actionsFor, isMonthly, type InvoiceActionId } from '@/composables/useInvoiceActions'
 import { setPageTitle } from '@/composables/usePageTitle'
 import { formatMoney, formatDate, formatPeriod, invoiceStatus, invoiceTypeLabel } from '@/utils/format'
@@ -139,6 +166,24 @@ const error = ref<string | null>(null)
 
 const status = computed(() => invoiceStatus(invoice.value?.status ?? 'Draft'))
 const actions = computed(() => (invoice.value ? actionsFor(invoice.value) : { primary: null, more: [] }))
+
+// Only a finalized invoice has its final PDF; a cancelled one must not go out
+const canEmail = computed(() => ['Finalized', 'Sent', 'Paid'].includes(status.value.name))
+const emailOpen = ref(false)
+const emails = ref<InvoiceEmailDto[]>([])
+
+async function loadEmails() {
+  try {
+    emails.value = await invoicesApi.getEmails(invoiceId.value)
+  } catch {
+    emails.value = [] // the history is secondary; the rest of the page still works
+  }
+}
+
+async function markSentAfterEmail() {
+  emailOpen.value = false
+  await runAndFollow('markSent')
+}
 
 const lifecycle = ['Draft', 'Finalized', 'Sent', 'Paid']
 const stepIndex = computed(() => lifecycle.indexOf(status.value.name))
@@ -186,12 +231,69 @@ async function loadData() {
   }
 }
 
-onMounted(loadData)
-watch(invoiceId, loadData)
+onMounted(() => {
+  loadData()
+  loadEmails()
+})
+watch(invoiceId, () => {
+  loadData()
+  loadEmails()
+})
 watch(() => invoice.value?.invoiceNumber, number => setPageTitle(number ? `Invoice ${number}` : null), { immediate: true })
 </script>
 
 <style scoped>
+.emails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.emails li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.email-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.email-subject {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.email-open {
+  flex: none;
+  font-size: var(--text-sm);
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 .meta {
   display: inline-flex;
   flex-wrap: wrap;

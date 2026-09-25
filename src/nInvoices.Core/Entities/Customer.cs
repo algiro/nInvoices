@@ -12,12 +12,19 @@ public sealed class Customer : EntityBase
     public string Locale { get; set; } = "en-US";
     public Address Address { get; set; } = null!;
 
+    /// <summary>Default recipient of invoice emails.</summary>
+    public string? Email { get; set; }
+
+    /// <summary>Comma-separated addresses copied on invoice emails.</summary>
+    public string? CcEmails { get; set; }
+
     // Navigation properties
     public ICollection<Rate> Rates { get; set; } = [];
     public ICollection<Tax> Taxes { get; set; } = [];
     public ICollection<InvoiceTemplate> Templates { get; set; } = [];
     public ICollection<Invoice> Invoices { get; set; } = [];
     public ICollection<Project> Projects { get; set; } = [];
+    public ICollection<EmailTemplate> EmailTemplates { get; set; } = [];
 
     public Customer()
     {
@@ -74,5 +81,11 @@ public sealed class Customer : EntityBase
         Address = address;
         Locale = locale;
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetContact(string? email, string? ccEmails)
+    {
+        Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim();
+        CcEmails = string.IsNullOrWhiteSpace(ccEmails) ? null : ccEmails.Trim();
     }
 }

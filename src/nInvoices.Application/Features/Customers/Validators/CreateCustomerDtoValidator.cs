@@ -1,5 +1,6 @@
 using FluentValidation;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Services.Email;
 
 namespace nInvoices.Application.Features.Customers.Validators;
 
@@ -18,5 +19,15 @@ public sealed class CreateCustomerDtoValidator : AbstractValidator<CreateCustome
         RuleFor(x => x.Address)
             .NotNull().WithMessage("Address is required")
             .SetValidator(new AddressDtoValidator());
+
+        RuleFor(x => x.Email)
+            .Must(EmailAddresses.IsValid!).WithMessage("Email must be a valid address, e.g. accounts@example.com")
+            .MaximumLength(320)
+            .When(x => !string.IsNullOrWhiteSpace(x.Email));
+
+        RuleFor(x => x.CcEmails)
+            .Must(EmailAddresses.AreAllValid).WithMessage("CC must be valid addresses separated by commas")
+            .MaximumLength(1000)
+            .When(x => !string.IsNullOrWhiteSpace(x.CcEmails));
     }
 }

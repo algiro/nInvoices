@@ -83,6 +83,10 @@ export interface CustomerDto {
   address: AddressDto;
   createdAt: string;
   updatedAt?: string;
+  /** Default recipient of invoice emails */
+  email?: string | null;
+  /** Comma-separated addresses copied on invoice emails */
+  ccEmails?: string | null;
 }
 
 export interface CreateCustomerDto {
@@ -90,6 +94,8 @@ export interface CreateCustomerDto {
   fiscalId: string;
   address: AddressDto;
   locale: string;
+  email?: string | null;
+  ccEmails?: string | null;
 }
 
 export interface UpdateCustomerDto {
@@ -97,6 +103,8 @@ export interface UpdateCustomerDto {
   fiscalId: string;
   address: AddressDto;
   locale: string;
+  email?: string | null;
+  ccEmails?: string | null;
 }
 
 export interface RateDto {
@@ -312,4 +320,94 @@ export interface PaginatedResponse<T> {
   totalCount: number;
   pageNumber: number;
   pageSize: number;
+}
+
+// ---------- Invoice emails (Gmail drafts) ----------
+
+export interface EmailTemplateDto {
+  id: number;
+  customerId: number;
+  name: string;
+  subject: string;
+  body: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateEmailTemplateDto {
+  customerId: number;
+  name: string;
+  subject: string;
+  body: string;
+}
+
+export interface UpdateEmailTemplateDto {
+  name: string;
+  subject: string;
+  body: string;
+}
+
+export interface EmailTemplatePreviewDto {
+  subject: string | null;
+  html: string | null;
+  errors: string[];
+}
+
+export interface GmailStatusDto {
+  /** False when the server has no Google OAuth client configured */
+  configured: boolean;
+  connected: boolean;
+  emailAddress?: string | null;
+  connectedAt?: string | null;
+  lastUsedAt?: string | null;
+}
+
+export interface EmailTemplateOptionDto {
+  /** null for the built-in default */
+  id: number | null;
+  name: string;
+  isActive: boolean;
+}
+
+export interface EmailAttachmentOptionDto {
+  key: 'invoice' | 'monthlyReport' | string;
+  fileName: string;
+  includedByDefault: boolean;
+}
+
+export interface InvoiceEmailComposeDto {
+  invoiceId: number;
+  templateId: number | null;
+  templates: EmailTemplateOptionDto[];
+  /** Connected Gmail address, or null when Gmail is not connected */
+  from: string | null;
+  to: string;
+  cc: string | null;
+  subject: string;
+  body: string;
+  attachments: EmailAttachmentOptionDto[];
+  errors: string[];
+}
+
+export interface CreateInvoiceEmailDraftDto {
+  to: string;
+  cc?: string | null;
+  subject: string;
+  body: string;
+  includeMonthlyReport: boolean;
+}
+
+export interface InvoiceEmailDto {
+  id: number;
+  invoiceId: number;
+  from: string;
+  to: string;
+  cc?: string | null;
+  subject: string;
+  attachments: string[];
+  gmailDraftId: string;
+  /** Opens the draft in Gmail */
+  gmailUrl: string;
+  createdAt: string;
 }

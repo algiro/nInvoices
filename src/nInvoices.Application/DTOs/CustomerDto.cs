@@ -10,4 +10,6 @@ public sealed record CustomerDto(
     string Locale,
     AddressDto Address,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    string? Email = null,
+    string? CcEmails = null);

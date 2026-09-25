@@ -13,7 +13,10 @@ public sealed record CustomerExportDto(
     IReadOnlyList<RateExportDto> Rates,
     IReadOnlyList<TaxExportDto> Taxes,
     IReadOnlyList<InvoiceTemplateExportDto> InvoiceTemplates,
-    IReadOnlyList<MonthlyReportTemplateExportDto> MonthlyReportTemplates);
+    IReadOnlyList<MonthlyReportTemplateExportDto> MonthlyReportTemplates,
+    string? Email = null,
+    string? CcEmails = null,
+    IReadOnlyList<EmailTemplateExportDto>? EmailTemplates = null);
 
 public sealed record RateExportDto(
     RateType Type,
@@ -35,6 +38,13 @@ public sealed record InvoiceTemplateExportDto(
     InvoiceType InvoiceType,
     string Name,
     string Content,
+    bool IsActive,
+    DateTime CreatedAt);
+
+public sealed record EmailTemplateExportDto(
+    string Name,
+    string Subject,
+    string Body,
     bool IsActive,
     DateTime CreatedAt);
 

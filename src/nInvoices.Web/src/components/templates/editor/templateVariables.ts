@@ -1,10 +1,10 @@
 /**
  * What a template author can use, per template kind. Mirrors the backend models
- * (InvoiceTemplateModel, MonthlyReportTemplateModel) and the functions registered in
+ * (InvoiceTemplateModel, MonthlyReportTemplateModel, EmailTemplateModel) and the functions registered in
  * ScribanTemplateRenderer; property names are camelCase as the renderer exposes them.
  */
 
-export type TemplateKind = 'invoice' | 'monthly-report'
+export type TemplateKind = 'invoice' | 'monthly-report' | 'email'
 
 export interface TemplateVariable {
   /** Text inserted into the template. `$0` marks where the cursor goes afterwards. */
@@ -153,6 +153,45 @@ export const monthlyReportVariables: VariableGroup[] = [
   functionsGroup
 ]
 
+export const emailVariables: VariableGroup[] = [
+  {
+    title: 'Invoice',
+    items: [
+      v('invoiceNumber', 'Invoice number, e.g. 26-09-004'),
+      v('invoiceType', 'Monthly, OneTime, …'),
+      v('date', 'Issue date (use FormatDate)'),
+      v('dueDate', 'Due date, may be empty'),
+      v('currency', 'Currency code, e.g. EUR'),
+      v('subtotal', 'Total before taxes'),
+      v('totalTax', 'Sum of all taxes'),
+      v('totalExpenses', 'Sum of expenses'),
+      v('total', 'Amount due')
+    ]
+  },
+  {
+    title: 'Monthly period',
+    items: [
+      v('monthDescription', 'Month name in the customer’s language'),
+      v('monthNumber', 'Month number 1–12'),
+      v('year', 'Year, e.g. 2026'),
+      v('workedDays', 'Number of worked days'),
+      { insert: '[[ if monthDescription ]]\n  $0\n[[ end ]]', label: 'if monthDescription … end', description: 'Only for monthly invoices' }
+    ]
+  },
+  {
+    title: 'Customer & sender',
+    items: [
+      v('customer.name', 'Customer name'),
+      v('customer.email', 'Customer email address'),
+      v('customer.fiscalId', 'VAT number / fiscal ID'),
+      v('customer.address.city', 'City'),
+      v('locale', 'Customer locale, e.g. it-IT'),
+      v('senderEmail', 'Your connected Gmail address')
+    ]
+  },
+  functionsGroup
+]
+
 export function variablesFor(kind: TemplateKind): VariableGroup[] {
-  return kind === 'invoice' ? invoiceVariables : monthlyReportVariables
+  return kind === 'invoice' ? invoiceVariables : kind === 'email' ? emailVariables : monthlyReportVariables
 }

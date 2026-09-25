@@ -2,10 +2,13 @@
   <section class="template-list">
     <header class="list-header">
       <div>
-        <h3>{{ kind === 'invoice' ? 'Invoice templates' : 'Monthly report templates' }}</h3>
+        <h3>{{ kind === 'invoice' ? 'Invoice templates' : kind === 'email' ? 'Email templates' : 'Monthly report templates' }}</h3>
         <p class="help">
           <template v-if="kind === 'invoice'">
             The active template for each invoice type is used when an invoice is generated.
+          </template>
+          <template v-else-if="kind === 'email'">
+            Subject and text of the email created in Gmail from an invoice. The active one is preselected; without one, a built-in text is used.
           </template>
           <template v-else>
             The active template is used for the monthly timesheet PDF unless you pick another when generating.
@@ -100,6 +103,7 @@ import LoadingState from '@/components/ui/LoadingState.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { templatesApi } from '@/api/templates'
 import { monthlyReportTemplatesApi } from '@/api/monthlyReportTemplates'
+import { emailTemplatesApi } from '@/api/emailTemplates'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import type { TemplateKind } from './editor/templateVariables'
@@ -108,7 +112,7 @@ import { formatDate } from '@/utils/format'
 interface TemplateRow {
   id: number
   name: string
-  invoiceType: unknown
+  invoiceType?: unknown
   isActive: boolean
   createdAt: string
   updatedAt?: string
@@ -128,8 +132,12 @@ const loadError = ref<string | null>(null)
 const busyId = ref<number | null>(null)
 
 function editorLink(id: number | 'new') {
-  const segment = props.kind === 'invoice' ? 'invoice' : 'monthly-report'
-  return `/customers/${props.customerId}/templates/${segment}/${id}`
+  return `/customers/${props.customerId}/templates/${props.kind}/${id}`
+}
+
+/** The operations every template kind shares. */
+function apiFor(kind: TemplateKind) {
+  return kind === 'invoice' ? templatesApi : kind === 'email' ? emailTemplatesApi : monthlyReportTemplatesApi
 }
 
 function typeLabel(type: unknown): string {
@@ -144,7 +152,9 @@ async function load() {
   try {
     const list: TemplateRow[] = props.kind === 'invoice'
       ? await templatesApi.getByCustomerId(props.customerId)
-      : await monthlyReportTemplatesApi.getByCustomer(props.customerId)
+      : props.kind === 'email'
+        ? await emailTemplatesApi.getByCustomer(props.customerId)
+        : await monthlyReportTemplatesApi.getByCustomer(props.customerId)
     rows.value = [...list].sort((a, b) => Number(b.isActive) - Number(a.isActive) || a.name.localeCompare(b.name))
   } catch (error) {
     loadError.value = 'The templates could not be loaded.'
@@ -157,7 +167,7 @@ async function load() {
 async function setActive(row: TemplateRow, active: boolean) {
   busyId.value = row.id
   try {
-    const api = props.kind === 'invoice' ? templatesApi : monthlyReportTemplatesApi
+    const api = apiFor(props.kind)
     await (active ? api.activate(row.id) : api.deactivate(row.id))
     toast.success(active ? 'Template activated' : 'Template deactivated')
     await load() // activating one can deactivate another of the same type
@@ -172,14 +182,15 @@ async function remove(row: TemplateRow) {
   const label = row.name || 'this template'
   if (!(await confirm({
     title: 'Delete template?',
-    message: `“${label}” will be permanently deleted. Invoices already generated keep their PDFs.`,
+    message: props.kind === 'email'
+      ? `“${label}” will be permanently deleted. Drafts already created in Gmail are not affected.`
+      : `“${label}” will be permanently deleted. Invoices already generated keep their PDFs.`,
     confirmLabel: 'Delete',
     tone: 'danger'
   }))) return
 
   try {
-    const api = props.kind === 'invoice' ? templatesApi : monthlyReportTemplatesApi
-    await api.delete(row.id)
+    await apiFor(props.kind).delete(row.id)
     toast.success('Template deleted')
     await load()
   } catch (error) {

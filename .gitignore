@@ -89,3 +89,9 @@ docker/volumes/
 screenshots/
 
 Docs/Issues/
+
+# Google OAuth client downloads (never commit)
+client_secret_*.json
+
+# ASP.NET Data Protection keys (encrypt stored Gmail tokens)
+src/nInvoices.Api/keys/

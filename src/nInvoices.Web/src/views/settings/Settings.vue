@@ -1,6 +1,6 @@
 <template>
   <div class="settings-page">
-    <PageHeader title="Settings" subtitle="Appearance, invoice numbering, images for templates, and backups." />
+    <PageHeader title="Settings" subtitle="Appearance, invoice numbering, images for templates, Gmail, and backups." />
 
     <div class="sections">
       <BasePanel title="Appearance" description="Saved in this browser. “System” follows your operating system and switches with it.">
@@ -127,6 +127,8 @@
         </ul>
       </BasePanel>
 
+      <GmailConnectionPanel />
+
       <BasePanel title="Backup and transfer" description="Export customers or invoices as JSON, for backups or to move them to another installation.">
         <div class="transfer">
           <section>
@@ -182,6 +184,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import ThemeSwitch from '@/components/ui/ThemeSwitch.vue'
+import GmailConnectionPanel from '@/components/settings/GmailConnectionPanel.vue'
 
 const toast = useToast()
 const { confirm } = useConfirm()

@@ -3,7 +3,7 @@
     <header class="editor-header">
       <router-link :to="backLink" class="back">
         <AppIcon name="chevronRight" class="back-icon" />
-        {{ customerName || 'Customer' }} · {{ kind === 'invoice' ? 'Invoice templates' : 'Monthly reports' }}
+        {{ customerName || 'Customer' }} · {{ kindLabel }}
       </router-link>
 
       <div class="header-row">
@@ -63,6 +63,24 @@
       </div>
     </header>
 
+    <div v-if="kind === 'email' && !loadingTemplate" class="subject-row">
+      <label for="template-subject">Subject</label>
+      <div class="subject-field">
+        <input
+          id="template-subject"
+          v-model="subject"
+          class="subject-input"
+          type="text"
+          maxlength="500"
+          placeholder="Invoice [[ invoiceNumber ]] - [[ customer.name ]]"
+          spellcheck="false"
+        />
+        <span class="subject-preview" :title="previewSubject ?? ''">
+          <template v-if="previewSubject">Preview: {{ previewSubject }}</template>
+        </span>
+      </div>
+    </div>
+
     <div v-if="loadingTemplate" class="loading">Loading template…</div>
 
     <div v-else class="workspace" :class="[`layout-${layout}`, { 'with-variables': showVariables }]">
@@ -117,9 +135,13 @@ import TemplateCodeEditor, { type EditorProblem } from '@/components/templates/e
 import TemplatePreviewPane from '@/components/templates/editor/TemplatePreviewPane.vue'
 import TemplateVariablesPanel from '@/components/templates/editor/TemplateVariablesPanel.vue'
 import { variablesFor, type TemplateKind } from '@/components/templates/editor/templateVariables'
-import { invoiceSample, monthlyReportSample, monthlyReportSampleName } from '@/components/templates/editor/templateSamples'
+import {
+  invoiceSample, monthlyReportSample, monthlyReportSampleName,
+  emailSampleName, emailSampleSubject, emailSampleBody
+} from '@/components/templates/editor/templateSamples'
 import { templatesApi } from '@/api/templates'
 import { monthlyReportTemplatesApi } from '@/api/monthlyReportTemplates'
+import { emailTemplatesApi } from '@/api/emailTemplates'
 import { useCustomersStore } from '@/stores/customers'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
@@ -147,15 +169,19 @@ const variableGroups = computed(() => variablesFor(kind.value))
 const customerName = ref('')
 const name = ref('')
 const content = ref('')
+const subject = ref('') // email templates only
 const invoiceType = ref<InvoiceTypeName>('Monthly')
 const isActive = ref(false)
 const loadingTemplate = ref(false)
 const saving = ref(false)
 const codeEditor = ref<InstanceType<typeof TemplateCodeEditor> | null>(null)
 
+const kindLabel = computed(() =>
+  kind.value === 'invoice' ? 'Invoice templates' : kind.value === 'email' ? 'Email templates' : 'Monthly reports')
+
 const backLink = computed(() => ({
   path: `/customers/${customerId.value}`,
-  query: { tab: kind.value === 'invoice' ? 'templates' : 'monthly-reports' }
+  query: { tab: kind.value === 'invoice' ? 'templates' : kind.value === 'email' ? 'emails' : 'monthly-reports' }
 }))
 
 // ---------- layout preferences (per browser) ----------
@@ -184,7 +210,7 @@ watch(showVariables, value => { try { localStorage.setItem(VARIABLES_KEY, String
 // ---------- dirty tracking ----------
 
 const saved = ref('')
-const snapshot = () => JSON.stringify([name.value, content.value, invoiceType.value])
+const snapshot = () => JSON.stringify([name.value, content.value, invoiceType.value, subject.value])
 const dirty = computed(() => !loadingTemplate.value && snapshot() !== saved.value)
 
 // ---------- loading ----------
@@ -204,6 +230,12 @@ async function load() {
         content.value = t.content
         invoiceType.value = (String(t.invoiceType) as InvoiceTypeName) ?? 'Monthly'
         isActive.value = t.isActive
+      } else if (kind.value === 'email') {
+        const t = await emailTemplatesApi.getById(templateId.value)
+        name.value = t.name
+        subject.value = t.subject
+        content.value = t.body
+        isActive.value = t.isActive
       } else {
         const t = await monthlyReportTemplatesApi.getById(templateId.value)
         name.value = t.name
@@ -212,10 +244,9 @@ async function load() {
       }
     } else {
       // A new template starts from the sample, so the preview shows something right away
-      name.value = kind.value === 'invoice' ? '' : monthlyReportSampleName
-      content.value = kind.value === 'invoice' ? invoiceSample : monthlyReportSample
+      applySample()
     }
-    saved.value = isNew.value ? JSON.stringify(['', '', invoiceType.value]) : snapshot()
+    saved.value = isNew.value ? JSON.stringify(['', '', invoiceType.value, '']) : snapshot()
   } catch (error) {
     toast.failure('Could not load the template', error)
   } finally {
@@ -230,6 +261,7 @@ interface ParsedError extends EditorProblem {
 }
 
 const previewHtml = ref<string | null>(null)
+const previewSubject = ref<string | null>(null)
 const previewLoading = ref(false)
 const previewStale = ref(false)
 const errors = ref<ParsedError[]>([])
@@ -246,6 +278,12 @@ function parseError(raw: string): ParsedError {
   // Runtime: "<input>(3,12) : error : message"
   m = raw.match(/^<input>\((\d+),(\d+)\)\s*:\s*error\s*:\s*([\s\S]*)$/)
   if (m) return { line: +m[1], column: +m[2], message: m[3], syntax: false }
+  // Email templates: "Body: …" points into the editor, "Subject: …" into the subject field
+  m = raw.match(/^(Subject|Body):\s*([\s\S]*)$/)
+  if (m) {
+    const inner = parseError(m[2])
+    return m[1] === 'Body' ? inner : { ...inner, line: 0, column: 0, message: `Subject: ${inner.message}` }
+  }
   return { line: 0, column: 0, message: raw, syntax: false }
 }
 
@@ -259,9 +297,11 @@ async function refreshPreview() {
   }
   previewLoading.value = true
   try {
-    const api = kind.value === 'invoice' ? templatesApi : monthlyReportTemplatesApi
-    const result = await api.preview(content.value, customerId.value)
+    const result = kind.value === 'email'
+      ? await emailTemplatesApi.preview(subject.value, content.value, customerId.value)
+      : await (kind.value === 'invoice' ? templatesApi : monthlyReportTemplatesApi).preview(content.value, customerId.value)
     if (seq !== previewSeq) return // a newer edit is already on its way
+    previewSubject.value = 'subject' in result ? (result.subject as string | null) : null
     errors.value = result.errors.map(parseError)
     if (result.html !== null) {
       previewHtml.value = result.html
@@ -276,7 +316,7 @@ async function refreshPreview() {
   }
 }
 
-watch(content, () => {
+watch([content, subject], () => {
   if (loadingTemplate.value) return
   if (previewTimer) clearTimeout(previewTimer)
   previewTimer = setTimeout(refreshPreview, 500)
@@ -296,15 +336,38 @@ async function loadSample() {
     message: 'Loading the sample replaces everything currently in the editor.',
     confirmLabel: 'Replace'
   }))) return
-  content.value = kind.value === 'invoice' ? invoiceSample : monthlyReportSample
-  if (kind.value === 'monthly-report' && !name.value.trim()) name.value = monthlyReportSampleName
+  applySample(true)
+}
+
+/** Fills the editor with this kind's sample; `keepName` leaves a name already typed. */
+function applySample(keepName = false) {
+  if (kind.value === 'email') {
+    subject.value = emailSampleSubject
+    content.value = emailSampleBody
+    if (!keepName || !name.value.trim()) name.value = emailSampleName
+  } else if (kind.value === 'invoice') {
+    content.value = invoiceSample
+    if (!keepName) name.value = ''
+  } else {
+    content.value = monthlyReportSample
+    if (!keepName || !name.value.trim()) name.value = monthlyReportSampleName
+  }
 }
 
 async function save() {
   if (saving.value || loadingTemplate.value) return
-  if (kind.value === 'monthly-report' && !name.value.trim()) {
-    toast.warning('Give the template a name', { message: 'Monthly report templates need a name so you can pick them when generating an invoice.' })
+  if (kind.value !== 'invoice' && !name.value.trim()) {
+    toast.warning('Give the template a name', {
+      message: kind.value === 'email'
+        ? 'Email templates need a name so you can pick them when creating an email.'
+        : 'Monthly report templates need a name so you can pick them when generating an invoice.'
+    })
     document.getElementById('template-name')?.focus()
+    return
+  }
+  if (kind.value === 'email' && !subject.value.trim()) {
+    toast.warning('The subject is empty')
+    document.getElementById('template-subject')?.focus()
     return
   }
   if (!content.value.trim()) {
@@ -342,6 +405,15 @@ async function save() {
           isActive: isActive.value // keep the current state; the API defaults to active
         })
       }
+    } else if (kind.value === 'email') {
+      const dto = { name: name.value.trim(), subject: subject.value, body: content.value }
+      if (isNew.value) {
+        const created = await emailTemplatesApi.create({ customerId: customerId.value, ...dto })
+        createdId = created.id
+        isActive.value = created.isActive
+      } else {
+        await emailTemplatesApi.update(templateId.value!, dto)
+      }
     } else if (isNew.value) {
       const created = await monthlyReportTemplatesApi.create({
         customerId: customerId.value,
@@ -357,8 +429,7 @@ async function save() {
     toast.success('Template saved')
 
     if (createdId !== null) {
-      const segment = kind.value === 'invoice' ? 'invoice' : 'monthly-report'
-      await router.replace(`/customers/${customerId.value}/templates/${segment}/${createdId}`)
+      await router.replace(`/customers/${customerId.value}/templates/${kind.value}/${createdId}`)
     }
   } catch (error) {
     toast.failure('Could not save the template', error)
@@ -413,6 +484,53 @@ watch(templateId, (next, previous) => {
 </script>
 
 <style scoped>
+.subject-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.subject-row label {
+  padding-top: 0.4rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.subject-field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.subject-input {
+  width: 100%;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.subject-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.subject-preview {
+  min-height: 1.1rem;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .template-editor {
   display: flex;
   flex-direction: column;

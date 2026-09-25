@@ -51,6 +51,24 @@
         </div>
       </BasePanel>
 
+      <BasePanel title="Invoice emails" description="Who receives the invoice when you create the email from the invoice page.">
+        <div class="grid">
+          <BaseField label="Email" for="customer-email" optional :error="errors.email">
+            <input
+              id="customer-email"
+              v-model="emailValue"
+              type="email"
+              class="control"
+              autocomplete="email"
+              placeholder="accounts@example.com"
+            />
+          </BaseField>
+          <BaseField label="CC" for="customer-cc" optional :error="errors.ccEmails" help="Several addresses separated by commas.">
+            <input id="customer-cc" v-model="ccValue" type="text" class="control" placeholder="manager@example.com" />
+          </BaseField>
+        </div>
+      </BasePanel>
+
       <div class="form-actions">
         <BaseButton :disabled="saving" @click="handleCancel">Cancel</BaseButton>
         <BaseButton type="submit" variant="primary" :loading="saving">
@@ -103,6 +121,18 @@ const form = reactive<CreateCustomerDto | UpdateCustomerDto>({
   }
 })
 
+// Empty email fields are sent as null; the inputs work with strings
+const emailValue = computed({
+  get: () => form.email ?? '',
+  set: (value: string) => { form.email = value.trim() ? value.trim() : null }
+})
+const ccValue = computed({
+  get: () => form.ccEmails ?? '',
+  set: (value: string) => { form.ccEmails = value.trim() ? value : null }
+})
+
+const EMAIL_PATTERN = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/
+
 // An empty state is sent as absent; the input works with strings
 const stateValue = computed({
   get: () => form.address.state ?? '',
@@ -135,6 +165,8 @@ async function loadCustomer(id: number) {
       form.fiscalId = customer.fiscalId
       form.locale = customer.locale ?? '' // keep an unset language unset until the user picks one
       form.address = { ...customer.address }
+      form.email = customer.email ?? null
+      form.ccEmails = customer.ccEmails ?? null
       loadedName.value = customer.name
       setPageTitle(`Edit ${customer.name}`)
     }
@@ -159,11 +191,15 @@ function validateForm(): boolean {
   for (const [key, value, message] of required) {
     if (!String(value ?? '').trim()) errors[key as string] = message
   }
+  if (form.email && !EMAIL_PATTERN.test(form.email)) errors.email = 'Enter an address like accounts@example.com.'
+  const badCc = (form.ccEmails ?? '').split(/[,;\s]+/).filter(Boolean).find(a => !EMAIL_PATTERN.test(a))
+  if (badCc) errors.ccEmails = `“${badCc}” is not a valid address.`
   const first = Object.keys(errors)[0]
   if (first) {
     const ids: Record<string, string> = {
       name: 'customer-name', fiscalId: 'customer-fiscal-id', street: 'customer-street', houseNumber: 'customer-house-number',
-      zipCode: 'customer-zip', city: 'customer-city', country: 'customer-country'
+      zipCode: 'customer-zip', city: 'customer-city', country: 'customer-country',
+      email: 'customer-email', ccEmails: 'customer-cc'
     }
     document.getElementById(ids[first])?.focus()
   }

@@ -7,3 +7,5 @@ export * from './taxes';
 export * from './templates';
 export * from './importExport';
 export * from './imageAssets';
+export * from './emailTemplates';
+export * from './gmail';

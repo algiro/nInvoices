@@ -6,6 +6,8 @@ using nInvoices.Infrastructure.Data;
 using nInvoices.Infrastructure.TaxHandlers;
 using nInvoices.Infrastructure.TemplateEngine;
 using nInvoices.Infrastructure.PdfExport;
+using nInvoices.Infrastructure.Gmail;
+using Microsoft.AspNetCore.DataProtection;
 using FluentValidation;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -64,6 +66,17 @@ builder.Services.AddTaxHandlers();
 // Add Template Engine
 builder.Services.AddTemplateEngine();
 builder.Services.AddPdfExport();
+
+// Data Protection encrypts the Gmail refresh tokens stored in the database. Keys must survive
+// restarts and redeploys (a Docker volume in production), otherwise stored tokens become unreadable.
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"]
+    ?? Path.Combine(builder.Environment.ContentRootPath, "keys");
+builder.Services.AddDataProtection()
+    .SetApplicationName("nInvoices")
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+
+// Gmail drafts for invoice emails (inactive until Gmail:ClientId/ClientSecret/RedirectUri are set)
+builder.Services.AddGmail(builder.Configuration);
 
 // Add Application Services
 builder.Services.AddApplicationServices();

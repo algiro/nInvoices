@@ -43,6 +43,7 @@ public sealed class ImportExportController : ControllerBase
             .Include(c => c.Rates)
             .Include(c => c.Taxes)
             .Include(c => c.Templates)
+            .Include(c => c.EmailTemplates)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
@@ -65,7 +66,10 @@ public sealed class ImportExportController : ControllerBase
                 t.ApplicationType, FindTaxIdByPk(c.Taxes, t.AppliedToTaxId), t.Order, t.IsActive, t.CreatedAt)).ToList(),
             c.Templates.Select(t => new InvoiceTemplateExportDto(t.InvoiceType, t.Name, t.Content, t.IsActive, t.CreatedAt)).ToList(),
             (templatesByCustomer.GetValueOrDefault(c.Id) ?? [])
-                .Select(mt => new MonthlyReportTemplateExportDto(mt.InvoiceType, mt.Name, mt.Content, mt.IsActive, mt.CreatedAt)).ToList()
+                .Select(mt => new MonthlyReportTemplateExportDto(mt.InvoiceType, mt.Name, mt.Content, mt.IsActive, mt.CreatedAt)).ToList(),
+            c.Email,
+            c.CcEmails,
+            c.EmailTemplates.Select(et => new EmailTemplateExportDto(et.Name, et.Subject, et.Body, et.IsActive, et.CreatedAt)).ToList()
         )).ToList();
 
         _logger.LogInformation("Exported {Count} customers", exported.Count);
@@ -173,6 +177,7 @@ public sealed class ImportExportController : ControllerBase
                     customerData.Address.State);
 
                 var customer = new Customer(customerData.Name, customerData.FiscalId, address);
+                customer.SetContact(customerData.Email, customerData.CcEmails);
                 await _context.Customers.AddAsync(customer, cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
 
@@ -214,6 +219,15 @@ public sealed class ImportExportController : ControllerBase
                     if (templateData.IsActive)
                         template.Activate();
                     await _context.MonthlyReportTemplates.AddAsync(template, cancellationToken);
+                }
+
+                // Import email templates (absent from exports made before they existed)
+                foreach (var templateData in customerData.EmailTemplates ?? [])
+                {
+                    var template = new EmailTemplate(customer.Id, templateData.Name, templateData.Subject, templateData.Body);
+                    if (templateData.IsActive)
+                        template.Activate();
+                    await _context.EmailTemplates.AddAsync(template, cancellationToken);
                 }
 
                 await _context.SaveChangesAsync(cancellationToken);

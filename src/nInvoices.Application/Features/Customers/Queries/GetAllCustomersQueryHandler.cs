@@ -1,5 +1,6 @@
 using MediatR;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 
@@ -18,19 +19,6 @@ public sealed class GetAllCustomersQueryHandler : IRequestHandler<GetAllCustomer
     {
         var customers = await _repository.GetAllAsync(cancellationToken);
 
-        return customers.Select(customer => new CustomerDto(
-            customer.Id,
-            customer.Name,
-            customer.FiscalId,
-            customer.Locale,
-            new AddressDto(
-                customer.Address.Street,
-                customer.Address.HouseNumber,
-                customer.Address.City,
-                customer.Address.ZipCode,
-                customer.Address.Country,
-                customer.Address.State),
-            customer.CreatedAt,
-            customer.UpdatedAt ?? customer.CreatedAt));
+        return customers.Select(CustomerMapper.ToDto);
     }
 }

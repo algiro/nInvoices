@@ -7,6 +7,9 @@ using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Invoices.Commands;
 using nInvoices.Application.Features.Invoices.Queries;
 using nInvoices.Application.Models;
+using nInvoices.Application.Features.InvoiceEmails.Commands;
+using nInvoices.Application.Features.InvoiceEmails.Queries;
+using nInvoices.Application.Services.Email;
 
 namespace nInvoices.Api.Controllers;
 
@@ -514,5 +517,61 @@ public sealed class InvoicesController : ControllerBase
         _logger.LogInformation("Invoice sequence set to {Value}", dto.Value);
         return Ok(new { currentValue = sequence.CurrentValue, message = "Sequence updated successfully" });
     }
-}
 
+    /// <summary>
+    /// Prepares the email for an invoice from the customer's active email template (or the one
+    /// given), for review. Rendering problems are returned in <c>errors</c>.
+    /// </summary>
+    [HttpGet("{id}/email")]
+    [ProducesResponseType(typeof(InvoiceEmailComposeDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<InvoiceEmailComposeDto>> ComposeEmail(
+        long id,
+        [FromQuery] long? templateId,
+        CancellationToken cancellationToken)
+    {
+        var compose = await _mediator.Send(new GetInvoiceEmailComposeQuery(id, templateId), cancellationToken);
+        return compose is null ? NotFound() : Ok(compose);
+    }
+
+    /// <summary>
+    /// Creates a draft with the reviewed email and the invoice documents in the user's Gmail.
+    /// The user reviews and sends it from Gmail; the invoice status does not change.
+    /// </summary>
+    [HttpPost("{id}/email/draft")]
+    [ProducesResponseType(typeof(InvoiceEmailDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<InvoiceEmailDto>> CreateEmailDraft(
+        long id,
+        [FromBody] CreateInvoiceEmailDraftDto dto,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var email = await _mediator.Send(new CreateInvoiceEmailDraftCommand(id, dto), cancellationToken);
+            return StatusCode(StatusCodes.Status201Created, email);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvoiceEmailException ex)
+        {
+            _logger.LogWarning(ex, "Gmail draft for invoice {InvoiceId} not created: {Code}", id, ex.Code);
+            var body = new { error = ex.Message, code = ex.Code };
+            return ex.Code is InvoiceEmailException.GmailNotConfigured
+                or InvoiceEmailException.GmailNotConnected
+                or InvoiceEmailException.GmailReconnectRequired
+                ? Conflict(body)
+                : BadRequest(body);
+        }
+    }
+
+    /// <summary>The Gmail drafts created for an invoice, newest first.</summary>
+    [HttpGet("{id}/emails")]
+    [ProducesResponseType(typeof(IReadOnlyList<InvoiceEmailDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<InvoiceEmailDto>>> GetEmails(long id, CancellationToken cancellationToken) =>
+        Ok(await _mediator.Send(new GetInvoiceEmailsQuery(id), cancellationToken));
+}

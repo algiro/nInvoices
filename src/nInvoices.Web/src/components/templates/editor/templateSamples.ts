@@ -156,3 +156,12 @@ export const monthlyReportSample = `<!DOCTYPE html>
 </html>`
 
 export const monthlyReportSampleName = 'Standard Monthly Report (Italian)'
+
+// Mirrors DefaultEmailTemplate on the server, which is used when a customer has no email template
+export const emailSampleName = 'Invoice email'
+export const emailSampleSubject = 'Invoice [[ invoiceNumber ]] - [[ customer.name ]]'
+export const emailSampleBody = `<p>Dear [[ customer.name ]],</p>
+<p>please find attached invoice <strong>[[ invoiceNumber ]]</strong> dated [[ FormatDate date "dd/MM/yyyy" ]][[ if monthDescription ]] for [[ monthDescription ]] [[ year ]][[ end ]], for a total of <strong>[[ FormatCurrency total currency ]]</strong>.</p>
+[[ if dueDate ]]<p>Payment is due by [[ FormatDate dueDate "dd/MM/yyyy" ]].</p>[[ end ]]
+<p>Kind regards</p>
+`

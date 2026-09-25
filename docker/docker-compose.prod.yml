@@ -68,8 +68,16 @@ services:
       - Keycloak__Audience=${KEYCLOAK_CLIENT_ID}
       - Keycloak__ValidIssuer=https://${DOMAIN}/auth/realms/${KEYCLOAK_REALM}
       - Cors__Origins=https://${DOMAIN}
+      # Gmail drafts for invoice emails (optional; the feature stays off while GMAIL_CLIENT_ID is empty)
+      - Gmail__ClientId=${GMAIL_CLIENT_ID:-}
+      - Gmail__ClientSecret=${GMAIL_CLIENT_SECRET:-}
+      - Gmail__RedirectUri=${GMAIL_REDIRECT_URI:-}
+      - Gmail__PostConnectRedirect=${GMAIL_POST_CONNECT_REDIRECT:-/settings}
+      # Encryption keys for the stored Gmail token; must persist across redeploys
+      - DataProtection__KeysPath=/app/keys
     volumes:
       - ./volumes/logs:/app/logs
+      - ./volumes/dataprotection:/app/keys
     depends_on:
       postgres:
         condition: service_healthy

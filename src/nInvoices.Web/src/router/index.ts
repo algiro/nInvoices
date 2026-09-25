@@ -66,6 +66,12 @@ const router = createRouter({
           component: () => import('../views/templates/TemplateEditor.vue'),
         },
         {
+          path: 'customers/:id/templates/email/:templateId',
+          name: 'email-template-editor',
+          meta: { title: 'Email template', section: 'customers', parent: { label: 'Customers', to: '/customers' }, kind: 'email' },
+          component: () => import('../views/templates/TemplateEditor.vue'),
+        },
+        {
           path: 'invoices',
           name: 'invoices',
           meta: { title: 'Invoices', section: 'invoices' },

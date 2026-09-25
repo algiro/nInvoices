@@ -67,11 +67,18 @@ public sealed class CustomersController : ControllerBase
         [FromBody] CreateCustomerDto dto,
         CancellationToken cancellationToken)
     {
-        var command = new CreateCustomerCommand(dto);
-        var customer = await _mediator.Send(command, cancellationToken);
+        try
+        {
+            var command = new CreateCustomerCommand(dto);
+            var customer = await _mediator.Send(command, cancellationToken);
 
-        _logger.LogInformation("Created customer with ID {CustomerId}", customer.Id);
-        return CreatedAtAction(nameof(GetById), new { id = customer.Id }, customer);
+            _logger.LogInformation("Created customer with ID {CustomerId}", customer.Id);
+            return CreatedAtAction(nameof(GetById), new { id = customer.Id }, customer);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>
@@ -98,6 +105,10 @@ public sealed class CustomersController : ControllerBase
         {
             _logger.LogWarning("Customer with ID {CustomerId} not found for update", id);
             return NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
         }
     }
 

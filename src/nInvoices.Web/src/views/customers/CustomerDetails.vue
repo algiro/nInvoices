@@ -41,6 +41,16 @@
                   <router-link v-else :to="`/customers/${customerId}/edit`" class="set-link">Choose a language</router-link>
                 </dd>
               </div>
+              <div>
+                <dt>Invoice emails to</dt>
+                <dd>
+                  <template v-if="customer.email">
+                    {{ customer.email }}
+                    <span v-if="customer.ccEmails" class="muted">(cc {{ customer.ccEmails }})</span>
+                  </template>
+                  <router-link v-else :to="`/customers/${customerId}/edit`" class="set-link">Add an email address</router-link>
+                </dd>
+              </div>
               <div><dt>Customer since</dt><dd>{{ formatDate(customer.createdAt) }}</dd></div>
             </dl>
           </BasePanel>
@@ -61,6 +71,7 @@
               <li><button type="button" @click="selectTab('projects')"><AppIcon name="folder" />Projects<span>for splitting time on invoices</span></button></li>
               <li><button type="button" @click="selectTab('templates')"><AppIcon name="template" />Invoice templates<span>layout of the invoice PDF</span></button></li>
               <li><button type="button" @click="selectTab('monthly-reports')"><AppIcon name="calendar" />Monthly reports<span>layout of the timesheet PDF</span></button></li>
+              <li><button type="button" @click="selectTab('emails')"><AppIcon name="send" />Email templates<span>subject and text of invoice emails</span></button></li>
             </ul>
           </BasePanel>
         </div>
@@ -71,6 +82,7 @@
           <TaxesList v-else-if="activeTab === 'taxes'" :customer-id="customerId" />
           <TemplateListPanel v-else-if="activeTab === 'templates'" kind="invoice" :customer-id="customerId" />
           <TemplateListPanel v-else-if="activeTab === 'monthly-reports'" kind="monthly-report" :customer-id="customerId" />
+          <TemplateListPanel v-else-if="activeTab === 'emails'" kind="email" :customer-id="customerId" />
           <CustomerInvoices v-else-if="activeTab === 'invoices'" :customer-id="customerId" />
         </BasePanel>
       </div>
@@ -121,6 +133,7 @@ const tabs = [
   { id: 'projects', label: 'Projects' },
   { id: 'templates', label: 'Invoice templates' },
   { id: 'monthly-reports', label: 'Monthly reports' },
+  { id: 'emails', label: 'Email templates' },
   { id: 'invoices', label: 'Invoices' }
 ]
 

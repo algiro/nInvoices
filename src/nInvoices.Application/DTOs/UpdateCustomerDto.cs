@@ -7,4 +7,6 @@ public sealed record UpdateCustomerDto(
     string Name,
     string FiscalId,
     AddressDto Address,
-    string Locale = "en-US");
+    string Locale = "en-US",
+    string? Email = null,
+    string? CcEmails = null);

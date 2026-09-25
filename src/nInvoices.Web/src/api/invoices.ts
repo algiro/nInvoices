@@ -2,7 +2,10 @@ import { apiClient } from './client';
 import type { 
   InvoiceDto, 
   GenerateInvoiceDto, 
-  UpdateInvoiceDto 
+  UpdateInvoiceDto,
+  InvoiceEmailComposeDto,
+  CreateInvoiceEmailDraftDto,
+  InvoiceEmailDto
 } from '../types';
 
 /**
@@ -84,5 +87,20 @@ export const invoicesApi = {
 
   async setSequence(value: number): Promise<{ currentValue: number; message: string }> {
     return apiClient.put<{ currentValue: number; message: string }>('/api/invoices/sequence', { value });
+  },
+
+  /** The email for this invoice, rendered from the customer's active (or the given) email template. */
+  async composeEmail(id: number, templateId?: number | null): Promise<InvoiceEmailComposeDto> {
+    return apiClient.get<InvoiceEmailComposeDto>(`/api/invoices/${id}/email`, templateId ? { templateId } : undefined);
+  },
+
+  /** Creates a draft in the connected Gmail account with the invoice documents attached. */
+  async createEmailDraft(id: number, data: CreateInvoiceEmailDraftDto): Promise<InvoiceEmailDto> {
+    return apiClient.post<InvoiceEmailDto>(`/api/invoices/${id}/email/draft`, data);
+  },
+
+  /** Gmail drafts created for this invoice, newest first. */
+  async getEmails(id: number): Promise<InvoiceEmailDto[]> {
+    return apiClient.get<InvoiceEmailDto[]>(`/api/invoices/${id}/emails`);
   },
 };

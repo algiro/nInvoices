@@ -27,6 +27,10 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<Expense> Expenses => Set<Expense>();
     public DbSet<InvoiceSequence> InvoiceSequences => Set<InvoiceSequence>();
     public DbSet<ImageAsset> ImageAssets => Set<ImageAsset>();
+    public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
+    public DbSet<GmailConnection> GmailConnections => Set<GmailConnection>();
+    public DbSet<OAuthState> OAuthStates => Set<OAuthState>();
+    public DbSet<InvoiceEmail> InvoiceEmails => Set<InvoiceEmail>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

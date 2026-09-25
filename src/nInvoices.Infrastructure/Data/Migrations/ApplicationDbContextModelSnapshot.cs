@@ -24,7 +24,15 @@ namespace nInvoices.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("CcEmails")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(320)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("FiscalId")
@@ -49,6 +57,46 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.HasIndex("FiscalId");
 
                     b.ToTable("Customers", (string)null);
+                });
+
+            modelBuilder.Entity("nInvoices.Core.Entities.EmailTemplate", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2147483647)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.ToTable("EmailTemplates", (string)null);
                 });
 
             modelBuilder.Entity("nInvoices.Core.Entities.Expense", b =>
@@ -84,6 +132,52 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.HasIndex("CustomerId", "Date");
 
                     b.ToTable("Expenses", (string)null);
+                });
+
+            modelBuilder.Entity("nInvoices.Core.Entities.GmailConnection", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("ConnectedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EmailAddress")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EncryptedRefreshToken")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Scopes")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("GmailConnections", (string)null);
                 });
 
             modelBuilder.Entity("nInvoices.Core.Entities.ImageAsset", b =>
@@ -182,6 +276,67 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.HasIndex("CustomerId", "Year", "Month");
 
                     b.ToTable("Invoices", (string)null);
+                });
+
+            modelBuilder.Entity("nInvoices.Core.Entities.InvoiceEmail", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Attachments")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Cc")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("From")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("GmailDraftId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("GmailMessageId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("InvoiceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RfcMessageId")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("To")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.ToTable("InvoiceEmails", (string)null);
                 });
 
             modelBuilder.Entity("nInvoices.Core.Entities.InvoiceSequence", b =>
@@ -367,6 +522,39 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.HasIndex("CustomerId", "InvoiceType", "IsActive");
 
                     b.ToTable("MonthlyReportTemplates", (string)null);
+                });
+
+            modelBuilder.Entity("nInvoices.Core.Entities.OAuthState", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("State")
+                        .IsUnique();
+
+                    b.ToTable("OAuthStates", (string)null);
                 });
 
             modelBuilder.Entity("nInvoices.Core.Entities.Project", b =>
@@ -611,6 +799,17 @@ namespace nInvoices.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("nInvoices.Core.Entities.EmailTemplate", b =>
+                {
+                    b.HasOne("nInvoices.Core.Entities.Customer", "Customer")
+                        .WithMany("EmailTemplates")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+                });
+
             modelBuilder.Entity("nInvoices.Core.Entities.Expense", b =>
                 {
                     b.HasOne("nInvoices.Core.Entities.Customer", "Customer")
@@ -797,6 +996,17 @@ namespace nInvoices.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("nInvoices.Core.Entities.InvoiceEmail", b =>
+                {
+                    b.HasOne("nInvoices.Core.Entities.Invoice", "Invoice")
+                        .WithMany()
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Invoice");
+                });
+
             modelBuilder.Entity("nInvoices.Core.Entities.InvoiceTaxLine", b =>
                 {
                     b.HasOne("nInvoices.Core.Entities.Invoice", "Invoice")
@@ -929,6 +1139,8 @@ namespace nInvoices.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("nInvoices.Core.Entities.Customer", b =>
                 {
+                    b.Navigation("EmailTemplates");
+
                     b.Navigation("Invoices");
 
                     b.Navigation("Projects");

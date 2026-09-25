@@ -39,8 +39,22 @@ function show(tone: ToastTone, title: string, options: ToastOptions = {}) {
   return id
 }
 
-/** Turns an unknown thrown value into a readable message. */
+/** Body of a failed API call ({ error, code }), when the thrown value is an HTTP error. */
+function apiErrorBody(error: unknown): { error?: unknown; code?: unknown } | null {
+  const data = (error as { response?: { data?: unknown } } | null)?.response?.data
+  return data && typeof data === 'object' ? data as { error?: unknown; code?: unknown } : null
+}
+
+/** Machine-readable reason sent by the API with some errors, e.g. 'gmail_not_connected'. */
+export function apiErrorCode(error: unknown): string | null {
+  const code = apiErrorBody(error)?.code
+  return typeof code === 'string' ? code : null
+}
+
+/** Turns an unknown thrown value into a readable message, preferring the API's own explanation. */
 export function errorMessage(error: unknown): string {
+  const apiMessage = apiErrorBody(error)?.error
+  if (typeof apiMessage === 'string' && apiMessage) return apiMessage
   if (error instanceof Error && error.message) return error.message
   if (typeof error === 'string') return error
   return 'Something went wrong. Please try again.'

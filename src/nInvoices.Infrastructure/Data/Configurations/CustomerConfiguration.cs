@@ -21,6 +21,12 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
             .IsRequired()
             .HasMaxLength(50);
 
+        builder.Property(c => c.Email)
+            .HasMaxLength(320);
+
+        builder.Property(c => c.CcEmails)
+            .HasMaxLength(1000);
+
         // Configure Address value object as owned entity
         builder.OwnsOne(c => c.Address, address =>
         {
