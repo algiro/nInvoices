@@ -255,6 +255,44 @@ public sealed class InvoiceGenerationServiceProjectTests
         _capturedModel.ProjectSummary.ShouldBeEmpty();
     }
 
+    [TestCase("it-IT")]
+    [TestCase("es-ES")]
+    public async Task GenerateInvoiceAsync_Always_ExposesTheCustomerLocale(string locale)
+    {
+        GivenCustomerLocale(locale);
+        GivenRate(RateType.Daily, 400m);
+
+        await _service.GenerateInvoiceAsync(
+            MonthlyDto(new WorkDayDto(new DateOnly(2026, 1, 1), DayType.Worked)),
+            TestContext.CurrentContext.CancellationToken);
+
+        _capturedModel.Locale.ShouldBe(locale);
+    }
+
+    [Test]
+    public async Task PreviewInvoiceAsync_Always_ExposesTheCustomerLocale()
+    {
+        GivenCustomerLocale("it-IT");
+        GivenRate(RateType.Daily, 400m);
+
+        await _service.PreviewInvoiceAsync(
+            MonthlyDto(new WorkDayDto(new DateOnly(2026, 1, 1), DayType.Worked)),
+            TestContext.CurrentContext.CancellationToken);
+
+        _capturedModel.Locale.ShouldBe("it-IT");
+    }
+
+    private void GivenCustomerLocale(string locale)
+    {
+        var customer = new Customer("Acme", "ACME123", new Address("Main", "1", "Town", "12345", "Country"), locale)
+        {
+            Id = CustomerId
+        };
+        _customerRepository
+            .Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(customer);
+    }
+
     [Test]
     public async Task GenerateInvoiceAsync_HourlyRateWorkedDayWithoutHours_Throws()
     {

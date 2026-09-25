@@ -13,6 +13,9 @@ public sealed record InvoiceTemplateModel
     public DateTime Date { get; init; }
     public DateTime? DueDate { get; init; }
     public string Currency { get; init; } = string.Empty;
+
+    /// <summary>The customer's locale (e.g. "it-IT"), for FormatDate/FormatCurrency/FormatDecimal and the Localize functions.</summary>
+    public string Locale { get; init; } = "en-US";
     
     public CustomerTemplateModel Customer { get; init; } = null!;
     public List<LineItemTemplateModel> LineItems { get; init; } = [];

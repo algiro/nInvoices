@@ -100,4 +100,6 @@ SQLitePCLRaw 2.1.12). The currency test was not culture-dependent after all: `Fo
 always formats as it-IT, so the test now expects `1.234,57 EUR`. `docker/deploy.sh` tags images
 with the commit (`-dirty-<timestamp>` for uncommitted changes) as well as `:latest`, runs that
 tag on the server, logs it to `~/docker/DEPLOYED-TAGS`, and rolls back with
-`IMAGE_TAG=<tag> ./deploy.sh --skip-build`. `deploy.ps1` still deploys `:latest` only.
+`IMAGE_TAG=<tag> ./deploy.sh --skip-build`. `deploy.ps1` does the same (`-SkipBuild -ImageTag <tag>`)
+and, like `deploy.sh --migrate`, applies `migrations-postgres/*.sql` with `-Migrate`; neither
+script migrates unless asked, and the app never migrates on startup.

@@ -489,6 +489,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             Date = invoice.IssueDate.ToDateTime(TimeOnly.MinValue),
             DueDate = invoice.DueDate?.ToDateTime(TimeOnly.MinValue),
             Currency = rate.Price.Currency,
+            Locale = customer.Locale,
 
             Customer = new CustomerTemplateModel
             {

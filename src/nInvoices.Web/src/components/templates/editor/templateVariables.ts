@@ -43,9 +43,9 @@ const customerGroup: VariableGroup = {
 const functionsGroup: VariableGroup = {
   title: 'Functions',
   items: [
-    { insert: '[[ FormatCurrency $0 currency ]]', label: 'FormatCurrency amount currency', description: 'Money as 1.234,56 EUR', completion: 'FormatCurrency' },
-    { insert: '[[ FormatDecimal $0 2 ]]', label: 'FormatDecimal value decimals', description: 'Number rounded to N decimals', completion: 'FormatDecimal' },
-    { insert: '[[ FormatDate $0 "dd/MM/yyyy" ]]', label: 'FormatDate date "format"', description: '.NET date format, e.g. "dd/MM/yyyy"', completion: 'FormatDate' },
+    { insert: '[[ FormatCurrency $0 currency ]]', label: 'FormatCurrency amount currency locale?', description: 'Money as 1.234,56 EUR; add a locale, e.g. "en-US", for 1,234.56 EUR', completion: 'FormatCurrency' },
+    { insert: '[[ FormatDecimal $0 2 ]]', label: 'FormatDecimal value decimals locale?', description: 'Number rounded to N decimals; the locale sets the decimal separator', completion: 'FormatDecimal' },
+    { insert: '[[ FormatDate $0 "dd/MM/yyyy" ]]', label: 'FormatDate date "format" locale?', description: '.NET date format, e.g. "dd/MM/yyyy"; the locale sets month and day names', completion: 'FormatDate' },
     { insert: '[[ Image "$0" ]]', label: 'Image "alias" width height', description: 'Image uploaded in Settings › Images (width/height optional)', completion: 'Image' }
   ]
 }
@@ -65,6 +65,7 @@ export const invoiceVariables: VariableGroup[] = [
       v('date', 'Issue date (use FormatDate)'),
       v('dueDate', 'Due date, may be empty'),
       v('currency', 'Currency code, e.g. EUR'),
+      v('locale', 'Customer locale, e.g. it-IT (pass it to FormatDate, FormatCurrency…)'),
       v('subtotal', 'Total before taxes'),
       v('totalTax', 'Sum of all taxes'),
       v('total', 'Amount due'),

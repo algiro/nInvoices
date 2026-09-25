@@ -52,6 +52,7 @@ nInvoices uses **Scriban** template engine for generating invoices and monthly r
 | `date` | DateTime | Invoice date | |
 | `dueDate` | DateTime? | Payment due date (nullable) | |
 | `currency` | string | ISO currency code | "EUR", "USD", "GBP" |
+| `locale` | string | Customer locale, for the formatting functions | "it-IT", "en-US" |
 | `workedDays` | int? | Number of days worked (nullable) | 20 |
 | `monthNumber` | int? | Month number for monthly invoices | 1-12 |
 | `monthDescription` | string? | Month name in locale | "January", "Gennaio" |
@@ -286,45 +287,64 @@ Operators: `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&` (and), `||` (or), `!` (not)
 ## Custom Helper Functions
 
 ### FormatCurrency
-Formats a number as currency with proper locale formatting.
+Formats a number with two decimals and thousands separators, followed by the currency code.
+Uses Italian formatting unless a locale is given.
 
-**Syntax:** `FormatCurrency(amount, currency)`
+**Syntax:** `FormatCurrency amount currency [locale]`
 
 ```html
-[[ FormatCurrency total "EUR" ]]      <!-- €1.234,56 -->
-[[ FormatCurrency total "USD" ]]      <!-- $1,234.56 -->
-[[ FormatCurrency total "GBP" ]]      <!-- £1,234.56 -->
+[[ FormatCurrency total "EUR" ]]            <!-- 1.234,56 EUR -->
+[[ FormatCurrency total "USD" "en-US" ]]    <!-- 1,234.56 USD -->
+[[ FormatCurrency total currency "de-CH" ]] <!-- 1’234.56 EUR -->
 ```
 
 ### FormatDate
-Formats a date with custom format string.
+Formats a date with a .NET format string. Month and day names, and standard formats such as `"d"`,
+follow the server's language unless a locale is given.
 
-**Syntax:** `FormatDate(date, format)`
+**Syntax:** `FormatDate date format [locale]`
 
 ```html
-[[ FormatDate date "dd/MM/yyyy" ]]           <!-- 23/01/2024 -->
-[[ FormatDate date "yyyy-MM-dd" ]]           <!-- 2024-01-23 -->
-[[ FormatDate date "MMMM dd, yyyy" ]]        <!-- January 23, 2024 -->
-[[ FormatDate date "dd MMM yy" ]]            <!-- 23 Jan 24 -->
+[[ FormatDate date "dd/MM/yyyy" ]]                  <!-- 23/01/2024 -->
+[[ FormatDate date "yyyy-MM-dd" ]]                  <!-- 2024-01-23 -->
+[[ FormatDate date "MMMM dd, yyyy" "en-US" ]]       <!-- January 23, 2024 -->
+[[ FormatDate date "dddd d MMMM yyyy" "it-IT" ]]    <!-- martedì 23 gennaio 2024 -->
+[[ FormatDate date "d" "de-DE" ]]                   <!-- 23.01.2024 -->
 ```
 
 Format codes:
+- `d` alone - The locale's short date pattern
 - `dd` - Day with leading zero (01-31)
+- `dddd` - Full day name (Tuesday)
 - `MM` - Month with leading zero (01-12)
 - `MMM` - Short month name (Jan, Feb)
 - `MMMM` - Full month name (January, February)
 - `yy` - Two-digit year (24)
 - `yyyy` - Four-digit year (2024)
 
-### FormatDecimal
-Formats a decimal number with specified decimal places.
+A missing date (e.g. `dueDate` on an invoice without one) prints `01/01/0001`; wrap it in `[[ if dueDate ]]`.
 
-**Syntax:** `FormatDecimal(value, decimals)`
+### FormatDecimal
+Rounds a number to the given decimal places (a half rounds to the even digit), without thousands
+separators. The decimal separator follows the server's language unless a locale is given.
+
+**Syntax:** `FormatDecimal value decimals [locale]`
 
 ```html
-[[ FormatDecimal tax.rate 2 ]]        <!-- 21.00 -->
-[[ FormatDecimal tax.rate 1 ]]        <!-- 21.0 -->
-[[ FormatDecimal item.quantity 0 ]]   <!-- 5 -->
+[[ FormatDecimal tax.rate 2 "en-US" ]]      <!-- 21.00 -->
+[[ FormatDecimal tax.rate 1 "it-IT" ]]      <!-- 21,0 -->
+[[ FormatDecimal item.quantity 0 ]]         <!-- 5 -->
+```
+
+### Locale argument
+`locale` is a culture name such as `"it-IT"`, `"en-US"` or `"es-ES"`. Leave it out, or pass `""`, to keep
+the function's default. An unknown locale stops the template from rendering, with an error naming it.
+
+Invoice, monthly report and email templates all have a `locale` variable holding the customer's locale:
+
+```html
+[[ FormatDate date "d MMMM yyyy" locale ]]
+[[ FormatCurrency total currency locale ]]
 ```
 
 ### LocalizeMonth

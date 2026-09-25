@@ -236,6 +236,7 @@ public sealed class TemplatePreviewService : ITemplatePreviewService
             Date = sample.Month.AddMonths(1).AddDays(-1),
             DueDate = sample.Month.AddMonths(2).AddDays(-1),
             Currency = sample.Currency,
+            Locale = sample.Locale,
             Customer = sample.Customer,
             LineItems = lineItems,
             Taxes = taxes,

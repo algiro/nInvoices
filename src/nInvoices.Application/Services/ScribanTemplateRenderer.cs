@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
@@ -58,17 +59,18 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
             scriptObject.Import(model, renamer: member => ToCamelCase(member.Name));
             
             // Add custom functions
-            scriptObject.Import(nameof(FormatCurrency), new Func<decimal, string, string>(FormatCurrency));
-            scriptObject.Import(nameof(FormatDate), new Func<DateTime, string, string>(FormatDate));
-            scriptObject.Import(nameof(FormatDecimal), new Func<decimal, int, string>(FormatDecimal));
+            scriptObject.Import(nameof(FormatCurrency), new Func<decimal, string, string?, string>(FormatCurrency));
+            scriptObject.Import(nameof(FormatDate), new Func<DateTime, string, string?, string>(FormatDate));
+            scriptObject.Import(nameof(FormatDecimal), new Func<decimal, int, string?, string>(FormatDecimal));
             
             // Add localization functions
             scriptObject.Import(nameof(LocalizeDayOfWeek), new Func<DateTime, string, bool, string>(LocalizeDayOfWeek));
             scriptObject.Import(nameof(LocalizeMonth), new Func<int, string, bool, string>(LocalizeMonth));
 
             // Add image function: Image "alias" width? height?
+            // The defaults on the lambda are what let Scriban accept the one- and two-argument forms
             scriptObject.Import("Image", new Func<string, int?, int?, string>(
-                (alias, width, height) => RenderImage(imagesByAlias, alias, width, height)));
+                (string alias, int? width = null, int? height = null) => RenderImage(imagesByAlias, alias, width, height)));
             
             // Configure member accessor to use camelCase for all property access (including nested objects)
             var context = new TemplateContext
@@ -129,28 +131,52 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
     // Custom functions available in templates
 
     /// <summary>
-    /// Formats a decimal as currency with Italian locale: FormatCurrency(1200.50, "EUR") => "1.200,50 EUR"
+    /// Formats a decimal as currency, Italian locale unless another is given:
+    /// FormatCurrency(1200.50, "EUR") => "1.200,50 EUR", FormatCurrency(1200.50, "USD", "en-US") => "1,200.50 USD"
     /// </summary>
-    private static string FormatCurrency(decimal amount, string currency)
+    private static string FormatCurrency(decimal amount, string currency, string? locale = null)
     {
-        var culture = new System.Globalization.CultureInfo("it-IT");
+        var culture = ResolveCulture(locale, DefaultCurrencyCulture);
         return $"{amount.ToString("N2", culture)} {currency}";
     }
 
     /// <summary>
-    /// Formats a date: FormatDate(date, "yyyy-MM-dd") => "2024-01-23"
+    /// Formats a date, in the server's locale unless another is given:
+    /// FormatDate(date, "yyyy-MM-dd") => "2024-01-23", FormatDate(date, "d MMMM yyyy", "it-IT") => "23 gennaio 2024"
     /// </summary>
-    private static string FormatDate(DateTime date, string format)
+    private static string FormatDate(DateTime date, string format, string? locale = null)
     {
-        return date.ToString(format);
+        return date.ToString(format, ResolveCulture(locale, CultureInfo.CurrentCulture));
     }
 
     /// <summary>
-    /// Formats a decimal with specific precision: FormatDecimal(123.456, 2) => "123.46"
+    /// Formats a decimal with specific precision, in the server's locale unless another is given:
+    /// FormatDecimal(123.456, 2, "en-US") => "123.46", FormatDecimal(123.456, 2, "it-IT") => "123,46"
     /// </summary>
-    private static string FormatDecimal(decimal value, int decimals)
+    private static string FormatDecimal(decimal value, int decimals, string? locale = null)
     {
-        return Math.Round(value, decimals).ToString($"F{decimals}");
+        return Math.Round(value, decimals).ToString($"F{decimals}", ResolveCulture(locale, CultureInfo.CurrentCulture));
+    }
+
+    private static readonly CultureInfo DefaultCurrencyCulture = CultureInfo.GetCultureInfo("it-IT");
+
+    /// <summary>
+    /// The culture for a locale argument; an empty locale means the function's default.
+    /// An unknown locale fails the render, so a typo shows up in the template preview.
+    /// </summary>
+    private static CultureInfo ResolveCulture(string? locale, CultureInfo defaultCulture)
+    {
+        if (string.IsNullOrWhiteSpace(locale))
+            return defaultCulture;
+
+        try
+        {
+            return CultureInfo.GetCultureInfo(locale, predefinedOnly: true);
+        }
+        catch (CultureNotFoundException)
+        {
+            throw new ArgumentException($"Unknown locale '{locale}'", nameof(locale));
+        }
     }
 
     /// <summary>
