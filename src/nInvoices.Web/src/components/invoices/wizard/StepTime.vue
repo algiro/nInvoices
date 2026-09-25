@@ -6,6 +6,16 @@
         <template v-if="timeView === 'calendar'">Weekdays start as full days. Select the days that differ and edit them on the right.</template>
         <template v-else>Edit any day in its row. Click a day number to select it (Shift for a range) and split it across projects on the right.</template>
       </p>
+      <p v-if="holidayCountryName" class="panel-help holidays">
+        <AppIcon name="calendar" />
+        <span v-if="holidays.length">
+          Public holidays in {{ holidayCountryName }}:
+          <template v-for="(holiday, index) in holidays" :key="holiday.date">{{ index ? ', ' : '' }}<strong>{{ dayLabel(holiday.date) }}</strong> {{ holiday.name }}</template>.
+          Weekdays among them are marked as holidays.
+        </span>
+        <span v-else>No public holidays in {{ holidayCountryName }} this month.</span>
+        <router-link to="/settings">Edit holidays</router-link>
+      </p>
     </template>
     <template #actions>
       <div class="view-switch" role="group" aria-label="View">
@@ -20,7 +30,7 @@
           {{ view.label }}
         </button>
       </div>
-      <BaseButton size="sm" @click="workMonth.fillWeekdays">Fill weekdays</BaseButton>
+      <BaseButton size="sm" @click="fillWeekdays">Fill weekdays</BaseButton>
       <BaseButton size="sm" variant="ghost" @click="workMonth.clearMonth">Clear</BaseButton>
     </template>
 
@@ -53,10 +63,15 @@ import DayInspector from '@/components/time/DayInspector.vue'
 import TimesheetList from '@/components/time/TimesheetList.vue'
 import BasePanel from '@/components/ui/BasePanel.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
 
 const props = defineProps<{ draft: InvoiceDraft }>()
 
-const { workMonth, selectedRate, projectSuggestions, periodLabel } = props.draft
+const { workMonth, selectedRate, projectSuggestions, periodLabel, holidays, holidayCountryName, fillWeekdays } = props.draft
+
+function dayLabel(date: string) {
+  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })
+}
 
 // Calendar and List edit the same data; the chosen view is remembered per browser
 type TimeView = 'calendar' | 'list'
@@ -95,6 +110,23 @@ watch(timeView, view => {
   max-width: 70ch;
   font-size: var(--text-md);
   color: var(--color-text-muted);
+}
+
+.holidays .app-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-right: 0.3rem;
+  vertical-align: -0.12em;
+  color: var(--color-primary);
+}
+
+.holidays a {
+  margin-left: 0.35rem;
+}
+
+.holidays strong {
+  color: var(--color-text-secondary);
+  font-weight: 600;
 }
 
 .view-switch {

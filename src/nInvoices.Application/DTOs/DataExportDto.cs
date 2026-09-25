@@ -16,7 +16,8 @@ public sealed record CustomerExportDto(
     IReadOnlyList<MonthlyReportTemplateExportDto> MonthlyReportTemplates,
     string? Email = null,
     string? CcEmails = null,
-    IReadOnlyList<EmailTemplateExportDto>? EmailTemplates = null);
+    IReadOnlyList<EmailTemplateExportDto>? EmailTemplates = null,
+    string? HolidayCountry = null);
 
 public sealed record RateExportDto(
     RateType Type,

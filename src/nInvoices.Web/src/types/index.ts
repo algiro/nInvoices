@@ -87,6 +87,10 @@ export interface CustomerDto {
   email?: string | null;
   /** Comma-separated addresses copied on invoice emails */
   ccEmails?: string | null;
+  /** Country (ISO code) whose public holidays apply; null to follow the address */
+  holidayCountry?: string | null;
+  /** The holiday country that applies: the chosen one, or the address country's code (null when not recognized) */
+  effectiveHolidayCountry?: string | null;
 }
 
 export interface CreateCustomerDto {
@@ -96,6 +100,7 @@ export interface CreateCustomerDto {
   locale: string;
   email?: string | null;
   ccEmails?: string | null;
+  holidayCountry?: string | null;
 }
 
 export interface UpdateCustomerDto {
@@ -105,6 +110,7 @@ export interface UpdateCustomerDto {
   locale: string;
   email?: string | null;
   ccEmails?: string | null;
+  holidayCountry?: string | null;
 }
 
 export interface RateDto {
@@ -426,4 +432,59 @@ export interface InvoiceEmailDto {
   /** Opens the draft in Gmail */
   gmailUrl: string;
   createdAt: string;
+}
+
+// ---------- public holidays ----------
+
+export enum HolidayRuleKind {
+  Fixed = 'Fixed',
+  EasterOffset = 'EasterOffset',
+  NthWeekday = 'NthWeekday'
+}
+
+export type Weekday = 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday'
+
+/** A rule of a country's holiday calendar; only the fields used by `kind` are set. */
+export interface HolidayRuleDto {
+  id: number;
+  name: string;
+  kind: HolidayRuleKind;
+  month: number | null;
+  day: number | null;
+  easterOffset: number | null;
+  weekday: Weekday | null;
+  /** 1-5, or -1 for the last */
+  occurrence: number | null;
+  fromYear: number | null;
+  toYear: number | null;
+  isActive: boolean;
+}
+
+export type SaveHolidayRuleDto = Omit<HolidayRuleDto, 'id'>
+
+export interface PublicHolidayDto {
+  date: string; // yyyy-MM-dd
+  name: string;
+}
+
+export interface HolidayCalendarDto {
+  countryCode: string;
+  countryName: string;
+  hasBuiltIn: boolean;
+  rules: HolidayRuleDto[];
+  year: number;
+  holidays: PublicHolidayDto[];
+}
+
+export interface HolidayCountryDto {
+  countryCode: string;
+  countryName: string;
+  hasBuiltIn: boolean;
+  hasCalendar: boolean;
+}
+
+export interface CustomerHolidaysDto {
+  countryCode: string | null;
+  countryName: string | null;
+  holidays: PublicHolidayDto[];
 }

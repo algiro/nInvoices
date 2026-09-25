@@ -9,4 +9,5 @@ public sealed record UpdateCustomerDto(
     AddressDto Address,
     string Locale = "en-US",
     string? Email = null,
-    string? CcEmails = null);
+    string? CcEmails = null,
+    string? HolidayCountry = null);

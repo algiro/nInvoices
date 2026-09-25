@@ -69,6 +69,8 @@
         <p class="note">Set by <code>Invoice.FirstDayOfWeek</code> in the API's appsettings.json (0 = Sunday, 1 = Monday … 6 = Saturday); restart the API after changing it.</p>
       </BasePanel>
 
+      <HolidayCalendarsPanel />
+
       <BasePanel title="Images for templates" description="Logos and signatures you can place in invoice and timesheet templates.">
         <form class="upload" novalidate @submit.prevent="handleUploadImage">
           <BaseField label="Name to use in templates" for="imageAlias" help="Letters and numbers, e.g. companyLogo.">
@@ -185,6 +187,7 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import ThemeSwitch from '@/components/ui/ThemeSwitch.vue'
 import GmailConnectionPanel from '@/components/settings/GmailConnectionPanel.vue'
+import HolidayCalendarsPanel from '@/components/settings/HolidayCalendarsPanel.vue'
 
 const toast = useToast()
 const { confirm } = useConfirm()

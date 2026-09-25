@@ -69,7 +69,8 @@ public sealed class ImportExportController : ControllerBase
                 .Select(mt => new MonthlyReportTemplateExportDto(mt.InvoiceType, mt.Name, mt.Content, mt.IsActive, mt.CreatedAt)).ToList(),
             c.Email,
             c.CcEmails,
-            c.EmailTemplates.Select(et => new EmailTemplateExportDto(et.Name, et.Subject, et.Body, et.IsActive, et.CreatedAt)).ToList()
+            c.EmailTemplates.Select(et => new EmailTemplateExportDto(et.Name, et.Subject, et.Body, et.IsActive, et.CreatedAt)).ToList(),
+            c.HolidayCountry
         )).ToList();
 
         _logger.LogInformation("Exported {Count} customers", exported.Count);
@@ -178,6 +179,7 @@ public sealed class ImportExportController : ControllerBase
 
                 var customer = new Customer(customerData.Name, customerData.FiscalId, address);
                 customer.SetContact(customerData.Email, customerData.CcEmails);
+                customer.SetHolidayCountry(customerData.HolidayCountry);
                 await _context.Customers.AddAsync(customer, cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
 

@@ -50,6 +50,16 @@ Pre-filling the month marks every weekday as worked. Public holidays are still m
 A per-country holiday list (from the customer's or the freelancer's country) could mark them
 as "Public holiday" automatically when a month is opened.
 
+**Status: done.** `HolidayCalendar` / `HolidayRule` (fixed date, Easter ± days, nth weekday of a
+month, optional year range) are created per country from `BuiltInHolidays` (IT, DE, AT, FR, ES,
+GB, US; national holidays only, no weekend substitute days) on first use and edited in Settings →
+Public holidays ("Reset to built-in" restores them). A customer uses `HolidayCountry` when set,
+otherwise its address country matched by name (`CountryCodes`). The wizard marks holidays on
+untouched weekdays when the month is filled or the customer changes (`useInvoiceDraft`).
+Not done: local holidays (a city's patron saint) as their own feature — they can be added as
+rules, but then apply to every customer in the country; holiday calendars are not in the JSON
+export/import.
+
 ## 5. Command palette and keyboard shortcuts
 
 `Ctrl+K` to jump anywhere or start an action ("new invoice for Nea srl", "open 26-09-005").

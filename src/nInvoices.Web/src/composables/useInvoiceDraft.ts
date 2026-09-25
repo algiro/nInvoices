@@ -5,8 +5,9 @@ import { useProjectsStore } from '@/stores/projects'
 import { useSettingsStore } from '@/stores/settings'
 import { useMonthlyReportTemplatesStore } from '@/stores/monthlyReportTemplates'
 import { InvoiceType, RateType, DayType } from '@/types'
-import type { GenerateInvoiceDto, WorkDayDto } from '@/types'
-import { useWorkMonth, localDateString, dayHours, billedHours } from '@/composables/useWorkMonth'
+import type { GenerateInvoiceDto, PublicHolidayDto, WorkDayDto } from '@/types'
+import { useWorkMonth, localDateString, dayHours, billedHours, FULL_DAY_HOURS } from '@/composables/useWorkMonth'
+import { holidaysApi } from '@/api/holidays'
 import { useToast } from '@/composables/useToast'
 import { formatMoney, invoiceTypeLabel } from '@/utils/format'
 
@@ -148,15 +149,93 @@ export function useInvoiceDraft() {
     incompleteExpense.value >= 0 ? 'Complete or remove the unfinished expense.' : null
   )
 
+  // ---------- public holidays ----------
+
+  // The customer's public holidays in the selected month, from its holiday country
+  const holidays = ref<PublicHolidayDto[]>([])
+  const holidayCountryName = ref<string | null>(null)
+  // Days marked as public holidays automatically (date → holiday name), so they can be undone
+  const autoHolidays = new Map<string, string>()
+  let holidayRequest = 0
+
+  /** A weekday still as "Fill weekdays" made it: one full day on at most one project, no note. */
+  function isUntouchedWorkday(wd: WorkDayDto | undefined) {
+    return !!wd
+      && (wd.dayType ?? DayType.Worked) === DayType.Worked
+      && !wd.notes
+      && (wd.projects ?? []).length <= 1
+      && dayHours(wd) === FULL_DAY_HOURS
+  }
+
+  /** Marks the month's holidays that fall on untouched weekdays (or only on `dates`, when given). */
+  function markHolidays(dates?: string[]) {
+    for (const holiday of holidays.value) {
+      if (dates && !dates.includes(holiday.date)) continue
+      if (!workMonth.monthDates.value.includes(holiday.date)) continue
+      const dow = new Date(`${holiday.date}T00:00:00`).getDay()
+      if (dow === 0 || dow === 6) continue
+      const day = workMonth.get(holiday.date)
+      if (day && !isUntouchedWorkday(day)) continue
+      workMonth.setKind([holiday.date], DayType.PublicHoliday)
+      workMonth.setNote([holiday.date], holiday.name)
+      autoHolidays.set(holiday.date, holiday.name)
+    }
+  }
+
+  /** Turns automatically marked holidays that nobody changed back into worked days. */
+  function unmarkHolidays() {
+    autoHolidays.forEach((name, date) => {
+      const day = workMonth.get(date)
+      if (day?.dayType === DayType.PublicHoliday && day.notes === name) {
+        workMonth.setKind([date], DayType.Worked)
+        workMonth.setNote([date], '')
+      }
+    })
+    autoHolidays.clear()
+  }
+
+  async function loadHolidays() {
+    const request = ++holidayRequest
+    let result: PublicHolidayDto[] = []
+    let countryName: string | null = null
+
+    if (form.customerId && isMonthly.value) {
+      try {
+        const response = await holidaysApi.getForCustomer(form.customerId, selectedYear.value, selectedMonth.value)
+        result = response.holidays
+        countryName = response.countryName
+      } catch (error) {
+        if (request === holidayRequest) toast.failure('Could not load the public holidays', error)
+      }
+    }
+
+    if (request !== holidayRequest) return
+    holidays.value = result
+    holidayCountryName.value = countryName
+    unmarkHolidays()
+    markHolidays()
+  }
+
+  /** Fills the empty weekdays and marks the public holidays among them. */
+  function fillWeekdays() {
+    const empty = workMonth.monthDates.value.filter(date => !workMonth.get(date))
+    workMonth.fillWeekdays()
+    markHolidays(empty)
+  }
+
   // ---------- data loading ----------
 
   // A new period starts from a clean month with every weekday pre-filled
   function resetMonth() {
     workMonth.clearMonth()
     workMonth.fillWeekdays()
+    autoHolidays.clear()
   }
 
-  watch([selectedMonth, selectedYear], resetMonth)
+  watch([selectedMonth, selectedYear], () => {
+    resetMonth()
+    loadHolidays()
+  })
 
   // Once the customer's single project is known, put it on rows that don't name a project yet
   watch(defaultProjectName, name => {
@@ -168,7 +247,10 @@ export function useInvoiceDraft() {
     // A timesheet template belongs to one customer
     form.monthlyReportTemplateId = undefined
     loadCustomerData()
+    loadHolidays()
   })
+
+  watch(isMonthly, () => loadHolidays())
 
   async function initialize(preselectedCustomerId?: number) {
     resetMonth()
@@ -282,6 +364,9 @@ export function useInvoiceDraft() {
     expensesTotal,
     workMonth,
     totals,
+    holidays,
+    holidayCountryName,
+    fillWeekdays,
     customerBlocker,
     timeBlocker,
     expensesBlocker,

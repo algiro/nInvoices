@@ -32,6 +32,7 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
 
         var customer = new Customer(dto.Name, dto.FiscalId, address, dto.Locale);
         CustomerContact.Apply(customer, dto.Email, dto.CcEmails);
+        customer.SetHolidayCountry(dto.HolidayCountry);
 
         await _repository.AddAsync(customer, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

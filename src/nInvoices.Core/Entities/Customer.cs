@@ -18,6 +18,12 @@ public sealed class Customer : EntityBase
     /// <summary>Comma-separated addresses copied on invoice emails.</summary>
     public string? CcEmails { get; set; }
 
+    /// <summary>
+    /// ISO 3166-1 alpha-2 code of the country whose public holidays apply to this customer's
+    /// time sheets; null to use the country of the address.
+    /// </summary>
+    public string? HolidayCountry { get; private set; }
+
     // Navigation properties
     public ICollection<Rate> Rates { get; set; } = [];
     public ICollection<Tax> Taxes { get; set; } = [];
@@ -46,6 +52,15 @@ public sealed class Customer : EntityBase
         FiscalId = fiscalId;
         Address = address;
         Locale = locale;
+    }
+
+    /// <param name="countryCode">A two-letter country code, or null/blank to follow the address.</param>
+    public void SetHolidayCountry(string? countryCode)
+    {
+        HolidayCountry = string.IsNullOrWhiteSpace(countryCode)
+            ? null
+            : HolidayCalendar.NormalizeCountryCode(countryCode);
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Update(string name, string fiscalId, Address address, string locale = "en-US")

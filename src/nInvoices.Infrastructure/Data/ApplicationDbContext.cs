@@ -31,6 +31,8 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<GmailConnection> GmailConnections => Set<GmailConnection>();
     public DbSet<OAuthState> OAuthStates => Set<OAuthState>();
     public DbSet<InvoiceEmail> InvoiceEmails => Set<InvoiceEmail>();
+    public DbSet<HolidayCalendar> HolidayCalendars => Set<HolidayCalendar>();
+    public DbSet<HolidayRule> HolidayRules => Set<HolidayRule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

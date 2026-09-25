@@ -29,5 +29,9 @@ public sealed class UpdateCustomerDtoValidator : AbstractValidator<UpdateCustome
             .Must(EmailAddresses.AreAllValid).WithMessage("CC must be valid addresses separated by commas")
             .MaximumLength(1000)
             .When(x => !string.IsNullOrWhiteSpace(x.CcEmails));
+
+        RuleFor(x => x.HolidayCountry)
+            .Matches("^[A-Za-z]{2}$").WithMessage("Holiday country must be a two-letter country code, e.g. IT")
+            .When(x => !string.IsNullOrWhiteSpace(x.HolidayCountry));
     }
 }

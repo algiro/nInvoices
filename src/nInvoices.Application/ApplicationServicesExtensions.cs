@@ -18,6 +18,7 @@ public static class ApplicationServicesExtensions
         services.AddScoped<ITemplateRenderer, ScribanTemplateRenderer>();
         services.AddScoped<ITemplatePreviewService, TemplatePreviewService>();
         services.AddScoped<IProjectResolver, ProjectResolver>();
+        services.AddScoped<Services.Holidays.IHolidayCalendarService, Services.Holidays.HolidayCalendarService>();
         services.AddScoped<Services.Email.IInvoiceEmailComposer, Services.Email.InvoiceEmailComposer>();
         return services;
     }

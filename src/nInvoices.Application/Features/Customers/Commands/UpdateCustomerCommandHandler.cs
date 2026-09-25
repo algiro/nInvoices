@@ -36,6 +36,7 @@ public sealed class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustome
 
         customer.Update(dto.Name, dto.FiscalId, address, dto.Locale);
         CustomerContact.Apply(customer, dto.Email, dto.CcEmails);
+        customer.SetHolidayCountry(dto.HolidayCountry);
 
         await _repository.UpdateAsync(customer, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

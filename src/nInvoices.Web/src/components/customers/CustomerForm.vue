@@ -51,6 +51,19 @@
         </div>
       </BasePanel>
 
+      <BasePanel title="Public holidays" description="On time sheets, these days are marked as public holidays when a month is filled in.">
+        <div class="grid">
+          <BaseField label="Holiday calendar" for="customer-holiday-country" :help="holidayHelp">
+            <select id="customer-holiday-country" v-model="holidayCountryValue" class="control">
+              <option value="">Country of the billing address</option>
+              <option v-for="country in holidayCountries" :key="country.countryCode" :value="country.countryCode">
+                {{ country.countryName }} ({{ country.countryCode }})
+              </option>
+            </select>
+          </BaseField>
+        </div>
+      </BasePanel>
+
       <BasePanel title="Invoice emails" description="Who receives the invoice when you create the email from the invoice page.">
         <div class="grid">
           <BaseField label="Email" for="customer-email" optional :error="errors.email">
@@ -83,7 +96,8 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCustomersStore } from '@/stores/customers'
-import type { CreateCustomerDto, UpdateCustomerDto } from '@/types'
+import type { CreateCustomerDto, UpdateCustomerDto, HolidayCountryDto } from '@/types'
+import { holidaysApi } from '@/api/holidays'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import BasePanel from '@/components/ui/BasePanel.vue'
 import BaseField from '@/components/ui/BaseField.vue'
@@ -126,6 +140,22 @@ const emailValue = computed({
   get: () => form.email ?? '',
   set: (value: string) => { form.email = value.trim() ? value.trim() : null }
 })
+// "" means "follow the address" and is sent as null
+const holidayCountryValue = computed({
+  get: () => form.holidayCountry ?? '',
+  set: (value: string) => { form.holidayCountry = value || null }
+})
+
+const holidayCountries = ref<HolidayCountryDto[]>([])
+// The country the saved customer's address resolves to, to explain the default
+const addressHolidayCountry = ref<string | null>(null)
+
+const holidayHelp = computed(() => {
+  if (form.holidayCountry) return 'Holidays are edited in Settings → Public holidays.'
+  if (addressHolidayCountry.value) return `The address country resolves to ${addressHolidayCountry.value}. Holidays are edited in Settings → Public holidays.`
+  return 'The country name of the address is matched to a country code; pick one if it isn’t recognized.'
+})
+
 const ccValue = computed({
   get: () => form.ccEmails ?? '',
   set: (value: string) => { form.ccEmails = value.trim() ? value : null }
@@ -151,6 +181,9 @@ const localeOptions = computed(() => {
 const errors = reactive<Record<string, string>>({})
 
 onMounted(async () => {
+  holidaysApi.getCountries()
+    .then(countries => { holidayCountries.value = countries })
+    .catch(() => { /* the list is a convenience: without it only "address country" is offered */ })
   if (isEditMode.value && props.customerId) {
     await loadCustomer(props.customerId)
   }
@@ -167,6 +200,8 @@ async function loadCustomer(id: number) {
       form.address = { ...customer.address }
       form.email = customer.email ?? null
       form.ccEmails = customer.ccEmails ?? null
+      form.holidayCountry = customer.holidayCountry ?? null
+      addressHolidayCountry.value = customer.holidayCountry ? null : customer.effectiveHolidayCountry ?? null
       loadedName.value = customer.name
       setPageTitle(`Edit ${customer.name}`)
     }

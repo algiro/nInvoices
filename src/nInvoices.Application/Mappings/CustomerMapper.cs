@@ -1,4 +1,5 @@
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Services.Holidays;
 using nInvoices.Core.Entities;
 
 namespace nInvoices.Application.Mappings;
@@ -20,5 +21,7 @@ public static class CustomerMapper
         customer.CreatedAt,
         customer.UpdatedAt ?? customer.CreatedAt,
         customer.Email,
-        customer.CcEmails);
+        customer.CcEmails,
+        customer.HolidayCountry,
+        customer.HolidayCountry ?? CountryCodes.FromName(customer.Address.Country));
 }
