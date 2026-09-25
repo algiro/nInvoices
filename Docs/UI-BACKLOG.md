@@ -70,6 +70,15 @@ The calendar already has keys (W, H, L, Del, 1–8, arrows); the rest of the app
 Fine for today's volumes. With hundreds of invoices it needs pagination (server-side), saved
 filters, sorting by column, and bulk actions (mark several as paid, download several PDFs).
 
+**Status: done.** `GET /api/invoices/search` filters (status, customer, type, issue year, number
+or customer name), sorts and pages in the database (`InvoiceRepository.SearchAsync`) and returns
+per-status counts; `GET /api/invoices/summary` feeds the tiles and the year filter. The list keeps
+all of it in the URL; named views are saved in browser storage (`useSavedViews`). Bulk:
+`POST /api/invoices/bulk/{finalize|mark-as-sent|mark-as-paid}` (invalid ones skipped with a
+reason, max 500) and `POST /api/invoices/bulk/pdf` (zip, optional timesheets, max 100).
+`GET /api/invoices` still returns everything, for the Dashboard, which will need the same
+treatment at a few thousand invoices.
+
 ## 7. Housekeeping
 
 - `src/nInvoices.Web/src/components/UserMenu.vue` is no longer used (the header's user menu

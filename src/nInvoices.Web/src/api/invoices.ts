@@ -3,6 +3,11 @@ import type {
   InvoiceDto, 
   GenerateInvoiceDto,
   InvoiceDraftPreviewDto,
+  InvoiceSearchParams,
+  InvoicePageDto,
+  InvoiceSummaryDto,
+  BulkInvoiceChange,
+  BulkInvoiceResultDto,
   UpdateInvoiceDto,
   InvoiceEmailComposeDto,
   CreateInvoiceEmailDraftDto,
@@ -16,6 +21,26 @@ import type {
 export const invoicesApi = {
   async getAll(): Promise<InvoiceDto[]> {
     return apiClient.get<InvoiceDto[]>('/api/invoices');
+  },
+
+  /** One page of invoices, filtered and sorted by the server (without their rendered HTML). */
+  async search(params: InvoiceSearchParams): Promise<InvoicePageDto> {
+    return apiClient.get<InvoicePageDto>('/api/invoices/search', params);
+  },
+
+  /** Outstanding and paid-this-year totals, drafts and invoice years, over all invoices. */
+  async getSummary(): Promise<InvoiceSummaryDto> {
+    return apiClient.get<InvoiceSummaryDto>('/api/invoices/summary');
+  },
+
+  /** Applies a status change to each invoice it's valid for; the others come back as skipped. */
+  async bulkChange(change: BulkInvoiceChange, ids: number[]): Promise<BulkInvoiceResultDto> {
+    return apiClient.post<BulkInvoiceResultDto>(`/api/invoices/bulk/${change}`, { ids });
+  },
+
+  /** The PDFs of these invoices (and optionally their timesheets) in one zip. */
+  async downloadZip(ids: number[], includeMonthlyReports: boolean): Promise<{ blob: Blob; fileName: string | null }> {
+    return apiClient.postForFile('/api/invoices/bulk/pdf', { ids, includeMonthlyReports });
   },
 
   async getById(id: number): Promise<InvoiceDto> {

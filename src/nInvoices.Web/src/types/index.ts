@@ -488,3 +488,49 @@ export interface CustomerHolidaysDto {
   countryName: string | null;
   holidays: PublicHolidayDto[];
 }
+
+// ---------- invoice list ----------
+
+export type InvoiceSortField = 'IssueDate' | 'Number' | 'Customer' | 'Period' | 'Status' | 'Total'
+
+/** Filters, sort and page of the invoice list (query-string parameters of /api/invoices/search). */
+export interface InvoiceSearchParams {
+  status?: string;
+  customerId?: number;
+  type?: string;
+  year?: number;
+  search?: string;
+  sort?: InvoiceSortField;
+  dir?: 'asc' | 'desc';
+  page?: number;
+  pageSize?: number;
+}
+
+export interface InvoicePageDto {
+  items: InvoiceDto[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  /** Matching invoices per status name, under every filter except the status one */
+  statusCounts: Record<string, number>;
+}
+
+export interface InvoiceAmountDto {
+  count: number;
+  totals: MoneyDto[];
+}
+
+export interface InvoiceSummaryDto {
+  totalCount: number;
+  outstanding: InvoiceAmountDto;
+  paidThisYear: InvoiceAmountDto;
+  drafts: number;
+  years: number[];
+}
+
+export type BulkInvoiceChange = 'finalize' | 'mark-as-sent' | 'mark-as-paid'
+
+export interface BulkInvoiceResultDto {
+  succeeded: number[];
+  skipped: { id: number; invoiceNumber: string | null; reason: string }[];
+}

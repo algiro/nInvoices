@@ -9,7 +9,12 @@ namespace nInvoices.Application.Mappings;
 /// </summary>
 public static class InvoiceMapper
 {
-    public static InvoiceDto ToDto(Invoice invoice)
+    public static InvoiceDto ToDto(Invoice invoice) => ToDto(invoice, includeContent: true);
+
+    /// <summary>For lists: everything but the rendered HTML, which only the invoice page needs.</summary>
+    public static InvoiceDto ToListItemDto(Invoice invoice) => ToDto(invoice, includeContent: false);
+
+    private static InvoiceDto ToDto(Invoice invoice, bool includeContent)
     {
         return new InvoiceDto
         {
@@ -28,7 +33,7 @@ public static class InvoiceMapper
             TotalTaxes = new MoneyDto(invoice.TotalTaxes.Amount, invoice.TotalTaxes.Currency),
             Total = new MoneyDto(invoice.Total.Amount, invoice.Total.Currency),
             Status = invoice.Status,
-            RenderedContent = invoice.RenderedContent,
+            RenderedContent = includeContent ? invoice.RenderedContent : null,
             Notes = invoice.Notes,
             CreatedAt = invoice.CreatedAt,
             UpdatedAt = invoice.UpdatedAt

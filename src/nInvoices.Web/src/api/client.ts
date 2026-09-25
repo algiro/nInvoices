@@ -98,6 +98,15 @@ class ApiClient {
     });
     return response.data;
   }
+
+  /** POSTs `data` and returns the response as a file, with the name the server suggests. */
+  async postForFile(url: string, data?: any): Promise<{ blob: Blob; fileName: string | null }> {
+    const response = await this.client.post(url, data, { responseType: 'blob' });
+    const disposition = String(response.headers['content-disposition'] ?? '');
+    const match = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i.exec(disposition);
+    const fileName = match ? decodeURIComponent(match[1] ?? match[2]) : null;
+    return { blob: response.data, fileName };
+  }
 }
 
 export const apiClient = new ApiClient();

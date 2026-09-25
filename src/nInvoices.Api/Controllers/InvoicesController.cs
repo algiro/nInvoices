@@ -49,6 +49,78 @@ public sealed class InvoicesController : ControllerBase
     }
 
     /// <summary>
+    /// One page of invoices, filtered and sorted in the database, with the number of matching
+    /// invoices per status. Invoices in the page don't carry their rendered HTML.
+    /// </summary>
+    [HttpGet("search")]
+    [ProducesResponseType(typeof(InvoicePageDto), StatusCodes.Status200OK)]
+    // Not named "search": a parameter named like one of its own query keys makes MVC bind with
+    // that name as a prefix ("search.status"…) and every filter would be ignored
+    public async Task<ActionResult<InvoicePageDto>> Search([FromQuery] InvoiceSearchDto request, CancellationToken cancellationToken) =>
+        Ok(await _mediator.Send(new SearchInvoicesQuery(request), cancellationToken));
+
+    /// <summary>Outstanding and paid-this-year totals, drafts and invoice years, over all invoices.</summary>
+    [HttpGet("summary")]
+    [ProducesResponseType(typeof(InvoiceSummaryDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<InvoiceSummaryDto>> Summary(CancellationToken cancellationToken) =>
+        Ok(await _mediator.Send(new GetInvoiceSummaryQuery(DateTime.Today.Year), cancellationToken));
+
+    /// <summary>
+    /// Finalizes, marks as sent or marks as paid several invoices. Invoices the change doesn't
+    /// apply to are skipped and listed with the reason.
+    /// </summary>
+    /// <param name="change"><c>finalize</c>, <c>mark-as-sent</c> or <c>mark-as-paid</c>.</param>
+    [HttpPost("bulk/{change:regex(^(finalize|mark-as-sent|mark-as-paid)$)}")]
+    [ProducesResponseType(typeof(BulkInvoiceResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<BulkInvoiceResultDto>> BulkChangeStatus(
+        string change,
+        [FromBody] BulkInvoiceIdsDto dto,
+        CancellationToken cancellationToken)
+    {
+        var bulkAction = change switch
+        {
+            "finalize" => BulkInvoiceStatusAction.Finalize,
+            "mark-as-sent" => BulkInvoiceStatusAction.MarkAsSent,
+            _ => BulkInvoiceStatusAction.MarkAsPaid
+        };
+
+        try
+        {
+            var result = await _mediator.Send(new BulkChangeInvoiceStatusCommand(bulkAction, dto.Ids ?? []), cancellationToken);
+            _logger.LogInformation(
+                "Bulk {Action}: {Succeeded} changed, {Skipped} skipped",
+                bulkAction, result.Succeeded.Count, result.Skipped.Count);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// The PDFs of several invoices in one zip, optionally with the timesheets of the monthly ones.
+    /// Invoices whose documents can't be produced are listed in NOT-INCLUDED.txt inside the zip.
+    /// </summary>
+    [HttpPost("bulk/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> BulkDownload([FromBody] BulkInvoiceDownloadDto dto, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var zip = await _mediator.Send(
+                new GetInvoiceDocumentsZipQuery(dto.Ids ?? [], dto.IncludeMonthlyReports), cancellationToken);
+            return File(zip.Content, "application/zip", zip.FileName);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Retrieves an invoice by ID.
     /// </summary>
     [HttpGet("{id}")]
