@@ -1,7 +1,8 @@
 import { apiClient } from './client';
 import type { 
   InvoiceDto, 
-  GenerateInvoiceDto, 
+  GenerateInvoiceDto,
+  InvoiceDraftPreviewDto,
   UpdateInvoiceDto,
   InvoiceEmailComposeDto,
   CreateInvoiceEmailDraftDto,
@@ -32,6 +33,11 @@ export const invoicesApi = {
 
   async generate(data: GenerateInvoiceDto): Promise<InvoiceDto> {
     return apiClient.post<InvoiceDto>('/api/invoices', data);
+  },
+
+  /** Renders the invoice and timesheet `data` would produce, without saving anything. */
+  async previewDraft(data: GenerateInvoiceDto): Promise<InvoiceDraftPreviewDto> {
+    return apiClient.post<InvoiceDraftPreviewDto>('/api/invoices/preview', data);
   },
 
   async update(id: number, data: UpdateInvoiceDto): Promise<void> {

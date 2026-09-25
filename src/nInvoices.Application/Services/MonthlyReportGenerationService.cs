@@ -16,6 +16,16 @@ public interface IMonthlyReportGenerationService
         Invoice invoice,
         Customer customer,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Renders the timesheet for an invoice that has not been saved yet, from the work days being
+    /// entered rather than the ones stored for the month.
+    /// </summary>
+    Task<string> PreviewReportHtmlAsync(
+        Invoice invoice,
+        Customer customer,
+        IReadOnlyCollection<WorkDayDto> workDays,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationService
@@ -42,55 +52,84 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
         ArgumentNullException.ThrowIfNull(invoice);
         ArgumentNullException.ThrowIfNull(customer);
 
+        EnsureMonthly(invoice);
+        var template = await GetTemplateAsync(invoice, customer, cancellationToken);
+
+        // Get work days for this month (with project allocations eagerly loaded)
+        var workDays = await _workDayRepository.GetByCustomerAndMonthAsync(
+            customer.Id, invoice.Year!.Value, invoice.Month!.Value, cancellationToken);
+
+        var dayDtos = workDays
+            .Select(wd => new WorkDayDto(
+                wd.Date,
+                wd.DayType,
+                wd.HoursWorked,
+                wd.Notes,
+                wd.Projects
+                    .Select(p => new WorkDayProjectDto(p.Project.Name, p.Hours, p.ProjectId))
+                    .ToList()))
+            .ToList();
+
+        var model = BuildMonthlyReportModel(invoice, customer, dayDtos);
+        return await _templateRenderer.RenderAsync(template.Content, model, cancellationToken);
+    }
+
+    public async Task<string> PreviewReportHtmlAsync(
+        Invoice invoice,
+        Customer customer,
+        IReadOnlyCollection<WorkDayDto> workDays,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(invoice);
+        ArgumentNullException.ThrowIfNull(customer);
+        ArgumentNullException.ThrowIfNull(workDays);
+
+        EnsureMonthly(invoice);
+        var template = await GetTemplateAsync(invoice, customer, cancellationToken);
+
+        var model = BuildMonthlyReportModel(invoice, customer, workDays.ToList());
+        return await _templateRenderer.RenderAsync(template.Content, model, cancellationToken);
+    }
+
+    private static void EnsureMonthly(Invoice invoice)
+    {
         if (invoice.Type != InvoiceType.Monthly)
             throw new InvalidOperationException("Monthly reports can only be generated for monthly invoices");
 
         if (!invoice.Month.HasValue || !invoice.Year.HasValue)
             throw new InvalidOperationException("Invoice must have month and year set");
-
-        MonthlyReportTemplate template;
-
-        // Use the template ID from the invoice if specified, otherwise use active template
-        if (invoice.MonthlyReportTemplateId.HasValue)
-        {
-            template = await _templateRepository.GetByIdAsync(invoice.MonthlyReportTemplateId.Value, cancellationToken)
-                ?? throw new InvalidOperationException($"Monthly report template {invoice.MonthlyReportTemplateId.Value} not found");
-        }
-        else
-        {
-            // Get active template (backward compatibility)
-            var templates = await _templateRepository.FindAsync(
-                t => t.CustomerId == customer.Id && t.InvoiceType == InvoiceType.Monthly && t.IsActive,
-                cancellationToken);
-
-            template = templates.FirstOrDefault()
-                ?? throw new InvalidOperationException($"No active monthly report template found for customer {customer.Id}");
-        }
-
-        // Get work days for this month (with project allocations eagerly loaded)
-        var year = invoice.Year.Value;
-        var month = invoice.Month.Value;
-
-        var workDays = await _workDayRepository.GetByCustomerAndMonthAsync(
-            customer.Id, year, month, cancellationToken);
-
-        // Build model
-        var model = BuildMonthlyReportModel(invoice, customer, workDays.ToList());
-
-        // Render HTML
-        var html = await _templateRenderer.RenderAsync(template.Content, model, cancellationToken);
-
-        return html;
     }
 
-    private MonthlyReportTemplateModel BuildMonthlyReportModel(Invoice invoice, Customer customer, List<WorkDay> workDays)
+    /// <summary>The template chosen on the invoice, otherwise the customer's active one.</summary>
+    private async Task<MonthlyReportTemplate> GetTemplateAsync(
+        Invoice invoice,
+        Customer customer,
+        CancellationToken cancellationToken)
+    {
+        if (invoice.MonthlyReportTemplateId.HasValue)
+        {
+            return await _templateRepository.GetByIdAsync(invoice.MonthlyReportTemplateId.Value, cancellationToken)
+                ?? throw new InvalidOperationException($"Monthly report template {invoice.MonthlyReportTemplateId.Value} not found");
+        }
+
+        var templates = await _templateRepository.FindAsync(
+            t => t.CustomerId == customer.Id && t.InvoiceType == InvoiceType.Monthly && t.IsActive,
+            cancellationToken);
+
+        return templates.FirstOrDefault()
+            ?? throw new InvalidOperationException($"No active monthly report template found for customer {customer.Id}");
+    }
+
+    private MonthlyReportTemplateModel BuildMonthlyReportModel(Invoice invoice, Customer customer, IReadOnlyList<WorkDayDto> workDays)
     {
         var year = invoice.Year!.Value;
         var month = invoice.Month!.Value;
         var daysInMonth = DateTime.DaysInMonth(year, month);
 
-        // Index work days by date
-        var workDaysDict = workDays.ToDictionary(wd => wd.Date, wd => wd);
+        // Index work days by date (the first entry wins if a date is sent twice)
+        var workDaysDict = workDays
+            .GroupBy(wd => wd.Date)
+            .ToDictionary(g => g.Key, g => g.First());
 
         // Build day models for all days in the month
         var monthDays = new List<MonthDayTemplateModel>();
@@ -100,12 +139,12 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
             var dateTime = date.ToDateTime(TimeOnly.MinValue);
             var isWeekend = dateTime.DayOfWeek == DayOfWeek.Saturday || dateTime.DayOfWeek == DayOfWeek.Sunday;
 
-            WorkDay? workedDay = workDaysDict.GetValueOrDefault(date);
+            var workedDay = workDaysDict.GetValueOrDefault(date);
 
-            var dayAllocations = workedDay?.Projects
+            var dayAllocations = workedDay?.Projects?
                 .Where(p => p.Hours > 0)
-                .OrderBy(p => p.Project.Name, StringComparer.OrdinalIgnoreCase)
-                .Select(p => new DayProjectTemplateModel { Name = p.Project.Name, Hours = p.Hours })
+                .OrderBy(p => p.ProjectName, StringComparer.OrdinalIgnoreCase)
+                .Select(p => new DayProjectTemplateModel { Name = p.ProjectName, Hours = p.Hours })
                 .ToList() ?? [];
 
             decimal? dayHours = dayAllocations.Count > 0
@@ -174,7 +213,7 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
     /// when no hours were tracked for any project.
     /// </summary>
     private static List<ProjectSummaryTemplateModel> BuildProjectSummary(
-        IReadOnlyList<WorkDay> workDays,
+        IReadOnlyList<WorkDayDto> workDays,
         decimal subtotal)
     {
         var order = new List<string>();
@@ -182,9 +221,9 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
 
         foreach (var wd in workDays.Where(wd => wd.DayType == DayType.Worked))
         {
-            foreach (var allocation in wd.Projects.Where(p => p.Hours > 0))
+            foreach (var allocation in (wd.Projects ?? []).Where(p => p.Hours > 0))
             {
-                var name = allocation.Project.Name;
+                var name = allocation.ProjectName.Trim();
                 if (!byProject.TryGetValue(name, out var acc))
                 {
                     order.Add(name);

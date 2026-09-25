@@ -124,6 +124,17 @@ public sealed class InvoicesController : ControllerBase
     }
 
     /// <summary>
+    /// Renders the invoice and timesheet that generating <paramref name="dto"/> would produce,
+    /// without saving anything. Problems are returned in <c>errors</c> / <c>timesheetError</c>.
+    /// </summary>
+    [HttpPost("preview")]
+    [ProducesResponseType(typeof(InvoiceDraftPreviewDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<InvoiceDraftPreviewDto>> Preview(
+        [FromBody] GenerateInvoiceDto dto,
+        CancellationToken cancellationToken) =>
+        Ok(await _mediator.Send(new PreviewInvoiceDraftQuery(dto), cancellationToken));
+
+    /// <summary>
     /// Updates a draft invoice (notes, rendered content, due date).
     /// Only draft invoices can be updated.
     /// </summary>

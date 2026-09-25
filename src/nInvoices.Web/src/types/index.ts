@@ -268,6 +268,22 @@ export interface GenerateInvoiceDto {
   monthlyReportTemplateId?: number;
 }
 
+/** The invoice and timesheet a GenerateInvoiceDto would produce, rendered but not saved. */
+export interface InvoiceDraftPreviewDto {
+  invoiceNumber: string | null;
+  invoiceHtml: string | null;
+  /** Why the invoice can't be generated (no rate, no active template, a template error). */
+  errors: string[];
+  timesheetHtml: string | null;
+  /** Why the timesheet can't be rendered; it doesn't block generating the invoice. */
+  timesheetError: string | null;
+  subtotal: MoneyDto | null;
+  totalExpenses: MoneyDto | null;
+  totalTaxes: MoneyDto | null;
+  total: MoneyDto | null;
+  taxes: { description: string; rate: number; amount: MoneyDto }[];
+}
+
 export interface UpdateInvoiceDto {
   dueDate?: string;
   renderedContent?: string;

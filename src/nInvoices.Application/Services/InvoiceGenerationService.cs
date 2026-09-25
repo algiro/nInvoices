@@ -19,7 +19,17 @@ public interface IInvoiceGenerationService
     Task<Invoice> GenerateInvoiceAsync(
         GenerateInvoiceDto dto,
         CancellationToken cancellationToken = default);
-    
+
+    /// <summary>
+    /// Builds and renders the invoice exactly as <see cref="GenerateInvoiceAsync"/> would, without
+    /// side effects: the invoice sequence is not advanced (the number shown is the next one), work
+    /// days are not saved and projects are not created. Throws <see cref="InvalidOperationException"/>
+    /// when the invoice could not be generated (no rate, no active template, a template error).
+    /// </summary>
+    Task<InvoiceDraft> PreviewInvoiceAsync(
+        GenerateInvoiceDto dto,
+        CancellationToken cancellationToken = default);
+
     Task<byte[]> GenerateInvoicePdfAsync(
         long invoiceId,
         CancellationToken cancellationToken = default);
@@ -28,6 +38,12 @@ public interface IInvoiceGenerationService
         long invoiceId,
         CancellationToken cancellationToken = default);
 }
+
+/// <summary>
+/// An invoice built in memory and not persisted, with the customer and the work days it was
+/// built from (project allocations merged per day), so the timesheet can be rendered from them.
+/// </summary>
+public sealed record InvoiceDraft(Invoice Invoice, Customer Customer, IReadOnlyCollection<WorkDayDto> WorkDays);
 
 public sealed class InvoiceGenerationService : IInvoiceGenerationService
 {
@@ -81,6 +97,29 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     {
         ArgumentNullException.ThrowIfNull(dto);
 
+        var draft = await BuildInvoiceAsync(dto, persist: true, cancellationToken);
+        return draft.Invoice;
+    }
+
+    public Task<InvoiceDraft> PreviewInvoiceAsync(
+        GenerateInvoiceDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(dto);
+
+        return BuildInvoiceAsync(dto, persist: false, cancellationToken);
+    }
+
+    /// <summary>
+    /// Builds and renders the invoice. With <paramref name="persist"/> the invoice number is taken
+    /// from the sequence and the month's work days are replaced (staged, committed by the caller);
+    /// without it nothing is written, which is what the preview needs.
+    /// </summary>
+    private async Task<InvoiceDraft> BuildInvoiceAsync(
+        GenerateInvoiceDto dto,
+        bool persist,
+        CancellationToken cancellationToken)
+    {
         var template = await GetTemplateAsync(dto.CustomerId, dto.InvoiceType, cancellationToken);
         var rate = await GetRateAsync(dto.CustomerId, dto.InvoiceType, cancellationToken);
         var customerTaxes = await GetCustomerTaxesAsync(dto.CustomerId, cancellationToken);
@@ -103,11 +142,9 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
         var subtotal = CalculateSubtotal(dto, rate);
         var expensesTotal = CalculateExpensesTotal(dto.Expenses, rate.Price.Currency);
-        var invoiceNumber = await GenerateInvoiceNumberAsync(
-            dto.CustomerId,
-            dto.InvoiceType,
-            dto.IssueDate,
-            cancellationToken);
+        var invoiceNumber = persist
+            ? await GenerateInvoiceNumberAsync(dto.CustomerId, dto.IssueDate, cancellationToken)
+            : await PeekInvoiceNumberAsync(dto.CustomerId, dto.IssueDate, cancellationToken);
 
         var (totalTax, taxLines) = _taxCalculationService.CalculateTaxes(customerTaxes, subtotal + expensesTotal);
 
@@ -135,8 +172,10 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
             // Clear existing work days for this month and save new ones.
             // Returns the work days with project names normalized to their canonical form.
-            workDays = await ClearAndSaveWorkDaysAsync(
-                dto.CustomerId, dto.Year!.Value, dto.Month!.Value, workDays, cancellationToken);
+            workDays = persist
+                ? await ClearAndSaveWorkDaysAsync(
+                    dto.CustomerId, dto.Year!.Value, dto.Month!.Value, workDays, cancellationToken)
+                : MergeAllocations(workDays);
         }
 
         if (dto.Expenses != null && dto.Expenses.Count > 0)
@@ -170,7 +209,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
         invoice.SetRenderedContent(renderedHtml);
 
-        return invoice;
+        return new InvoiceDraft(invoice, customer, workDays?.ToList() ?? []);
     }
 
     public async Task<byte[]> GenerateInvoicePdfAsync(
@@ -361,7 +400,6 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
     private async Task<InvoiceNumber> GenerateInvoiceNumberAsync(
         long customerId,
-        InvoiceType invoiceType,
         DateOnly issueDate,
         CancellationToken cancellationToken)
     {
@@ -379,6 +417,27 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         await _sequenceRepository.UpdateAsync(sequence, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        return await FormatInvoiceNumberAsync(customerId, sequenceNumber, issueDate, cancellationToken);
+    }
+
+    /// <summary>The number the next generated invoice will get, without advancing the sequence.</summary>
+    private async Task<InvoiceNumber> PeekInvoiceNumberAsync(
+        long customerId,
+        DateOnly issueDate,
+        CancellationToken cancellationToken)
+    {
+        var sequence = await _sequenceRepository.GetByIdAsync(1, cancellationToken);
+        var sequenceNumber = sequence?.CurrentValue ?? 1;
+
+        return await FormatInvoiceNumberAsync(customerId, sequenceNumber, issueDate, cancellationToken);
+    }
+
+    private async Task<InvoiceNumber> FormatInvoiceNumberAsync(
+        long customerId,
+        int sequenceNumber,
+        DateOnly issueDate,
+        CancellationToken cancellationToken)
+    {
         // Use configured pattern from appsettings
         var pattern = _invoiceSettings.NumberFormat;
         var date = issueDate.ToDateTime(TimeOnly.MinValue);
@@ -791,4 +850,23 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
         return normalized;
     }
+
+    /// <summary>
+    /// The in-memory counterpart of <see cref="ClearAndSaveWorkDaysAsync"/> for previews: merges
+    /// duplicate references to the same project within a day, without resolving or creating
+    /// projects, so names keep the spelling typed on the calendar.
+    /// </summary>
+    private static List<WorkDayDto> MergeAllocations(IEnumerable<WorkDayDto> workDays) =>
+        workDays
+            .Select(wd => wd.Projects is { Count: > 0 }
+                ? wd with
+                {
+                    Projects = wd.Projects
+                        .Where(p => p.Hours > 0)
+                        .GroupBy(p => (p.ProjectName ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
+                        .Select(g => new WorkDayProjectDto(g.Key, g.Sum(p => p.Hours), g.First().ProjectId))
+                        .ToList()
+                }
+                : wd with { Projects = null })
+            .ToList();
 }

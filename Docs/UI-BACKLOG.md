@@ -20,6 +20,14 @@ Today "New invoice" is one long page with a sticky summary bar. The proposal was
 Where to start: `src/nInvoices.Web/src/views/invoices/InvoiceGenerate.vue` (split its three
 panels into step components) and `TemplatePreviewService` in `nInvoices.Application/Services`.
 
+**Status: done on `feature/invoice-wizard`.** The page is a stepper over
+`components/invoices/wizard/Step*.vue`; state and per-step rules live in
+`composables/useInvoiceDraft.ts`. One-time invoices skip the Time step. The review step calls
+`POST /api/invoices/preview` (`PreviewInvoiceDraftQuery`), which runs the real generation path
+(`IInvoiceGenerationService.PreviewInvoiceAsync`, `IMonthlyReportGenerationService.PreviewReportHtmlAsync`)
+without advancing the sequence, saving work days or creating projects. Project names in the
+preview keep the typed spelling (projects are matched and created only on generate).
+
 ## 2. Autosaved invoice drafts
 
 A refresh or an accidental navigation away from "New invoice" loses the month you entered.

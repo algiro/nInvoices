@@ -283,4 +283,70 @@ public sealed class InvoiceGenerationServiceProjectTests
         _capturedModel.LineItems.Where(l => l.Description is "Alpha" or "Unassigned").Sum(l => l.Amount)
             .ShouldBe(invoice.Subtotal.Amount);
     }
+
+    [Test]
+    public async Task PreviewInvoiceAsync_Always_WritesNothing()
+    {
+        GivenRate(RateType.Hourly, 50m);
+        var sequence = new InvoiceSequence(7);
+        _sequenceRepository
+            .Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(sequence);
+
+        var dto = MonthlyDto(WorkedDay(1, ("Alpha", 3m), ("Beta", 5m)));
+
+        await _service.PreviewInvoiceAsync(dto, TestContext.CurrentContext.CancellationToken);
+
+        sequence.CurrentValue.ShouldBe(7);
+        _savedWorkDays.ShouldBeEmpty();
+        _projectResolver.Verify(
+            r => r.ResolveOrCreateAsync(It.IsAny<long>(), It.IsAny<long?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _workDayRepository.Verify(r => r.DeleteAsync(It.IsAny<WorkDay>(), It.IsAny<CancellationToken>()), Times.Never);
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Test]
+    public async Task PreviewInvoiceAsync_Always_UsesTheNextSequenceNumber()
+    {
+        GivenRate(RateType.Daily, 400m);
+        _sequenceRepository
+            .Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new InvoiceSequence(7));
+
+        var draft = await _service.PreviewInvoiceAsync(
+            MonthlyDto(WorkedDay(1, ("Alpha", 8m))), TestContext.CurrentContext.CancellationToken);
+
+        draft.Invoice.Number.ToString().ShouldEndWith("-007");
+    }
+
+    [Test]
+    public async Task PreviewInvoiceAsync_SameAllocationsAsGenerate_RendersTheSameModel()
+    {
+        GivenRate(RateType.Daily, 400m);
+        var dto = MonthlyDto(
+            WorkedDay(1, ("Alpha", 6m), ("Beta", 2m)),
+            WorkedDay(2, ("Alpha", 8m)));
+
+        var draft = await _service.PreviewInvoiceAsync(dto, TestContext.CurrentContext.CancellationToken);
+        var previewLines = _capturedModel.LineItems.Select(l => (l.Description, l.Quantity, l.Amount)).ToList();
+
+        var invoice = await _service.GenerateInvoiceAsync(dto, TestContext.CurrentContext.CancellationToken);
+
+        draft.Invoice.Total.Amount.ShouldBe(invoice.Total.Amount);
+        _capturedModel.LineItems.Select(l => (l.Description, l.Quantity, l.Amount)).ToList().ShouldBe(previewLines);
+    }
+
+    [Test]
+    public async Task PreviewInvoiceAsync_SameProjectTwiceOnADay_MergesTheAllocations()
+    {
+        GivenRate(RateType.Hourly, 50m);
+
+        var draft = await _service.PreviewInvoiceAsync(
+            MonthlyDto(WorkedDay(1, ("Alpha", 3m), (" alpha ", 2m))), TestContext.CurrentContext.CancellationToken);
+
+        var allocation = draft.WorkDays.Single().Projects!.ShouldHaveSingleItem();
+        allocation.ProjectName.ShouldBe("Alpha");
+        allocation.Hours.ShouldBe(5m);
+    }
 }

@@ -195,6 +195,20 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Say at startup why Gmail drafts are unavailable, instead of only in the Settings page
+var gmailOptions = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<GmailOptions>>().Value;
+if (!gmailOptions.IsConfigured)
+{
+    var missing = new[]
+    {
+        string.IsNullOrWhiteSpace(gmailOptions.ClientId) ? "Gmail:ClientId" : null,
+        string.IsNullOrWhiteSpace(gmailOptions.ClientSecret) ? "Gmail:ClientSecret" : null,
+        string.IsNullOrWhiteSpace(gmailOptions.RedirectUri) ? "Gmail:RedirectUri" : null
+    }.OfType<string>();
+    Log.Warning("Gmail drafts are off: {Missing} not configured (environment {Environment}, APPDATA {AppData})",
+        string.Join(", ", missing), app.Environment.EnvironmentName, Environment.GetEnvironmentVariable("APPDATA"));
+}
+
 // Dev-only (Aspire AppHost sets Database:EnsureCreated=true): build the schema for a
 // throwaway PostgreSQL from the current EF model. EF migrations are SQLite-scaffolded
 // and cannot run under Npgsql, so EnsureCreated (model-based) is used instead.
