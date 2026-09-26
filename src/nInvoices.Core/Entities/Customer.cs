@@ -5,7 +5,7 @@ namespace nInvoices.Core.Entities;
 /// <summary>
 /// Represents a customer (client) who receives invoices.
 /// </summary>
-public sealed class Customer : EntityBase
+public sealed class Customer : OwnedEntityBase
 {
     public string Name { get; set; } = string.Empty;
     public string FiscalId { get; set; } = string.Empty;

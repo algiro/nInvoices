@@ -4,7 +4,7 @@ namespace nInvoices.Core.Entities;
 /// The public holidays of one country, as editable rules. Created from the built-in rules the
 /// first time the country is used; from then on the stored rules are the ones that apply.
 /// </summary>
-public sealed class HolidayCalendar : EntityBase
+public sealed class HolidayCalendar : OwnedEntityBase
 {
     /// <summary>ISO 3166-1 alpha-2 code, upper case (e.g. "IT").</summary>
     public string CountryCode { get; set; } = string.Empty;

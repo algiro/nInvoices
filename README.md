@@ -58,6 +58,7 @@ nInvoices is built around that monthly routine:
 - **PostgreSQL or SQLite.**
 - **JSON export and import** of customers, templates and invoices, for backups or moving to another server.
 - **Sign-in with Keycloak** (OpenID Connect), with a no-login mode for local use.
+- **Several users on one server.** Each Keycloak user has their own customers, invoices, templates and invoice numbering, and cannot see anyone else's.
 
 ## Screenshots
 
@@ -115,6 +116,25 @@ Open **http://localhost:3000**, add your first customer with a rate, and create 
 | **Local, SQLite** | One person on one machine | The [quick start](#quick-start) above. |
 
 PostgreSQL schema changes are shipped as idempotent SQL scripts in [`docker/migrations-postgres/`](docker/migrations-postgres/README.md).
+
+### Multiple users
+
+One instance serves any number of Keycloak users, each with their own data: customers,
+rates, taxes, worked days, invoices, templates, images, holiday calendars and invoice
+numbering. Invoice number format and first day of week (`Invoice:*` settings) are still
+set once for the whole server.
+
+**Upgrading an existing install:** data created before multi-user support has no owner,
+and no one can see it until you give it one. Set `LEGACY_OWNER_ID` in `docker/.env`
+(`MultiUser:LegacyOwnerId` in app settings) to the Keycloak user id that should own it,
+then restart the API. The API logs the id at each sign-in (`Token validated for user: <id>`),
+and the Keycloak admin console shows it under *Users*. At startup the API gives every
+ownerless row to that user; if any are left, it logs a warning with the count. The dev-auth
+user (`dev-user-001`) is set as the owner in `appsettings.Development.json` and
+`docker-compose.local.yml`.
+
+Anyone who can sign in gets their own empty workspace. To control who has an account, turn
+off self-registration in the Keycloak realm (`registrationAllowed`).
 
 ## How it's built
 

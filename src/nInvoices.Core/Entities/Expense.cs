@@ -5,7 +5,7 @@ namespace nInvoices.Core.Entities;
 /// <summary>
 /// Represents an expense to be included in an invoice.
 /// </summary>
-public sealed class Expense : EntityBase
+public sealed class Expense : OwnedEntityBase
 {
     public long CustomerId { get; set; }
     public long? InvoiceId { get; set; }

@@ -6,7 +6,7 @@ namespace nInvoices.Core.Entities;
 /// Represents a tax configuration for a customer.
 /// Supports different tax calculation strategies via handler system.
 /// </summary>
-public sealed class Tax : EntityBase
+public sealed class Tax : OwnedEntityBase
 {
     public long CustomerId { get; set; }
     public string TaxId { get; set; } = string.Empty;

@@ -4,7 +4,7 @@ namespace nInvoices.Core.Entities;
 /// Represents a project a freelancer works on for a specific customer.
 /// Projects are referenced by work day allocations to break down time per project.
 /// </summary>
-public sealed class Project : EntityBase
+public sealed class Project : OwnedEntityBase
 {
     public long CustomerId { get; set; }
     public string Name { get; set; } = string.Empty;

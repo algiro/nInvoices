@@ -4,7 +4,7 @@ namespace nInvoices.Core.Entities;
 /// Represents the time allocated to a single project on a given work day.
 /// A work day can be split across multiple projects (e.g. 3h on project A, 5h on project B).
 /// </summary>
-public sealed class WorkDayProject : EntityBase
+public sealed class WorkDayProject : OwnedEntityBase
 {
     public long WorkDayId { get; set; }
     public long ProjectId { get; set; }

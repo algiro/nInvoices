@@ -6,7 +6,7 @@ namespace nInvoices.Core.Entities;
 /// Represents an invoice template for a specific customer and invoice type.
 /// Templates contain placeholders like {{Variable}} that get replaced during rendering.
 /// </summary>
-public sealed class InvoiceTemplate : EntityBase
+public sealed class InvoiceTemplate : OwnedEntityBase
 {
     public long CustomerId { get; set; }
     public InvoiceType InvoiceType { get; set; }

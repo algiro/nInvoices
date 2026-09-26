@@ -47,6 +47,8 @@ services:
       - Authentication__UseDevAuth=true
       - ConnectionStrings__Default=Host=postgres;Port=5432;Database=ninvoices_db;Username=ninvoices_user;Password=local_dev_password
       - Database__Type=PostgreSQL
+      # Dev auth signs every request in as dev-user-001; give it any data from before multi-user support
+      - MultiUser__LegacyOwnerId=dev-user-001
       - Cors__Origins=http://localhost:3000,http://localhost:5173
     volumes:
       - ./volumes/logs:/app/logs

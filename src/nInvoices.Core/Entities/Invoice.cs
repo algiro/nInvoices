@@ -1,4 +1,5 @@
 using nInvoices.Core.Enums;
+using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
 
 namespace nInvoices.Core.Entities;
@@ -7,7 +8,7 @@ namespace nInvoices.Core.Entities;
 /// Represents an invoice issued to a customer.
 /// Aggregates worked days, expenses, and tax calculations.
 /// </summary>
-public sealed class Invoice : EntityBase
+public sealed class Invoice : OwnedEntityBase
 {
     public long CustomerId { get; set; }
     public InvoiceNumber Number { get; set; } = null!;
@@ -148,10 +149,11 @@ public sealed class Invoice : EntityBase
 /// <summary>
 /// Represents a single tax line item on an invoice.
 /// </summary>
-public sealed class InvoiceTaxLine
+public sealed class InvoiceTaxLine : IOwnedEntity
 {
     public long Id { get; set; }
     public long InvoiceId { get; set; }
+    public string OwnerId { get; set; } = string.Empty;
     public string TaxId { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public decimal Rate { get; set; }
