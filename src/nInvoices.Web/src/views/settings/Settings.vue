@@ -3,8 +3,8 @@
     <PageHeader title="Settings" subtitle="Appearance, invoice numbering, images for templates, Gmail, and backups." />
 
     <div class="sections">
-      <BasePanel title="Appearance" description="Saved in this browser. “System” follows your operating system and switches with it.">
-        <ThemeSwitch />
+      <BasePanel title="Appearance" description="Pick a light and a dark theme; the mode decides which one is shown. Saved in this browser.">
+        <ThemePicker />
       </BasePanel>
 
       <BasePanel title="Invoice numbering" description="Every new invoice takes the next number in the sequence, formatted with the pattern below.">
@@ -185,7 +185,7 @@ import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
-import ThemeSwitch from '@/components/ui/ThemeSwitch.vue'
+import ThemePicker from '@/components/settings/ThemePicker.vue'
 import GmailConnectionPanel from '@/components/settings/GmailConnectionPanel.vue'
 import HolidayCalendarsPanel from '@/components/settings/HolidayCalendarsPanel.vue'
 

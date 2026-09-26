@@ -2,6 +2,14 @@
   <figure class="bar-chart">
     <div ref="plot" class="plot" @mouseleave="hover = null">
       <svg :viewBox="`0 0 ${width} ${height}`" :width="width" :height="height" role="img" :aria-label="label">
+        <!-- the theme's two chart colours, from the top of each bar to its base -->
+        <defs>
+          <linearGradient :id="gradientId" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" class="stop-top" />
+            <stop offset="1" class="stop-base" />
+          </linearGradient>
+        </defs>
+
         <!-- recessive grid and y labels -->
         <g v-for="tick in ticks" :key="tick">
           <line :x1="padLeft" :x2="width - padRight" :y1="y(tick)" :y2="y(tick)" class="grid" />
@@ -24,7 +32,7 @@
             @focus="hover = index"
             @blur="hover = null"
           />
-          <path v-if="point.value > 0" :d="columnPath(index, point.value)" class="bar" :class="{ dim: hover !== null && hover !== index }" />
+          <path v-if="point.value > 0" :d="columnPath(index, point.value)" class="bar" :fill="`url(#${gradientId})`" :class="{ dim: hover !== null && hover !== index }" />
           <text :x="bandX(index) + band / 2" :y="height - padBottom + 16" class="axis x-label" text-anchor="middle">
             {{ point.short }}
           </text>
@@ -66,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, useId } from 'vue'
 
 export interface MonthPoint {
   key: string
@@ -83,6 +91,7 @@ const props = defineProps<{
 }>()
 
 const plot = ref<HTMLElement | null>(null)
+const gradientId = `bar-gradient-${useId()}`
 const width = ref(640)
 const height = 220
 const padTop = 18
@@ -168,8 +177,15 @@ svg {
 }
 
 .bar {
-  fill: var(--chart-bar);
   transition: opacity 0.12s;
+}
+
+.stop-top {
+  stop-color: var(--chart-bar);
+}
+
+.stop-base {
+  stop-color: var(--chart-bar-2);
 }
 
 .bar.dim {

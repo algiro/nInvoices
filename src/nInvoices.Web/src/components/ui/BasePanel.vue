@@ -31,10 +31,11 @@ defineProps<{
 
 <style scoped>
 .panel {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: var(--panel-blur);
   min-width: 0;
 }
 
@@ -45,7 +46,7 @@ defineProps<{
   justify-content: space-between;
   gap: 0.5rem 1rem;
   padding: 0.9rem 1.15rem;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--panel-border);
 }
 
 .panel-title {

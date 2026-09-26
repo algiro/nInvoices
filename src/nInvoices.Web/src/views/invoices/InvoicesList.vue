@@ -7,20 +7,21 @@
     </PageHeader>
 
     <div v-if="summary && summary.totalCount > 0" class="tiles">
-      <div class="tile">
-        <span class="tile-label">Outstanding</span>
-        <span class="tile-value">{{ formatTotals(summary.outstanding.totals) }}</span>
-        <span class="tile-note">{{ summary.outstanding.count }} finalized or sent</span>
+      <!-- the headline figure: the theme's hero gradient -->
+      <div class="stat-tile hero">
+        <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="coins" /></span><span class="stat-tile-label">Outstanding</span></span>
+        <span class="stat-tile-value">{{ formatTotals(summary.outstanding.totals) }}</span>
+        <span class="stat-tile-note">{{ summary.outstanding.count }} finalized or sent</span>
       </div>
-      <button type="button" class="tile" @click="applyView({ status: 'Paid', year: String(currentYear) })">
-        <span class="tile-label">Paid in {{ currentYear }}</span>
-        <span class="tile-value">{{ formatTotals(summary.paidThisYear.totals) }}</span>
-        <span class="tile-note">{{ summary.paidThisYear.count }} {{ summary.paidThisYear.count === 1 ? 'invoice' : 'invoices' }}</span>
+      <button type="button" class="stat-tile" :style="{ '--accent': 'var(--kpi-2)' }" @click="applyView({ status: 'Paid', year: String(currentYear) })">
+        <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="paid" /></span><span class="stat-tile-label">Paid in {{ currentYear }}</span></span>
+        <span class="stat-tile-value">{{ formatTotals(summary.paidThisYear.totals) }}</span>
+        <span class="stat-tile-note">{{ summary.paidThisYear.count }} {{ summary.paidThisYear.count === 1 ? 'invoice' : 'invoices' }}</span>
       </button>
-      <button type="button" class="tile" @click="applyView({ status: 'Draft' })">
-        <span class="tile-label">Drafts</span>
-        <span class="tile-value">{{ summary.drafts }}</span>
-        <span class="tile-note">not finalized yet</span>
+      <button type="button" class="stat-tile" :style="{ '--accent': 'var(--kpi-4)' }" @click="applyView({ status: 'Draft' })">
+        <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="lock" /></span><span class="stat-tile-label">Drafts</span></span>
+        <span class="stat-tile-value">{{ summary.drafts }}</span>
+        <span class="stat-tile-note">not finalized yet</span>
       </button>
     </div>
 
@@ -679,45 +680,6 @@ async function deleteView(name: string) {
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
   gap: 0.75rem;
   margin-bottom: 1.25rem;
-}
-
-.tile {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.9rem 1rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  text-align: left;
-}
-
-/* the Paid and Drafts tiles open the matching list */
-button.tile {
-  cursor: pointer;
-}
-
-button.tile:hover {
-  border-color: var(--color-primary-line);
-}
-
-.tile-label {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.tile-value {
-  font-size: 1.35rem;
-  font-weight: 650;
-  color: var(--color-text);
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
-}
-
-.tile-note {
-  font-size: var(--text-sm);
-  color: var(--color-text-subtle);
 }
 
 .filters {

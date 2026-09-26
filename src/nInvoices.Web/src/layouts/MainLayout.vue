@@ -65,6 +65,24 @@
             <div class="menu-section">
               <span class="menu-label">Theme</span>
               <ThemeSwitch compact />
+              <div class="swatches" role="radiogroup" :aria-label="`${mode === 'dark' ? 'Dark' : 'Light'} theme`">
+                <button
+                  v-for="option in modeThemes"
+                  :key="option.id"
+                  type="button"
+                  role="radio"
+                  class="swatch"
+                  :class="{ selected: theme === option.id }"
+                  :aria-checked="theme === option.id"
+                  :title="option.name"
+                  :aria-label="option.name"
+                  @click="setTheme(option.id)"
+                >
+                  <!-- drawn with the theme's own variables -->
+                  <span class="swatch-fill" :data-theme="option.id"><span class="swatch-accent"></span></span>
+                </button>
+                <router-link to="/settings" class="all-themes" @click="userOpen = false">All themes</router-link>
+              </div>
             </div>
             <button type="button" class="menu-item" role="menuitem" :disabled="loggingOut" @click="logout">
               <AppIcon name="logout" />
@@ -90,6 +108,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import ThemeSwitch from '@/components/ui/ThemeSwitch.vue'
 import { useToast } from '@/composables/useToast'
 import { usePageTitle } from '@/composables/usePageTitle'
+import { THEMES, useTheme } from '@/composables/useTheme'
 
 interface NavItem {
   to: string
@@ -109,6 +128,9 @@ const route = useRoute()
 const authStore = useAuthStore()
 const toast = useToast()
 const pageTitle = usePageTitle()
+
+const { mode, theme, setTheme } = useTheme()
+const modeThemes = computed(() => THEMES.filter(t => t.mode === mode.value))
 
 const navOpen = ref(false)
 const userOpen = ref(false)
@@ -174,8 +196,9 @@ watch(() => route.fullPath, () => {
   flex-direction: column;
   gap: 0.25rem;
   padding: 0.9rem 0.75rem;
-  background: var(--color-surface);
-  border-right: 1px solid var(--color-border);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  backdrop-filter: var(--panel-blur);
   z-index: 50;
 }
 
@@ -184,7 +207,11 @@ watch(() => route.fullPath, () => {
   align-items: center;
   gap: 0.6rem;
   padding: 0.35rem 0.5rem 1.1rem;
-  color: var(--color-text);
+  color: var(--sidebar-text-strong);
+  text-decoration: none;
+}
+
+.brand:hover {
   text-decoration: none;
 }
 
@@ -194,8 +221,9 @@ watch(() => route.fullPath, () => {
   display: grid;
   place-items: center;
   border-radius: var(--radius-md);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+  background: var(--sidebar-cta-bg);
+  color: var(--sidebar-cta-text);
+  box-shadow: var(--accent-glow);
   font-weight: 700;
   font-size: var(--text-sm);
   letter-spacing: 0.02em;
@@ -218,30 +246,31 @@ watch(() => route.fullPath, () => {
   gap: 0.7rem;
   padding: 0.55rem 0.7rem;
   border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
+  color: var(--sidebar-text);
   font-size: var(--text-md);
   font-weight: 500;
   text-decoration: none;
+  transition: background 0.15s, color 0.15s;
 }
 
 .nav-link:hover {
-  background: var(--color-surface-sunken);
-  color: var(--color-text);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text-strong);
   text-decoration: none;
 }
 
 .nav-link .app-icon {
-  color: var(--color-text-subtle);
+  color: var(--sidebar-icon);
 }
 
 .nav-link.active {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-active-text);
   font-weight: 600;
 }
 
 .nav-link.active .app-icon {
-  color: var(--color-primary);
+  color: var(--sidebar-active-text);
 }
 
 .sidebar-footer {
@@ -251,6 +280,14 @@ watch(() => route.fullPath, () => {
 
 .new-invoice {
   width: 100%;
+}
+
+/* the sidebar's own call to action, legible on a coloured sidebar */
+.new-invoice.variant-primary,
+.new-invoice.variant-primary:hover:not(:disabled) {
+  background: var(--sidebar-cta-bg);
+  border-color: transparent;
+  color: var(--sidebar-cta-text);
 }
 
 .backdrop {
@@ -390,6 +427,49 @@ watch(() => route.fullPath, () => {
   padding: 0.4rem 0.45rem 0.6rem;
   margin-bottom: 0.3rem;
   border-bottom: 1px solid var(--color-border);
+}
+
+.swatches {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-top: 0.15rem;
+}
+
+.swatch {
+  width: 1.7rem;
+  height: 1.7rem;
+  padding: 2px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.swatch.selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.swatch-fill {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--sidebar-bg);
+}
+
+.swatch-accent {
+  width: 45%;
+  height: 45%;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+}
+
+.all-themes {
+  margin-left: auto;
+  font-size: var(--text-sm);
 }
 
 .menu-label {

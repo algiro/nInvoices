@@ -7,12 +7,15 @@
     <title>nInvoices</title>
     <script>
       // Apply the saved theme before the page paints, so dark mode never flashes white.
-      // Keep the storage key in sync with src/composables/useTheme.ts.
+      // Keep the storage keys and theme ids in sync with src/composables/useTheme.ts.
       (function () {
-        var pref = null;
-        try { pref = localStorage.getItem('ninvoices.theme'); } catch (e) {}
+        var get = function (key) { try { return localStorage.getItem(key); } catch (e) { return null; } };
+        var pref = get('ninvoices.theme');
         var dark = pref === 'dark' || (pref !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        var themes = dark ? ['dark', 'aurora', 'volt', 'orchid', 'cinder'] : ['light', 'lagoon', 'iris', 'ember'];
+        var chosen = get(dark ? 'ninvoices.theme.dark' : 'ninvoices.theme.light');
+        document.documentElement.dataset.theme = themes.indexOf(chosen) >= 0 ? chosen : themes[0];
+        document.documentElement.dataset.mode = dark ? 'dark' : 'light';
       })();
     </script>
   </head>

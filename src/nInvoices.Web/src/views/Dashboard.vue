@@ -20,25 +20,26 @@
 
     <template v-else-if="loaded">
       <div class="tiles">
-        <router-link class="tile" to="/invoices">
-          <span class="tile-label">Outstanding</span>
-          <span class="tile-value">{{ formatTotals(outstanding.totals) }}</span>
-          <span class="tile-note">{{ outstanding.count }} finalized or sent</span>
+        <!-- the headline figure: the theme's hero gradient -->
+        <router-link class="stat-tile hero" to="/invoices">
+          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="coins" /></span><span class="stat-tile-label">Outstanding</span></span>
+          <span class="stat-tile-value">{{ formatTotals(outstanding.totals) }}</span>
+          <span class="stat-tile-note">{{ outstanding.count }} finalized or sent</span>
         </router-link>
-        <router-link class="tile" :to="{ path: '/invoices', query: { status: 'Paid' } }">
-          <span class="tile-label">Paid in {{ year }}</span>
-          <span class="tile-value">{{ formatTotals(paidThisYear.totals) }}</span>
-          <span class="tile-note">{{ paidThisYear.count }} {{ paidThisYear.count === 1 ? 'invoice' : 'invoices' }}</span>
+        <router-link class="stat-tile" :style="{ '--accent': 'var(--kpi-2)' }" :to="{ path: '/invoices', query: { status: 'Paid' } }">
+          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="paid" /></span><span class="stat-tile-label">Paid in {{ year }}</span></span>
+          <span class="stat-tile-value">{{ formatTotals(paidThisYear.totals) }}</span>
+          <span class="stat-tile-note">{{ paidThisYear.count }} {{ paidThisYear.count === 1 ? 'invoice' : 'invoices' }}</span>
         </router-link>
-        <router-link class="tile" to="/invoices">
-          <span class="tile-label">Invoiced in {{ year }}</span>
-          <span class="tile-value">{{ formatTotals(invoicedThisYear.totals) }}</span>
-          <span class="tile-note">excluding cancelled</span>
+        <router-link class="stat-tile" :style="{ '--accent': 'var(--kpi-3)' }" to="/invoices">
+          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="invoices" /></span><span class="stat-tile-label">Invoiced in {{ year }}</span></span>
+          <span class="stat-tile-value">{{ formatTotals(invoicedThisYear.totals) }}</span>
+          <span class="stat-tile-note">excluding cancelled</span>
         </router-link>
-        <router-link class="tile" to="/customers">
-          <span class="tile-label">Customers</span>
-          <span class="tile-value">{{ customersStore.customers.length }}</span>
-          <span class="tile-note">{{ billedCustomers }} billed this year</span>
+        <router-link class="stat-tile" :style="{ '--accent': 'var(--kpi-4)' }" to="/customers">
+          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="customers" /></span><span class="stat-tile-label">Customers</span></span>
+          <span class="stat-tile-value">{{ customersStore.customers.length }}</span>
+          <span class="stat-tile-note">{{ billedCustomers }} billed this year</span>
         </router-link>
       </div>
 
@@ -325,43 +326,6 @@ const recent = computed(() =>
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
   gap: 0.75rem;
-}
-
-.tile {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.9rem 1rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  color: inherit;
-  text-decoration: none;
-  transition: border-color 0.12s;
-}
-
-.tile:hover {
-  border-color: var(--color-primary-line);
-  text-decoration: none;
-}
-
-.tile-label {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.tile-value {
-  font-size: 1.35rem;
-  font-weight: 650;
-  color: var(--color-text);
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
-}
-
-.tile-note {
-  font-size: var(--text-sm);
-  color: var(--color-text-subtle);
 }
 
 .columns {

@@ -65,14 +65,15 @@ withDefaults(defineProps<{
 .size-md.icon-only { padding: 0.5rem; }
 .size-sm.icon-only { padding: 0.3rem; }
 
+/* a gradient in the richer themes; border transparent so the gradient reaches the edge */
 .variant-primary {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+  background: var(--accent-gradient);
+  border-color: transparent;
   color: var(--color-on-primary);
+  box-shadow: var(--accent-glow);
 }
 .variant-primary:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-  border-color: var(--color-primary-hover);
+  background: var(--accent-gradient-hover);
 }
 
 .variant-secondary {

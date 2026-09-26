@@ -1,74 +1,11 @@
 /*
  * nInvoices design tokens and base styles.
  * Components style themselves with these variables; nothing here targets a specific screen.
+ * Colours, radii and shadows come from the active theme (themes.css); type and layout are here.
  */
+@import './themes.css';
+
 :root {
-  /* surfaces */
-  --color-bg: #f3f4f7;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f8f9fb;
-  --color-surface-sunken: #eef0f4;
-
-  /* text */
-  --color-text: #141a26;
-  --color-text-secondary: #3b4455;
-  --color-text-muted: #5d6678;
-  --color-text-subtle: #8a93a4;
-
-  /* lines */
-  --color-border: #e1e4ea;
-  --color-border-strong: #cfd4dd;
-
-  /* brand */
-  --color-primary: #2451c9;
-  --color-primary-hover: #1d43ad;
-  --color-primary-soft: #e8eeff;
-  --color-primary-line: #b9c8f5;
-  --color-on-primary: #ffffff;
-
-  /* semantic */
-  --color-success: #15803d;
-  --color-success-soft: #e7f6ec;
-  --color-success-line: #9fd4b7;
-  --color-warning: #b45309;
-  --color-warning-soft: #fdf3e1;
-  --color-warning-line: #efc98b;
-  --color-danger: #b42318;
-  --color-danger-hover: #971d14;
-  --color-danger-soft: #fdecea;
-  --color-danger-line: #f1b3ad;
-
-  /* shape & depth */
-  --radius-sm: 0.3rem;
-  --radius-md: 0.45rem;
-  --radius-lg: 0.7rem;
-  --shadow-sm: 0 1px 2px rgba(20, 26, 38, 0.06);
-  --shadow-md: 0 1px 2px rgba(20, 26, 38, 0.06), 0 6px 20px rgba(20, 26, 38, 0.08);
-  --shadow-lg: 0 10px 40px rgba(20, 26, 38, 0.18);
-  --focus-ring: 0 0 0 3px rgba(36, 81, 201, 0.18);
-  --shadow-up: 0 -4px 18px rgba(20, 26, 38, 0.08);
-  --color-scrim: rgba(15, 20, 30, 0.45);
-  --color-topbar: rgba(255, 255, 255, 0.92);
-  /* text on solid status fills (success/warning/danger buttons and chips) */
-  --color-on-status: #ffffff;
-
-  /* template code editor */
-  --code-expr: #7a2fb5;
-  --code-expr-bg: rgba(138, 63, 194, 0.09);
-  --code-active-line: rgba(36, 81, 201, 0.04);
-  --code-selection: rgba(36, 81, 201, 0.16);
-  --code-tag: #2451c9;
-  --code-attr: #9a4a06;
-  --code-string: #15803d;
-  --code-comment: #8a93a4;
-  --code-keyword: #b42318;
-  --code-number: #0f766e;
-  --code-property: #0e6f86;
-
-  /* charts */
-  --chart-bar: #2451c9;
-
-  /* type */
   --font-sans: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'Cascadia Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
   --text-xs: 0.75rem;
@@ -78,11 +15,9 @@
   --text-lg: 1.125rem;
   --text-xl: 1.375rem;
 
-  /* layout */
   --sidebar-width: 15rem;
   --topbar-height: 3.25rem;
 
-  color-scheme: light;
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
@@ -92,67 +27,6 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/*
- * Dark theme. The resolved theme is stamped on <html data-theme="…"> (see useTheme.ts and the
- * inline script in index.html), so only the tokens change here; components stay the same.
- */
-:root[data-theme='dark'] {
-  color-scheme: dark;
-
-  --color-bg: #0d1117;
-  --color-surface: #151a23;
-  --color-surface-muted: #1a202b;
-  --color-surface-sunken: #10141b;
-
-  --color-text: #e8ebf1;
-  --color-text-secondary: #c9cfda;
-  --color-text-muted: #98a2b3;
-  --color-text-subtle: #838da0;
-
-  --color-border: #262d3a;
-  --color-border-strong: #353d4d;
-
-  --color-primary: #7d9bff;
-  --color-primary-hover: #9cb3ff;
-  --color-primary-soft: #1b2644;
-  --color-primary-line: #34458a;
-  --color-on-primary: #0d1117;
-
-  --color-success: #4cc28a;
-  --color-success-soft: #12291d;
-  --color-success-line: #2a5c41;
-  --color-warning: #e0a54a;
-  --color-warning-soft: #2c2210;
-  --color-warning-line: #5e4518;
-  --color-danger: #ef7b70;
-  --color-danger-hover: #f4988f;
-  --color-danger-soft: #331816;
-  --color-danger-line: #6a2e28;
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.55);
-  --shadow-up: 0 -4px 18px rgba(0, 0, 0, 0.4);
-  --focus-ring: 0 0 0 3px rgba(125, 155, 255, 0.3);
-  --color-scrim: rgba(0, 0, 0, 0.6);
-  --color-topbar: rgba(21, 26, 35, 0.9);
-  --color-on-status: #0d1117;
-
-  --code-expr: #c79bf2;
-  --code-expr-bg: rgba(199, 155, 242, 0.13);
-  --code-active-line: rgba(125, 155, 255, 0.06);
-  --code-selection: rgba(125, 155, 255, 0.28);
-  --code-tag: #8fb0ff;
-  --code-attr: #e7b163;
-  --code-string: #62d19c;
-  --code-comment: #838da0;
-  --code-keyword: #f28b82;
-  --code-number: #5fd4c4;
-  --code-property: #6fd3e8;
-
-  --chart-bar: #6a88ee;
 }
 
 *,
@@ -165,7 +39,9 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: var(--color-bg);
+  /* the theme's background stays put while the page scrolls */
+  background: var(--app-bg);
+  background-attachment: fixed;
   font-size: var(--text-base);
 }
 
@@ -303,9 +179,11 @@ textarea.control {
 /* tables: <div class="table-wrap"><table class="data-table">…</table></div> */
 .table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--panel-border);
   border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  background: var(--panel-bg);
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: var(--panel-blur);
 }
 
 .data-table {
@@ -372,6 +250,129 @@ textarea.control {
 
 .data-table .actions > * + * {
   margin-left: 0.25rem;
+}
+
+/*
+ * figure tiles: <a|button|div class="stat-tile [hero]" style="--accent: var(--kpi-2)">
+ *   <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon/></span><span class="stat-tile-label">…</span></span>
+ *   <span class="stat-tile-value">…</span><span class="stat-tile-note">…</span>
+ * The accent colours the icon and a corner glow; "hero" takes the theme's hero gradient.
+ */
+/* each tile has an accent colour from the theme (--kpi-1…4) for its icon and glow */
+.stat-tile {
+  --accent: var(--kpi-1);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 1rem 1.1rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: var(--panel-blur);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.stat-tile:is(a, button) {
+  cursor: pointer;
+}
+
+/* a soft glow of the accent colour in the corner */
+.stat-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(90% 120% at 100% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%);
+  pointer-events: none;
+}
+
+.stat-tile:is(a, button):hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--panel-border));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  text-decoration: none;
+}
+
+.stat-tile-head {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.35rem;
+}
+
+.stat-tile-icon {
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+
+.stat-tile-icon .app-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.stat-tile-label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.stat-tile-value {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.stat-tile-note {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* the headline tile takes the theme's hero gradient; in Classic it looks like the others */
+.stat-tile.hero {
+  background: var(--hero-bg);
+  border-color: var(--hero-border);
+}
+
+.stat-tile.hero::before {
+  display: none;
+}
+
+.stat-tile.hero .stat-tile-icon {
+  background: color-mix(in srgb, var(--hero-accent) 16%, transparent);
+  color: var(--hero-accent);
+}
+
+.stat-tile.hero .stat-tile-label,
+.stat-tile.hero .stat-tile-note {
+  color: var(--hero-muted);
+}
+
+.stat-tile.hero .stat-tile-value {
+  font-size: 1.7rem;
+  color: var(--hero-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stat-tile:is(a, button):hover {
+    transform: none;
+  }
 }
 
 .muted {
