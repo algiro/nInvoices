@@ -6,7 +6,7 @@ namespace nInvoices.Core.Entities;
 /// Represents a monthly report template for generating work day reports.
 /// Similar to InvoiceTemplate but specifically for monthly work reports.
 /// </summary>
-public sealed class MonthlyReportTemplate : EntityBase
+public sealed class MonthlyReportTemplate : OwnedEntityBase
 {
     public long CustomerId { get; set; }
     public InvoiceType InvoiceType { get; set; }

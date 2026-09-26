@@ -1,11 +1,11 @@
 namespace nInvoices.Core.Entities;
 
 /// <summary>
-/// Represents a global invoice sequence counter.
-/// Ensures unique invoice numbers across all customers and invoice types.
-/// This is a singleton entity - only one record should exist in the database.
+/// Represents a user's invoice sequence counter.
+/// Ensures unique invoice numbers across all of that user's customers and invoice types.
+/// There is at most one record per owner.
 /// </summary>
-public sealed class InvoiceSequence : EntityBase
+public sealed class InvoiceSequence : OwnedEntityBase
 {
     /// <summary>
     /// The current sequence number.

@@ -5,7 +5,7 @@ namespace nInvoices.Core.Entities;
 /// Both use the same Scriban syntax as invoice templates. The active template is the one
 /// preselected when creating an invoice email; at most one per customer is active.
 /// </summary>
-public sealed class EmailTemplate : EntityBase
+public sealed class EmailTemplate : OwnedEntityBase
 {
     public long CustomerId { get; set; }
     public string Name { get; set; } = string.Empty;

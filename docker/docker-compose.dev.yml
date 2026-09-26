@@ -67,6 +67,9 @@ services:
       - Database__Type=PostgreSQL
       # Creates the schema from the app's model on an empty database; no-op once tables exist
       - Database__EnsureCreated=true
+      # Rows created before multi-user support belong to nobody until this names their owner
+      # (the Keycloak user id, "sub"); the API assigns them at startup. See README "Multiple users".
+      - MultiUser__LegacyOwnerId=${LEGACY_OWNER_ID:-}
       # Development settings would otherwise sign every request in as a fake user; use Keycloak
       - Authentication__UseDevAuth=false
       - Keycloak__Authority=http://keycloak:8080/realms/${KEYCLOAK_REALM:-ninvoices}

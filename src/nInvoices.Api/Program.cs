@@ -221,6 +221,16 @@ if (app.Configuration.GetValue<bool>("Database:EnsureCreated"))
     Log.Information("Database:EnsureCreated — schema ensured from the EF model");
 }
 
+// Data is scoped per user. Rows created before that have no owner and stay invisible until
+// MultiUser:LegacyOwnerId names the user (their "sub" claim) who should own them.
+var legacyOwnerId = app.Configuration["MultiUser:LegacyOwnerId"];
+var (assignedRows, unownedRows) = await app.Services.AssignUnownedDataAsync(legacyOwnerId);
+if (assignedRows > 0)
+    Log.Information("Assigned {Count} unowned rows to user {UserId} (MultiUser:LegacyOwnerId)", assignedRows, legacyOwnerId);
+if (unownedRows > 0)
+    Log.Warning("{Count} rows have no owner and are hidden from every user. Set MultiUser:LegacyOwnerId to the " +
+        "user id that should own them (logged at sign-in as 'Token validated for user: <id>') and restart", unownedRows);
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {

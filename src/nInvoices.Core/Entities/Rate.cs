@@ -7,7 +7,7 @@ namespace nInvoices.Core.Entities;
 /// Represents a rate (pricing) for a customer.
 /// Each customer can have multiple rates of different types.
 /// </summary>
-public sealed class Rate : EntityBase
+public sealed class Rate : OwnedEntityBase
 {
     public long CustomerId { get; set; }
     public RateType Type { get; set; }

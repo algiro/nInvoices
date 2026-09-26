@@ -28,7 +28,9 @@ public sealed class InvoiceRepositorySearchTests
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         await _connection.OpenAsync();
-        _context = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options);
+        _context = new ApplicationDbContext(
+            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options,
+            new TestUserContext("user-1"));
         await _context.Database.EnsureCreatedAsync();
 
         var acme = new Customer("Acme Corp", "ACME1", new Address("Main", "1", "Town", "12345", "Italy"));

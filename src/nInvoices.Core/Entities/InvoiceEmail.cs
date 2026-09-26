@@ -4,7 +4,7 @@ namespace nInvoices.Core.Entities;
 /// An email draft created in Gmail for an invoice. Kept as history: creating another draft
 /// for the same invoice adds a row.
 /// </summary>
-public sealed class InvoiceEmail : EntityBase
+public sealed class InvoiceEmail : OwnedEntityBase
 {
     public long InvoiceId { get; set; }
 

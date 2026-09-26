@@ -20,12 +20,8 @@ public sealed class InvoiceSequenceConfiguration : IEntityTypeConfiguration<Invo
 
         builder.Property(s => s.UpdatedAt);
 
-        // Seed initial data - singleton record with ID = 1
-        builder.HasData(new
-        {
-            Id = 1L,
-            CurrentValue = 1,
-            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-        });
+        // One sequence per user, created on first use
+        builder.HasIndex(s => s.OwnerId)
+            .IsUnique();
     }
 }

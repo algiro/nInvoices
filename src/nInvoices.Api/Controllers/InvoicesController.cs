@@ -550,14 +550,14 @@ public sealed class InvoicesController : ControllerBase
     }
 
     /// <summary>
-    /// Gets the current global invoice sequence number.
+    /// Gets the current user's invoice sequence number.
     /// </summary>
     [HttpGet("sequence")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public async Task<ActionResult> GetSequence(CancellationToken cancellationToken)
     {
         var repository = HttpContext.RequestServices.GetRequiredService<IRepository<InvoiceSequence>>();
-        var sequence = await repository.GetByIdAsync(1, cancellationToken);
+        var sequence = (await repository.GetAllAsync(cancellationToken)).FirstOrDefault();
 
         if (sequence == null)
             return Ok(new { currentValue = 1, message = "Sequence not initialized yet" });
@@ -566,7 +566,7 @@ public sealed class InvoicesController : ControllerBase
     }
 
     /// <summary>
-    /// Sets the global invoice sequence to a specific value.
+    /// Sets the current user's invoice sequence to a specific value.
     /// WARNING: Setting this too low can cause duplicate invoice numbers.
     /// </summary>
     [HttpPut("sequence")]
@@ -582,7 +582,7 @@ public sealed class InvoicesController : ControllerBase
         var repository = HttpContext.RequestServices.GetRequiredService<IRepository<InvoiceSequence>>();
         var unitOfWork = HttpContext.RequestServices.GetRequiredService<IUnitOfWork>();
 
-        var sequence = await repository.GetByIdAsync(1, cancellationToken);
+        var sequence = (await repository.GetAllAsync(cancellationToken)).FirstOrDefault();
         
         if (sequence == null)
         {

@@ -24,8 +24,8 @@ public sealed class HolidayCalendarConfiguration : IEntityTypeConfiguration<Holi
             .HasForeignKey(r => r.HolidayCalendarId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // One calendar per country
-        builder.HasIndex(c => c.CountryCode)
+        // One calendar per country, per user
+        builder.HasIndex(c => new { c.OwnerId, c.CountryCode })
             .IsUnique();
     }
 }

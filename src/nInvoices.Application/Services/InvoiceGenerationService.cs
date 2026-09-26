@@ -403,8 +403,8 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         DateOnly issueDate,
         CancellationToken cancellationToken)
     {
-        // Get or create the singleton sequence record (ID = 1)
-        var sequence = await _sequenceRepository.GetByIdAsync(1, cancellationToken);
+        // Get or create the current user's sequence record (the query filter returns only theirs)
+        var sequence = (await _sequenceRepository.GetAllAsync(cancellationToken)).FirstOrDefault();
         if (sequence == null)
         {
             sequence = new InvoiceSequence(1);
@@ -426,7 +426,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         DateOnly issueDate,
         CancellationToken cancellationToken)
     {
-        var sequence = await _sequenceRepository.GetByIdAsync(1, cancellationToken);
+        var sequence = (await _sequenceRepository.GetAllAsync(cancellationToken)).FirstOrDefault();
         var sequenceNumber = sequence?.CurrentValue ?? 1;
 
         return await FormatInvoiceNumberAsync(customerId, sequenceNumber, issueDate, cancellationToken);

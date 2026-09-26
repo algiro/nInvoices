@@ -6,7 +6,7 @@ namespace nInvoices.Core.Entities;
 /// One public holiday of a <see cref="HolidayCalendar"/>: its name and how its date is found
 /// each year. Only the fields used by <see cref="Kind"/> are set; the others are null.
 /// </summary>
-public sealed class HolidayRule : EntityBase
+public sealed class HolidayRule : OwnedEntityBase
 {
     public long HolidayCalendarId { get; set; }
     public string Name { get; private set; } = string.Empty;
