@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Foglio Ore</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 1rem 1.5rem; 
+            font-size: 13px;
+        }
+        h1 { 
+            color: #1e40af; 
+            border-bottom: 2px solid #1e40af; 
+            padding-bottom: 0.3rem; 
+            margin-bottom: 0.8rem;
+            font-size: 20px;
+        }
+        .summary { 
+            margin: 0.8rem 0; 
+            padding: 0.6rem 0.8rem; 
+            background: #f3f4f6; 
+            border-radius: 0.3rem; 
+            font-size: 12px;
+        }
+        .summary-item { 
+            display: inline-block; 
+            margin-right: 1.5rem; 
+        }
+        .summary-label { 
+            font-weight: bold; 
+            color: #4b5563; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 1rem; 
+            font-size: 12px;
+        }
+        th { 
+            background: #1e40af; 
+            color: white; 
+            padding: 0.4rem 0.6rem; 
+            text-align: left; 
+            font-size: 11px;
+            font-weight: 600;
+        }
+        td { 
+            padding: 0.35rem 0.6rem; 
+            border: 1px solid #e5e7eb; 
+        }
+        .worked { background: #ccffcc; }
+        .public-holiday { background: #fff3e0; }
+        .unpaid-leave { background: #99ccff; }
+        .weekend { background: #f9fafb; color: #9ca3af; }
+    </style>
+</head>
+<body>
+    <h1>Foglio ore - [[ LocalizeMonth monthNumber "it-IT" ]] [[ year ]]</h1>
+    
+    <div class="summary">
+        <div class="summary-item">
+            <span class="summary-label">Cliente:</span> [[ customer.name ]]
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Giorni Lavorati:</span> [[ workedDaysCount ]]
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Festività:</span> [[ publicHolidayCount ]]
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Permessi:</span> [[ unpaidLeaveCount ]]
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Giorno</th>
+                <th>Ore Lavorate</th>
+            </tr>
+        </thead>
+        <tbody>
+            [[ for day in monthDays ]]
+            <tr class="[[ if day.isWeekend ]]weekend[[ else if day.isWorked ]]worked[[ else if day.isPublicHoliday ]]public-holiday[[ else if day.isUnpaidLeave ]]unpaid-leave[[ end ]]">
+                <td>[[ day.dateValue | date.to_string "%d-%m-%Y" ]]</td>
+                <td>[[ LocalizeDayOfWeek day.dateValue "it-IT" ]]</td>
+                <td> [[ if day.type == "Worked" ]] 8 [[ else if day.type == "PublicHoliday" ]] Festivo [[ else ]] - [[ end ]] </td>
+            </tr>
+            [[ end ]]
+        </tbody>
+    </table>
+</body>
+</html>

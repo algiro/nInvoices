@@ -1,0 +1,362 @@
+[
+  {
+    "browser": "chromium",
+    "test": "Dashboard",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/chromium-dashboard.png"
+    ]
+  },
+  {
+    "browser": "chromium",
+    "test": "Customers List",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/chromium-customers-list.png"
+    ]
+  },
+  {
+    "browser": "chromium",
+    "test": "Create Customer",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/chromium-customer-form-empty.png",
+      "screenshots/chromium-customer-form-filled.png",
+      "screenshots/chromium-customer-form-submitted.png"
+    ]
+  },
+  {
+    "browser": "chromium",
+    "test": "Customer Details & Tabs",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/chromium-customer-details.png",
+      "screenshots/chromium-customer-tab-rates.png",
+      "screenshots/chromium-customer-tab-taxes.png",
+      "screenshots/chromium-customer-tab-templates.png"
+    ]
+  },
+  {
+    "browser": "chromium",
+    "test": "Add Template",
+    "passed": false,
+    "errors": [
+      "[Functional] Template modal did not open"
+    ],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/chromium-templates-tab.png",
+      "screenshots/chromium-template-modal-opened.png"
+    ]
+  },
+  {
+    "browser": "chromium",
+    "test": "Add Rate",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/chromium-rates-tab.png",
+      "screenshots/chromium-rate-modal.png"
+    ]
+  },
+  {
+    "browser": "chromium",
+    "test": "Add Tax",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/chromium-taxes-tab.png",
+      "screenshots/chromium-tax-modal.png"
+    ]
+  },
+  {
+    "browser": "chromium",
+    "test": "Invoices List",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/chromium-invoices-list.png"
+    ]
+  },
+  {
+    "browser": "chromium",
+    "test": "Invoice Generate",
+    "passed": true,
+    "errors": [],
+    "warnings": [
+      "[Visual] Invoice type options not visible"
+    ],
+    "screenshots": [
+      "screenshots/chromium-invoice-generate.png"
+    ]
+  },
+  {
+    "browser": "chromium",
+    "test": "Visual Consistency",
+    "passed": true,
+    "errors": [],
+    "warnings": [
+      "[Visual] invoices: Low contrast text: \"All Statuses\" (text: rgb(0, 0, 0), bg: rgba(0, 0, 0, 0))",
+      "[Visual] invoices: Low contrast text: \"Draft\" (text: rgb(0, 0, 0), bg: rgba(0, 0, 0, 0))",
+      "[Visual] invoices: Low contrast text: \"Finalized\" (text: rgb(0, 0, 0), bg: rgba(0, 0, 0, 0))",
+      "[Visual] invoices: Low contrast text: \"Sent\" (text: rgb(0, 0, 0), bg: rgba(0, 0, 0, 0))",
+      "[Visual] invoices: Low contrast text: \"Paid\" (text: rgb(0, 0, 0), bg: rgba(0, 0, 0, 0))"
+    ],
+    "screenshots": [
+      "screenshots/chromium-visual-dashboard.png",
+      "screenshots/chromium-visual-customers.png",
+      "screenshots/chromium-visual-invoices.png"
+    ]
+  },
+  {
+    "browser": "firefox",
+    "test": "Dashboard",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/firefox-dashboard.png"
+    ]
+  },
+  {
+    "browser": "firefox",
+    "test": "Customers List",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/firefox-customers-list.png"
+    ]
+  },
+  {
+    "browser": "firefox",
+    "test": "Create Customer",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/firefox-customer-form-empty.png",
+      "screenshots/firefox-customer-form-filled.png",
+      "screenshots/firefox-customer-form-submitted.png"
+    ]
+  },
+  {
+    "browser": "firefox",
+    "test": "Customer Details & Tabs",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/firefox-customer-details.png",
+      "screenshots/firefox-customer-tab-rates.png",
+      "screenshots/firefox-customer-tab-taxes.png",
+      "screenshots/firefox-customer-tab-templates.png"
+    ]
+  },
+  {
+    "browser": "firefox",
+    "test": "Add Template",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/firefox-templates-tab.png",
+      "screenshots/firefox-template-modal-opened.png",
+      "screenshots/firefox-template-syntax-guide.png",
+      "screenshots/firefox-template-sample-loaded.png"
+    ]
+  },
+  {
+    "browser": "firefox",
+    "test": "Add Rate",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/firefox-rates-tab.png",
+      "screenshots/firefox-rate-modal.png"
+    ]
+  },
+  {
+    "browser": "firefox",
+    "test": "Add Tax",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/firefox-taxes-tab.png",
+      "screenshots/firefox-tax-modal.png"
+    ]
+  },
+  {
+    "browser": "firefox",
+    "test": "Invoices List",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/firefox-invoices-list.png"
+    ]
+  },
+  {
+    "browser": "firefox",
+    "test": "Invoice Generate",
+    "passed": true,
+    "errors": [],
+    "warnings": [
+      "[Visual] Invoice type options not visible"
+    ],
+    "screenshots": [
+      "screenshots/firefox-invoice-generate.png"
+    ]
+  },
+  {
+    "browser": "firefox",
+    "test": "Visual Consistency",
+    "passed": true,
+    "errors": [],
+    "warnings": [
+      "[Visual] invoices: Low contrast text: \"All Statuses\" (text: rgb(0, 0, 0), bg: rgba(0, 0, 0, 0))",
+      "[Visual] invoices: Low contrast text: \"Draft\" (text: rgb(0, 0, 0), bg: rgba(0, 0, 0, 0))",
+      "[Visual] invoices: Low contrast text: \"Finalized\" (text: rgb(0, 0, 0), bg: rgba(0, 0, 0, 0))",
+      "[Visual] invoices: Low contrast text: \"Sent\" (text: rgb(0, 0, 0), bg: rgba(0, 0, 0, 0))",
+      "[Visual] invoices: Low contrast text: \"Paid\" (text: rgb(0, 0, 0), bg: rgba(0, 0, 0, 0))"
+    ],
+    "screenshots": [
+      "screenshots/firefox-visual-dashboard.png",
+      "screenshots/firefox-visual-customers.png",
+      "screenshots/firefox-visual-invoices.png"
+    ]
+  },
+  {
+    "browser": "msedge",
+    "test": "Dashboard",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/msedge-dashboard.png"
+    ]
+  },
+  {
+    "browser": "msedge",
+    "test": "Customers List",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/msedge-customers-list.png"
+    ]
+  },
+  {
+    "browser": "msedge",
+    "test": "Create Customer",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/msedge-customer-form-empty.png",
+      "screenshots/msedge-customer-form-filled.png",
+      "screenshots/msedge-customer-form-submitted.png"
+    ]
+  },
+  {
+    "browser": "msedge",
+    "test": "Customer Details & Tabs",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/msedge-customer-details.png",
+      "screenshots/msedge-customer-tab-rates.png",
+      "screenshots/msedge-customer-tab-taxes.png",
+      "screenshots/msedge-customer-tab-templates.png"
+    ]
+  },
+  {
+    "browser": "msedge",
+    "test": "Add Template",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/msedge-templates-tab.png",
+      "screenshots/msedge-template-modal-opened.png",
+      "screenshots/msedge-template-syntax-guide.png",
+      "screenshots/msedge-template-sample-loaded.png"
+    ]
+  },
+  {
+    "browser": "msedge",
+    "test": "Add Rate",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/msedge-rates-tab.png",
+      "screenshots/msedge-rate-modal.png"
+    ]
+  },
+  {
+    "browser": "msedge",
+    "test": "Add Tax",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/msedge-taxes-tab.png",
+      "screenshots/msedge-tax-modal.png"
+    ]
+  },
+  {
+    "browser": "msedge",
+    "test": "Invoices List",
+    "passed": true,
+    "errors": [],
+    "warnings": [],
+    "screenshots": [
+      "screenshots/msedge-invoices-list.png"
+    ]
+  },
+  {
+    "browser": "msedge",
+    "test": "Invoice Generate",
+    "passed": true,
+    "errors": [],
+    "warnings": [
+      "[Visual] Invoice type options not visible"
+    ],
+    "screenshots": [
+      "screenshots/msedge-invoice-generate.png"
+    ]
+  },
+  {
+    "browser": "msedge",
+    "test": "Visual Consistency",
+    "passed": true,
+    "errors": [],
+    "warnings": [
+      "[Visual] invoices: Low contrast text: \"All Statuses\" (text: rgb(0, 0, 0), bg: rgba(0, 0, 0, 0))",
+      "[Visual] invoices: Low contrast text: \"Draft\" (text: rgb(0, 0, 0), bg: rgba(0, 0, 0, 0))",
+      "[Visual] invoices: Low contrast text: \"Finalized\" (text: rgb(0, 0, 0), bg: rgba(0, 0, 0, 0))",
+      "[Visual] invoices: Low contrast text: \"Sent\" (text: rgb(0, 0, 0), bg: rgba(0, 0, 0, 0))",
+      "[Visual] invoices: Low contrast text: \"Paid\" (text: rgb(0, 0, 0), bg: rgba(0, 0, 0, 0))"
+    ],
+    "screenshots": [
+      "screenshots/msedge-visual-dashboard.png",
+      "screenshots/msedge-visual-customers.png",
+      "screenshots/msedge-visual-invoices.png"
+    ]
+  }
+]

@@ -1,0 +1,102 @@
+# Build results
+[Dd]ebug/
+[Bb]in\\[Dd]ebug/
+[Bb]in\\[Rr]elease/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# .NET
+project.lock.json
+project.fragment.lock.json
+artifacts/
+**/Properties/launchSettings.json
+
+# Test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+*.db.bak*
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
+
+# Frontend build
+dist/
+dist-ssr/
+*.local
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Docker
+docker/data/
+docker/logs/
+docker/volumes/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Rider
+.idea/
+*.sln.iml
+
+screenshots/
+# ...except the README's images
+!Docs/screenshots/
+
+Docs/Issues/
+
+# Your server and domain for docker/deploy.sh and deploy.ps1 (see deploy.local.env.example)
+docker/deploy.local.env
+
+# Google OAuth client downloads (never commit)
+client_secret_*.json
+
+# ASP.NET Data Protection keys (encrypt stored Gmail tokens)
+src/nInvoices.Api/keys/

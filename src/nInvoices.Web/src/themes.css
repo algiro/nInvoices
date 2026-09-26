@@ -1,0 +1,699 @@
+/*
+ * nInvoices themes.
+ *
+ * The resolved theme is stamped on <html data-theme="…"> (see useTheme.ts and the inline script
+ * in index.html). A theme is only a set of CSS variables; components never test for a theme.
+ * Any element with data-theme gets that theme's variables, which is how the theme picker draws
+ * its previews.
+ *
+ * Layers, in order (later blocks win at equal specificity):
+ *   1. Classic light: the base colour tokens, also the fallback for every light theme
+ *   2. Look tokens (sidebar, panels, accents, hero, KPI…), derived from the colour tokens of
+ *      whichever theme the element has, so Classic keeps its flat look
+ *   3. Dark base: Classic dark, also the fallback for every dark theme
+ *   4. The individual themes, overriding what makes each one distinct
+ *
+ * Text colours keep WCAG AA contrast (4.5:1) against the surfaces they sit on.
+ */
+
+/* ---------- 1. Classic light ---------- */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  /* surfaces */
+  --color-bg: #f3f4f7;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8f9fb;
+  --color-surface-sunken: #eef0f4;
+
+  /* text */
+  --color-text: #141a26;
+  --color-text-secondary: #3b4455;
+  --color-text-muted: #5d6678;
+  --color-text-subtle: #8a93a4;
+
+  /* lines */
+  --color-border: #e1e4ea;
+  --color-border-strong: #cfd4dd;
+
+  /* brand */
+  --color-primary: #2451c9;
+  --color-primary-hover: #1d43ad;
+  --color-primary-soft: #e8eeff;
+  --color-primary-line: #b9c8f5;
+  --color-on-primary: #ffffff;
+
+  /* semantic */
+  --color-success: #15803d;
+  --color-success-soft: #e7f6ec;
+  --color-success-line: #9fd4b7;
+  --color-warning: #b45309;
+  --color-warning-soft: #fdf3e1;
+  --color-warning-line: #efc98b;
+  --color-danger: #b42318;
+  --color-danger-hover: #971d14;
+  --color-danger-soft: #fdecea;
+  --color-danger-line: #f1b3ad;
+
+  /* shape & depth */
+  --radius-sm: 0.3rem;
+  --radius-md: 0.45rem;
+  --radius-lg: 0.7rem;
+  --shadow-sm: 0 1px 2px rgba(20, 26, 38, 0.06);
+  --shadow-md: 0 1px 2px rgba(20, 26, 38, 0.06), 0 6px 20px rgba(20, 26, 38, 0.08);
+  --shadow-lg: 0 10px 40px rgba(20, 26, 38, 0.18);
+  --focus-ring: 0 0 0 3px rgba(36, 81, 201, 0.18);
+  --shadow-up: 0 -4px 18px rgba(20, 26, 38, 0.08);
+  --color-scrim: rgba(15, 20, 30, 0.45);
+  --color-topbar: rgba(255, 255, 255, 0.92);
+  /* text on solid status fills (success/warning/danger buttons and chips) */
+  --color-on-status: #ffffff;
+
+  /* template code editor */
+  --code-expr: #7a2fb5;
+  --code-expr-bg: rgba(138, 63, 194, 0.09);
+  --code-active-line: rgba(36, 81, 201, 0.04);
+  --code-selection: rgba(36, 81, 201, 0.16);
+  --code-tag: #2451c9;
+  --code-attr: #9a4a06;
+  --code-string: #15803d;
+  --code-comment: #8a93a4;
+  --code-keyword: #b42318;
+  --code-number: #0f766e;
+  --code-property: #0e6f86;
+
+  /* charts and figures */
+  --chart-bar: #2451c9;
+  --kpi-1: #2451c9;
+  --kpi-2: #15803d;
+  --kpi-3: #7c3aed;
+  --kpi-4: #b45309;
+}
+
+/* ---------- 2. Look tokens, derived per element from its theme's colours ---------- */
+:root,
+[data-theme] {
+  /* page background behind everything; may be a gradient */
+  --app-bg: var(--color-bg);
+
+  /* navigation sidebar */
+  --sidebar-bg: var(--color-surface);
+  --sidebar-border: var(--color-border);
+  --sidebar-text: var(--color-text-secondary);
+  --sidebar-text-strong: var(--color-text);
+  --sidebar-icon: var(--color-text-subtle);
+  --sidebar-hover-bg: var(--color-surface-sunken);
+  --sidebar-active-bg: var(--color-primary-soft);
+  --sidebar-active-text: var(--color-primary);
+  --sidebar-cta-bg: var(--accent-gradient);
+  --sidebar-cta-text: var(--color-on-primary);
+
+  /* panels, tables, tiles */
+  --panel-bg: var(--color-surface);
+  --panel-border: var(--color-border);
+  --panel-shadow: var(--shadow-sm);
+  --panel-blur: none;
+
+  /* primary actions and the brand mark */
+  --accent-gradient: var(--color-primary);
+  --accent-gradient-hover: var(--color-primary-hover);
+  --accent-glow: none;
+
+  /* the headline figure on the dashboard */
+  --hero-bg: var(--panel-bg);
+  --hero-border: var(--panel-border);
+  --hero-text: var(--color-text);
+  --hero-muted: var(--color-text-muted);
+  /* the hero's icon: an accent on a plain hero, the hero's text colour on a gradient one */
+  --hero-accent: var(--kpi-1);
+
+  /* the chart's bars run from --chart-bar (top) to --chart-bar-2 (base) */
+  --chart-bar-2: var(--chart-bar);
+}
+
+/* ---------- 3. Dark base: Classic dark, and the fallback of every dark theme ---------- */
+[data-theme='dark'],
+[data-theme='aurora'],
+[data-theme='volt'],
+[data-theme='orchid'],
+[data-theme='cinder'] {
+  color-scheme: dark;
+
+  --color-bg: #0d1117;
+  --color-surface: #151a23;
+  --color-surface-muted: #1a202b;
+  --color-surface-sunken: #10141b;
+
+  --color-text: #e8ebf1;
+  --color-text-secondary: #c9cfda;
+  --color-text-muted: #98a2b3;
+  --color-text-subtle: #838da0;
+
+  --color-border: #262d3a;
+  --color-border-strong: #353d4d;
+
+  --color-primary: #7d9bff;
+  --color-primary-hover: #9cb3ff;
+  --color-primary-soft: #1b2644;
+  --color-primary-line: #34458a;
+  --color-on-primary: #0d1117;
+
+  --color-success: #4cc28a;
+  --color-success-soft: #12291d;
+  --color-success-line: #2a5c41;
+  --color-warning: #e0a54a;
+  --color-warning-soft: #2c2210;
+  --color-warning-line: #5e4518;
+  --color-danger: #ef7b70;
+  --color-danger-hover: #f4988f;
+  --color-danger-soft: #331816;
+  --color-danger-line: #6a2e28;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.55);
+  --shadow-up: 0 -4px 18px rgba(0, 0, 0, 0.4);
+  --focus-ring: 0 0 0 3px rgba(125, 155, 255, 0.3);
+  --color-scrim: rgba(0, 0, 0, 0.6);
+  --color-topbar: rgba(21, 26, 35, 0.9);
+  --color-on-status: #0d1117;
+
+  --code-expr: #c79bf2;
+  --code-expr-bg: rgba(199, 155, 242, 0.13);
+  --code-active-line: rgba(125, 155, 255, 0.06);
+  --code-selection: rgba(125, 155, 255, 0.28);
+  --code-tag: #8fb0ff;
+  --code-attr: #e7b163;
+  --code-string: #62d19c;
+  --code-comment: #838da0;
+  --code-keyword: #f28b82;
+  --code-number: #5fd4c4;
+  --code-property: #6fd3e8;
+
+  --chart-bar: #6a88ee;
+  --kpi-1: #7d9bff;
+  --kpi-2: #4cc28a;
+  --kpi-3: #b79cf5;
+  --kpi-4: #e0a54a;
+}
+
+/* ================================================================================
+ * 4. Themes
+ * ================================================================================ */
+
+/*
+ * Lagoon (light): a turquoise gradient sidebar on a cool, faintly lavender canvas, white cards,
+ * and cyan / pink / violet figures.
+ */
+[data-theme='lagoon'] {
+  --color-bg: #f2f5fb;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f6f9fd;
+  --color-surface-sunken: #ebf1f8;
+
+  --color-text: #13203a;
+  --color-text-secondary: #37445f;
+  --color-text-muted: #56637d;
+  --color-text-subtle: #8792a9;
+
+  --color-border: #e1e8f2;
+  --color-border-strong: #ccd6e6;
+
+  --color-primary: #0e7490;
+  --color-primary-hover: #155e75;
+  --color-primary-soft: #e0f6fa;
+  --color-primary-line: #9fdcea;
+  --color-on-primary: #ffffff;
+
+  --radius-md: 0.55rem;
+  --radius-lg: 0.95rem;
+  --shadow-sm: 0 1px 2px rgba(19, 32, 58, 0.04), 0 6px 22px rgba(19, 32, 58, 0.05);
+  --shadow-md: 0 2px 6px rgba(19, 32, 58, 0.06), 0 14px 36px rgba(19, 32, 58, 0.1);
+  --focus-ring: 0 0 0 3px rgba(14, 116, 144, 0.2);
+  --color-topbar: rgba(244, 247, 252, 0.8);
+
+  --app-bg:
+    radial-gradient(1100px 620px at 105% -12%, rgba(34, 211, 238, 0.16), transparent 62%),
+    radial-gradient(900px 560px at -8% 108%, rgba(167, 139, 250, 0.13), transparent 60%),
+    #f2f5fb;
+
+  --sidebar-bg: linear-gradient(170deg, #0e7490 0%, #0f766e 58%, #115e59 100%);
+  --sidebar-border: transparent;
+  --sidebar-text: #e6fbf8;
+  --sidebar-text-strong: #ffffff;
+  --sidebar-icon: rgba(230, 251, 248, 0.82);
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.1);
+  /* a darker pill: white on a lighter one wouldn't reach 4.5:1 */
+  --sidebar-active-bg: rgba(6, 40, 52, 0.38);
+  --sidebar-active-text: #ffffff;
+  --sidebar-cta-bg: #ffffff;
+  --sidebar-cta-text: #0e7490;
+
+  --panel-border: #e6ecf5;
+
+  --accent-gradient: linear-gradient(135deg, #0e7490 0%, #0f766e 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #155e75 0%, #115e59 100%);
+  --accent-glow: 0 6px 18px rgba(14, 116, 144, 0.28);
+
+  --hero-bg:
+    radial-gradient(120% 140% at 100% 0%, rgba(103, 232, 249, 0.22), transparent 55%),
+    linear-gradient(135deg, #0e7490 0%, #0f766e 70%, #115e59 100%);
+  --hero-border: transparent;
+  --hero-text: #ffffff;
+  --hero-muted: #d2f5f1;
+  --hero-accent: var(--hero-text);
+  --hero-accent: var(--hero-text);
+
+  --chart-bar: #06b6d4;
+  --chart-bar-2: #8b5cf6;
+  --kpi-1: #0891b2;
+  --kpi-2: #db2777;
+  --kpi-3: #7c3aed;
+  --kpi-4: #d97706;
+}
+
+/*
+ * Iris (light): a deep indigo sidebar on a soft lilac canvas, violet-to-fuchsia accents.
+ */
+[data-theme='iris'] {
+  --color-bg: #f6f4fc;
+  --color-surface: #ffffff;
+  --color-surface-muted: #faf9fe;
+  --color-surface-sunken: #f0edfa;
+
+  --color-text: #1b1636;
+  --color-text-secondary: #3e3860;
+  --color-text-muted: #5f5980;
+  --color-text-subtle: #938dae;
+
+  --color-border: #e8e4f5;
+  --color-border-strong: #d4cdea;
+
+  --color-primary: #6d28d9;
+  --color-primary-hover: #5b21b6;
+  --color-primary-soft: #f1ebff;
+  --color-primary-line: #cfbdf8;
+  --color-on-primary: #ffffff;
+
+  --radius-md: 0.55rem;
+  --radius-lg: 0.95rem;
+  --shadow-sm: 0 1px 2px rgba(27, 22, 54, 0.04), 0 6px 22px rgba(76, 29, 149, 0.06);
+  --shadow-md: 0 2px 6px rgba(27, 22, 54, 0.06), 0 14px 36px rgba(76, 29, 149, 0.12);
+  --focus-ring: 0 0 0 3px rgba(109, 40, 217, 0.2);
+  --color-topbar: rgba(248, 246, 253, 0.82);
+
+  --code-tag: #6d28d9;
+
+  --app-bg:
+    radial-gradient(1000px 600px at 102% -10%, rgba(236, 72, 153, 0.1), transparent 60%),
+    radial-gradient(1000px 640px at 20% -20%, rgba(139, 92, 246, 0.13), transparent 62%),
+    #f6f4fc;
+
+  --sidebar-bg: linear-gradient(180deg, #1e1b4b 0%, #2e1f6b 55%, #3b1a78 100%);
+  --sidebar-border: transparent;
+  --sidebar-text: #dcd8fb;
+  --sidebar-text-strong: #ffffff;
+  --sidebar-icon: #a9a2e6;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.08);
+  --sidebar-active-bg: linear-gradient(90deg, rgba(196, 181, 253, 0.26), rgba(196, 181, 253, 0.08));
+  --sidebar-active-text: #ffffff;
+
+  --panel-border: #ebe7f7;
+
+  --accent-gradient: linear-gradient(135deg, #6d28d9 0%, #a21caf 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #5b21b6 0%, #86198f 100%);
+  --accent-glow: 0 6px 18px rgba(109, 40, 217, 0.3);
+
+  --hero-bg:
+    radial-gradient(120% 140% at 100% 0%, rgba(244, 114, 182, 0.24), transparent 55%),
+    linear-gradient(135deg, #3b1a78 0%, #6d28d9 60%, #a21caf 100%);
+  --hero-border: transparent;
+  --hero-text: #ffffff;
+  --hero-muted: #eadcff;
+  --hero-accent: var(--hero-text);
+
+  --chart-bar: #8b5cf6;
+  --chart-bar-2: #ec4899;
+  --kpi-1: #7c3aed;
+  --kpi-2: #db2777;
+  --kpi-3: #2563eb;
+  --kpi-4: #0d9488;
+}
+
+/*
+ * Ember (light): a dark rust sidebar with a bright orange pill on a warm cream canvas,
+ * orange-to-amber figures, teal as the complementary accent. The vivid oranges are kept to
+ * fills without small text on them; text sits on the deeper burnt oranges (≥ 5:1 with white).
+ */
+[data-theme='ember'] {
+  --color-bg: #faf6f2;
+  --color-surface: #ffffff;
+  --color-surface-muted: #fdfaf7;
+  --color-surface-sunken: #f5eee8;
+
+  --color-text: #2a1a10;
+  --color-text-secondary: #4d3527;
+  --color-text-muted: #6b5243;
+  --color-text-subtle: #9c8779;
+
+  --color-border: #efe4db;
+  --color-border-strong: #e0d0c3;
+
+  --color-primary: #c2410c;
+  --color-primary-hover: #9a3412;
+  --color-primary-soft: #fff1e6;
+  --color-primary-line: #fdc9a4;
+  --color-on-primary: #ffffff;
+
+  --radius-md: 0.55rem;
+  --radius-lg: 0.95rem;
+  --shadow-sm: 0 1px 2px rgba(42, 26, 16, 0.04), 0 6px 22px rgba(124, 45, 18, 0.06);
+  --shadow-md: 0 2px 6px rgba(42, 26, 16, 0.06), 0 14px 36px rgba(124, 45, 18, 0.12);
+  --focus-ring: 0 0 0 3px rgba(194, 65, 12, 0.22);
+  --color-topbar: rgba(250, 246, 242, 0.82);
+
+  --code-tag: #c2410c;
+
+  --app-bg:
+    radial-gradient(1000px 600px at 104% -12%, rgba(251, 146, 60, 0.18), transparent 60%),
+    radial-gradient(900px 560px at -8% 108%, rgba(251, 191, 36, 0.12), transparent 60%),
+    #faf6f2;
+
+  --sidebar-bg: linear-gradient(180deg, #431407 0%, #6b2410 60%, #7c2d12 100%);
+  --sidebar-border: transparent;
+  --sidebar-text: #fde8d7;
+  --sidebar-text-strong: #ffffff;
+  --sidebar-icon: #f3b48a;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.08);
+  --sidebar-active-bg: linear-gradient(135deg, #fdba74 0%, #fb923c 100%);
+  --sidebar-active-text: #431407;
+  --sidebar-cta-bg: linear-gradient(135deg, #fdba74 0%, #fb923c 100%);
+  --sidebar-cta-text: #431407;
+
+  --panel-border: #f1e7de;
+
+  --accent-gradient: linear-gradient(135deg, #c2410c 0%, #9a3412 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #9a3412 0%, #7c2d12 100%);
+  --accent-glow: 0 6px 18px rgba(194, 65, 12, 0.3);
+
+  --hero-bg:
+    radial-gradient(120% 140% at 100% 0%, rgba(251, 191, 36, 0.24), transparent 55%),
+    linear-gradient(135deg, #7c2d12 0%, #9a3412 50%, #c2410c 100%);
+  --hero-border: transparent;
+  --hero-text: #ffffff;
+  --hero-muted: #fff3ea;
+  --hero-accent: var(--hero-text);
+
+  --chart-bar: #f97316;
+  --chart-bar-2: #fbbf24;
+  --kpi-1: #ea580c;
+  --kpi-2: #0d9488;
+  --kpi-3: #db2777;
+  --kpi-4: #7c3aed;
+}
+
+/*
+ * Aurora (dark): near-black with a teal glow, translucent glass panels.
+ */
+[data-theme='aurora'] {
+  --color-bg: #090d10;
+  --color-surface: #10171d;
+  --color-surface-muted: #141d24;
+  --color-surface-sunken: #0b1115;
+
+  --color-text: #e5f2f1;
+  --color-text-secondary: #c2d2d4;
+  --color-text-muted: #8fa4a9;
+  --color-text-subtle: #7b9096;
+
+  --color-border: #1c2931;
+  --color-border-strong: #293a44;
+
+  --color-primary: #2dd4bf;
+  --color-primary-hover: #5eead4;
+  --color-primary-soft: #0e2a29;
+  --color-primary-line: #1d5c55;
+  --color-on-primary: #042f2e;
+
+  --radius-md: 0.6rem;
+  --radius-lg: 1.05rem;
+  --focus-ring: 0 0 0 3px rgba(45, 212, 191, 0.3);
+  --color-topbar: rgba(9, 13, 16, 0.72);
+
+  --code-tag: #5eead4;
+  --code-selection: rgba(45, 212, 191, 0.25);
+
+  --app-bg:
+    radial-gradient(1000px 620px at 88% -12%, rgba(45, 212, 191, 0.14), transparent 60%),
+    radial-gradient(800px 520px at -10% 105%, rgba(56, 189, 248, 0.09), transparent 60%),
+    #090d10;
+
+  --sidebar-bg: rgba(11, 17, 21, 0.72);
+  --sidebar-border: rgba(148, 197, 190, 0.1);
+  --sidebar-text: #b9cbcd;
+  --sidebar-text-strong: #eefaf8;
+  --sidebar-icon: #7b9096;
+  --sidebar-hover-bg: rgba(45, 212, 191, 0.07);
+  --sidebar-active-bg: linear-gradient(90deg, rgba(45, 212, 191, 0.2), rgba(45, 212, 191, 0.04));
+  --sidebar-active-text: #5eead4;
+
+  --panel-bg: linear-gradient(180deg, rgba(20, 30, 38, 0.82) 0%, rgba(13, 20, 26, 0.82) 100%);
+  --panel-border: rgba(148, 197, 190, 0.12);
+  --panel-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+  --panel-blur: blur(14px);
+
+  --accent-gradient: linear-gradient(135deg, #2dd4bf 0%, #22d3ee 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #5eead4 0%, #67e8f9 100%);
+  --accent-glow: 0 0 0 1px rgba(45, 212, 191, 0.35), 0 8px 26px rgba(45, 212, 191, 0.28);
+
+  --hero-bg:
+    radial-gradient(120% 150% at 0% 0%, rgba(45, 212, 191, 0.38), transparent 55%),
+    radial-gradient(90% 120% at 100% 100%, rgba(56, 189, 248, 0.22), transparent 60%),
+    linear-gradient(135deg, #0f2a2b 0%, #0b1a22 100%);
+  --hero-border: rgba(94, 234, 212, 0.25);
+  --hero-text: #effffc;
+  --hero-muted: #a8d8d2;
+  --hero-accent: var(--hero-text);
+
+  --chart-bar: #2dd4bf;
+  --chart-bar-2: #0ea5e9;
+  --kpi-1: #2dd4bf;
+  --kpi-2: #38bdf8;
+  --kpi-3: #a78bfa;
+  --kpi-4: #fbbf24;
+}
+
+/*
+ * Volt (dark): black and graphite with electric lime, like a trading terminal.
+ */
+[data-theme='volt'] {
+  --color-bg: #0a0a0b;
+  --color-surface: #141416;
+  --color-surface-muted: #19191c;
+  --color-surface-sunken: #0f0f11;
+
+  --color-text: #f3f5ee;
+  --color-text-secondary: #d3d6ca;
+  --color-text-muted: #9b9e92;
+  --color-text-subtle: #83867a;
+
+  --color-border: #24252a;
+  --color-border-strong: #33343a;
+
+  --color-primary: #b5f23d;
+  --color-primary-hover: #c9f76d;
+  --color-primary-soft: #1c2510;
+  --color-primary-line: #4b6816;
+  --color-on-primary: #0a0a0b;
+
+  --radius-md: 0.6rem;
+  --radius-lg: 1.05rem;
+  --focus-ring: 0 0 0 3px rgba(181, 242, 61, 0.28);
+  --color-topbar: rgba(10, 10, 11, 0.78);
+
+  --code-tag: #c9f76d;
+  --code-selection: rgba(181, 242, 61, 0.22);
+
+  --app-bg:
+    radial-gradient(900px 540px at 100% -6%, rgba(163, 230, 53, 0.11), transparent 60%),
+    radial-gradient(700px 480px at -6% 104%, rgba(250, 204, 21, 0.05), transparent 60%),
+    #0a0a0b;
+
+  --sidebar-bg: linear-gradient(180deg, #121213 0%, #0c0c0d 100%);
+  --sidebar-border: #1d1e22;
+  --sidebar-text: #c9ccc0;
+  --sidebar-text-strong: #f7f9f2;
+  --sidebar-icon: #8a8d81;
+  --sidebar-hover-bg: rgba(181, 242, 61, 0.07);
+  --sidebar-active-bg: linear-gradient(135deg, #d9f99d 0%, #b5f23d 60%, #9ad62a 100%);
+  --sidebar-active-text: #0a0a0b;
+
+  --panel-bg: linear-gradient(180deg, #161618 0%, #121214 100%);
+  --panel-border: #222328;
+  --panel-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+
+  --accent-gradient: linear-gradient(135deg, #d9f99d 0%, #b5f23d 55%, #9ad62a 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #ecfccb 0%, #c9f76d 55%, #b5f23d 100%);
+  --accent-glow: 0 8px 26px rgba(163, 230, 53, 0.24);
+
+  --hero-bg:
+    radial-gradient(110% 140% at 100% 0%, rgba(181, 242, 61, 0.3), transparent 55%),
+    linear-gradient(160deg, #1b2410 0%, #131313 72%);
+  --hero-border: rgba(181, 242, 61, 0.22);
+  --hero-text: #f7f9f2;
+  --hero-muted: #bfd49a;
+  --hero-accent: var(--hero-text);
+
+  --chart-bar: #b5f23d;
+  --chart-bar-2: #facc15;
+  --kpi-1: #b5f23d;
+  --kpi-2: #facc15;
+  --kpi-3: #38bdf8;
+  --kpi-4: #f472b6;
+}
+
+/*
+ * Orchid (dark): warm charcoal with lavender and peach, soft and rounded.
+ */
+[data-theme='orchid'] {
+  --color-bg: #151419;
+  --color-surface: #201e26;
+  --color-surface-muted: #25222c;
+  --color-surface-sunken: #1a191f;
+
+  --color-text: #f2eff8;
+  --color-text-secondary: #d4cee3;
+  --color-text-muted: #a49db7;
+  --color-text-subtle: #8c85a2;
+
+  --color-border: #2e2a37;
+  --color-border-strong: #3d3848;
+
+  --color-primary: #b9a6ff;
+  --color-primary-hover: #cdbfff;
+  --color-primary-soft: #2b2446;
+  --color-primary-line: #504382;
+  --color-on-primary: #1a1530;
+
+  --radius-md: 0.65rem;
+  --radius-lg: 1.15rem;
+  --focus-ring: 0 0 0 3px rgba(185, 166, 255, 0.3);
+  --color-topbar: rgba(21, 20, 25, 0.78);
+
+  --code-tag: #cdbfff;
+  --code-selection: rgba(185, 166, 255, 0.26);
+
+  --app-bg:
+    radial-gradient(900px 540px at 85% -12%, rgba(167, 139, 250, 0.15), transparent 60%),
+    radial-gradient(700px 460px at -6% 104%, rgba(251, 146, 60, 0.08), transparent 60%),
+    #151419;
+
+  --sidebar-bg: #1a1920;
+  --sidebar-border: #25232c;
+  --sidebar-text: #cbc5da;
+  --sidebar-text-strong: #f7f4fc;
+  --sidebar-icon: #8c85a2;
+  --sidebar-hover-bg: rgba(185, 166, 255, 0.08);
+  --sidebar-active-bg: rgba(185, 166, 255, 0.17);
+  --sidebar-active-text: #d8ccff;
+
+  --panel-bg: #201e26;
+  --panel-border: #2c2934;
+  --panel-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+
+  --accent-gradient: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 55%, #e9a3f0 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 55%, #f0abfc 100%);
+  --accent-glow: 0 8px 24px rgba(167, 139, 250, 0.26);
+
+  --hero-bg:
+    radial-gradient(110% 140% at 100% 100%, rgba(253, 186, 116, 0.22), transparent 55%),
+    radial-gradient(110% 140% at 0% 0%, rgba(167, 139, 250, 0.4), transparent 55%),
+    linear-gradient(135deg, #332a55 0%, #25202f 100%);
+  --hero-border: rgba(196, 181, 253, 0.2);
+  --hero-text: #f7f4fc;
+  --hero-muted: #cfc6ea;
+
+  --chart-bar: #a78bfa;
+  --chart-bar-2: #f9a8d4;
+  --kpi-1: #b9a6ff;
+  --kpi-2: #fdba74;
+  --kpi-3: #f9a8d4;
+  --kpi-4: #67e8f9;
+}
+
+/*
+ * Cinder (dark): warm near-black with glowing orange, Ember's dark counterpart. On a dark
+ * canvas the vivid oranges read well as text, so they carry the accents; text on orange fills
+ * is dark (≥ 5:1 on the deepest orange).
+ */
+[data-theme='cinder'] {
+  --color-bg: #110c09;
+  --color-surface: #1a1411;
+  --color-surface-muted: #1f1814;
+  --color-surface-sunken: #140f0c;
+
+  --color-text: #f7efe9;
+  --color-text-secondary: #dccdc2;
+  --color-text-muted: #a8968a;
+  --color-text-subtle: #8f7d71;
+
+  --color-border: #2c221c;
+  --color-border-strong: #3b2e26;
+
+  --color-primary: #fb923c;
+  --color-primary-hover: #fdba74;
+  --color-primary-soft: #2e1a0e;
+  --color-primary-line: #7a3d16;
+  --color-on-primary: #1c0a02;
+
+  --color-warning: #fbbf24;
+  --color-warning-soft: #2d230b;
+  --color-warning-line: #6b5314;
+
+  --radius-md: 0.6rem;
+  --radius-lg: 1.05rem;
+  --focus-ring: 0 0 0 3px rgba(251, 146, 60, 0.3);
+  --color-topbar: rgba(17, 12, 9, 0.78);
+
+  --code-tag: #fdba74;
+  --code-selection: rgba(251, 146, 60, 0.25);
+
+  --app-bg:
+    radial-gradient(900px 560px at 100% -8%, rgba(249, 115, 22, 0.16), transparent 60%),
+    radial-gradient(760px 500px at -8% 106%, rgba(251, 191, 36, 0.07), transparent 60%),
+    #110c09;
+
+  --sidebar-bg: linear-gradient(180deg, #160f0c 0%, #120c09 100%);
+  --sidebar-border: #241b16;
+  --sidebar-text: #d9c9bd;
+  --sidebar-text-strong: #fbf4ee;
+  --sidebar-icon: #8f7d71;
+  --sidebar-hover-bg: rgba(251, 146, 60, 0.08);
+  --sidebar-active-bg: linear-gradient(135deg, #fdba74 0%, #fb923c 55%, #f97316 100%);
+  --sidebar-active-text: #1c0a02;
+
+  --panel-bg: linear-gradient(180deg, #1c1512 0%, #17110e 100%);
+  --panel-border: #2a201a;
+  --panel-shadow: 0 10px 30px rgba(0, 0, 0, 0.38);
+
+  --accent-gradient: linear-gradient(135deg, #fdba74 0%, #fb923c 45%, #ea580c 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #fed7aa 0%, #fdba74 45%, #f97316 100%);
+  --accent-glow: 0 8px 26px rgba(249, 115, 22, 0.3);
+
+  --hero-bg:
+    radial-gradient(110% 140% at 100% 0%, rgba(249, 115, 22, 0.42), transparent 55%),
+    radial-gradient(90% 120% at 0% 100%, rgba(251, 191, 36, 0.12), transparent 60%),
+    linear-gradient(150deg, #3b1a0b 0%, #1d120d 75%);
+  --hero-border: rgba(251, 146, 60, 0.28);
+  --hero-text: #fff7f0;
+  --hero-muted: #f3c7a6;
+  --hero-accent: var(--hero-text);
+
+  --chart-bar: #fb923c;
+  --chart-bar-2: #fbbf24;
+  --kpi-1: #fb923c;
+  --kpi-2: #2dd4bf;
+  --kpi-3: #f472b6;
+  --kpi-4: #a78bfa;
+}

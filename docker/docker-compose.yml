@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Default=Data Source=/data/nInvoices.db
+    volumes:
+      - ./data:/data
+      - ./logs:/app/logs
+    networks:
+      - ninvoices-network
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.web
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - ninvoices-network
+
+networks:
+  ninvoices-network:
+    driver: bridge
+
+volumes:
+  data:
+  logs:

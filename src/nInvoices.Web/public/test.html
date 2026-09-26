@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script type="importmap">
+    {
+      "imports": {
+        "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+  
+  <script type="module">
+    import { createApp, ref } from 'vue'
+    
+    const App = {
+      setup() {
+        const P_TEST = '{{ test }}'
+        const insertPlaceholder = (val) => { console.log('Clicked:', val) }
+        return { P_TEST, insertPlaceholder }
+      },
+      template: `
+        <div>
+          <h1>Test</h1>
+          <button @click="insertPlaceholder(P_TEST)">Click Me</button>
+          <code v-pre>{{ test }}</code>
+        </div>
+      `
+    }
+    
+    createApp(App).mount('#app')
+  </script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>INVOICE</h1>
+    
+    <h3>Invoice #{{ invoiceNumber }}</h3>
+    <p>Date: {{ FormatDate date "MMMM dd, yyyy" }}</p>
+    
+    <h3>Bill To:</h3>
+    <p>
+        <strong>{{ customer.name }}</strong><br>
+        {{ customer.address.street }}<br>
+        {{ customer.address.city }}, {{ customer.address.postalCode }}<br>
+        {{ customer.address.country }}<br>
+        VAT/Tax ID: {{ customer.fiscalId }}
+    </p>
+    
+    <h3>Services & Charges</h3>
+    <table>
+        <tr>
+            <th width="70%">Description</th>
+            <th width="15%">Quantity</th>
+            <th width="15%">Amount</th>
+        </tr>
+        
+        {{ for item in lineItems }}
+        <tr>
+            <td>{{ item.description }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ FormatCurrency item.amount currency }}</td>
+        </tr>
+        {{ end }}
+        
+        {{ if totalExpenses }}
+        {{ for expense in expenses }}
+        <tr>
+            <td>Expense: {{ expense.description }}</td>
+            <td>1</td>
+            <td>{{ FormatCurrency expense.amount currency }}</td>
+        </tr>
+        {{ end }}
+        {{ end }}
+        
+        <tr>
+            <td><strong>Subtotal</strong></td>
+            <td></td>
+            <td><strong>{{ FormatCurrency subtotal currency }}</strong></td>
+        </tr>
+        
+        {{ for tax in taxes }}
+        <tr>
+            <td>{{ tax.description }} ({{ FormatDecimal tax.rate 2 }}%)</td>
+            <td></td>
+            <td>{{ FormatCurrency tax.amount currency }}</td>
+        </tr>
+        {{ end }}
+        
+        <tr>
+            <td><h3>TOTAL</h3></td>
+            <td></td>
+            <td><h3>{{ FormatCurrency total currency }}</h3></td>
+        </tr>
+    </table>
+    
+    {{ if workedDays }}
+    <p>
+        <strong>Period:</strong> {{ monthDescription }}<br>
+        <strong>Days Worked:</strong> {{ workedDays }}<br>
+        <strong>Daily Rate:</strong> {{ FormatCurrency monthlyRate currency }}
+    </p>
+    {{ end }}
+    
+    <br><br>
+    <p>Thank you for your business!</p>
+</body>
+</html>

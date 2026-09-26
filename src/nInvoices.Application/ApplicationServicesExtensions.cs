@@ -1,0 +1,25 @@
+using Microsoft.Extensions.DependencyInjection;
+using nInvoices.Application.Services;
+
+namespace nInvoices.Application;
+
+/// <summary>
+/// Extension methods for registering application services.
+/// </summary>
+public static class ApplicationServicesExtensions
+{
+    /// <summary>
+    /// Registers application layer services.
+    /// </summary>
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    {
+        services.AddScoped<IInvoiceGenerationService, InvoiceGenerationService>();
+        services.AddScoped<IMonthlyReportGenerationService, MonthlyReportGenerationService>();
+        services.AddScoped<ITemplateRenderer, ScribanTemplateRenderer>();
+        services.AddScoped<ITemplatePreviewService, TemplatePreviewService>();
+        services.AddScoped<IProjectResolver, ProjectResolver>();
+        services.AddScoped<Services.Holidays.IHolidayCalendarService, Services.Holidays.HolidayCalendarService>();
+        services.AddScoped<Services.Email.IInvoiceEmailComposer, Services.Email.InvoiceEmailComposer>();
+        return services;
+    }
+}
