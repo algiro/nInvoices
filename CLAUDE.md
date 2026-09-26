@@ -123,6 +123,14 @@ against a running API + frontend.
 - Repository methods only stage changes; commit explicitly with
   `await _unitOfWork.SaveChangesAsync(ct)` in the handler.
 - `DbContext.SaveChangesAsync` auto-stamps `UpdatedAt` on modified `EntityBase` rows.
+- **Data is per user.** User-data entities derive from `OwnedEntityBase` (`IOwnedEntity.OwnerId`
+  = the JWT `sub`). `ApplicationDbContext` adds a global query filter `OwnerId == current user`
+  (no user → no rows), stamps `OwnerId` on insert, and rejects saves that modify another user's
+  row or set a foreign key to a row the user can't see. Handlers need no owner code; don't use
+  `IgnoreQueryFilters()` in request paths. Synchronous `SaveChanges` throws. New user-data
+  entities should derive from `OwnedEntityBase`; per-user unique indexes include `OwnerId`.
+  Rows with an empty owner (pre-multi-user data) are assigned at startup to
+  `MultiUser:LegacyOwnerId` (`UnownedDataExtensions`).
 - Database provider is chosen by `Database:Type` config (`SQLite` | `PostgreSQL`); the
   connection string key is `ConnectionStrings:Default`. Migrations assembly is
   `nInvoices.Infrastructure` for both providers, so a single migration set must work on both.

@@ -6,7 +6,7 @@ namespace nInvoices.Core.Entities;
 /// Represents a worked day for tracking in monthly invoices.
 /// Includes day type to distinguish between worked days, holidays, and leave.
 /// </summary>
-public sealed class WorkDay : EntityBase
+public sealed class WorkDay : OwnedEntityBase
 {
     public long CustomerId { get; set; }
     public DateOnly Date { get; set; }

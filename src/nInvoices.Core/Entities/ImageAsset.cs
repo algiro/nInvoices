@@ -4,7 +4,7 @@ namespace nInvoices.Core.Entities;
 /// Represents an uploaded image asset (logo, signature, stamp, etc.)
 /// that can be referenced in invoice templates by alias.
 /// </summary>
-public sealed class ImageAsset : EntityBase
+public sealed class ImageAsset : OwnedEntityBase
 {
     public string Alias { get; set; } = string.Empty;
     public string FileName { get; set; } = string.Empty;

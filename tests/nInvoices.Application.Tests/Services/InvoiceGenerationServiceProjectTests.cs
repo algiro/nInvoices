@@ -91,8 +91,8 @@ public sealed class InvoiceGenerationServiceProjectTests
             .ReturnsAsync(customer);
 
         _sequenceRepository
-            .Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new InvoiceSequence(1));
+            .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new InvoiceSequence(1)]);
 
         _workDayRepository
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<WorkDay, bool>>>(), It.IsAny<CancellationToken>()))
@@ -328,8 +328,8 @@ public sealed class InvoiceGenerationServiceProjectTests
         GivenRate(RateType.Hourly, 50m);
         var sequence = new InvoiceSequence(7);
         _sequenceRepository
-            .Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(sequence);
+            .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([sequence]);
 
         var dto = MonthlyDto(WorkedDay(1, ("Alpha", 3m), ("Beta", 5m)));
 
@@ -349,8 +349,8 @@ public sealed class InvoiceGenerationServiceProjectTests
     {
         GivenRate(RateType.Daily, 400m);
         _sequenceRepository
-            .Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new InvoiceSequence(7));
+            .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new InvoiceSequence(7)]);
 
         var draft = await _service.PreviewInvoiceAsync(
             MonthlyDto(WorkedDay(1, ("Alpha", 8m))), TestContext.CurrentContext.CancellationToken);
