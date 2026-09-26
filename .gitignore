@@ -87,6 +87,8 @@ docker/volumes/
 *.sln.iml
 
 screenshots/
+# ...except the README's images
+!Docs/screenshots/
 
 Docs/Issues/
 

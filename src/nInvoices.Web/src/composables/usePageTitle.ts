@@ -2,7 +2,7 @@ import { ref } from 'vue'
 
 /**
  * Lets a view replace its route's static title (e.g. "Customer details") with the record's own
- * name ("Nea srl") in the breadcrumb and browser tab. The router clears it on every navigation.
+ * name ("Northwind Labs") in the breadcrumb and browser tab. The router clears it on every navigation.
  */
 const pageTitle = ref<string | null>(null)
 

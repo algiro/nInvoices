@@ -213,7 +213,7 @@ const numberFormat = computed(() => settingsStore.invoiceSettings?.numberFormat 
  * Mirrors InvoiceNumber.Format in the backend. The stored sequence value is the number the
  * next invoice receives (the backend hands it out, then increments it).
  */
-function formatInvoiceNumber(pattern: string, sequence: number, date = new Date(), customerCode = 'NEA'): string {
+function formatInvoiceNumber(pattern: string, sequence: number, date = new Date(), customerCode = 'ACME'): string {
   return pattern
     .replace(/\{YEAR:yy\}/g, String(date.getFullYear()).slice(-2))
     .replace(/\{YEAR\}/g, String(date.getFullYear()))

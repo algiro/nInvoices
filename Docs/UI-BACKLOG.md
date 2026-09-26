@@ -62,7 +62,7 @@ export/import.
 
 ## 5. Command palette and keyboard shortcuts
 
-`Ctrl+K` to jump anywhere or start an action ("new invoice for Nea srl", "open 26-09-005").
+`Ctrl+K` to jump anywhere or start an action ("new invoice for Northwind Labs", "open 26-09-005").
 The calendar already has keys (W, H, L, Del, 1–8, arrows); the rest of the app has none.
 
 ## 6. Invoice list at scale

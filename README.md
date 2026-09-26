@@ -1,405 +1,170 @@
-# nInvoices - Freelancer Invoice Management System
+<div align="center">
 
-A modern, full-stack invoice management application built with .NET 10 and Vue 3, designed specifically for freelancers to manage customers, rates, taxes, and generate professional invoices.
+# nInvoices
 
-## 🏗️ Architecture
+**Invoices and timesheets for freelancers who bill by the day or the hour. Self-hosted, and yours.**
 
-This application follows **Clean Architecture** principles with clear separation of concerns:
+Mark the days you worked, check the invoice before it exists, and send the PDF, all in a few clicks.
 
-- **nInvoices.Core**: Domain entities, value objects, and interfaces
-- **nInvoices.Application**: Business logic, CQRS commands/queries, DTOs
-- **nInvoices.Infrastructure**: Data access, EF Core, PDF generation, template engine
-- **nInvoices.Api**: ASP.NET Core Web API endpoints
-- **nInvoices.Web**: Vue 3 + TypeScript frontend
+[![License: PolyForm Shield 1.0.0](https://img.shields.io/badge/license-PolyForm%20Shield%201.0.0-5b21b6)](LICENSE.md)
+![.NET 10](https://img.shields.io/badge/.NET-10-512bd4)
+![Vue 3](https://img.shields.io/badge/Vue-3-42b883)
+![Self-hosted](https://img.shields.io/badge/self--hosted-yes-0e7490)
 
-## 🚀 Features
+![nInvoices dashboard, Lagoon theme](Docs/screenshots/dashboard-lagoon.png)
 
-- ✅ **Customer Management**: Full CRUD operations for customer data
-- ✅ **Multi-Currency Support**: Handle rates in different currencies (EUR, USD, etc.)
-- ✅ **Flexible Rate System**: Daily, monthly, and custom rate types per customer
-- ✅ **Advanced Tax System**: Pluggable tax handlers (percentage, fixed, compound taxes)
-- ✅ **Custom Invoice Templates**: Import, validate, and preview templates with placeholders
-- ✅ **Monthly Invoice Generation**: Track worked days, add expenses, generate invoices
-- ✅ **Custom Invoice Numbering**: Configurable formats (e.g., INV-{YEAR}-{NUMBER:000})
-- ✅ **PDF Export**: Professional PDF invoices and worked days calendar
-- ✅ **Multi-Language Invoices**: Localized placeholders for international clients
-- ✅ **SQLite Database**: Lightweight, file-based database (easily switchable)
+</div>
 
-## 🛠️ Technology Stack
+## Why nInvoices
 
-### Backend
-- .NET 10 (LTS)
-- ASP.NET Core Web API
-- Entity Framework Core
-- MediatR (CQRS pattern)
-- FluentValidation
-- Serilog (logging)
-- QuestPDF (PDF generation)
+Most invoicing tools are built for shops that sell products. Freelancers and consultants invoice **time**: days worked for a client each month, sometimes split across projects, with public holidays, half days and travel expenses along the way. The client usually wants a **timesheet** next to the invoice.
 
-### Frontend
-- Vue 3 with Composition API
-- TypeScript
-- Vite
-- Pinia (state management)
-- Vue Router
-- Axios
+nInvoices is built around that monthly routine:
 
-### Database
-- PostgreSQL (production - recommended)
-- SQLite (development/testing)
+- **Your month on a calendar.** Weekdays start as full days and public holidays are already marked. You only touch the days that differ.
+- **See the real invoice before it's created.** The last step renders the actual invoice PDF and timesheet with your data, and nothing is saved until you press *Generate*.
+- **Your layout, your language.** Invoices and timesheets are HTML templates you design, with dates and month names in each client's language.
+- **Self-hosted.** Your clients, rates and invoices stay on your own server or laptop.
 
-### Authentication
-- Keycloak (OAuth2/OIDC)
-- JWT Bearer tokens
-- Automatic token refresh
+## Features
 
-### DevOps
-- Docker & Docker Compose
-- Multi-stage Docker builds
-- Nginx reverse proxy
-- Health checks
-- Structured logging
-- Automated backups
+### Time and invoices
+- **Guided "New invoice" wizard:** customer and period → time → expenses → review and generate.
+- **Calendar and list views of the month** with full, partial and split days, notes, and keyboard shortcuts (`W`, `H`, `L`, `1`–`8`).
+- **Projects per customer:** split a day across projects, and see per-project totals on the invoice and timesheet.
+- **Public holidays per country**, filled in automatically. Built-in calendars for Italy, Germany, Austria, France, Spain, the UK and the US, editable in Settings (add a patron saint's day, or any country).
+- **Daily, hourly and monthly rates**, in any currency.
+- **Taxes as rules:** percentage, fixed amount or compound (tax on tax), applied in order.
+- **Expenses** added to the invoice, in the invoice's currency or another one.
 
-## 📋 Prerequisites
+### Documents
+- **HTML templates** for invoices and timesheets using [Scriban](https://github.com/scriban/scriban) syntax: loops, conditions, formatting and localisation helpers.
+- **Template editor with live preview** and a panel of available variables.
+- **Pixel-exact PDFs** rendered by headless Chrome, for invoices, timesheets and a worked-days calendar.
+- **Configurable invoice numbers**, e.g. `{YEAR}-{MONTH:00}-{NUMBER:000}`.
 
-### For Development
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- [Node.js 20+](https://nodejs.org/)
+### Getting paid
+- **Invoice lifecycle:** Draft → Finalized → Sent → Paid, or Cancelled.
+- **Dashboard** with outstanding and paid totals, invoiced per month, and a *Needs your attention* list (missing monthly invoices, drafts, overdue payments).
+- **Invoice list that scales:** server-side search, filters, sorting and paging, plus saved views.
+- **Bulk actions:** finalize, mark as sent or mark as paid in one go, or download many PDFs, with their timesheets, as a single zip.
+- **Gmail drafts (optional):** compose the email from a per-customer template and create a Gmail draft with the PDFs attached; you review and send it from Gmail. Needs your own Google OAuth client.
 
-### For Docker Deployment
-- [Docker Engine 20.10+](https://www.docker.com/)
-- [Docker Compose 2.0+](https://docs.docker.com/compose/)
-- At least 2GB RAM
-- At least 5GB disk space
+### Look and feel
+- **Nine themes**, four light and five dark, with a separate choice for day and night that can follow your operating system.
+- **Readable by design:** body text meets WCAG AA contrast in every theme, the calendar works from the keyboard, and animations respect *reduce motion*.
 
-## 🚦 Getting Started
+### Your data
+- **PostgreSQL or SQLite.**
+- **JSON export and import** of customers, templates and invoices, for backups or moving to another server.
+- **Sign-in with Keycloak** (OpenID Connect), with a no-login mode for local use.
 
-### Development Setup
+## Screenshots
 
-1. **Clone the repository**
-   ```bash
-   cd nInvoices
-   ```
+| | |
+|---|---|
+| ![Dashboard, Volt theme](Docs/screenshots/dashboard-volt.png) **Dashboard** in the *Volt* dark theme | ![Time step with public holidays, Aurora theme](Docs/screenshots/invoice-wizard-aurora.png) **Time step:** holidays pre-marked (*Aurora*) |
+| ![Review step with live invoice preview, Iris theme](Docs/screenshots/invoice-review-iris.png) **Review:** the real invoice before it's saved (*Iris*) | ![Invoice list with bulk actions, Ember theme](Docs/screenshots/invoices-ember.png) **Invoices:** filters, saved views and bulk actions (*Ember*) |
 
-2. **Restore backend dependencies**
-   ```bash
-   dotnet restore
-   ```
+<p align="center">
+  <img src="Docs/screenshots/themes-orchid.png" alt="Theme picker with nine themes" width="720"><br>
+  <em>Pick one light and one dark theme; nInvoices switches with your system.</em>
+</p>
 
-3. **Install frontend dependencies**
-   ```bash
-   cd src/nInvoices.Web
-   npm install
-   cd ../..
-   ```
+<sub>All names, companies and amounts in the screenshots are fictional.</sub>
 
-4. **Run database migrations**
-   ```bash
-   cd src/nInvoices.Api
-   dotnet ef database update
-   cd ../..
-   ```
+## Quick start
 
-5. **Start the API** (Terminal 1)
-   ```bash
-   cd src/nInvoices.Api
-   dotnet run
-   ```
-   API will be available at: `https://localhost:5001`
+Run nInvoices on your machine in a few minutes, with a local SQLite database and no login.
 
-6. **Start the frontend** (Terminal 2)
-   ```bash
-   cd src/nInvoices.Web
-   npm run dev
-   ```
-   Frontend will be available at: `http://localhost:5173`
-
-### Docker Deployment with Keycloak
-
-**NEW: The application now uses Keycloak for authentication and PostgreSQL for data storage.**
-
-#### Quick Start
+**You need:** [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) and [Node.js 20+](https://nodejs.org/).
 
 ```bash
-cd docker
+git clone https://github.com/algiro/nInvoices.git
+cd nInvoices
 
-# Copy environment file and configure
-cp ../.env.example .env
-# Edit .env with your settings (⚠️ avoid special characters in passwords!)
+# 1. Let the API run locally without a login server
+cp src/nInvoices.Api/Properties/launchSettings.template.json src/nInvoices.Api/Properties/launchSettings.json
 
-# Start all services (PostgreSQL, Keycloak, API, Web)
-docker-compose -f docker-compose.dev.yml up -d
+# 2. Create the SQLite database
+dotnet tool install --global dotnet-ef
+dotnet ef database update -p src/nInvoices.Infrastructure -s src/nInvoices.Api
 
-# Check services status
-docker-compose -f docker-compose.dev.yml ps
-
-# View logs
-docker-compose -f docker-compose.dev.yml logs -f
+# 3. Start the API (http://localhost:5297)
+cd src/nInvoices.Api && dotnet run
 ```
 
-**Access Points:**
-- **Web Application**: `http://localhost:3000`
-- **API**: `http://localhost:8080`
-- **Keycloak Admin**: `http://localhost:8080`
-- **PostgreSQL**: `localhost:5432` (via external tools)
-
-**Default Test User:**
-- Username: `testuser`
-- Password: `Test123!`
-
-#### 📚 Complete Implementation Guide
-
-**For detailed step-by-step instructions with all issues and solutions:**
-
-👉 **[docker/KEYCLOAK-DOCKER-GUIDE.md](./docker/KEYCLOAK-DOCKER-GUIDE.md)** 👈
-
-This comprehensive guide covers:
-- Complete setup process from scratch
-- All critical issues and their solutions
-- BackchannelHandler implementation (required for authentication)
-- Password configuration gotchas
-- Database initialization
-- Keycloak configuration walkthrough
-- Testing and validation
-- Production considerations
-
-#### Production Setup
+In a second terminal:
 
 ```bash
-cd docker
-
-# Configure production environment
-cp ../.env.example .env
-# Edit .env with:
-# - Strong passwords (alphanumeric only - no special characters!)
-# - Your domain name
-# - Production URLs (HTTPS)
-
-# Obtain SSL certificates (Let's Encrypt recommended)
-# Place certificates in docker/volumes/ssl/
-
-# Start production stack (includes Nginx reverse proxy)
-docker-compose -f docker-compose.prod.yml up -d
+cd src/nInvoices.Web
+npm install
+npm run dev
 ```
 
-**Production URLs:**
-- All services: `https://your-domain.com`
-- API: `https://your-domain.com/api`
-- Keycloak: `https://your-domain.com/auth`
+Open **http://localhost:3000**, add your first customer with a rate, and create an invoice.
 
-#### Additional Documentation
+> The first PDF takes a little longer: the API downloads the headless Chrome it uses for rendering, once.
 
-- **[docker/README.md](./docker/README.md)** - Comprehensive deployment guide
-- **[docker/KEYCLOAK-DOCKER-GUIDE.md](./docker/KEYCLOAK-DOCKER-GUIDE.md)** - Complete step-by-step implementation
-- **[docker/TROUBLESHOOTING.md](./docker/TROUBLESHOOTING.md)** - Common issues and solutions
-- **[docker/MIGRATION.md](./docker/MIGRATION.md)** - Database migration guide
+## Running it for real
 
-#### Database Migration
+| Option | Good for | How |
+|---|---|---|
+| **Docker Compose** | Your own server | PostgreSQL + Keycloak + API + web, behind your reverse proxy. See [`docker/README.md`](docker/README.md) and [`QUICKSTART.md`](QUICKSTART.md). |
+| **.NET Aspire** | Trying the full stack locally | `aspire run --project src/nInvoices.AppHost` starts PostgreSQL, Keycloak (test user `testuser` / `Test123!`), the API and the web app. Needs Docker. See [`src/nInvoices.AppHost/README.md`](src/nInvoices.AppHost/README.md). |
+| **Local, SQLite** | One person on one machine | The [quick start](#quick-start) above. |
 
-If you have existing SQLite data, migrate to PostgreSQL:
+PostgreSQL schema changes are shipped as idempotent SQL scripts in [`docker/migrations-postgres/`](docker/migrations-postgres/README.md).
+
+## How it's built
+
+- **Backend:** .NET 10 and ASP.NET Core, following Clean Architecture (`Core` ← `Application` ← `Infrastructure` ← `Api`). CQRS with MediatR, FluentValidation, and Entity Framework Core for PostgreSQL and SQLite. Scriban for templates, PuppeteerSharp for PDFs, Serilog and OpenTelemetry for logs and traces.
+- **Frontend:** Vue 3 (Composition API), TypeScript, Vite and Pinia. No UI framework: a small design system of CSS variables drives the nine themes.
+- **Tests:** NUnit, Shouldly and Moq. Repository queries are tested against a real SQLite database.
+
+```
+src/
+  nInvoices.Core/            entities, value objects, interfaces
+  nInvoices.Application/     commands, queries, services (generation, templates, holidays)
+  nInvoices.Infrastructure/  EF Core, PDF export, tax handlers, Gmail
+  nInvoices.Api/             ASP.NET Core API
+  nInvoices.Web/             Vue 3 app
+  nInvoices.AppHost/         .NET Aspire orchestrator (local only)
+tests/                       unit and integration tests
+docker/                      Dockerfiles, compose files, deploy and migration scripts
+Docs/                        template guide, backlog, screenshots
+```
 
 ```bash
-cd docker
-.\migrate-sqlite-to-postgres.ps1 -SqliteDbPath "../src/nInvoices.Api/nInvoices.db"
+dotnet test                      # backend tests
+cd src/nInvoices.Web && npm run build   # type-check and build the frontend
 ```
 
-See **[docker/MIGRATION.md](./docker/MIGRATION.md)** for details.
+## Roadmap
 
-#### Database Backup & Restore
+Next on the list (see [`Docs/UI-BACKLOG.md`](Docs/UI-BACKLOG.md)):
 
-```bash
-# Backup
-cd docker
-.\backup-database.ps1
+- **Autosaved drafts** of an invoice in progress
+- **Week view** for customers with several projects
+- **Command palette** (`Ctrl+K`) and more keyboard shortcuts
 
-# Restore
-.\restore-database.ps1 path/to/backup.sql
-```
+Ideas and bug reports are welcome in [Issues](https://github.com/algiro/nInvoices/issues).
 
-## 🧪 Running Tests
+## Contributing
 
-```bash
-# Run all tests
-dotnet test
+Issues, questions and suggestions are very welcome. For code changes, please **open an issue first** so we can agree on the approach before you invest time. Pull requests are accepted under the project's license (see below).
 
-# Run specific test project
-dotnet test tests/nInvoices.Core.Tests
+## License
 
-# With coverage
-dotnet test /p:CollectCoverage=true /p:CoverageReportsFormat=opencover
-```
+nInvoices is **free to use, but it is not open source**. It is *source-available* under the [**PolyForm Shield License 1.0.0**](LICENSE.md).
 
-## 📁 Project Structure
+In plain words:
 
-```
-nInvoices/
-├── src/
-│   ├── nInvoices.Api/              # Web API
-│   ├── nInvoices.Application/      # Business Logic
-│   ├── nInvoices.Core/             # Domain Layer
-│   ├── nInvoices.Infrastructure/   # Data Access & External Services
-│   └── nInvoices.Web/              # Vue 3 Frontend
-├── tests/
-│   ├── nInvoices.Core.Tests/
-│   ├── nInvoices.Application.Tests/
-│   ├── nInvoices.Infrastructure.Tests/
-│   └── nInvoices.Api.Tests/
-├── docker/
-│   ├── Dockerfile.api
-│   ├── Dockerfile.web
-│   ├── docker-compose.yml
-│   └── nginx.conf
-└── nInvoices.slnx
-```
+- ✅ **Use it for free**, for any purpose, **including running your own freelance business**: invoicing your clients is fine.
+- ✅ **Self-host it, read the code, and change it** to fit your needs.
+- ✅ **Share copies**, as long as they keep the license and the copyright notice.
+- ❌ **Don't offer it, or something built from it, as a competing product or service**, for example selling it, hosting it for other people, or publishing a rival invoicing app based on it. Under this license, a product competes even when it's free.
 
-## 🔧 Configuration
+This summary is a convenience; the [license text](LICENSE.md) is what applies. If you'd like to use nInvoices in a way the license doesn't allow, please [open an issue](https://github.com/algiro/nInvoices/issues) to talk about a separate license.
 
-### Database Configuration
-
-The application supports both SQLite (development) and PostgreSQL (production):
-
-**SQLite (Development):**
-Edit `src/nInvoices.Api/appsettings.Development.json`:
-```json
-{
-  "ConnectionStrings": {
-    "Default": "Data Source=nInvoices.db"
-  },
-  "Database": {
-    "Type": "SQLite"
-  }
-}
-```
-
-**PostgreSQL (Production):**
-Edit `src/nInvoices.Api/appsettings.Production.json` or use environment variables:
-```json
-{
-  "ConnectionStrings": {
-    "Default": "Host=postgres;Port=5432;Database=ninvoices_db;Username=ninvoices_user;Password=your_password"
-  },
-  "Database": {
-    "Type": "PostgreSQL"
-  }
-}
-```
-
-### Authentication Configuration
-
-The application uses Keycloak for OAuth2/OIDC authentication.
-
-**API Configuration (`appsettings.json`):**
-```json
-{
-  "Keycloak": {
-    "Authority": "http://localhost:8080/realms/ninvoices",
-    "Audience": "ninvoices-api",
-    "ValidIssuer": "http://localhost:8080/realms/ninvoices"
-  }
-}
-```
-
-**Frontend Configuration (`.env`):**
-```env
-VITE_KEYCLOAK_URL=http://localhost:8080
-VITE_KEYCLOAK_REALM=ninvoices
-VITE_KEYCLOAK_CLIENT_ID=ninvoices-web
-```
-
-### CORS Configuration
-
-CORS origins can be configured via environment variable or appsettings:
-
-```json
-{
-  "Cors": {
-    "Origins": "http://localhost:3000,http://localhost:5173"
-  }
-}
-```
-
-## 📖 API Documentation
-
-Once the API is running, visit:
-- OpenAPI/Swagger: `https://localhost:5001/openapi/v1.json`
-- Health Check: `https://localhost:5001/api/health`
-
-## 🎨 Design Patterns Used
-
-- **Repository Pattern**: Data access abstraction
-- **Unit of Work**: Transaction management
-- **CQRS**: Command-Query Responsibility Segregation
-- **Strategy Pattern**: Pluggable tax calculation handlers
-- **Builder Pattern**: Invoice generation
-- **Factory Pattern**: Tax handler creation
-- **Dependency Injection**: Throughout the application
-
-## 🔐 Security
-
-- **OAuth2/OIDC Authentication**: Powered by Keycloak
-- **JWT Bearer Tokens**: Secure API access
-- **Role-Based Access Control**: User and Admin roles
-- **Input validation**: FluentValidation throughout
-- **SQL injection protection**: Via EF Core
-- **Password Security**: Keycloak handles secure password storage
-- **Session Management**: Automatic token refresh
-- **CORS**: Configured for specific origins
-
-## 📝 Development Status
-
-Phase 1: ✅ **COMPLETED**
-- [x] Solution structure created
-- [x] .NET 10 projects configured
-- [x] Vue 3 + TypeScript frontend setup
-- [x] NuGet packages installed
-- [x] CORS configured
-- [x] Serilog logging configured
-- [x] Docker configuration created
-- [x] Build successful
-
-**Next Phase**: Domain Layer (Core Entities)
-
-## 📄 License
-
-MIT License - See LICENSE file for details
-
-## 👨‍💻 Author
-
-Developed by a freelance developer for freelance developers 🚀
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome!
-
-## ⭐ Support
-
-If you find this project useful, please consider giving it a star!
-
-
-## 📚 Documentation
-
-Comprehensive documentation is available in the Docs folder:
-
-- **[README.md](./Docs/README.md)** - Documentation index and quick start
-- **[implementation-complete-summary.md](./Docs/implementation-complete-summary.md)** - Complete system guide
-- **[TEMPLATE-SYNTAX-REFERENCE.md](./Docs/TEMPLATE-SYNTAX-REFERENCE.md)** - Quick reference card
-- **[phase4-implementation-complete.md](./Docs/phase4-implementation-complete.md)** - Technical details
-
-### HTML Template System
-
-The application now supports custom HTML invoice templates with:
-- ✅ Scriban/Liquid template syntax
-- ✅ Loops and conditionals
-- ✅ Custom formatting functions
-- ✅ Real-time validation
-- ✅ PDF generation with QuestPDF
-
-**Quick Start:**
-1. Navigate to Customer → Templates
-2. Click "Add Template"
-3. Click "📋 Load Sample" to see example
-4. Modify as needed
-5. Save and generate invoices!
-
-See **[TEMPLATE-SYNTAX-REFERENCE.md](./Docs/TEMPLATE-SYNTAX-REFERENCE.md)** for syntax guide.
+Copyright © Alessandro Girotto.

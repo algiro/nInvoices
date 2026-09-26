@@ -21,7 +21,7 @@ public sealed class InvoiceRepositorySearchTests
     private ApplicationDbContext _context = null!;
     private InvoiceRepository _repository = null!;
     private long _acme;
-    private long _nea;
+    private long _northwind;
 
     [SetUp]
     public async Task SetUp()
@@ -32,14 +32,14 @@ public sealed class InvoiceRepositorySearchTests
         await _context.Database.EnsureCreatedAsync();
 
         var acme = new Customer("Acme Corp", "ACME1", new Address("Main", "1", "Town", "12345", "Italy"));
-        var nea = new Customer("Nea srl", "NEA1", new Address("Via Roma", "2", "Milano", "20121", "Italy"));
-        _context.Customers.AddRange(acme, nea);
+        var northwind = new Customer("Northwind Labs", "NORTH1", new Address("Via Roma", "2", "Milano", "20121", "Italy"));
+        _context.Customers.AddRange(acme, northwind);
         await _context.SaveChangesAsync();
-        (_acme, _nea) = (acme.Id, nea.Id);
+        (_acme, _northwind) = (acme.Id, northwind.Id);
 
         Add(_acme, "25-11-001", new DateOnly(2025, 11, 30), 1000m, InvoiceStatus.Paid);
-        Add(_nea, "25-12-002", new DateOnly(2025, 12, 31), 250.5m, InvoiceStatus.Sent);
-        Add(_nea, "26-01-003", new DateOnly(2026, 1, 31), 99.99m, InvoiceStatus.Finalized);
+        Add(_northwind, "25-12-002", new DateOnly(2025, 12, 31), 250.5m, InvoiceStatus.Sent);
+        Add(_northwind, "26-01-003", new DateOnly(2026, 1, 31), 99.99m, InvoiceStatus.Finalized);
         Add(_acme, "26-02-004", new DateOnly(2026, 2, 28), 5000m, InvoiceStatus.Draft);
         await _context.SaveChangesAsync();
         _context.ChangeTracker.Clear();
@@ -104,7 +104,7 @@ public sealed class InvoiceRepositorySearchTests
             .ShouldBe(["26-02-004", "25-11-001", "26-01-003", "25-12-002"]);
     }
 
-    [TestCase("nea", new[] { "26-01-003", "25-12-002" })]
+    [TestCase("north", new[] { "26-01-003", "25-12-002" })]
     [TestCase("ACME", new[] { "26-02-004", "25-11-001" })]
     [TestCase("12-00", new[] { "25-12-002" })]
     public async Task SearchAsync_Search_MatchesNumberOrCustomerIgnoringCase(string term, string[] expected)
@@ -115,7 +115,7 @@ public sealed class InvoiceRepositorySearchTests
     [Test]
     public async Task SearchAsync_YearAndCustomer_Combine()
     {
-        (await NumbersAsync(new InvoiceSearchCriteria(CustomerId: _nea, Year: 2026))).ShouldBe(["26-01-003"]);
+        (await NumbersAsync(new InvoiceSearchCriteria(CustomerId: _northwind, Year: 2026))).ShouldBe(["26-01-003"]);
     }
 
     [Test]
