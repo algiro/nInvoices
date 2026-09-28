@@ -30,7 +30,7 @@ services:
     networks:
       - ninvoices-local
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ninvoices_user"]
+      test: ["CMD-SHELL", "pg_isready -U ninvoices_user -d ninvoices_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -58,7 +58,7 @@ services:
     networks:
       - ninvoices-local
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 -O /dev/null http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
