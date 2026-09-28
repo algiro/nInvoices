@@ -52,7 +52,7 @@
 
     <div v-if="form.customerId && customerRates.length > 0" class="grid rate-fields">
       <BaseField
-        v-if="customerRates.length > 1"
+        v-if="customerRates.length > 1 && !isMonthly"
         label="Rate"
         for="rate"
         required
@@ -79,7 +79,11 @@
     </div>
 
     <div v-if="form.customerId" class="rate-line" :class="{ missing: noRate }">
-      <template v-if="selectedRate">
+      <template v-if="isMonthly && customerRates.length > 1">
+        <AppIcon name="coins" />
+        <span>This customer has {{ customerRates.length }} rates. You choose the invoice's rate, and the rate of single days, in the Time step.</span>
+      </template>
+      <template v-else-if="selectedRate">
         <AppIcon name="coins" />
         <span>Billed at <strong>{{ formatMoney(selectedRate.price.amount, selectedRate.price.currency) }}</strong> {{ rateUnit }}</span>
       </template>

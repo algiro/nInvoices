@@ -87,6 +87,11 @@ public sealed class WorkDayDtoValidator : AbstractValidator<WorkDayDto>
             .NotEmpty()
             .WithMessage("Work day date is required");
 
+        RuleFor(x => x.RateId)
+            .GreaterThan(0)
+            .When(x => x.RateId.HasValue)
+            .WithMessage("Rate ID must be positive");
+
         RuleFor(x => x.Notes)
             .MaximumLength(500)
             .When(x => x.Notes != null)

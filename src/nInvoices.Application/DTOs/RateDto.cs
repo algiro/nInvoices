@@ -11,4 +11,5 @@ public sealed record RateDto(
     RateType Type,
     MoneyDto Price,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    string? Name = null);

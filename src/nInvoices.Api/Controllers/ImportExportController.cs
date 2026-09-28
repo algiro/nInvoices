@@ -77,7 +77,7 @@ public sealed class ImportExportController : ControllerBase
             new AddressDto(c.Address.Street, c.Address.HouseNumber, c.Address.City,
                 c.Address.ZipCode, c.Address.Country, c.Address.State),
             c.CreatedAt,
-            c.Rates.Select(r => new RateExportDto(r.Type, new MoneyDto(r.Price.Amount, r.Price.Currency), r.CreatedAt)).ToList(),
+            c.Rates.Select(r => new RateExportDto(r.Type, new MoneyDto(r.Price.Amount, r.Price.Currency), r.CreatedAt, r.Name)).ToList(),
             c.Taxes.Select(t => new TaxExportDto(t.TaxId, t.Description, t.HandlerId, t.Rate,
                 t.ApplicationType, FindTaxIdByPk(c.Taxes, t.AppliedToTaxId), t.Order, t.IsActive, t.CreatedAt)).ToList(),
             c.Templates.Select(t => new InvoiceTemplateExportDto(t.InvoiceType, t.Name, t.Content, t.IsActive, t.CreatedAt)).ToList(),
@@ -203,6 +203,7 @@ public sealed class ImportExportController : ControllerBase
                 foreach (var rateData in customerData.Rates)
                 {
                     var rate = new Rate(customer.Id, rateData.Type, new Money(rateData.Price.Amount, rateData.Price.Currency));
+                    rate.SetName(rateData.Name);
                     await _context.Rates.AddAsync(rate, cancellationToken);
                 }
 

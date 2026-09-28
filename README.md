@@ -33,7 +33,7 @@ nInvoices is built around that monthly routine:
 - **Calendar and list views of the month** with full, partial and split days, notes, and keyboard shortcuts (`W`, `H`, `L`, `1`–`8`).
 - **Projects per customer:** split a day across projects, and see per-project totals on the invoice and timesheet.
 - **Public holidays per country**, filled in automatically. Built-in calendars for Italy, Germany, Austria, France, Spain, the UK and the US, editable in Settings (add a patron saint's day, or any country).
-- **Daily, hourly and monthly rates**, in any currency.
+- **Daily, hourly and monthly rates**, in any currency. A customer can have several (even two hourly rates, told apart by a name), and on a monthly invoice each worked day can be billed at a different one: some days at one hourly rate, some at another, some at the daily rate.
 - **Taxes as rules:** percentage, fixed amount or compound (tax on tax), applied in order.
 - **Expenses** added to the invoice, in the invoice's currency or another one.
 

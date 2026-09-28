@@ -19,6 +19,7 @@
             <th scope="col">Type</th>
             <th scope="col" class="num">Hours</th>
             <th scope="col">Project</th>
+            <th v-if="showRate" scope="col">Rate</th>
             <th scope="col">Note</th>
             <th v-if="showAmount" scope="col" class="num">Amount</th>
           </tr>
@@ -30,7 +31,7 @@
               <td class="day-cell" @pointerdown="onDayPointerDown($event, row.date)">
                 <span class="day-num">{{ row.day }}</span><span class="day-name">{{ row.dayName }}</span>
               </td>
-              <td :colspan="showAmount ? 5 : 4">
+              <td :colspan="(showAmount ? 5 : 4) + (showRate ? 1 : 0)">
                 {{ row.label }} ·
                 <button
                   v-for="d in row.markable"
@@ -114,6 +115,21 @@
                 <span v-else class="dash">—</span>
               </td>
 
+              <td v-if="showRate">
+                <select
+                  v-if="kindOf(row.date) === DayType.Worked"
+                  :id="`ts-rate-${row.date}`"
+                  class="input rate-select"
+                  :value="get(row.date)?.rateId != null ? String(get(row.date)?.rateId) : 'default'"
+                  :aria-label="`Rate for ${row.label}`"
+                  @change="onRateChange(row.date, ($event.target as HTMLSelectElement).value)"
+                >
+                  <option value="default">Invoice rate</option>
+                  <option v-for="rate in rates" :key="rate.id" :value="String(rate.id)">{{ rateLabel(rate) }}</option>
+                </select>
+                <span v-else class="dash">—</span>
+              </td>
+
               <td>
                 <input
                   v-if="kindOf(row.date) !== 'none'"
@@ -145,19 +161,24 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { DayType, RateType } from '@/types'
-import { billedHours, dayHours, FULL_DAY_HOURS, type DayKind, type WorkMonth } from '@/composables/useWorkMonth'
+import { billedHours, type DayKind, type WorkMonth } from '@/composables/useWorkMonth'
+import { dayAmount, rateLabel } from '@/utils/rates'
+import type { RateDto, WorkDayDto } from '@/types'
 
 const props = defineProps<{
   month: WorkMonth
-  rateType?: RateType | null
-  rateAmount?: number | null
-  currency?: string | null
+  /** The rates a single day can choose from (empty or one: no choice, no column). */
+  rates: RateDto[]
+  /** The invoice's rate, used by days that don't choose one. */
+  defaultRate: RateDto | null
+  /** The rate a day is billed at. */
+  rateOf: (day: WorkDayDto) => RateDto | null
   projectSuggestions: string[]
 }>()
 
 const {
   monthDates, selected, selectedDays, anchor, get, kindOf, select, clearSelection,
-  setKind, setHours, setProject, setNote
+  setKind, setHours, setProject, setRate, setNote
 } = props.month
 
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -204,8 +225,13 @@ const rows = computed((): Row[] => {
 })
 
 const showAmount = computed(
-  () => !!props.rateAmount && (props.rateType === RateType.Daily || props.rateType === RateType.Hourly)
+  () => !!props.defaultRate && (props.defaultRate.type === RateType.Daily || props.defaultRate.type === RateType.Hourly)
 )
+const showRate = computed(() => props.rates.length > 1)
+
+function onRateChange(date: string, value: string) {
+  setRate([date], value === 'default' ? null : Number(value))
+}
 
 function hoursOf(date: string): number {
   const wd = get(date)
@@ -224,11 +250,9 @@ function splitLabel(date: string): string {
 
 function amountOf(date: string): string {
   const wd = get(date)
-  if (!wd || kindOf(date) !== DayType.Worked || !props.rateAmount) return ''
-  const value = props.rateType === RateType.Hourly
-    ? dayHours(wd) * props.rateAmount
-    : (billedHours(wd) / FULL_DAY_HOURS) * props.rateAmount
-  return `${value.toFixed(2)} ${props.currency ?? ''}`.trim()
+  const rate = wd ? props.rateOf(wd) : null
+  if (!wd || kindOf(date) !== DayType.Worked || !rate) return ''
+  return `${dayAmount(rate, wd).toFixed(2)} ${rate.price.currency}`.trim()
 }
 
 function kindClass(date: string): string {
@@ -454,6 +478,10 @@ tr.selected.weekend td {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   color: var(--color-text-secondary);
+}
+
+.rate-select {
+  min-width: 9rem;
 }
 
 .dash {

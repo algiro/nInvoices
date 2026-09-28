@@ -168,6 +168,206 @@ public sealed class InvoiceGenerationServiceProjectTests
         WorkDays = workDays
     };
 
+    // ---------- a rate per worked day ----------
+
+    private Rate GivenNamedRate(RateType type, decimal amount, string? name = null, string currency = Currency, long customerId = CustomerId)
+    {
+        var rate = new Rate(customerId, type, new Money(amount, currency)) { Id = _rates.Count + 1 };
+        rate.SetName(name);
+        _rates.Add(rate);
+        return rate;
+    }
+
+    /// <summary>A monthly invoice billed at <paramref name="defaultRate"/>, on which some days may choose another rate.</summary>
+    private GenerateInvoiceDto MonthlyDtoAt(Rate defaultRate, params WorkDayDto[] workDays) => new()
+    {
+        CustomerId = CustomerId,
+        InvoiceType = InvoiceType.Monthly,
+        Year = 2026,
+        Month = 1,
+        WorkDays = workDays,
+        RateId = defaultRate.Id
+    };
+
+    private static WorkDayDto OnRate(WorkDayDto day, Rate? rate) => day with { RateId = rate?.Id };
+
+    private Task<Invoice> Generate(GenerateInvoiceDto dto) =>
+        _service.GenerateInvoiceAsync(dto, TestContext.CurrentContext.CancellationToken);
+
+    [Test]
+    public async Task GenerateInvoiceAsync_DaysAtDifferentRates_BillsEachDayAtItsRate()
+    {
+        var daily = GivenNamedRate(RateType.Daily, 400m);
+        var hourly50 = GivenNamedRate(RateType.Hourly, 50m);
+        var hourly70 = GivenNamedRate(RateType.Hourly, 70m, "Senior");
+
+        var invoice = await Generate(MonthlyDtoAt(daily,
+            WorkedDay(1, ("Alpha", 8m)),                    // the invoice's rate: one day
+            OnRate(WorkedDay(2, ("Alpha", 3m)), hourly50),  // 3h at 50
+            OnRate(WorkedDay(3, ("Alpha", 5m)), hourly70))); // 5h at 70
+
+        invoice.Subtotal.Amount.ShouldBe(400m + 150m + 350m);
+        invoice.RateId.ShouldBe(daily.Id);
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_DaysAtDifferentRates_HasOneLinePerRateSayingWhichRate()
+    {
+        var daily = GivenNamedRate(RateType.Daily, 400m);
+        var hourly50 = GivenNamedRate(RateType.Hourly, 50m);
+        var hourly70 = GivenNamedRate(RateType.Hourly, 70m, "Senior");
+
+        await Generate(MonthlyDtoAt(daily,
+            WorkedDay(1, ("Alpha", 8m)),
+            OnRate(WorkedDay(2, ("Alpha", 3m)), hourly50),
+            OnRate(WorkedDay(3, ("Alpha", 5m)), hourly70),
+            OnRate(WorkedDay(4, ("Alpha", 2m)), hourly50)));
+
+        _capturedModel.LineItems
+            .Select(l => (l.Description, l.Quantity, l.Rate, l.Amount))
+            .ShouldBe([
+                ("Alpha - 400 EUR/day", 1m, 400m, 400m),
+                ("Alpha - 50 EUR/h", 5m, 50m, 250m),
+                ("Alpha - Senior (70 EUR/h)", 5m, 70m, 350m)
+            ]);
+        _capturedModel.LineItems.Sum(l => l.Amount).ShouldBe(1000m);
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_DaysAtDifferentRatesWithoutProjects_HasOneLinePerDayAtItsRate()
+    {
+        var hourly50 = GivenNamedRate(RateType.Hourly, 50m);
+        var hourly70 = GivenNamedRate(RateType.Hourly, 70m);
+
+        await Generate(MonthlyDtoAt(hourly50,
+            new WorkDayDto(new DateOnly(2026, 1, 5), DayType.Worked, HoursWorked: 4m),
+            new WorkDayDto(new DateOnly(2026, 1, 6), DayType.Worked, HoursWorked: 2m, RateId: hourly70.Id)));
+
+        _capturedModel.LineItems.Select(l => (l.Quantity, l.Rate, l.Amount)).ShouldBe([(4m, 50m, 200m), (2m, 70m, 140m)]);
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_AllDaysAtTheInvoiceRate_KeepsPlainDescriptions()
+    {
+        var daily = GivenNamedRate(RateType.Daily, 400m);
+
+        // Choosing the invoice's own rate for a day changes nothing
+        var invoice = await Generate(MonthlyDtoAt(daily,
+            WorkedDay(1, ("Alpha", 8m)),
+            OnRate(WorkedDay(2, ("Alpha", 8m)), daily)));
+
+        invoice.Subtotal.Amount.ShouldBe(800m);
+        _capturedModel.LineItems.Single().Description.ShouldBe("Alpha");
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_DaysAtDifferentRates_ProjectSummaryUsesEachDaysRate()
+    {
+        var hourly50 = GivenNamedRate(RateType.Hourly, 50m);
+        var hourly70 = GivenNamedRate(RateType.Hourly, 70m);
+
+        await Generate(MonthlyDtoAt(hourly50,
+            WorkedDay(1, ("Alpha", 4m)),
+            OnRate(WorkedDay(2, ("Alpha", 2m)), hourly70)));
+
+        var alpha = _capturedModel.ProjectSummary.Single();
+        alpha.TotalHours.ShouldBe(6m);
+        alpha.Amount.ShouldBe(4m * 50m + 2m * 70m);
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_DaysAtDifferentRates_SavesEachDaysRate()
+    {
+        var daily = GivenNamedRate(RateType.Daily, 400m);
+        var hourly = GivenNamedRate(RateType.Hourly, 50m);
+
+        await Generate(MonthlyDtoAt(daily,
+            WorkedDay(1, ("Alpha", 8m)),
+            OnRate(WorkedDay(2, ("Alpha", 3m)), hourly)));
+
+        _savedWorkDays.OrderBy(w => w.Date).Select(w => w.RateId).ShouldBe([null, hourly.Id]);
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_NoDayChoosesARate_BillsExactlyAsBefore()
+    {
+        var daily = GivenNamedRate(RateType.Daily, 400m);
+
+        var invoice = await Generate(MonthlyDtoAt(daily,
+            new WorkDayDto(new DateOnly(2026, 1, 1), DayType.Worked, HoursWorked: 6m),
+            WorkedDay(2, ("Alpha", 8m))));
+
+        invoice.Subtotal.Amount.ShouldBe(400m * (6m / 8m + 1m));
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_ADayAtAnHourlyRateWithoutHours_Throws()
+    {
+        var daily = GivenNamedRate(RateType.Daily, 400m);
+        var hourly = GivenNamedRate(RateType.Hourly, 50m);
+
+        var ex = await Should.ThrowAsync<InvalidOperationException>(() => Generate(MonthlyDtoAt(daily,
+            new WorkDayDto(new DateOnly(2026, 1, 2), DayType.Worked, RateId: hourly.Id))));
+
+        ex.Message.ShouldContain("Hours must be specified");
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_ADayAtTheRateOfAnotherCustomer_Throws()
+    {
+        var daily = GivenNamedRate(RateType.Daily, 400m);
+        var foreign = GivenNamedRate(RateType.Hourly, 10m, customerId: CustomerId + 1);
+
+        await Should.ThrowAsync<InvalidOperationException>(() => Generate(MonthlyDtoAt(daily,
+            OnRate(WorkedDay(1, ("Alpha", 8m)), foreign))));
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_ADayAtAFixedMonthlyRate_Throws()
+    {
+        var daily = GivenNamedRate(RateType.Daily, 400m);
+        var monthly = GivenNamedRate(RateType.Monthly, 5000m);
+
+        await Should.ThrowAsync<InvalidOperationException>(() => Generate(MonthlyDtoAt(daily,
+            OnRate(WorkedDay(1, ("Alpha", 8m)), monthly))));
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_DaysCannotHaveTheirOwnRateOnAFixedMonthlyInvoice()
+    {
+        var monthly = GivenNamedRate(RateType.Monthly, 5000m);
+        var hourly = GivenNamedRate(RateType.Hourly, 50m);
+
+        await Should.ThrowAsync<InvalidOperationException>(() => Generate(MonthlyDtoAt(monthly,
+            OnRate(WorkedDay(1, ("Alpha", 8m)), hourly))));
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_RatesInDifferentCurrencies_Throws()
+    {
+        var daily = GivenNamedRate(RateType.Daily, 400m);
+        var dollars = GivenNamedRate(RateType.Hourly, 60m, currency: "USD");
+
+        await Should.ThrowAsync<InvalidOperationException>(() => Generate(MonthlyDtoAt(daily,
+            OnRate(WorkedDay(1, ("Alpha", 8m)), dollars))));
+    }
+
+    [Test]
+    public async Task PreviewInvoiceAsync_DaysAtDifferentRates_MatchesGenerating()
+    {
+        var daily = GivenNamedRate(RateType.Daily, 400m);
+        var hourly = GivenNamedRate(RateType.Hourly, 50m);
+        var dto = MonthlyDtoAt(daily,
+            WorkedDay(1, ("Alpha", 8m)),
+            OnRate(WorkedDay(2, ("Alpha", 3m)), hourly));
+
+        var preview = await _service.PreviewInvoiceAsync(dto, TestContext.CurrentContext.CancellationToken);
+        var generated = await Generate(dto);
+
+        preview.Invoice.Subtotal.Amount.ShouldBe(generated.Subtotal.Amount);
+        preview.Invoice.Subtotal.Amount.ShouldBe(550m);
+    }
+
     [Test]
     public async Task GenerateInvoiceAsync_DailyRateWithProjects_ProducesOneLinePerProjectWithFractionalDays()
     {

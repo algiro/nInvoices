@@ -214,6 +214,15 @@ export function useWorkMonth(options: {
     })
   }
 
+  /** Bills the worked days among these at a rate of their own; null goes back to the invoice's rate. */
+  function setRate(dates: string[], rateId: number | null) {
+    dates.forEach(date => {
+      const wd = get(date)
+      if (!isWorked(wd)) return
+      wd!.rateId = rateId ?? undefined
+    })
+  }
+
   /** Puts every selected worked day on one project, keeping each day's total. */
   function setProject(dates: string[], projectName: string) {
     dates.forEach(date => {
@@ -304,6 +313,7 @@ export function useWorkMonth(options: {
     setKind,
     setHours,
     setProject,
+    setRate,
     addAllocation,
     removeAllocation,
     setNote,

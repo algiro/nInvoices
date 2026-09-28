@@ -34,21 +34,35 @@
       <BaseButton size="sm" variant="ghost" @click="workMonth.clearMonth">Clear</BaseButton>
     </template>
 
+    <div v-if="customerRates.length > 1" class="rate-picker">
+      <label for="time-rate" class="rate-label">Rate</label>
+      <select id="time-rate" v-model="form.rateId" class="control">
+        <option v-for="rate in customerRates" :key="rate.id" :value="rate.id">{{ rateLabel(rate) }}</option>
+      </select>
+      <span class="rate-help">
+        <template v-if="canChooseDayRate">
+          The invoice's rate: days without a rate of their own are billed at it. To bill a day at another rate, select it and pick the rate in the day panel<template v-if="timeView === 'list'"> or in the Rate column</template>.
+        </template>
+        <template v-else-if="selectedRate?.type === RateType.Monthly">A fixed monthly price: days aren't billed one by one.</template>
+        <template v-else>The rate every worked day is billed at.</template>
+      </span>
+    </div>
+
     <div class="time-layout">
-      <MonthCalendar v-if="timeView === 'calendar'" :month="workMonth" />
+      <MonthCalendar v-if="timeView === 'calendar'" :month="workMonth" :rate-badge="rateBadge" />
       <TimesheetList
         v-else
         :month="workMonth"
-        :rate-type="selectedRate?.type ?? null"
-        :rate-amount="selectedRate?.price?.amount ?? null"
-        :currency="selectedRate?.price?.currency ?? null"
+        :rates="dayRateOptions"
+        :default-rate="selectedRate"
+        :rate-of="rateOfDay"
         :project-suggestions="projectSuggestions"
       />
       <DayInspector
         :month="workMonth"
-        :rate-type="selectedRate?.type ?? null"
-        :rate-amount="selectedRate?.price?.amount ?? null"
-        :currency="selectedRate?.price?.currency ?? null"
+        :rates="dayRateOptions"
+        :default-rate="selectedRate"
+        :rate-of="rateOfDay"
         :project-suggestions="projectSuggestions"
       />
     </div>
@@ -64,10 +78,23 @@ import TimesheetList from '@/components/time/TimesheetList.vue'
 import BasePanel from '@/components/ui/BasePanel.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import AppIcon from '@/components/ui/AppIcon.vue'
+import { RateType } from '@/types'
+import { rateLabel, rateShortLabel } from '@/utils/rates'
 
 const props = defineProps<{ draft: InvoiceDraft }>()
 
-const { workMonth, selectedRate, projectSuggestions, periodLabel, holidays, holidayCountryName, fillWeekdays } = props.draft
+const {
+  form, workMonth, selectedRate, customerRates, dayRateOptions, canChooseDayRate, rateOfDay,
+  projectSuggestions, periodLabel, holidays, holidayCountryName, fillWeekdays
+} = props.draft
+
+/** The calendar marks days billed at a rate other than the invoice's. */
+function rateBadge(date: string): string {
+  const day = workMonth.get(date)
+  if (!day || !canChooseDayRate.value) return ''
+  const rate = rateOfDay(day)
+  return rate && rate.id !== selectedRate.value?.id ? rateShortLabel(rate) : ''
+}
 
 function dayLabel(date: string) {
   return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })
@@ -108,6 +135,33 @@ watch(timeView, view => {
 .panel-help {
   margin: 0.2rem 0 0;
   max-width: 70ch;
+  font-size: var(--text-md);
+  color: var(--color-text-muted);
+}
+
+.rate-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.rate-label {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.rate-picker .control {
+  width: auto;
+  min-width: 14rem;
+}
+
+.rate-help {
+  flex: 1 1 18rem;
   font-size: var(--text-md);
   color: var(--color-text-muted);
 }

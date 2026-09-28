@@ -10,6 +10,7 @@ import { useWorkMonth, localDateString, dayHours, billedHours, FULL_DAY_HOURS } 
 import { holidaysApi } from '@/api/holidays'
 import { useToast } from '@/composables/useToast'
 import { formatMoney, invoiceTypeLabel } from '@/utils/format'
+import { dayAmount, isDayRate } from '@/utils/rates'
 
 export const EXPENSE_CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF']
 
@@ -88,6 +89,21 @@ export function useInvoiceDraft() {
   const isHourlyRate = computed(() => selectedRate.value?.type === RateType.Hourly)
   const isDailyRate = computed(() => selectedRate.value?.type === RateType.Daily)
 
+  // The rates a single worked day can be billed at: the daily and hourly ones in the invoice's
+  // currency (one invoice is billed in one currency). A fixed monthly rate leaves none.
+  const dayRateOptions = computed(() => {
+    const rate = selectedRate.value
+    return rate && isDayRate(rate)
+      ? customerRates.value.filter(r => isDayRate(r) && r.price.currency === rate.price.currency)
+      : []
+  })
+  const canChooseDayRate = computed(() => isMonthly.value && dayRateOptions.value.length > 1)
+
+  /** The rate a worked day is billed at: its own choice, else the invoice's. */
+  function rateOfDay(day: WorkDayDto) {
+    return dayRateOptions.value.find(r => r.id === day.rateId) ?? selectedRate.value
+  }
+
   const customer = computed(() => customersStore.customers.find(c => c.id === form.customerId) ?? null)
   const sortedCustomers = computed(() => [...customersStore.customers].sort((a, b) => a.name.localeCompare(b.name)))
 
@@ -124,8 +140,12 @@ export function useInvoiceDraft() {
       return Number(form.hours) > 0 ? formatMoney(Number(form.hours) * rate, currency) : '-'
     }
 
-    if (selectedRate.value.type === RateType.Hourly) return formatMoney(totals.value.totalHours * rate, currency)
-    if (selectedRate.value.type === RateType.Daily) return formatMoney(totals.value.effectiveDays * rate, currency)
+    if (isDayRate(selectedRate.value)) {
+      // Each day at its own rate: hours × price for an hourly rate, the day (or hours / 8) × price for a daily one
+      const fallback = selectedRate.value
+      const total = workMonth.workedDays.value.reduce((sum, wd) => sum + dayAmount(rateOfDay(wd) ?? fallback, wd), 0)
+      return formatMoney(total, currency)
+    }
     if (selectedRate.value.type === RateType.Monthly) return formatMoney(rate, currency)
     return '-'
   })
@@ -160,11 +180,13 @@ export function useInvoiceDraft() {
     if (!isMonthly.value) return null
     if ((form.workDays ?? []).length === 0) return 'Mark at least one day.'
     // Hourly and daily billing need some hours on every worked day
-    if (isHourlyRate.value || isDailyRate.value) {
-      if (workMonth.workedDays.value.some(wd => (isHourlyRate.value ? dayHours(wd) : billedHours(wd)) <= 0)) {
-        return 'Every worked day needs more than 0 hours.'
-      }
-    }
+    const missingHours = workMonth.workedDays.value.some(wd => {
+      const rate = rateOfDay(wd)
+      if (rate?.type === RateType.Hourly) return dayHours(wd) <= 0
+      if (rate?.type === RateType.Daily) return billedHours(wd) <= 0
+      return false
+    })
+    if (missingHours) return 'Every worked day needs more than 0 hours.'
     return null
   })
 
@@ -271,6 +293,15 @@ export function useInvoiceDraft() {
     form.workDays?.forEach(wd => wd.projects?.forEach(p => { if (!p.projectName) p.projectName = name }))
   })
 
+  // A day can only keep a rate that is still on offer: another customer's rates, other currencies
+  // and everything under a fixed monthly rate are dropped
+  watch(() => selectedRate.value?.id, () => {
+    const offered = new Set(dayRateOptions.value.map(r => r.id))
+    workMonth.workedDays.value.forEach(wd => {
+      if (wd.rateId != null && !offered.has(wd.rateId)) wd.rateId = undefined
+    })
+  })
+
   watch(() => form.customerId, () => {
     // A timesheet template and a rate belong to one customer
     form.monthlyReportTemplateId = undefined
@@ -351,7 +382,8 @@ export function useInvoiceDraft() {
               ? hoursSource.reduce((sum, p) => sum + Number(p.hours), 0)
               : undefined
             const notes = wd.notes?.trim() ? wd.notes.trim() : undefined
-            return { ...wd, hoursWorked, notes, projects }
+            const rateId = isWorked && canChooseDayRate.value ? (wd.rateId ?? undefined) : undefined
+            return { ...wd, hoursWorked, notes, projects, rateId }
           })
         : [],
       expenses: (form.expenses ?? []).map(e => ({ ...e, description: e.description.trim(), amount: Number(e.amount) }))
@@ -381,6 +413,9 @@ export function useInvoiceDraft() {
     isMonthly,
     isHourlyRate,
     isDailyRate,
+    dayRateOptions,
+    canChooseDayRate,
+    rateOfDay,
     years,
     customer,
     sortedCustomers,
