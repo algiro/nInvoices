@@ -123,12 +123,20 @@ ssh -o BatchMode=yes -o ConnectTimeout=8 "$SSH_HOST" true 2>/dev/null || die \
   - run with the real host:  SSH_HOST=user@host ./deploy.sh $*
   (deploy.ps1 uses WSL's ssh config; 'wsl -- ssh -G $SSH_HOST' shows its hostname/user/key)"
 
-# Without a build there is no new image: redeploy the tag the server already runs (last line of
-# DEPLOYED-TAGS). A commit tag computed now could name an image that was never built, e.g. a new
-# "-dirty-" timestamp.
+if [[ $API_ONLY -eq 1 ]]; then services="api"
+elif [[ $WEB_ONLY -eq 1 ]]; then services="web"
+else services="api web"; fi
+
+# Without a build there is no new image: redeploy the last tag DEPLOYED-TAGS recorded for these
+# services (a web-only tag has no API image, and vice versa). A commit tag computed now could name
+# an image that was never built, e.g. a new "-dirty-" timestamp.
 if [[ -z "$IMAGE_TAG" ]]; then
   if [[ $SKIP_BUILD -eq 1 ]]; then
-    IMAGE_TAG=$(ssh "$SSH_HOST" "tail -n 1 ${REMOTE_DIR}/DEPLOYED-TAGS 2>/dev/null" | awk '{print $2}')
+    IMAGE_TAG=$(ssh "$SSH_HOST" "cat ${REMOTE_DIR}/DEPLOYED-TAGS 2>/dev/null" | awk -v need="$services" '
+      { ok = 1; n = split(need, want, " ")
+        for (i = 1; i <= n; i++) { found = 0; for (j = 3; j <= NF; j++) if ($j == want[i]) found = 1; if (!found) ok = 0 }
+        if (ok) tag = $2 }
+      END { print tag }')
     IMAGE_TAG="${IMAGE_TAG:-latest}"
   else
     IMAGE_TAG=$(commit_tag)
@@ -191,13 +199,17 @@ else
 fi
 
 # ---- 3: pull & restart on the server -----------------------------------------------------------------
-# The server's compose file reads ${IMAGE_TAG:-latest}; only the services being deployed are
-# recreated, so --api-only doesn't look for a web image with the new tag
+# The server's compose file reads ${API_IMAGE_TAG:-${IMAGE_TAG:-latest}} (WEB_IMAGE_TAG for web).
+# The tag of each deployed service is recorded in the server's .env, so a manual
+# "docker compose up" later keeps these images instead of falling back to a stale :latest.
+# Only the services being deployed are recreated, so --api-only doesn't look for a web image
+# with the new tag.
 step "3/4" "Pulling and restarting ${IMAGE_TAG} on ${SSH_HOST}:${REMOTE_DIR}..."
-if [[ $API_ONLY -eq 1 ]]; then services="api"
-elif [[ $WEB_ONLY -eq 1 ]]; then services="web"
-else services="api web"; fi
-remote "cd ${REMOTE_DIR} && IMAGE_TAG=${IMAGE_TAG} docker compose pull ${services} && IMAGE_TAG=${IMAGE_TAG} docker compose up -d ${services}"
+tag_vars=""
+for service in $services; do tag_vars+=" $(tr '[:lower:]' '[:upper:]' <<< "$service")_IMAGE_TAG=${IMAGE_TAG}"; done
+# single-quoted: $k and $kv are expanded on the server, not here
+record_tags='touch .env && for kv in'"${tag_vars}"'; do k=${kv%%=*}; if grep -q "^$k=" .env; then sed -i "s|^$k=.*|$kv|" .env; else echo "$kv" >> .env; fi; done'
+remote "cd ${REMOTE_DIR} && ${record_tags} && IMAGE_TAG=${IMAGE_TAG} docker compose pull ${services} && IMAGE_TAG=${IMAGE_TAG} docker compose up -d ${services}"
 remote "echo \"\$(date -u +%Y-%m-%dT%H:%M:%SZ) ${IMAGE_TAG} ${services}\" >> ${REMOTE_DIR}/DEPLOYED-TAGS"
 # Recreated containers get new internal IPs; the shared proxy keeps the old ones
 # until it reloads, which shows up as 502s (see infra hosts/ittudes/DEPLOY.md).

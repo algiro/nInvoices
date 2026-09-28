@@ -107,10 +107,19 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# The tag the server last deployed (last line of DEPLOYED-TAGS), or "latest"
-function Get-DeployedTag {
-    $line = wsl ssh $SSH_HOST "tail -n 1 $REMOTE_DIR/DEPLOYED-TAGS 2>/dev/null"
-    $tag = if ($line) { ($line -split '\s+')[1] } else { $null }
+$services = if ($ApiOnly) { "api" } elseif ($WebOnly) { "web" } else { "api web" }
+
+# The last tag DEPLOYED-TAGS ("<time> <tag> <services…>" per line) recorded for all of these
+# services, or "latest". A web-only tag has no API image, and vice versa.
+function Get-DeployedTag($forServices) {
+    $wanted = $forServices -split ' '
+    $tag = $null
+    foreach ($line in (wsl ssh $SSH_HOST "cat $REMOTE_DIR/DEPLOYED-TAGS 2>/dev/null")) {
+        $fields = $line -split '\s+'
+        if ($fields.Count -lt 3) { continue }
+        $deployed = $fields[2..($fields.Count - 1)]
+        if (-not ($wanted | Where-Object { $deployed -notcontains $_ })) { $tag = $fields[1] }
+    }
     if ($tag) { return $tag }
     return "latest"
 }
@@ -118,7 +127,7 @@ function Get-DeployedTag {
 if (-not $ImageTag) {
     # Without a build there is no new image: redeploy the one already on the server. (A commit
     # tag computed now could name an image that was never built, e.g. a new "-dirty-" timestamp.)
-    $ImageTag = if ($SkipBuild) { Get-DeployedTag } else { Get-CommitTag }
+    $ImageTag = if ($SkipBuild) { Get-DeployedTag $services } else { Get-CommitTag }
 }
 Write-Host "Image tag: $ImageTag" -ForegroundColor Cyan
 
@@ -184,13 +193,30 @@ if ($Migrate) {
 }
 
 # Step 3: Pull and restart on remote
-# The server's compose file reads ${IMAGE_TAG:-latest}; only the services being deployed are
-# recreated, so -ApiOnly doesn't look for a web image with the new tag
+# The server's compose file reads ${API_IMAGE_TAG:-${IMAGE_TAG:-latest}} (WEB_IMAGE_TAG for web).
+# The tag of each deployed service is recorded in the server's .env, so a manual
+# "docker compose up" later keeps these images instead of falling back to a stale :latest.
+# Only the services being deployed are recreated, so -ApiOnly doesn't look for a web image
+# with the new tag.
 Write-Step "3/4" "Pulling and restarting $ImageTag on remote server..."
 
-$services = if ($ApiOnly) { "api" } elseif ($WebOnly) { "web" } else { "api web" }
-Invoke-Remote "cd $REMOTE_DIR && IMAGE_TAG=$ImageTag docker compose pull $services && IMAGE_TAG=$ImageTag docker compose up -d $services"
-Invoke-Remote "echo `"`$(date -u +%Y-%m-%dT%H:%M:%SZ) $ImageTag $services`" >> $REMOTE_DIR/DEPLOYED-TAGS"
+$tagVars = ($services -split ' ' | ForEach-Object { "$($_.ToUpper())_IMAGE_TAG=$ImageTag" }) -join ' '
+$remoteScript = @'
+set -e
+cd __DIR__
+touch .env
+for kv in __TAGVARS__; do
+  k=${kv%%=*}
+  if grep -q "^$k=" .env; then sed -i "s|^$k=.*|$kv|" .env; else echo "$kv" >> .env; fi
+done
+IMAGE_TAG=__TAG__ docker compose pull __SERVICES__
+IMAGE_TAG=__TAG__ docker compose up -d __SERVICES__
+echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) __TAG__ __SERVICES__" >> DEPLOYED-TAGS
+'@
+$remoteScript = $remoteScript.Replace('__DIR__', $REMOTE_DIR).Replace('__TAGVARS__', $tagVars).Replace('__TAG__', $ImageTag).Replace('__SERVICES__', $services).Replace("`r", "")
+# Sent base64-encoded: WSL's shell would otherwise expand the script's $variables locally
+$encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($remoteScript))
+Invoke-Remote "echo $encoded | base64 -d | bash"
 
 # Recreated containers get new internal IPs; the shared proxy keeps the old ones
 # until it reloads, which shows up as 502s (see infra hosts/ittudes/DEPLOY.md).
