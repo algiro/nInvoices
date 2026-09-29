@@ -1,5 +1,6 @@
 using MediatR;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
@@ -11,11 +12,22 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
     public const int MaxInvoices = 500;
 
     private readonly IInvoiceRepository _repository;
+    private readonly IRepository<Customer> _customerRepository;
+    private readonly IInvoiceNumbering _numbering;
+    private readonly IDraftInvoiceSynchronizer _drafts;
     private readonly IUnitOfWork _unitOfWork;
 
-    public BulkChangeInvoiceStatusCommandHandler(IInvoiceRepository repository, IUnitOfWork unitOfWork)
+    public BulkChangeInvoiceStatusCommandHandler(
+        IInvoiceRepository repository,
+        IRepository<Customer> customerRepository,
+        IInvoiceNumbering numbering,
+        IDraftInvoiceSynchronizer drafts,
+        IUnitOfWork unitOfWork)
     {
         _repository = repository;
+        _customerRepository = customerRepository;
+        _numbering = numbering;
+        _drafts = drafts;
         _unitOfWork = unitOfWork;
     }
 
@@ -26,7 +38,7 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
             throw new ArgumentException($"At most {MaxInvoices} invoices can be changed at once");
 
         var invoices = (await _repository.GetByIdsAsync(ids, cancellationToken)).ToDictionary(i => i.Id);
-        var succeeded = new List<long>();
+        var eligible = new List<Invoice>();
         var skipped = new List<BulkInvoiceSkipDto>();
 
         foreach (var id in ids)
@@ -44,12 +56,46 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
                 continue;
             }
 
-            Apply(request.Action, invoice);
-            succeeded.Add(id);
+            eligible.Add(invoice);
         }
+
+        var renumbered = new List<long>();
+        if (request.Action == BulkInvoiceStatusAction.Finalize)
+        {
+            // Numbers follow the invoice dates: the earliest issue date gets the lowest number
+            foreach (var invoice in eligible.OrderBy(i => i.IssueDate).ThenBy(i => i.CreatedAt).ThenBy(i => i.Id))
+            {
+                var customer = await _customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken);
+                if (customer == null)
+                {
+                    skipped.Add(new BulkInvoiceSkipDto(invoice.Id, invoice.Number.ToString(), "Customer not found"));
+                    continue;
+                }
+
+                invoice.FinalizeInvoice();
+                var number = await _numbering.TakeAsync(customer, invoice.IssueDate, cancellationToken);
+                if (invoice.Number != number)
+                    renumbered.Add(invoice.Id);
+                invoice.Number = number;
+            }
+        }
+        else
+        {
+            foreach (var invoice in eligible)
+                Apply(request.Action, invoice);
+        }
+
+        var skippedIds = skipped.Select(s => s.Id).ToHashSet();
+        var succeeded = eligible.Where(i => !skippedIds.Contains(i.Id)).Select(i => i.Id).ToList();
 
         if (succeeded.Count > 0)
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (request.Action == BulkInvoiceStatusAction.Finalize && succeeded.Count > 0)
+        {
+            await _drafts.RerenderAsync(renumbered, cancellationToken);
+            await _drafts.RefreshDraftsAsync(cancellationToken);
+        }
 
         return new BulkInvoiceResultDto(succeeded, skipped);
     }
@@ -81,9 +127,6 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
     {
         switch (action)
         {
-            case BulkInvoiceStatusAction.Finalize:
-                invoice.FinalizeInvoice();
-                break;
             case BulkInvoiceStatusAction.MarkAsSent:
                 invoice.MarkAsSent();
                 break;

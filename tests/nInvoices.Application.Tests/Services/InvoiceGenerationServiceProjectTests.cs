@@ -140,12 +140,11 @@ public sealed class InvoiceGenerationServiceProjectTests
             _taxRepository.Object,
             _invoiceRepository.Object,
             _workDayRepository.Object,
-            _sequenceRepository.Object,
             _projectResolver.Object,
             _templateRenderer.Object,
             _htmlToPdfConverter.Object,
             _taxCalculationService.Object,
-            settings,
+            new InvoiceNumbering(_sequenceRepository.Object, settings),
             _unitOfWork.Object);
     }
 
@@ -336,7 +335,7 @@ public sealed class InvoiceGenerationServiceProjectTests
     }
 
     [Test]
-    public async Task GenerateInvoiceAsync_UserHasASequence_UsesAndAdvancesIt()
+    public async Task GenerateInvoiceAsync_UserHasASequence_ShowsTheNextNumberWithoutTakingIt()
     {
         GivenRate(RateType.Daily, 400m);
         var sequence = GivenSequence(4);
@@ -345,11 +344,26 @@ public sealed class InvoiceGenerationServiceProjectTests
             MonthlyDto(WorkedDay(1, ("Alpha", 8m))), TestContext.CurrentContext.CancellationToken);
 
         invoice.Number.ToString().ShouldEndWith("-004");
-        sequence.CurrentValue.ShouldBe(5);
+        invoice.Status.ShouldBe(InvoiceStatus.Draft);
+        sequence.CurrentValue.ShouldBe(4);
     }
 
     [Test]
-    public async Task GenerateInvoiceAsync_UserHasNoSequenceYet_StartsAtOne()
+    public async Task GenerateInvoiceAsync_SeveralDrafts_ShowTheSameNumber()
+    {
+        GivenRate(RateType.Daily, 400m);
+        var sequence = GivenSequence(4);
+        var dto = MonthlyDto(WorkedDay(1, ("Alpha", 8m)));
+
+        var first = await _service.GenerateInvoiceAsync(dto, TestContext.CurrentContext.CancellationToken);
+        var second = await _service.GenerateInvoiceAsync(dto, TestContext.CurrentContext.CancellationToken);
+
+        first.Number.ShouldBe(second.Number);
+        sequence.CurrentValue.ShouldBe(4);
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_UserHasNoSequenceYet_ShowsOne()
     {
         GivenRate(RateType.Daily, 400m);
         _sequenceRepository
@@ -360,7 +374,8 @@ public sealed class InvoiceGenerationServiceProjectTests
             MonthlyDto(WorkedDay(1, ("Alpha", 8m))), TestContext.CurrentContext.CancellationToken);
 
         invoice.Number.ToString().ShouldEndWith("-001");
-        _sequenceRepository.Verify(r => r.AddAsync(It.IsAny<InvoiceSequence>(), It.IsAny<CancellationToken>()), Times.Once);
+        // Generating a draft leaves no trace in the sequence
+        _sequenceRepository.Verify(r => r.AddAsync(It.IsAny<InvoiceSequence>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Test]

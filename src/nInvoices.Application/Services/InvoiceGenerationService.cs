@@ -1,7 +1,5 @@
-using Microsoft.Extensions.Options;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Models;
-using nInvoices.Core.Configuration;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
@@ -22,8 +20,8 @@ public interface IInvoiceGenerationService
 
     /// <summary>
     /// Builds and renders the invoice exactly as <see cref="GenerateInvoiceAsync"/> would, without
-    /// side effects: the invoice sequence is not advanced (the number shown is the next one), work
-    /// days are not saved and projects are not created. Throws <see cref="InvalidOperationException"/>
+    /// side effects: work days are not saved and projects are not created (the number shown is
+    /// the next one; generating does not take it either, finalizing does). Throws <see cref="InvalidOperationException"/>
     /// when the invoice could not be generated (no rate, no active template, a template error).
     /// </summary>
     Task<InvoiceDraft> PreviewInvoiceAsync(
@@ -53,12 +51,11 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     private readonly IRepository<Tax> _taxRepository;
     private readonly IInvoiceRepository _invoiceRepository;
     private readonly IWorkDayRepository _workDayRepository;
-    private readonly IRepository<InvoiceSequence> _sequenceRepository;
     private readonly IProjectResolver _projectResolver;
     private readonly ITemplateRenderer _templateRenderer;
     private readonly IHtmlToPdfConverter _htmlToPdfConverter;
     private readonly ITaxCalculationService _taxCalculationService;
-    private readonly InvoiceSettings _invoiceSettings;
+    private readonly IInvoiceNumbering _numbering;
     private readonly IUnitOfWork _unitOfWork;
 
     public InvoiceGenerationService(
@@ -68,12 +65,11 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         IRepository<Tax> taxRepository,
         IInvoiceRepository invoiceRepository,
         IWorkDayRepository workDayRepository,
-        IRepository<InvoiceSequence> sequenceRepository,
         IProjectResolver projectResolver,
         ITemplateRenderer templateRenderer,
         IHtmlToPdfConverter htmlToPdfConverter,
         ITaxCalculationService taxCalculationService,
-        IOptions<InvoiceSettings> invoiceSettings,
+        IInvoiceNumbering numbering,
         IUnitOfWork unitOfWork)
     {
         _templateRepository = templateRepository;
@@ -82,12 +78,11 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         _taxRepository = taxRepository;
         _invoiceRepository = invoiceRepository;
         _workDayRepository = workDayRepository;
-        _sequenceRepository = sequenceRepository;
         _projectResolver = projectResolver;
         _templateRenderer = templateRenderer;
         _htmlToPdfConverter = htmlToPdfConverter;
         _taxCalculationService = taxCalculationService;
-        _invoiceSettings = invoiceSettings.Value;
+        _numbering = numbering;
         _unitOfWork = unitOfWork;
     }
 
@@ -111,9 +106,9 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     }
 
     /// <summary>
-    /// Builds and renders the invoice. With <paramref name="persist"/> the invoice number is taken
-    /// from the sequence and the month's work days are replaced (staged, committed by the caller);
-    /// without it nothing is written, which is what the preview needs.
+    /// Builds and renders the invoice. With <paramref name="persist"/> the month's work days are
+    /// replaced (staged, committed by the caller); without it nothing is written, which is what
+    /// the preview needs. Either way the number is the next one, not yet taken from the sequence.
     /// </summary>
     private async Task<InvoiceDraft> BuildInvoiceAsync(
         GenerateInvoiceDto dto,
@@ -147,9 +142,9 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         var expensesTotal = CalculateExpensesTotal(dto.Expenses, rate.Price.Currency);
         var customer = await _customerRepository.GetByIdAsync(dto.CustomerId, cancellationToken)
             ?? throw new InvalidOperationException($"Customer {dto.CustomerId} not found");
-        var invoiceNumber = persist
-            ? await GenerateInvoiceNumberAsync(customer, dto.IssueDate, cancellationToken)
-            : await PeekInvoiceNumberAsync(customer, dto.IssueDate, cancellationToken);
+        // A draft does not use up a number: it shows the next one, which is only taken when the
+        // invoice is finalized
+        var invoiceNumber = await _numbering.PeekAsync(customer, dto.IssueDate, cancellationToken);
 
         var (totalTax, taxLines) = _taxCalculationService.CalculateTaxes(customerTaxes, subtotal + expensesTotal);
 
@@ -417,49 +412,6 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         var total = expenses.Sum(e => e.Amount);
 
         return new Money(total, currency);
-    }
-
-    private async Task<InvoiceNumber> GenerateInvoiceNumberAsync(
-        Customer customer,
-        DateOnly issueDate,
-        CancellationToken cancellationToken)
-    {
-        // Get or create the current user's numbering (the query filter returns only theirs)
-        var sequence = (await _sequenceRepository.GetAllAsync(cancellationToken)).FirstOrDefault();
-        if (sequence == null)
-        {
-            sequence = new InvoiceSequence(1);
-            await _sequenceRepository.AddAsync(sequence, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-
-        // Atomically increment the sequence
-        var sequenceNumber = sequence.Increment();
-        await _sequenceRepository.UpdateAsync(sequence, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return FormatInvoiceNumber(sequence.NumberFormat, customer, sequenceNumber, issueDate);
-    }
-
-    /// <summary>The number the next generated invoice will get, without advancing the sequence.</summary>
-    private async Task<InvoiceNumber> PeekInvoiceNumberAsync(
-        Customer customer,
-        DateOnly issueDate,
-        CancellationToken cancellationToken)
-    {
-        var sequence = (await _sequenceRepository.GetAllAsync(cancellationToken)).FirstOrDefault();
-        var sequenceNumber = sequence?.CurrentValue ?? 1;
-
-        return FormatInvoiceNumber(sequence?.NumberFormat, customer, sequenceNumber, issueDate);
-    }
-
-    /// <param name="userFormat">The user's own pattern; null to use the default from appsettings.</param>
-    private InvoiceNumber FormatInvoiceNumber(string? userFormat, Customer customer, int sequenceNumber, DateOnly issueDate)
-    {
-        var pattern = userFormat ?? _invoiceSettings.NumberFormat;
-        var date = issueDate.ToDateTime(TimeOnly.MinValue);
-
-        return InvoiceNumber.Generate(pattern, sequenceNumber, date, customer.FiscalId);
     }
 
     /// <summary>

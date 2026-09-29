@@ -23,7 +23,7 @@
         <div class="total"><dt>Total</dt><dd>{{ money(preview.total) }}</dd></div>
       </dl>
 
-      <p class="note muted">Nothing is saved until you generate. The number is the next one in the sequence.</p>
+      <p class="note muted">Nothing is saved until you generate. The invoice starts as a draft showing the next number; it only takes the number when you finalize it.</p>
     </BasePanel>
 
     <BasePanel flush class="preview-panel">

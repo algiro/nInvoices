@@ -1,5 +1,9 @@
+using Microsoft.Extensions.Options;
 using Moq;
 using nInvoices.Application.Features.Invoices.Commands;
+using nInvoices.Application.Services;
+using nInvoices.Application.Tests.TestDoubles;
+using nInvoices.Core.Configuration;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
@@ -13,6 +17,8 @@ public sealed class BulkChangeInvoiceStatusTests
 {
     private Mock<IInvoiceRepository> _repository = null!;
     private Mock<IUnitOfWork> _unitOfWork = null!;
+    private Mock<IDraftInvoiceSynchronizer> _drafts = null!;
+    private InMemoryRepository<InvoiceSequence> _sequences = null!;
     private BulkChangeInvoiceStatusCommandHandler _handler = null!;
     private List<Invoice> _invoices = null!;
 
@@ -25,7 +31,14 @@ public sealed class BulkChangeInvoiceStatusTests
             .Setup(r => r.GetByIdsAsync(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyCollection<long> ids, CancellationToken _) => _invoices.Where(i => ids.Contains(i.Id)).ToList());
         _unitOfWork = new Mock<IUnitOfWork>();
-        _handler = new BulkChangeInvoiceStatusCommandHandler(_repository.Object, _unitOfWork.Object);
+        _drafts = new Mock<IDraftInvoiceSynchronizer>();
+
+        var customer = new Customer("Acme", "ACME1", new Address("Main", "1", "Town", "12345", "Italy")) { Id = 1 };
+        _sequences = new InMemoryRepository<InvoiceSequence>(new InvoiceSequence(10));
+        var numbering = new InvoiceNumbering(_sequences, Options.Create(new InvoiceSettings { NumberFormat = "N-{NUMBER:000}" }));
+
+        _handler = new BulkChangeInvoiceStatusCommandHandler(
+            _repository.Object, new InMemoryRepository<Customer>(customer), numbering, _drafts.Object, _unitOfWork.Object);
     }
 
     private Invoice Given(long id, InvoiceStatus status)
@@ -63,6 +76,60 @@ public sealed class BulkChangeInvoiceStatusTests
         draft.Status.ShouldBe(InvoiceStatus.Draft);
         result.Skipped.Select(s => (s.Id, s.Reason)).ShouldBe([(3L, "Not finalized yet"), (4L, "Already paid"), (99L, "Not found")]);
         _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task Handle_Finalize_GivesNumbersByIssueDateThenCreationAndMovesTheSequenceOn()
+    {
+        // Created in the order 1, 2, 3, but issued in the order 3, 1, 2 (1 and 2 on the same day)
+        var one = Given(1, InvoiceStatus.Draft);
+        var two = Given(2, InvoiceStatus.Draft);
+        var three = Given(3, InvoiceStatus.Draft);
+        one.IssueDate = new DateOnly(2026, 2, 10);
+        two.IssueDate = new DateOnly(2026, 2, 10);
+        three.IssueDate = new DateOnly(2026, 2, 1);
+
+        var result = await _handler.Handle(
+            new BulkChangeInvoiceStatusCommand(BulkInvoiceStatusAction.Finalize, [1, 2, 3]),
+            TestContext.CurrentContext.CancellationToken);
+
+        result.Succeeded.ShouldBe([1L, 2L, 3L]);
+        three.Number.ToString().ShouldBe("N-010");
+        one.Number.ToString().ShouldBe("N-011");
+        two.Number.ToString().ShouldBe("N-012");
+        _sequences.Items.Single().CurrentValue.ShouldBe(13);
+        one.Status.ShouldBe(InvoiceStatus.Finalized);
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _drafts.Verify(d => d.RefreshDraftsAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task Handle_Finalize_SkippedInvoicesDoNotUseUpNumbers()
+    {
+        var draft = Given(1, InvoiceStatus.Draft);
+        Given(2, InvoiceStatus.Sent);
+
+        var result = await _handler.Handle(
+            new BulkChangeInvoiceStatusCommand(BulkInvoiceStatusAction.Finalize, [1, 2]),
+            TestContext.CurrentContext.CancellationToken);
+
+        result.Succeeded.ShouldBe([1L]);
+        result.Skipped.Select(s => s.Id).ShouldBe([2L]);
+        draft.Number.ToString().ShouldBe("N-010");
+        _sequences.Items.Single().CurrentValue.ShouldBe(11);
+    }
+
+    [Test]
+    public async Task Handle_MarkAsSent_DoesNotTouchTheSequence()
+    {
+        Given(1, InvoiceStatus.Finalized);
+
+        await _handler.Handle(
+            new BulkChangeInvoiceStatusCommand(BulkInvoiceStatusAction.MarkAsSent, [1]),
+            TestContext.CurrentContext.CancellationToken);
+
+        _sequences.Items.Single().CurrentValue.ShouldBe(10);
+        _drafts.Verify(d => d.RefreshDraftsAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Test]

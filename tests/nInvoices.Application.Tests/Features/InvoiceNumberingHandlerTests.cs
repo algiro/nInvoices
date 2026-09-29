@@ -3,6 +3,7 @@ using Moq;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Invoices.Commands;
 using nInvoices.Application.Features.Invoices.Queries;
+using nInvoices.Application.Services;
 using nInvoices.Core.Configuration;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
@@ -15,6 +16,7 @@ public sealed class InvoiceNumberingHandlerTests
 {
     private Mock<IRepository<InvoiceSequence>> _sequences = null!;
     private Mock<IUnitOfWork> _unitOfWork = null!;
+    private Mock<IDraftInvoiceSynchronizer> _drafts = null!;
     private List<InvoiceSequence> _stored = null!;
     private IOptions<InvoiceSettings> _settings = null!;
 
@@ -33,6 +35,7 @@ public sealed class InvoiceNumberingHandlerTests
             .ReturnsAsync((InvoiceSequence s, CancellationToken _) => { _stored.Add(s); return s; });
 
         _unitOfWork = new Mock<IUnitOfWork>();
+        _drafts = new Mock<IDraftInvoiceSynchronizer>();
     }
 
     private static CancellationToken Token => TestContext.CurrentContext.CancellationToken;
@@ -41,7 +44,7 @@ public sealed class InvoiceNumberingHandlerTests
         new GetInvoiceNumberingQueryHandler(_sequences.Object, _settings).Handle(new GetInvoiceNumberingQuery(), Token);
 
     private Task<InvoiceNumberingDto> Update(int value, string? format) =>
-        new UpdateInvoiceNumberingCommandHandler(_sequences.Object, _unitOfWork.Object, _settings)
+        new UpdateInvoiceNumberingCommandHandler(_sequences.Object, _drafts.Object, _unitOfWork.Object, _settings)
             .Handle(new UpdateInvoiceNumberingCommand(new UpdateInvoiceNumberingDto(value, format)), Token);
 
     [Test]
@@ -81,6 +84,8 @@ public sealed class InvoiceNumberingHandlerTests
         sequence.NumberFormat.ShouldBe("{YEAR:yy}/{NUMBER:0000}");
         numbering.NextNumber.ShouldEndWith("/0040");
         _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        // The drafts show the next number, which this has just changed
+        _drafts.Verify(d => d.RefreshDraftsAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
@@ -123,5 +128,6 @@ public sealed class InvoiceNumberingHandlerTests
     {
         await Should.ThrowAsync<ArgumentException>(() => Update(1, "just-text"));
         _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _drafts.Verify(d => d.RefreshDraftsAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }
