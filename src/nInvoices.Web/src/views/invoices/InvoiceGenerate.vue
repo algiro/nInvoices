@@ -32,11 +32,13 @@
       <dl class="summary">
         <template v-if="isMonthly">
           <div><dt>Period</dt><dd>{{ periodLabel }}</dd></div>
-          <div><dt>Worked days</dt><dd>{{ totals.workedDays }}</dd></div>
-          <div><dt>Hours</dt><dd>{{ totals.totalHours.toFixed(1) }}</dd></div>
+          <template v-if="showTimeTotals">
+            <div><dt>Worked days</dt><dd>{{ totals.workedDays }}</dd></div>
+            <div><dt>Hours</dt><dd>{{ totals.totalHours.toFixed(1) }}</dd></div>
+          </template>
         </template>
         <div v-if="expensesTotal"><dt>Expenses</dt><dd>{{ expensesTotal }}</dd></div>
-        <div class="estimate"><dt>Estimated subtotal</dt><dd>{{ estimatedAmount }}</dd></div>
+        <div v-if="showTimeTotals" class="estimate"><dt>Estimated subtotal</dt><dd>{{ estimatedAmount }}</dd></div>
       </dl>
       <div class="summary-actions">
         <span v-if="currentBlocker" class="blocker">{{ currentBlocker }}</span>
@@ -101,6 +103,9 @@ const steps = computed(() => [
 ])
 
 const currentIndex = computed(() => Math.max(0, steps.value.findIndex(s => s.id === currentId.value)))
+// A monthly invoice bills the days marked on the Time step, so its totals mean nothing on the
+// first step, before any day has been chosen (a one-time invoice's amount is known from the start)
+const showTimeTotals = computed(() => !isMonthly.value || currentId.value !== 'customer')
 const currentBlocker = computed(() => steps.value[currentIndex.value].blocker)
 
 /** A step can be opened when every step before it is complete. */
