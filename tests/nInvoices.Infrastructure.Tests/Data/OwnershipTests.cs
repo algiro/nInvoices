@@ -200,6 +200,55 @@ public sealed class OwnershipTests
         (await ContextFor(Alice).Invoices.CountAsync(Token)).ShouldBe(1);
     }
 
+    /// <summary>Saves the rows as Bob, then clears their owner as if written before ownership existed.</summary>
+    private async Task AddLegacyAsync(params object[] entities)
+    {
+        var bob = ContextFor(Bob);
+        bob.AddRange(entities);
+        await bob.SaveChangesAsync(Token);
+        var raw = ContextFor(null);
+        await raw.HolidayCalendars.IgnoreQueryFilters().Where(c => c.OwnerId == Bob)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.OwnerId, string.Empty), Token);
+        await raw.HolidayRules.IgnoreQueryFilters().Where(r => r.OwnerId == Bob)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.OwnerId, string.Empty), Token);
+        await raw.InvoiceSequences.IgnoreQueryFilters().Where(s => s.OwnerId == Bob)
+            .ExecuteUpdateAsync(s => s.SetProperty(e => e.OwnerId, string.Empty), Token);
+    }
+
+    [Test]
+    public async Task AssignUnownedDataAsync_OwnerAlreadyHasCalendarForCountry_KeepsLegacyCalendar()
+    {
+        await AddLegacyAsync(new HolidayCalendar("IT") { Rules = [HolidayRule.Fixed("Sant'Ambrogio", 12, 7)] });
+        // Created for Alice when she signed in before the legacy data was hers
+        var alice = ContextFor(Alice);
+        alice.HolidayCalendars.Add(new HolidayCalendar("IT") { Rules = [HolidayRule.Fixed("Natale", 12, 25)] });
+        alice.HolidayCalendars.Add(new HolidayCalendar("ES"));
+        await alice.SaveChangesAsync(Token);
+
+        await ContextFor(null).AssignUnownedDataAsync(Alice, Token);
+
+        var calendars = await ContextFor(Alice).HolidayCalendars.OrderBy(c => c.CountryCode).ToListAsync(Token);
+        calendars.Select(c => c.CountryCode).ShouldBe(["ES", "IT"]);
+        var rules = await ContextFor(Alice).HolidayRules.ToListAsync(Token);
+        rules.Select(r => r.Name).ShouldBe(["Sant'Ambrogio"]);
+        rules.Single().HolidayCalendarId.ShouldBe(calendars[1].Id);
+    }
+
+    [TestCase(12, 5, 12)]
+    [TestCase(3, 7, 7)]
+    public async Task AssignUnownedDataAsync_OwnerAlreadyHasSequence_KeepsHigherValue(int legacy, int own, int expected)
+    {
+        await AddLegacyAsync(new InvoiceSequence(legacy));
+        var alice = ContextFor(Alice);
+        alice.InvoiceSequences.Add(new InvoiceSequence(own));
+        await alice.SaveChangesAsync(Token);
+
+        var (assigned, _) = await ContextFor(null).AssignUnownedDataAsync(Alice, Token);
+
+        assigned.ShouldBe(1);
+        (await ContextFor(Alice).InvoiceSequences.SingleAsync(Token)).CurrentValue.ShouldBe(expected);
+    }
+
     [Test]
     public async Task Migrations_OnFreshDatabase_LeaveNoUnownedRows()
     {

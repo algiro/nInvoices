@@ -43,17 +43,67 @@ public static class UnownedDataExtensions
             .Select(t => t.ClrType)
             .ToList();
 
-        var assigned = 0;
-        var unowned = 0;
-        foreach (var type in ownedTypes)
+        if (string.IsNullOrWhiteSpace(ownerId))
         {
-            if (string.IsNullOrWhiteSpace(ownerId))
+            var unowned = 0;
+            foreach (var type in ownedTypes)
                 unowned += await (Task<int>)CountMethod.MakeGenericMethod(type).Invoke(null, [context, cancellationToken])!;
-            else
-                assigned += await (Task<int>)AssignMethod.MakeGenericMethod(type).Invoke(null, [context, ownerId, cancellationToken])!;
+            return (0, unowned);
         }
 
-        return (assigned, unowned);
+        // All or nothing: a failure halfway would leave the data split between owners
+        var strategy = context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async ct =>
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(ct);
+
+            await ResolveConflictsAsync(context, ownerId, ct);
+
+            var assigned = 0;
+            foreach (var type in ownedTypes)
+                assigned += await (Task<int>)AssignMethod.MakeGenericMethod(type).Invoke(null, [context, ownerId, ct])!;
+
+            await transaction.CommitAsync(ct);
+            return (assigned, 0);
+        }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Clears rows the owner already has that would clash with the legacy ones on a per-user
+    /// unique index. They exist when the user signed in before the legacy data was assigned:
+    /// the app then created defaults for them. The legacy rows hold the real history, so they win.
+    /// </summary>
+    private static async Task ResolveConflictsAsync(
+        ApplicationDbContext context,
+        string ownerId,
+        CancellationToken cancellationToken)
+    {
+        // One calendar per country: drop the owner's (built-in) one; its rules cascade
+        var legacyCountries = await context.HolidayCalendars.IgnoreQueryFilters()
+            .Where(c => c.OwnerId == string.Empty)
+            .Select(c => c.CountryCode)
+            .ToListAsync(cancellationToken);
+        if (legacyCountries.Count > 0)
+            await context.HolidayCalendars.IgnoreQueryFilters()
+                .Where(c => c.OwnerId == ownerId && legacyCountries.Contains(c.CountryCode))
+                .ExecuteDeleteAsync(cancellationToken);
+
+        // One sequence per user: keep the legacy one, never below the owner's own counter,
+        // so no invoice number is handed out twice
+        var ownValue = await context.InvoiceSequences.IgnoreQueryFilters()
+            .Where(s => s.OwnerId == ownerId)
+            .Select(s => (int?)s.CurrentValue)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (ownValue is int value &&
+            await context.InvoiceSequences.IgnoreQueryFilters().AnyAsync(s => s.OwnerId == string.Empty, cancellationToken))
+        {
+            await context.InvoiceSequences.IgnoreQueryFilters()
+                .Where(s => s.OwnerId == string.Empty && s.CurrentValue < value)
+                .ExecuteUpdateAsync(s => s.SetProperty(e => e.CurrentValue, value), cancellationToken);
+            await context.InvoiceSequences.IgnoreQueryFilters()
+                .Where(s => s.OwnerId == ownerId)
+                .ExecuteDeleteAsync(cancellationToken);
+        }
     }
 
     private static Task<int> AssignAsync<TEntity>(
