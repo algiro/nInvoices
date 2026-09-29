@@ -67,12 +67,14 @@ public sealed class InvoiceGenerationServiceProjectTests
         _taxCalculationService = new Mock<ITaxCalculationService>();
         _unitOfWork = new Mock<IUnitOfWork>();
 
-        var template = new InvoiceTemplate(CustomerId, InvoiceType.Monthly, "T", "<html/>");
-        template.Activate();
+        var templates = new[] { InvoiceType.Monthly, InvoiceType.OneTime }
+            .Select(type => new InvoiceTemplate(CustomerId, type, "T", "<html/>"))
+            .ToList();
+        templates.ForEach(t => t.Activate());
         _templateRepository
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<InvoiceTemplate, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Expression<Func<InvoiceTemplate, bool>> p, CancellationToken _) =>
-                new[] { template }.Where(p.Compile()).ToList());
+                templates.Where(p.Compile()).ToList());
 
         _rateRepository
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Rate, bool>>>(), It.IsAny<CancellationToken>()))
@@ -90,9 +92,7 @@ public sealed class InvoiceGenerationServiceProjectTests
             .Setup(r => r.GetByIdAsync(CustomerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(customer);
 
-        _sequenceRepository
-            .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new InvoiceSequence(1)]);
+        GivenSequence(1);
 
         _workDayRepository
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<WorkDay, bool>>>(), It.IsAny<CancellationToken>()))
@@ -322,14 +322,160 @@ public sealed class InvoiceGenerationServiceProjectTests
             .ShouldBe(invoice.Subtotal.Amount);
     }
 
+    private InvoiceSequence GivenSequence(int value, string? numberFormat = null)
+    {
+        var sequence = new InvoiceSequence(value);
+        sequence.SetNumberFormat(numberFormat);
+        _sequenceRepository
+            .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([sequence]);
+        return sequence;
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_UserHasASequence_UsesAndAdvancesIt()
+    {
+        GivenRate(RateType.Daily, 400m);
+        var sequence = GivenSequence(4);
+
+        var invoice = await _service.GenerateInvoiceAsync(
+            MonthlyDto(WorkedDay(1, ("Alpha", 8m))), TestContext.CurrentContext.CancellationToken);
+
+        invoice.Number.ToString().ShouldEndWith("-004");
+        sequence.CurrentValue.ShouldBe(5);
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_UserHasNoSequenceYet_StartsAtOne()
+    {
+        GivenRate(RateType.Daily, 400m);
+        _sequenceRepository
+            .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        var invoice = await _service.GenerateInvoiceAsync(
+            MonthlyDto(WorkedDay(1, ("Alpha", 8m))), TestContext.CurrentContext.CancellationToken);
+
+        invoice.Number.ToString().ShouldEndWith("-001");
+        _sequenceRepository.Verify(r => r.AddAsync(It.IsAny<InvoiceSequence>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task PreviewInvoiceAsync_UserHasItsOwnPattern_UsesItInsteadOfTheDefault()
+    {
+        GivenRate(RateType.Daily, 400m);
+        GivenSequence(7, numberFormat: "{CUSTOMER:3}/{NUMBER:0000}");
+
+        var draft = await _service.PreviewInvoiceAsync(
+            MonthlyDto(WorkedDay(1, ("Alpha", 8m))), TestContext.CurrentContext.CancellationToken);
+
+        draft.Invoice.Number.ToString().ShouldBe("ACM/0007");
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_UserHasItsOwnPattern_UsesItForTheNumber()
+    {
+        GivenRate(RateType.Daily, 400m);
+        GivenSequence(12, numberFormat: "{YEAR:yy}-{NUMBER:00000}");
+
+        var invoice = await _service.GenerateInvoiceAsync(
+            MonthlyDto(WorkedDay(1, ("Alpha", 8m))), TestContext.CurrentContext.CancellationToken);
+
+        invoice.Number.ToString().ShouldEndWith("-00012");
+    }
+
+    private GenerateInvoiceDto OneTimeDto(decimal? hours = null, long? rateId = null) => new()
+    {
+        CustomerId = CustomerId,
+        InvoiceType = InvoiceType.OneTime,
+        Hours = hours,
+        RateId = rateId
+    };
+
+    [Test]
+    public async Task GenerateInvoiceAsync_OneTimeWithHourlyRate_BillsHoursTimesRate()
+    {
+        GivenRate(RateType.Hourly, 50m);
+
+        var invoice = await _service.GenerateInvoiceAsync(OneTimeDto(hours: 7.5m), TestContext.CurrentContext.CancellationToken);
+
+        invoice.Subtotal.Amount.ShouldBe(375m);
+        invoice.Hours.ShouldBe(7.5m);
+        var line = _capturedModel.LineItems.Single();
+        (line.Quantity, line.Rate, line.Amount).ShouldBe((7.5m, 50m, 375m));
+    }
+
+    [TestCase(null)]
+    [TestCase(0)]
+    public async Task GenerateInvoiceAsync_OneTimeWithHourlyRateAndNoHours_Throws(double? hours)
+    {
+        GivenRate(RateType.Hourly, 50m);
+
+        await Should.ThrowAsync<InvalidOperationException>(() =>
+            _service.GenerateInvoiceAsync(OneTimeDto((decimal?)hours), TestContext.CurrentContext.CancellationToken));
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_OneTimeWithDailyRate_BillsTheRateAsAFixedPrice()
+    {
+        GivenRate(RateType.Daily, 400m);
+
+        var invoice = await _service.GenerateInvoiceAsync(OneTimeDto(), TestContext.CurrentContext.CancellationToken);
+
+        invoice.Subtotal.Amount.ShouldBe(400m);
+        invoice.Hours.ShouldBeNull();
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_RateChosen_UsesItInsteadOfTheDefault()
+    {
+        GivenRate(RateType.Daily, 400m);
+        GivenRate(RateType.Hourly, 50m);
+        var hourly = _rates.Single(r => r.Type == RateType.Hourly);
+
+        var invoice = await _service.GenerateInvoiceAsync(
+            OneTimeDto(hours: 2m, rateId: hourly.Id), TestContext.CurrentContext.CancellationToken);
+
+        invoice.Subtotal.Amount.ShouldBe(100m);
+        invoice.RateId.ShouldBe(hourly.Id);
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_MonthlyWithChosenHourlyRate_BillsTheHoursEvenWithADailyRate()
+    {
+        GivenRate(RateType.Daily, 400m);
+        GivenRate(RateType.Hourly, 50m);
+        var hourly = _rates.Single(r => r.Type == RateType.Hourly);
+        var dto = new GenerateInvoiceDto
+        {
+            CustomerId = CustomerId,
+            InvoiceType = InvoiceType.Monthly,
+            Year = 2026,
+            Month = 1,
+            RateId = hourly.Id,
+            WorkDays = [WorkedDay(1, ("Alpha", 3m)), WorkedDay(2, ("Alpha", 5m))]
+        };
+
+        var invoice = await _service.GenerateInvoiceAsync(dto, TestContext.CurrentContext.CancellationToken);
+
+        invoice.Subtotal.Amount.ShouldBe(400m);
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_RateOfAnotherCustomer_Throws()
+    {
+        GivenRate(RateType.Daily, 400m);
+        _rates.Add(new Rate(CustomerId + 1, RateType.Hourly, new Money(10m, Currency)) { Id = 99 });
+
+        await Should.ThrowAsync<InvalidOperationException>(() =>
+            _service.GenerateInvoiceAsync(OneTimeDto(hours: 1m, rateId: 99), TestContext.CurrentContext.CancellationToken));
+    }
+
     [Test]
     public async Task PreviewInvoiceAsync_Always_WritesNothing()
     {
         GivenRate(RateType.Hourly, 50m);
-        var sequence = new InvoiceSequence(7);
-        _sequenceRepository
-            .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([sequence]);
+        var sequence = GivenSequence(7);
 
         var dto = MonthlyDto(WorkedDay(1, ("Alpha", 3m), ("Beta", 5m)));
 
@@ -348,9 +494,7 @@ public sealed class InvoiceGenerationServiceProjectTests
     public async Task PreviewInvoiceAsync_Always_UsesTheNextSequenceNumber()
     {
         GivenRate(RateType.Daily, 400m);
-        _sequenceRepository
-            .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new InvoiceSequence(7)]);
+        GivenSequence(7);
 
         var draft = await _service.PreviewInvoiceAsync(
             MonthlyDto(WorkedDay(1, ("Alpha", 8m))), TestContext.CurrentContext.CancellationToken);

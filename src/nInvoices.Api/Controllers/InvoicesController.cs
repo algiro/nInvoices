@@ -550,55 +550,37 @@ public sealed class InvoicesController : ControllerBase
     }
 
     /// <summary>
-    /// Gets the current user's invoice sequence number.
+    /// Gets how the current user's invoices are numbered: the sequence, the pattern and the next number.
     /// </summary>
-    [HttpGet("sequence")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    public async Task<ActionResult> GetSequence(CancellationToken cancellationToken)
+    [HttpGet("numbering")]
+    [ProducesResponseType(typeof(InvoiceNumberingDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<InvoiceNumberingDto>> GetNumbering(CancellationToken cancellationToken)
     {
-        var repository = HttpContext.RequestServices.GetRequiredService<IRepository<InvoiceSequence>>();
-        var sequence = (await repository.GetAllAsync(cancellationToken)).FirstOrDefault();
-
-        if (sequence == null)
-            return Ok(new { currentValue = 1, message = "Sequence not initialized yet" });
-
-        return Ok(new { currentValue = sequence.CurrentValue });
+        return Ok(await _mediator.Send(new GetInvoiceNumberingQuery(), cancellationToken));
     }
 
     /// <summary>
-    /// Sets the current user's invoice sequence to a specific value.
-    /// WARNING: Setting this too low can cause duplicate invoice numbers.
+    /// Sets the current user's next sequence value and pattern (blank pattern = the default one).
+    /// WARNING: Setting the value too low can cause duplicate invoice numbers.
     /// </summary>
-    [HttpPut("sequence")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [HttpPut("numbering")]
+    [ProducesResponseType(typeof(InvoiceNumberingDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult> SetSequence(
-        [FromBody] SetSequenceDto dto,
+    public async Task<ActionResult<InvoiceNumberingDto>> UpdateNumbering(
+        [FromBody] UpdateInvoiceNumberingDto dto,
         CancellationToken cancellationToken)
     {
-        if (dto.Value < 1)
-            return BadRequest(new { error = "Sequence value must be at least 1" });
-
-        var repository = HttpContext.RequestServices.GetRequiredService<IRepository<InvoiceSequence>>();
-        var unitOfWork = HttpContext.RequestServices.GetRequiredService<IUnitOfWork>();
-
-        var sequence = (await repository.GetAllAsync(cancellationToken)).FirstOrDefault();
-        
-        if (sequence == null)
+        try
         {
-            sequence = new InvoiceSequence(dto.Value);
-            await repository.AddAsync(sequence, cancellationToken);
+            var numbering = await _mediator.Send(new UpdateInvoiceNumberingCommand(dto), cancellationToken);
+
+            _logger.LogInformation("Updated invoice numbering: next value {Value}", numbering.CurrentValue);
+            return Ok(numbering);
         }
-        else
+        catch (ArgumentException ex)
         {
-            sequence.SetValue(dto.Value);
-            await repository.UpdateAsync(sequence, cancellationToken);
+            return BadRequest(new { error = ex.Message });
         }
-
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        _logger.LogInformation("Invoice sequence set to {Value}", dto.Value);
-        return Ok(new { currentValue = sequence.CurrentValue, message = "Sequence updated successfully" });
     }
 
     /// <summary>

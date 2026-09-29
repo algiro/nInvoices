@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using nInvoices.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using nInvoices.Infrastructure.Data;
 namespace nInvoices.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260929101858_AddRateAndHoursToInvoice")]
+    partial class AddRateAndHoursToInvoice
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
@@ -51,6 +54,10 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NumberFormat")
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("OwnerId")
@@ -500,9 +507,8 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.Property<int>("CurrentValue")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("NumberFormat")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("OwnerId")
                         .IsRequired()
@@ -514,7 +520,11 @@ namespace nInvoices.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OwnerId")
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("OwnerId", "CustomerId")
                         .IsUnique();
 
                     b.ToTable("InvoiceSequence", (string)null);
@@ -1225,6 +1235,17 @@ namespace nInvoices.Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Invoice");
+                });
+
+            modelBuilder.Entity("nInvoices.Core.Entities.InvoiceSequence", b =>
+                {
+                    b.HasOne("nInvoices.Core.Entities.Customer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
                 });
 
             modelBuilder.Entity("nInvoices.Core.Entities.InvoiceTaxLine", b =>

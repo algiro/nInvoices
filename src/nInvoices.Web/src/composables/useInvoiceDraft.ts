@@ -5,13 +5,24 @@ import { useProjectsStore } from '@/stores/projects'
 import { useSettingsStore } from '@/stores/settings'
 import { useMonthlyReportTemplatesStore } from '@/stores/monthlyReportTemplates'
 import { InvoiceType, RateType, DayType } from '@/types'
-import type { GenerateInvoiceDto, PublicHolidayDto, WorkDayDto } from '@/types'
+import type { GenerateInvoiceDto, PublicHolidayDto, RateDto, WorkDayDto } from '@/types'
 import { useWorkMonth, localDateString, dayHours, billedHours, FULL_DAY_HOURS } from '@/composables/useWorkMonth'
 import { holidaysApi } from '@/api/holidays'
 import { useToast } from '@/composables/useToast'
 import { formatMoney, invoiceTypeLabel } from '@/utils/format'
 
 export const EXPENSE_CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF']
+
+/** Same preference as the backend: Daily, then Monthly, then Hourly. */
+function defaultRate(rates: RateDto[]): RateDto | null {
+  return (
+    rates.find(r => r.type === RateType.Daily) ??
+    rates.find(r => r.type === RateType.Monthly) ??
+    rates.find(r => r.type === RateType.Hourly) ??
+    rates[0] ??
+    null
+  )
+}
 
 /**
  * The invoice being built on the "New invoice" wizard: customer, period, worked days and
@@ -28,7 +39,6 @@ export function useInvoiceDraft() {
 
   const selectedMonth = ref(new Date().getMonth() + 1)
   const selectedYear = ref(new Date().getFullYear())
-  const selectedRate = ref<any>(null)
   const noRate = ref(false)
 
   const form = reactive<GenerateInvoiceDto>({
@@ -37,8 +47,16 @@ export function useInvoiceDraft() {
     issueDate: localDateString(new Date()),
     workDays: [],
     expenses: [],
-    monthlyReportTemplateId: undefined
+    monthlyReportTemplateId: undefined,
+    rateId: undefined,
+    hours: undefined
   })
+
+  // The customer's rates, and the one the invoice bills with (the chosen one, else the default)
+  const customerRates = computed(() => (form.customerId ? ratesStore.ratesByCustomer(form.customerId) : []))
+  const selectedRate = computed(() =>
+    customerRates.value.find(r => r.id === form.rateId) ?? defaultRate(customerRates.value)
+  )
 
   const isMonthly = computed(() => form.invoiceType === InvoiceType.Monthly)
 
@@ -92,10 +110,15 @@ export function useInvoiceDraft() {
   })
 
   const estimatedAmount = computed(() => {
-    if (!selectedRate.value || !isMonthly.value) return '-'
+    if (!selectedRate.value) return '-'
 
     const rate = selectedRate.value.price.amount
     const currency = selectedRate.value.price.currency
+
+    if (!isMonthly.value) {
+      if (selectedRate.value.type !== RateType.Hourly) return formatMoney(rate, currency)
+      return Number(form.hours) > 0 ? formatMoney(Number(form.hours) * rate, currency) : '-'
+    }
 
     if (selectedRate.value.type === RateType.Hourly) return formatMoney(totals.value.totalHours * rate, currency)
     if (selectedRate.value.type === RateType.Daily) return formatMoney(totals.value.effectiveDays * rate, currency)
@@ -124,6 +147,7 @@ export function useInvoiceDraft() {
   const customerBlocker = computed((): string | null => {
     if (!form.customerId) return 'Select a customer.'
     if (noRate.value) return 'The customer needs a rate.'
+    if (!isMonthly.value && isHourlyRate.value && !(Number(form.hours) > 0)) return 'Enter the hours to bill.'
     if (!form.issueDate) return 'Set the issue date.'
     return null
   })
@@ -244,8 +268,9 @@ export function useInvoiceDraft() {
   })
 
   watch(() => form.customerId, () => {
-    // A timesheet template belongs to one customer
+    // A timesheet template and a rate belong to one customer
     form.monthlyReportTemplateId = undefined
+    form.rateId = undefined
     loadCustomerData()
     loadHolidays()
   })
@@ -261,7 +286,6 @@ export function useInvoiceDraft() {
   }
 
   async function loadCustomerData() {
-    selectedRate.value = null
     noRate.value = false
     if (!form.customerId) return
 
@@ -274,12 +298,8 @@ export function useInvoiceDraft() {
         return
       }
 
-      // Same preference as the backend: Daily, then Monthly, then Hourly
-      selectedRate.value =
-        rates.find(r => r.type === RateType.Daily) ??
-        rates.find(r => r.type === RateType.Monthly) ??
-        rates.find(r => r.type === RateType.Hourly) ??
-        rates[0]
+      // Start on the default rate; the user can pick another
+      form.rateId = defaultRate(rates)?.id
 
       // The customer's projects, for suggestions on the calendar
       await projectsStore.fetchByCustomerId(form.customerId, false)
@@ -333,11 +353,15 @@ export function useInvoiceDraft() {
       expenses: (form.expenses ?? []).map(e => ({ ...e, description: e.description.trim(), amount: Number(e.amount) }))
     }
 
+    payload.rateId = selectedRate.value?.id
+
     if (isMonthly.value) {
       payload.year = selectedYear.value
       payload.month = selectedMonth.value
+      payload.hours = undefined
     } else {
       payload.monthlyReportTemplateId = undefined
+      payload.hours = isHourlyRate.value && Number(form.hours) > 0 ? Number(form.hours) : undefined
     }
 
     return payload
@@ -348,6 +372,7 @@ export function useInvoiceDraft() {
     selectedMonth,
     selectedYear,
     selectedRate,
+    customerRates,
     noRate,
     isMonthly,
     isHourlyRate,

@@ -17,4 +17,10 @@ public sealed class GenerateInvoiceDto
     public ICollection<ExpenseDto>? Expenses { get; init; }
     public string InvoiceNumberFormat { get; init; } = "INV-{YEAR}-{NUMBER:000}";
     public long? MonthlyReportTemplateId { get; init; }
+
+    /// <summary>The customer's rate to bill with; null to use the default (Daily, then Monthly, then Hourly).</summary>
+    public long? RateId { get; init; }
+
+    /// <summary>Hours to bill on a one-time invoice with an hourly rate (hours × rate).</summary>
+    public decimal? Hours { get; init; }
 }

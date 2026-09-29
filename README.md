@@ -41,7 +41,7 @@ nInvoices is built around that monthly routine:
 - **HTML templates** for invoices and timesheets using [Scriban](https://github.com/scriban/scriban) syntax: loops, conditions, formatting and localisation helpers.
 - **Template editor with live preview** and a panel of available variables.
 - **Pixel-exact PDFs** rendered by headless Chrome, for invoices, timesheets and a worked-days calendar.
-- **Configurable invoice numbers**, e.g. `{YEAR}-{MONTH:00}-{NUMBER:000}`.
+- **Configurable invoice numbers, per user**: each user has their own sequence and pattern, e.g. `{YEAR}-{MONTH:00}-{NUMBER:000}`, set in Settings.
 
 ### Getting paid
 - **Invoice lifecycle:** Draft → Finalized → Sent → Paid, or Cancelled.
@@ -121,8 +121,9 @@ PostgreSQL schema changes are shipped as idempotent SQL scripts in [`docker/migr
 
 One instance serves any number of Keycloak users, each with their own data: customers,
 rates, taxes, worked days, invoices, templates, images, holiday calendars and invoice
-numbering. Invoice number format and first day of week (`Invoice:*` settings) are still
-set once for the whole server.
+numbering (the sequence and the pattern, set in Settings). `Invoice:NumberFormat` in
+appsettings is only the default pattern for users who haven't set their own; the first day of
+week (`Invoice:FirstDayOfWeek`) is still set once for the whole server.
 
 **Upgrading an existing install:** data created before multi-user support has no owner,
 and no one can see it until you give it one. Set `LEGACY_OWNER_ID` in `docker/.env`

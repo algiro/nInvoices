@@ -272,6 +272,24 @@ export interface GenerateInvoiceDto {
   expenses?: ExpenseDto[];
   invoiceNumberFormat?: string;
   monthlyReportTemplateId?: number;
+  /** The customer's rate to bill with; omitted for the default one. */
+  rateId?: number;
+  /** Hours to bill on a one-time invoice with an hourly rate. */
+  hours?: number;
+}
+
+/** How the user's invoices are numbered; customNumberFormat is null when the default pattern applies. */
+export interface InvoiceNumberingDto {
+  currentValue: number;
+  numberFormat: string;
+  customNumberFormat: string | null;
+  defaultNumberFormat: string;
+  nextNumber: string;
+}
+
+export interface UpdateInvoiceNumberingDto {
+  value: number;
+  numberFormat: string | null;
 }
 
 /** The invoice and timesheet a GenerateInvoiceDto would produce, rendered but not saved. */

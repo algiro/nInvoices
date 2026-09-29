@@ -12,17 +12,11 @@ public interface IUnitOfWork : IDisposable
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Begins a database transaction.
+    /// Runs <paramref name="operation"/> in one database transaction: committed when it returns,
+    /// rolled back when it throws. With a provider that retries on transient failures
+    /// (PostgreSQL) the whole operation is run again, so it must be safe to repeat.
     /// </summary>
-    Task BeginTransactionAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Commits the current transaction.
-    /// </summary>
-    Task CommitTransactionAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Rolls back the current transaction.
-    /// </summary>
-    Task RollbackTransactionAsync(CancellationToken cancellationToken = default);
+    Task ExecuteInTransactionAsync(
+        Func<CancellationToken, Task> operation,
+        CancellationToken cancellationToken = default);
 }

@@ -1,9 +1,9 @@
 namespace nInvoices.Core.Entities;
 
 /// <summary>
-/// Represents a user's invoice sequence counter.
-/// Ensures unique invoice numbers across all of that user's customers and invoice types.
-/// There is at most one record per owner.
+/// A user's invoice numbering: the sequence counter and, optionally, the pattern the numbers
+/// are formatted with. Ensures unique invoice numbers across all of that user's customers and
+/// invoice types. There is at most one record per owner, created on first use.
 /// </summary>
 public sealed class InvoiceSequence : OwnedEntityBase
 {
@@ -12,6 +12,12 @@ public sealed class InvoiceSequence : OwnedEntityBase
     /// Incremented atomically when generating new invoices.
     /// </summary>
     public int CurrentValue { get; private set; }
+
+    /// <summary>
+    /// Pattern for this user's invoice numbers (see <see cref="ValueObjects.InvoiceNumber"/>);
+    /// null to use the default pattern from the configuration.
+    /// </summary>
+    public string? NumberFormat { get; private set; }
 
     private InvoiceSequence() 
     { 
@@ -47,5 +53,21 @@ public sealed class InvoiceSequence : OwnedEntityBase
             throw new ArgumentException("Sequence value must be at least 1", nameof(value));
 
         CurrentValue = value;
+    }
+
+    /// <param name="pattern">A valid pattern, or null/blank to use the default one.</param>
+    /// <exception cref="ArgumentException">The pattern has no token.</exception>
+    public void SetNumberFormat(string? pattern)
+    {
+        if (string.IsNullOrWhiteSpace(pattern))
+        {
+            NumberFormat = null;
+            return;
+        }
+
+        if (!ValueObjects.InvoiceNumber.ValidatePattern(pattern))
+            throw new ArgumentException("The pattern must contain at least one token, e.g. {NUMBER:000}");
+
+        NumberFormat = pattern.Trim();
     }
 }

@@ -20,33 +20,25 @@ internal static class InvoiceTemplateActivation
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        await unitOfWork.BeginTransactionAsync(cancellationToken);
-        try
+        await unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
             var previouslyActive = await repository.FindAsync(
                 t => t.CustomerId == template.CustomerId
                      && t.InvoiceType == template.InvoiceType
                      && t.IsActive
                      && t.Id != template.Id,
-                cancellationToken);
+                ct);
 
             foreach (var other in previouslyActive)
             {
                 other.Deactivate();
-                await repository.UpdateAsync(other, cancellationToken);
+                await repository.UpdateAsync(other, ct);
             }
-            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await unitOfWork.SaveChangesAsync(ct);
 
             template.Activate();
-            await repository.UpdateAsync(template, cancellationToken);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-
-            await unitOfWork.CommitTransactionAsync(cancellationToken);
-        }
-        catch
-        {
-            await unitOfWork.RollbackTransactionAsync(cancellationToken);
-            throw;
-        }
+            await repository.UpdateAsync(template, ct);
+            await unitOfWork.SaveChangesAsync(ct);
+        }, cancellationToken);
     }
 }
