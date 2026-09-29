@@ -11,6 +11,10 @@ export const emailTemplatesApi = {
     return apiClient.get<EmailTemplateDto[]>(`/api/emailtemplates/customer/${customerId}`);
   },
 
+  /** The templates shared by all customers. */
+  getShared: async (): Promise<EmailTemplateDto[]> => {
+    return apiClient.get<EmailTemplateDto[]>('/api/emailtemplates/shared');
+  },
   getById: async (id: number): Promise<EmailTemplateDto> => {
     return apiClient.get<EmailTemplateDto>(`/api/emailtemplates/${id}`);
   },
@@ -40,8 +44,8 @@ export const emailTemplatesApi = {
     return apiClient.post<void>(`/api/emailtemplates/${id}/deactivate`);
   },
 
-  /** Renders subject and body with the customer's latest invoice, without saving. */
-  preview: async (subject: string, body: string, customerId: number): Promise<EmailTemplatePreviewDto> => {
+  /** Renders subject and body with the customer's latest invoice (sample data without a customer), without saving. */
+  preview: async (subject: string, body: string, customerId: number | null): Promise<EmailTemplatePreviewDto> => {
     return apiClient.post<EmailTemplatePreviewDto>('/api/emailtemplates/preview', { subject, body, customerId });
   }
 };

@@ -94,11 +94,15 @@ export function useInvoiceDraft() {
   const availableTemplates = computed(() => {
     if (!form.customerId) return []
     return monthlyReportTemplatesStore.templates.filter(
-      t => t.customerId === form.customerId && invoiceTypeLabel(t.invoiceType) === 'Monthly'
+      t => (t.customerId === form.customerId || t.customerId === null) && invoiceTypeLabel(t.invoiceType) === 'Monthly'
     )
   })
 
-  const activeTemplateName = computed(() => availableTemplates.value.find(t => t.isActive)?.name ?? '')
+  // The template used by default: the customer's own active one, else the shared active one
+  const activeTemplateName = computed(() => {
+    const active = availableTemplates.value.filter(t => t.isActive)
+    return (active.find(t => t.customerId !== null) ?? active[0])?.name ?? ''
+  })
 
   const periodLabel = computed(() =>
     new Date(selectedYear.value, selectedMonth.value - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })

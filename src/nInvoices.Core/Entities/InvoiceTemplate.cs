@@ -1,14 +1,19 @@
 using nInvoices.Core.Enums;
 
+using nInvoices.Core.Interfaces;
+
 namespace nInvoices.Core.Entities;
 
 /// <summary>
-/// Represents an invoice template for a specific customer and invoice type.
-/// Templates contain placeholders like {{Variable}} that get replaced during rendering.
+/// Represents an invoice template for an invoice type, either for one customer or shared by all
+/// of the user's customers (<see cref="CustomerId"/> is null). A customer's own active template
+/// wins over the shared active one. Templates contain placeholders like {{Variable}} that get
+/// replaced during rendering.
 /// </summary>
-public sealed class InvoiceTemplate : OwnedEntityBase
+public sealed class InvoiceTemplate : OwnedEntityBase, IScopedTemplate
 {
-    public long CustomerId { get; set; }
+    /// <summary>The customer the template belongs to; null for a template shared by all customers.</summary>
+    public long? CustomerId { get; set; }
     public InvoiceType InvoiceType { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
@@ -16,8 +21,8 @@ public sealed class InvoiceTemplate : OwnedEntityBase
     public int Version { get; set; }
     public bool IsActive { get; set; }
 
-    // Navigation property
-    public Customer Customer { get; set; } = null!;
+    // Navigation property (null for a shared template)
+    public Customer? Customer { get; set; }
 
     public InvoiceTemplate()
     {
@@ -26,8 +31,9 @@ public sealed class InvoiceTemplate : OwnedEntityBase
         Version = 1;
     }
 
+    /// <param name="customerId">The customer, or null for a template shared by all customers.</param>
     public InvoiceTemplate(
-        long customerId,
+        long? customerId,
         InvoiceType invoiceType,
         string name,
         string content,

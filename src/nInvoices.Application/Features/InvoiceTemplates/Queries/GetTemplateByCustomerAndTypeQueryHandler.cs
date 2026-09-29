@@ -16,11 +16,12 @@ public sealed class GetTemplateByCustomerAndTypeQueryHandler : IRequestHandler<G
 
     public async Task<InvoiceTemplateDto?> Handle(GetTemplateByCustomerAndTypeQuery request, CancellationToken cancellationToken)
     {
+        // The customer's own active template, else the shared one
         var templates = await _repository.FindAsync(
-            t => t.CustomerId == request.CustomerId && t.InvoiceType == request.Type && t.IsActive, 
+            t => (t.CustomerId == request.CustomerId || t.CustomerId == null) && t.InvoiceType == request.Type && t.IsActive,
             cancellationToken);
 
-        var template = templates.FirstOrDefault();
+        var template = ScopedTemplates.PickEffective(templates, request.CustomerId);
         
         if (template == null)
             return null;

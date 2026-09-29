@@ -65,6 +65,17 @@ public sealed class InvoiceTemplatesController : ControllerBase
     }
 
     /// <summary>
+    /// Gets the templates shared by all of the user's customers.
+    /// </summary>
+    [HttpGet("shared")]
+    [ProducesResponseType(typeof(IEnumerable<InvoiceTemplateDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<InvoiceTemplateDto>>> GetShared(CancellationToken cancellationToken)
+    {
+        var templates = await _mediator.Send(new GetTemplatesByCustomerIdQuery(null), cancellationToken);
+        return Ok(templates);
+    }
+
+    /// <summary>
     /// Gets all templates for a specific customer.
     /// </summary>
     [HttpGet("customer/{customerId}")]

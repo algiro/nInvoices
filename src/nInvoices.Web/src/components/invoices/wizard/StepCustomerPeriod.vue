@@ -44,7 +44,7 @@
         <select id="monthlyReportTemplate" v-model="form.monthlyReportTemplateId" class="control">
           <option :value="undefined">Active template{{ activeTemplateName ? ` (${activeTemplateName})` : '' }}</option>
           <option v-for="template in availableTemplates" :key="template.id" :value="template.id">
-            {{ template.name }}{{ template.isActive ? ' (active)' : '' }}
+            {{ template.name }}{{ template.customerId === null ? ' (shared)' : '' }}{{ template.isActive ? ' (active)' : '' }}
           </option>
         </select>
       </BaseField>

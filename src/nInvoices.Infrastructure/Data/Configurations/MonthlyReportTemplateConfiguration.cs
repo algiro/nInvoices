@@ -19,8 +19,8 @@ public sealed class MonthlyReportTemplateConfiguration : IEntityTypeConfiguratio
         builder.Property(t => t.Id)
             .ValueGeneratedOnAdd();
 
-        builder.Property(t => t.CustomerId)
-            .IsRequired();
+        // No customer = a template shared by all the user's customers
+        builder.Property(t => t.CustomerId);
 
         builder.Property(t => t.InvoiceType)
             .IsRequired()
@@ -41,7 +41,7 @@ public sealed class MonthlyReportTemplateConfiguration : IEntityTypeConfiguratio
 
         builder.Property(t => t.UpdatedAt);
 
-        // Relationship with Customer
+        // Relationship with Customer (optional: shared templates have none)
         builder.HasOne(t => t.Customer)
             .WithMany()
             .HasForeignKey(t => t.CustomerId)

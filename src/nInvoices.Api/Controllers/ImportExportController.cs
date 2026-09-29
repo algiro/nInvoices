@@ -51,9 +51,25 @@ public sealed class ImportExportController : ControllerBase
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
+        // Shared templates have no customer: they are exported on their own
         var templatesByCustomer = monthlyTemplates
-            .GroupBy(mt => mt.CustomerId)
+            .Where(mt => mt.CustomerId.HasValue)
+            .GroupBy(mt => mt.CustomerId!.Value)
             .ToDictionary(g => g.Key, g => g.ToList());
+
+        var sharedInvoiceTemplates = await _context.InvoiceTemplates
+            .Where(t => t.CustomerId == null)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+        var sharedEmailTemplates = await _context.EmailTemplates
+            .Where(t => t.CustomerId == null)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+        var shared = new SharedTemplatesExportDto(
+            sharedInvoiceTemplates.Select(t => new InvoiceTemplateExportDto(t.InvoiceType, t.Name, t.Content, t.IsActive, t.CreatedAt)).ToList(),
+            monthlyTemplates.Where(mt => mt.CustomerId is null)
+                .Select(mt => new MonthlyReportTemplateExportDto(mt.InvoiceType, mt.Name, mt.Content, mt.IsActive, mt.CreatedAt)).ToList(),
+            sharedEmailTemplates.Select(et => new EmailTemplateExportDto(et.Name, et.Subject, et.Body, et.IsActive, et.CreatedAt)).ToList());
 
         var exported = customers.Select(c => new CustomerExportDto(
             c.Name,
@@ -75,7 +91,7 @@ public sealed class ImportExportController : ControllerBase
 
         _logger.LogInformation("Exported {Count} customers", exported.Count);
 
-        return Ok(new DataExportDto("1.0", DateTime.UtcNow, exported, null));
+        return Ok(new DataExportDto("1.0", DateTime.UtcNow, exported, null, shared));
     }
 
     /// <summary>
@@ -149,14 +165,14 @@ public sealed class ImportExportController : ControllerBase
         [FromBody] DataExportDto data,
         CancellationToken cancellationToken)
     {
-        if (data.Customers is null || data.Customers.Count == 0)
+        if ((data.Customers is null || data.Customers.Count == 0) && !HasSharedTemplates(data.SharedTemplates))
             return BadRequest(new { error = "No customers to import" });
 
         var imported = 0;
         var skipped = 0;
         var errors = new List<string>();
 
-        foreach (var customerData in data.Customers)
+        foreach (var customerData in data.Customers ?? [])
         {
             try
             {
@@ -242,10 +258,95 @@ public sealed class ImportExportController : ControllerBase
             }
         }
 
+        if (data.SharedTemplates is not null)
+        {
+            try
+            {
+                var (sharedImported, sharedSkipped) = await ImportSharedTemplatesAsync(data.SharedTemplates, cancellationToken);
+                imported += sharedImported;
+                skipped += sharedSkipped;
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Shared templates: {ex.Message}");
+                _logger.LogError(ex, "Failed to import the shared templates");
+            }
+        }
+
         _logger.LogInformation("Import complete: {Imported} imported, {Skipped} skipped, {Errors} errors",
             imported, skipped, errors.Count);
 
         return Ok(new ImportResultDto(imported, skipped, errors));
+    }
+
+    private static bool HasSharedTemplates(SharedTemplatesExportDto? shared) =>
+        shared is not null
+        && (shared.InvoiceTemplates.Count > 0 || shared.MonthlyReportTemplates.Count > 0 || shared.EmailTemplates.Count > 0);
+
+    /// <summary>
+    /// Adds the shared templates that are not there yet (same kind, type and name); an imported
+    /// template is only activated when the user has no active shared one of its kind and type.
+    /// </summary>
+    private async Task<(int Imported, int Skipped)> ImportSharedTemplatesAsync(
+        SharedTemplatesExportDto shared,
+        CancellationToken cancellationToken)
+    {
+        var imported = 0;
+        var skipped = 0;
+
+        var invoiceTemplates = await _context.InvoiceTemplates.Where(t => t.CustomerId == null).ToListAsync(cancellationToken);
+        foreach (var data in shared.InvoiceTemplates)
+        {
+            if (invoiceTemplates.Any(t => t.InvoiceType == data.InvoiceType && t.Name == data.Name))
+            {
+                skipped++;
+                continue;
+            }
+
+            var template = new InvoiceTemplate(null, data.InvoiceType, data.Name, data.Content);
+            if (data.IsActive && !invoiceTemplates.Any(t => t.InvoiceType == data.InvoiceType && t.IsActive))
+                template.Activate();
+            invoiceTemplates.Add(template);
+            await _context.InvoiceTemplates.AddAsync(template, cancellationToken);
+            imported++;
+        }
+
+        var reportTemplates = await _context.MonthlyReportTemplates.Where(t => t.CustomerId == null).ToListAsync(cancellationToken);
+        foreach (var data in shared.MonthlyReportTemplates)
+        {
+            if (reportTemplates.Any(t => t.Name == data.Name))
+            {
+                skipped++;
+                continue;
+            }
+
+            var template = new MonthlyReportTemplate(null, data.Name, data.Content, data.InvoiceType);
+            if (data.IsActive && !reportTemplates.Any(t => t.IsActive))
+                template.Activate();
+            reportTemplates.Add(template);
+            await _context.MonthlyReportTemplates.AddAsync(template, cancellationToken);
+            imported++;
+        }
+
+        var emailTemplates = await _context.EmailTemplates.Where(t => t.CustomerId == null).ToListAsync(cancellationToken);
+        foreach (var data in shared.EmailTemplates)
+        {
+            if (emailTemplates.Any(t => t.Name == data.Name))
+            {
+                skipped++;
+                continue;
+            }
+
+            var template = new EmailTemplate(null, data.Name, data.Subject, data.Body);
+            if (data.IsActive && !emailTemplates.Any(t => t.IsActive))
+                template.Activate();
+            emailTemplates.Add(template);
+            await _context.EmailTemplates.AddAsync(template, cancellationToken);
+            imported++;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return (imported, skipped);
     }
 
     /// <summary>

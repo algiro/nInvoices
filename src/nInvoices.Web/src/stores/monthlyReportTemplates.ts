@@ -18,7 +18,12 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
     loading.value = true;
     error.value = null;
     try {
-      templates.value = await monthlyReportTemplatesApi.getByCustomer(customerId);
+      // The customer's own templates and the shared ones, which apply when it has no active one
+      const [own, shared] = await Promise.all([
+        monthlyReportTemplatesApi.getByCustomer(customerId),
+        monthlyReportTemplatesApi.getShared()
+      ]);
+      templates.value = [...own, ...shared];
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message || 'Failed to fetch templates';
       throw err;

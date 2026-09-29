@@ -33,6 +33,15 @@ public sealed class EmailTemplatesController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>The templates shared by all of the user's customers.</summary>
+    [HttpGet("shared")]
+    [ProducesResponseType(typeof(IEnumerable<EmailTemplateDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<EmailTemplateDto>>> GetShared(CancellationToken cancellationToken)
+    {
+        var templates = await _repository.FindAsync(t => t.CustomerId == null, cancellationToken);
+        return Ok(templates.Select(ToDto));
+    }
+
     [HttpGet("customer/{customerId}")]
     [ProducesResponseType(typeof(IEnumerable<EmailTemplateDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<EmailTemplateDto>>> GetByCustomer(long customerId, CancellationToken cancellationToken)
@@ -57,7 +66,8 @@ public sealed class EmailTemplatesController : ControllerBase
         Ok(new UpdateEmailTemplateDto("Invoice email", DefaultEmailTemplate.Subject, DefaultEmailTemplate.Body));
 
     /// <summary>
-    /// Creates a template. The customer's first email template becomes active automatically.
+    /// Creates a template (with no customer, one shared by all customers). The first email template
+    /// of a customer, or the first shared one, becomes active automatically.
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(EmailTemplateDto), StatusCodes.Status201Created)]
@@ -74,7 +84,7 @@ public sealed class EmailTemplatesController : ControllerBase
             await _repository.AddAsync(template, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Email template {TemplateId} created for customer {CustomerId}", template.Id, template.CustomerId);
+            _logger.LogInformation("Email template {TemplateId} created for customer {CustomerId}", template.Id, template.CustomerId?.ToString() ?? "(shared)");
             return CreatedAtAction(nameof(GetById), new { id = template.Id }, ToDto(template));
         }
         catch (ArgumentException ex)

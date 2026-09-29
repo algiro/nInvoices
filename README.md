@@ -39,6 +39,7 @@ nInvoices is built around that monthly routine:
 
 ### Documents
 - **HTML templates** for invoices and timesheets using [Scriban](https://github.com/scriban/scriban) syntax: loops, conditions, formatting and localisation helpers.
+- **Shared templates.** Invoice, timesheet and email templates can be shared by all your customers (Templates in the sidebar). A customer uses the shared one unless it has an active template of its own, which you can create from the shared one with "Override for this customer".
 - **Template editor with live preview** and a panel of available variables.
 - **Pixel-exact PDFs** rendered by headless Chrome, for invoices, timesheets and a worked-days calendar.
 - **Configurable invoice numbers, per user**: each user has their own sequence and pattern, e.g. `{YEAR}-{MONTH:00}-{NUMBER:000}`, set in Settings.

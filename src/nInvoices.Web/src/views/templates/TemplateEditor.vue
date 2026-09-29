@@ -3,7 +3,7 @@
     <header class="editor-header">
       <router-link :to="backLink" class="back">
         <AppIcon name="chevronRight" class="back-icon" />
-        {{ customerName || 'Customer' }} · {{ kindLabel }}
+        {{ isShared ? 'Shared templates' : (customerName || 'Customer') }} · {{ kindLabel }}
       </router-link>
 
       <div class="header-row">
@@ -157,7 +157,9 @@ const toast = useToast()
 const { confirm } = useConfirm()
 
 const kind = computed(() => route.meta.kind as TemplateKind)
-const customerId = computed(() => Number(route.params.id))
+// No customer in the URL: a template shared by all customers
+const customerId = computed(() => (route.params.id ? Number(route.params.id) : null))
+const isShared = computed(() => customerId.value === null)
 // 'new' in the URL means an unsaved template
 const templateId = computed(() => {
   const raw = route.params.templateId
@@ -179,10 +181,12 @@ const codeEditor = ref<InstanceType<typeof TemplateCodeEditor> | null>(null)
 const kindLabel = computed(() =>
   kind.value === 'invoice' ? 'Invoice templates' : kind.value === 'email' ? 'Email templates' : 'Monthly reports')
 
-const backLink = computed(() => ({
-  path: `/customers/${customerId.value}`,
-  query: { tab: kind.value === 'invoice' ? 'templates' : kind.value === 'email' ? 'emails' : 'monthly-reports' }
-}))
+const backLink = computed(() => isShared.value
+  ? { path: '/templates', query: { tab: kind.value } }
+  : {
+      path: `/customers/${customerId.value}`,
+      query: { tab: kind.value === 'invoice' ? 'templates' : kind.value === 'email' ? 'emails' : 'monthly-reports' }
+    })
 
 // ---------- layout preferences (per browser) ----------
 
@@ -218,10 +222,12 @@ const dirty = computed(() => !loadingTemplate.value && snapshot() !== saved.valu
 async function load() {
   loadingTemplate.value = true
   try {
-    const customer = customersStore.selectedCustomer?.id === customerId.value
-      ? customersStore.selectedCustomer
-      : await customersStore.fetchById(customerId.value)
-    customerName.value = customer?.name ?? ''
+    if (customerId.value !== null) {
+      const customer = customersStore.selectedCustomer?.id === customerId.value
+        ? customersStore.selectedCustomer
+        : await customersStore.fetchById(customerId.value)
+      customerName.value = customer?.name ?? ''
+    }
 
     if (templateId.value !== null) {
       if (kind.value === 'invoice') {
@@ -299,7 +305,7 @@ async function refreshPreview() {
   try {
     const result = kind.value === 'email'
       ? await emailTemplatesApi.preview(subject.value, content.value, customerId.value)
-      : await (kind.value === 'invoice' ? templatesApi : monthlyReportTemplatesApi).preview(content.value, customerId.value)
+      : await (kind.value === 'invoice' ? templatesApi : monthlyReportTemplatesApi).preview(content.value, customerId.value ?? undefined)
     if (seq !== previewSeq) return // a newer edit is already on its way
     previewSubject.value = 'subject' in result ? (result.subject as string | null) : null
     errors.value = result.errors.map(parseError)
@@ -429,7 +435,9 @@ async function save() {
     toast.success('Template saved')
 
     if (createdId !== null) {
-      await router.replace(`/customers/${customerId.value}/templates/${kind.value}/${createdId}`)
+      await router.replace(isShared.value
+        ? `/templates/${kind.value}/${createdId}`
+        : `/customers/${customerId.value}/templates/${kind.value}/${createdId}`)
     }
   } catch (error) {
     toast.failure('Could not save the template', error)

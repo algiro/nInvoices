@@ -68,6 +68,15 @@ public sealed class ApplicationDbContext : DbContext
             .IsUnique()
             .HasFilter(Database.IsNpgsql() ? "\"IsActive\"" : "[IsActive] = 1");
 
+        // A template with no customer is shared by all of the user's customers, and the index
+        // above treats every NULL customer as different: this one keeps a user's shared
+        // templates to one active per invoice type
+        modelBuilder.Entity<InvoiceTemplate>()
+            .HasIndex(t => new { t.OwnerId, t.InvoiceType })
+            .IsUnique()
+            .HasDatabaseName("IX_InvoiceTemplates_Shared_OwnerId_InvoiceType")
+            .HasFilter(Database.IsNpgsql() ? "\"IsActive\" AND \"CustomerId\" IS NULL" : "[IsActive] = 1 AND [CustomerId] IS NULL");
+
         foreach (var entityType in modelBuilder.Model.GetEntityTypes()
             .Where(t => t.BaseType is null && !t.IsOwned() && typeof(IOwnedEntity).IsAssignableFrom(t.ClrType))
             .ToList())

@@ -20,6 +20,11 @@ export const templatesApi = {
     return apiClient.get<InvoiceTemplateDto[]>(`/api/invoicetemplates/customer/${customerId}`)
   },
 
+  /** The templates shared by all customers. */
+  async getShared(): Promise<InvoiceTemplateDto[]> {
+    return apiClient.get<InvoiceTemplateDto[]>('/api/invoicetemplates/shared')
+  },
+
   async getByCustomerAndType(customerId: number, invoiceType: string): Promise<InvoiceTemplateDto | null> {
     try {
       return await apiClient.get<InvoiceTemplateDto>(

@@ -88,10 +88,20 @@ public sealed record InvoiceTaxLineExportDto(
     int Order);
 
 /// <summary>
-/// Root export container with metadata.
+/// The templates shared by all of the user's customers (they belong to no customer).
+/// </summary>
+public sealed record SharedTemplatesExportDto(
+    IReadOnlyList<InvoiceTemplateExportDto> InvoiceTemplates,
+    IReadOnlyList<MonthlyReportTemplateExportDto> MonthlyReportTemplates,
+    IReadOnlyList<EmailTemplateExportDto> EmailTemplates);
+
+/// <summary>
+/// Root export container with metadata. <see cref="SharedTemplates"/> is absent from exports
+/// made before templates could be shared.
 /// </summary>
 public sealed record DataExportDto(
     string ExportVersion,
     DateTime ExportedAt,
     IReadOnlyList<CustomerExportDto>? Customers,
-    IReadOnlyList<InvoiceExportDto>? Invoices);
+    IReadOnlyList<InvoiceExportDto>? Invoices,
+    SharedTemplatesExportDto? SharedTemplates = null);

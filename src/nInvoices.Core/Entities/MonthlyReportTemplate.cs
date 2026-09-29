@@ -1,21 +1,25 @@
 using nInvoices.Core.Enums;
 
+using nInvoices.Core.Interfaces;
+
 namespace nInvoices.Core.Entities;
 
 /// <summary>
-/// Represents a monthly report template for generating work day reports.
+/// Represents a monthly report template for generating work day reports, for one customer or
+/// shared by all of the user's customers (<see cref="CustomerId"/> is null).
 /// Similar to InvoiceTemplate but specifically for monthly work reports.
 /// </summary>
-public sealed class MonthlyReportTemplate : OwnedEntityBase
+public sealed class MonthlyReportTemplate : OwnedEntityBase, IScopedTemplate
 {
-    public long CustomerId { get; set; }
+    /// <summary>The customer the template belongs to; null for a template shared by all customers.</summary>
+    public long? CustomerId { get; set; }
     public InvoiceType InvoiceType { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public bool IsActive { get; set; }
 
-    // Navigation property
-    public Customer Customer { get; set; } = null!;
+    // Navigation property (null for a shared template)
+    public Customer? Customer { get; set; }
 
     public MonthlyReportTemplate()
     {
@@ -24,8 +28,9 @@ public sealed class MonthlyReportTemplate : OwnedEntityBase
         InvoiceType = InvoiceType.Monthly; // Monthly reports are only for monthly invoices
     }
 
+    /// <param name="customerId">The customer, or null for a template shared by all customers.</param>
     public MonthlyReportTemplate(
-        long customerId,
+        long? customerId,
         string name,
         string content,
         InvoiceType invoiceType = InvoiceType.Monthly) : this()

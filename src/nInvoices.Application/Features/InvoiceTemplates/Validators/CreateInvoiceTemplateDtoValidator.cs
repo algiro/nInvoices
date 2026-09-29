@@ -7,8 +7,10 @@ public sealed class CreateInvoiceTemplateDtoValidator : AbstractValidator<Create
 {
     public CreateInvoiceTemplateDtoValidator()
     {
+        // No customer = a template shared by all the user's customers
         RuleFor(x => x.CustomerId)
-            .GreaterThan(0).WithMessage("Customer ID must be a positive number");
+            .GreaterThan(0).WithMessage("Customer ID must be a positive number")
+            .When(x => x.CustomerId.HasValue);
 
         RuleFor(x => x.InvoiceType)
             .IsInEnum().WithMessage("Invalid invoice type");
