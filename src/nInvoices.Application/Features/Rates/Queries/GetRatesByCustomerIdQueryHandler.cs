@@ -1,5 +1,6 @@
 using MediatR;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 
@@ -20,12 +21,6 @@ public sealed class GetRatesByCustomerIdQueryHandler : IRequestHandler<GetRatesB
             r => r.CustomerId == request.CustomerId, 
             cancellationToken);
 
-        return rates.Select(rate => new RateDto(
-            rate.Id,
-            rate.CustomerId,
-            rate.Type,
-            new MoneyDto(rate.Price.Amount, rate.Price.Currency),
-            rate.CreatedAt,
-            rate.UpdatedAt ?? rate.CreatedAt));
+        return rates.Select(RateMapper.ToDto);
     }
 }

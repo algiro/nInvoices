@@ -7,4 +7,5 @@ namespace nInvoices.Application.DTOs;
 /// </summary>
 public sealed record UpdateRateDto(
     RateType Type,
-    MoneyDto Price);
+    MoneyDto Price,
+    string? Name = null);

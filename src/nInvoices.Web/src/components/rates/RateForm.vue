@@ -2,6 +2,10 @@
   <LoadingState v-if="loadingRate" label="Loading rate…" />
 
   <form v-else class="rate-form" novalidate @submit.prevent="handleSubmit">
+    <BaseField label="Name" for="rate-name" help="Optional. Tells rates apart when there are several, e.g. “Senior developer”.">
+      <input id="rate-name" v-model="form.name" type="text" maxlength="100" class="control" placeholder="e.g. Senior developer" :disabled="disabled" />
+    </BaseField>
+
     <BaseField label="Billed" for="rate-type" required>
       <select id="rate-type" v-model.number="form.type" class="control" :disabled="disabled">
         <option :value="RateType.Daily">Per day</option>
@@ -72,6 +76,7 @@ const saving = ref(false)
 
 const form = reactive<CreateRateDto | UpdateRateDto>({
   customerId: props.customerId,
+  name: '',
   type: RateType.Daily,
   price: {
     amount: 0,
@@ -100,6 +105,7 @@ async function loadRate(id: number) {
         form.type = rate.type
       }
       form.price = { ...rate.price }
+      form.name = rate.name ?? ''
     }
   } catch (error) {
     errors.form = `The rate could not be loaded: ${errorMessage(error)}`
@@ -123,10 +129,10 @@ async function handleSubmit() {
   try {
     saving.value = true
     if (props.rateId) {
-      const updateDto: UpdateRateDto = { type: form.type, price: form.price }
+      const updateDto: UpdateRateDto = { type: form.type, price: form.price, name: form.name?.trim() || null }
       await ratesStore.update(props.rateId, updateDto)
     } else {
-      await ratesStore.create(form as CreateRateDto)
+      await ratesStore.create({ ...(form as CreateRateDto), name: form.name?.trim() || null })
     }
     emit('success')
   } catch (error) {

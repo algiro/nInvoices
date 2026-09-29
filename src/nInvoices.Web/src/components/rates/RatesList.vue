@@ -3,7 +3,7 @@
     <header class="section-header">
       <div>
         <h3>Rates</h3>
-        <p class="help">The price used to bill this customer. Monthly invoices use the daily rate first, then monthly, then hourly.</p>
+        <p class="help">The prices used to bill this customer. A customer can have several, even of the same type (say two hourly rates); on a monthly invoice each worked day can be billed at a different one. Without a choice, the daily rate is used first, then monthly, then hourly.</p>
       </div>
       <BaseButton variant="primary" icon="plus" @click="handleAdd">New rate</BaseButton>
     </header>
@@ -28,6 +28,7 @@
       <table class="data-table">
         <thead>
           <tr>
+            <th scope="col">Name</th>
             <th scope="col">Type</th>
             <th scope="col" class="num">Price</th>
             <th scope="col">Billed</th>
@@ -36,7 +37,8 @@
         </thead>
         <tbody>
           <tr v-for="rate in rates" :key="rate.id">
-            <td class="primary-cell">{{ rateTypeName(rate.type) }}</td>
+            <td class="primary-cell">{{ rate.name || '—' }}</td>
+            <td>{{ rateTypeName(rate.type) }}</td>
             <td class="num primary-cell">{{ formatMoney(rate.price.amount, rate.price.currency) }}</td>
             <td class="muted">per {{ unitFor(rate.type) }}</td>
             <td class="actions">
@@ -138,7 +140,8 @@ function handleEdit(rate: RateDto) {
 
 async function handleDelete(rate: RateDto) {
   const typeName = rateTypeName(rate.type).toLowerCase()
-  if (!(await confirm({ title: 'Delete rate?', message: `This ${typeName} rate will be permanently deleted.`, confirmLabel: 'Delete', tone: 'danger' }))) {
+  const label = rate.name ? `“${rate.name}” (${typeName})` : `This ${typeName} rate`
+  if (!(await confirm({ title: 'Delete rate?', message: `${label} will be permanently deleted. Invoices already generated keep their PDFs.`, confirmLabel: 'Delete', tone: 'danger' }))) {
     return
   }
 

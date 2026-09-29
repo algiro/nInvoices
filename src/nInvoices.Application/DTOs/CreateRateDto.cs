@@ -8,4 +8,5 @@ namespace nInvoices.Application.DTOs;
 public sealed record CreateRateDto(
     long CustomerId,
     RateType Type,
-    MoneyDto Price);
+    MoneyDto Price,
+    string? Name = null);

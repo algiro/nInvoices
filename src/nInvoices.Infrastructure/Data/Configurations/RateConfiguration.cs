@@ -37,8 +37,10 @@ public sealed class RateConfiguration : IEntityTypeConfiguration<Rate>
         builder.Property(r => r.CreatedAt).IsRequired();
         builder.Property(r => r.UpdatedAt);
 
-        // Unique constraint: one rate type per customer
-        builder.HasIndex(r => new { r.CustomerId, r.Type })
-            .IsUnique();
+        builder.Property(r => r.Name)
+            .HasMaxLength(Rate.MaxNameLength);
+
+        // A customer can have several rates, including of the same type
+        builder.HasIndex(r => r.CustomerId);
     }
 }

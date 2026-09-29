@@ -56,6 +56,15 @@
           </div>
         </div>
 
+        <div v-if="rates.length > 1" class="section">
+          <label class="label" for="inspector-rate">{{ days.length > 1 ? 'Rate (each day)' : 'Rate' }}</label>
+          <select id="inspector-rate" class="input" :value="commonRate ?? ''" @change="onRateChange(($event.target as HTMLSelectElement).value)">
+            <option v-if="commonRate === null" value="" disabled>Mixed rates</option>
+            <option value="default">Invoice rate{{ defaultRate ? ` (${rateLabel(defaultRate)})` : '' }}</option>
+            <option v-for="rate in rates" :key="rate.id" :value="String(rate.id)">{{ rateLabel(rate) }}</option>
+          </select>
+        </div>
+
         <div class="section">
           <span class="label">{{ days.length > 1 ? 'Project (all selected days)' : 'Projects' }}</span>
 
@@ -144,16 +153,21 @@
 import { computed } from 'vue'
 import { DayType, RateType } from '@/types'
 import { billedHours, dayHours, FULL_DAY_HOURS, type DayKind, type WorkMonth } from '@/composables/useWorkMonth'
+import { dayAmount, rateLabel } from '@/utils/rates'
+import type { RateDto, WorkDayDto } from '@/types'
 
 const props = defineProps<{
   month: WorkMonth
-  rateType?: RateType | null
-  rateAmount?: number | null
-  currency?: string | null
+  /** The rates a single day can choose from (empty or one: no choice). */
+  rates: RateDto[]
+  /** The invoice's rate, used by days that don't choose one. */
+  defaultRate: RateDto | null
+  /** The rate a day is billed at. */
+  rateOf: (day: WorkDayDto) => RateDto | null
   projectSuggestions: string[]
 }>()
 
-const { selectedDays, get, kindOf, setKind, setHours, setProject, setNote, addAllocation, removeAllocation } = props.month
+const { selectedDays, get, kindOf, setKind, setHours, setProject, setRate, setNote, addAllocation, removeAllocation } = props.month
 
 const kindOptions: { value: DayKind; label: string; css: string }[] = [
   { value: DayType.Worked, label: 'Worked', css: 'worked' },
@@ -185,9 +199,25 @@ const commonProject = computed(() =>
   common(entries.value.map(wd => ((wd?.projects ?? []).length === 1 ? wd!.projects![0].projectName : '\u0000')))
 )
 
-const requireHours = computed(() => props.rateType === RateType.Hourly || props.rateType === RateType.Daily)
+// The rate shared by every selected day: "default", a rate id, or null when they differ
+const commonRate = computed(() =>
+  common(entries.value.map(wd => (wd?.rateId != null ? String(wd.rateId) : 'default')))
+)
+
+function onRateChange(value: string) {
+  setRate(days.value, value === 'default' || value === '' ? null : Number(value))
+}
+
+const requireHours = computed(() => !!props.defaultRate && props.defaultRate.type !== RateType.Monthly)
+// A day billed by the hour needs its hours, and so does a day billed by the day
 const hasDayWithoutHours = computed(() =>
-  entries.value.some(wd => wd && (props.rateType === RateType.Hourly ? dayHours(wd) : billedHours(wd)) <= 0)
+  entries.value.some(wd => {
+    if (!wd) return false
+    const rate = props.rateOf(wd)
+    if (rate?.type === RateType.Hourly) return dayHours(wd) <= 0
+    if (rate?.type === RateType.Daily) return billedHours(wd) <= 0
+    return false
+  })
 )
 
 const dateFormat = (date: string, opts: Intl.DateTimeFormatOptions) =>
@@ -214,17 +244,25 @@ const subtitle = computed(() => {
 })
 
 const calculation = computed(() => {
-  if (!props.rateAmount || !props.currency) return ''
-  const hours = entries.value.reduce((sum, wd) => sum + (wd ? billedHours(wd) : 0), 0)
-  const money = (v: number) => `${v.toFixed(2)} ${props.currency}`
-  if (props.rateType === RateType.Daily) {
+  const worked = entries.value.filter((wd): wd is WorkDayDto => !!wd && (wd.dayType ?? DayType.Worked) === DayType.Worked)
+  if (worked.length === 0) return ''
+
+  const rates = worked.map(wd => props.rateOf(wd))
+  if (rates.some(rate => !rate || rate.type === RateType.Monthly)) return ''
+
+  const first = rates[0]!
+  const money = (value: number) => `${value.toFixed(2)} ${first.price.currency}`
+  const total = worked.reduce((sum, wd, i) => sum + dayAmount(rates[i]!, wd), 0)
+
+  // Days at different rates can't be shown as one multiplication
+  if (rates.some(rate => rate!.id !== first.id)) return `${worked.length} days at different rates = ${money(total)}`
+
+  const hours = worked.reduce((sum, wd) => sum + billedHours(wd), 0)
+  if (first.type === RateType.Daily) {
     const effective = hours / FULL_DAY_HOURS
-    return `${hours}h ÷ ${FULL_DAY_HOURS} = ${effective.toFixed(2)} day(s) × ${money(props.rateAmount)} = ${money(effective * props.rateAmount)}`
+    return `${hours}h \u00f7 ${FULL_DAY_HOURS} = ${effective.toFixed(2)} day(s) \u00d7 ${money(first.price.amount)} = ${money(total)}`
   }
-  if (props.rateType === RateType.Hourly) {
-    return `${hours}h × ${money(props.rateAmount)} = ${money(hours * props.rateAmount)}`
-  }
-  return ''
+  return `${hours}h \u00d7 ${money(first.price.amount)} = ${money(total)}`
 })
 </script>
 

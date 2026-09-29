@@ -14,6 +14,12 @@ public sealed class WorkDay : OwnedEntityBase
     public decimal? HoursWorked { get; set; }
     public string? Notes { get; set; }
 
+    /// <summary>
+    /// The rate this day is billed at, when it is not the invoice's default one (some days at one
+    /// hourly rate, some at another, some at the daily rate). Null: the invoice's rate.
+    /// </summary>
+    public long? RateId { get; set; }
+
     // Navigation properties
     public Customer Customer { get; set; } = null!;
     public ICollection<WorkDayProject> Projects { get; set; } = [];

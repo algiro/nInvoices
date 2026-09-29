@@ -22,7 +22,8 @@ public sealed record CustomerExportDto(
 public sealed record RateExportDto(
     RateType Type,
     MoneyDto Price,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string? Name = null);
 
 public sealed record TaxExportDto(
     string TaxId,

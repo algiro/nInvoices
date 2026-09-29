@@ -5,7 +5,8 @@ namespace nInvoices.Core.Entities;
 
 /// <summary>
 /// Represents a rate (pricing) for a customer.
-/// Each customer can have multiple rates of different types.
+/// A customer can have any number of rates, including several of the same type (say two
+/// hourly rates for different roles); the optional <see cref="Name"/> tells them apart.
 /// </summary>
 public sealed class Rate : OwnedEntityBase
 {
@@ -13,6 +14,11 @@ public sealed class Rate : OwnedEntityBase
     public RateType Type { get; set; }
     public Money Price { get; set; } = null!;
     public bool IsActive { get; set; }
+
+    /// <summary>What this rate is for, e.g. "Senior developer"; null when the price says it all.</summary>
+    public string? Name { get; private set; }
+
+    public const int MaxNameLength = 100;
 
     // Navigation property
     public Customer Customer { get; set; } = null!;
@@ -33,6 +39,17 @@ public sealed class Rate : OwnedEntityBase
         CustomerId = customerId;
         Type = type;
         Price = price;
+    }
+
+    /// <param name="name">The name, or null/blank for none.</param>
+    /// <exception cref="ArgumentException">The name is longer than <see cref="MaxNameLength"/>.</exception>
+    public void SetName(string? name)
+    {
+        var trimmed = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+        if (trimmed is { Length: > MaxNameLength })
+            throw new ArgumentException($"The rate name must not exceed {MaxNameLength} characters");
+
+        Name = trimmed;
     }
 
     public void UpdatePrice(Money newPrice)

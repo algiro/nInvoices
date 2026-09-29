@@ -119,14 +119,20 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         var rate = await GetRateAsync(dto.CustomerId, dto.InvoiceType, dto.RateId, cancellationToken);
         var customerTaxes = await GetCustomerTaxesAsync(dto.CustomerId, cancellationToken);
 
+        // The rates of the invoice: its default one, and any a worked day chose for itself
+        var rates = await LoadDayRatesAsync(dto.CustomerId, rate, dto.InvoiceType == InvoiceType.Monthly ? dto.WorkDays : null, cancellationToken);
+
         // Validate hourly rate requirements
-        if (rate.Type == RateType.Hourly && dto.InvoiceType == InvoiceType.Monthly)
+        if (dto.InvoiceType == InvoiceType.Monthly)
         {
-            if (dto.WorkDays == null || !dto.WorkDays.Any())
+            if (rate.Type == RateType.Hourly && (dto.WorkDays == null || !dto.WorkDays.Any()))
                 throw new InvalidOperationException("Work days are required for hourly rate invoices.");
 
-            var workedDaysWithoutHours = dto.WorkDays
-                .Where(wd => wd.DayType == DayType.Worked && GetDayHours(wd) <= 0)
+            rates.Validate(dto.WorkDays ?? []);
+
+            // Every day billed by the hour needs its hours
+            var workedDaysWithoutHours = (dto.WorkDays ?? [])
+                .Where(wd => wd.DayType == DayType.Worked && !rates.IsFixedMonthly && rates.For(wd).Type == RateType.Hourly && GetDayHours(wd) <= 0)
                 .ToList();
 
             if (workedDaysWithoutHours.Any())
@@ -138,7 +144,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         if (rate.Type == RateType.Hourly && dto.InvoiceType == InvoiceType.OneTime && dto.Hours is not > 0)
             throw new InvalidOperationException("Hours are required for a one-time invoice with an hourly rate.");
 
-        var subtotal = CalculateSubtotal(dto, rate);
+        var subtotal = CalculateSubtotal(dto, rates);
         var expensesTotal = CalculateExpensesTotal(dto.Expenses, rate.Price.Currency);
         var customer = await _customerRepository.GetByIdAsync(dto.CustomerId, cancellationToken)
             ?? throw new InvalidOperationException($"Customer {dto.CustomerId} not found");
@@ -205,7 +211,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         invoice.AddTaxes(totalTax);
 
         // NEW: Use Scriban template renderer instead of old template engine
-        var templateModel = BuildTemplateModel(invoice, customer, dto, rate, workDays);
+        var templateModel = BuildTemplateModel(invoice, customer, dto, rates, workDays);
         var renderedHtml = await _templateRenderer.RenderAsync(template.Content, templateModel, cancellationToken);
 
         invoice.SetRenderedContent(renderedHtml);
@@ -259,7 +265,8 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
                     wd.Notes,
                     wd.Projects
                         .Select(p => new WorkDayProjectDto(p.Project.Name, p.Hours, p.ProjectId))
-                        .ToList()))
+                        .ToList(),
+                    wd.RateId))
                 .ToList();
         }
 
@@ -283,7 +290,8 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             }).ToList()
         };
 
-        var templateModel = BuildTemplateModel(invoice, customer, dto, rate, workDayDtos);
+        var rates = await LoadDayRatesAsync(invoice.CustomerId, rate, workDayDtos, cancellationToken);
+        var templateModel = BuildTemplateModel(invoice, customer, dto, rates, workDayDtos);
         var renderedHtml = await _templateRenderer.RenderAsync(template.Content, templateModel, cancellationToken);
 
         invoice.SetRenderedContent(renderedHtml);
@@ -368,31 +376,49 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             cancellationToken);
     }
 
-    private Money CalculateSubtotal(GenerateInvoiceDto dto, Rate rate)
+    /// <summary>
+    /// The default rate plus the rates the worked days chose for themselves, loaded from the
+    /// customer's rates.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">A day chose a rate that is not the customer's.</exception>
+    private async Task<DayRates> LoadDayRatesAsync(
+        long customerId,
+        Rate defaultRate,
+        IEnumerable<WorkDayDto>? workDays,
+        CancellationToken cancellationToken)
     {
+        var ids = DayRates.RequestedIds(workDays, defaultRate);
+        if (ids.Count == 0)
+            return new DayRates(defaultRate, []);
+
+        var found = (await _rateRepository.FindAsync(
+            r => r.CustomerId == customerId && ids.Contains(r.Id),
+            cancellationToken)).ToList();
+
+        var missing = ids.Except(found.Select(r => r.Id)).ToList();
+        if (missing.Count > 0)
+            throw new InvalidOperationException($"Rate {missing[0]} not found for customer {customerId}.");
+
+        return new DayRates(defaultRate, found);
+    }
+
+    private Money CalculateSubtotal(GenerateInvoiceDto dto, DayRates rates)
+    {
+        var rate = rates.Default;
+
         return dto.InvoiceType switch
         {
             // Fixed monthly rate
             InvoiceType.Monthly when rate.Type == RateType.Monthly =>
                 rate.Price,
-            
-            // Hourly rate: sum of (hourly_rate × hours per day), hours taken from
-            // project allocations when present, otherwise the day's HoursWorked
-            InvoiceType.Monthly when rate.Type == RateType.Hourly && dto.WorkDays != null =>
-                new Money(
-                    rate.Price.Amount * dto.WorkDays
-                        .Where(wd => wd.DayType == DayType.Worked)
-                        .Sum(GetDayHours),
-                    rate.Price.Currency),
-            
-            // Daily rate: daily_rate × effective days (partial days counted as hoursWorked/8)
+
+            // Each worked day at its own rate: an hourly rate bills the day's hours (from its
+            // project allocations when present, otherwise HoursWorked), a daily rate bills
+            // the day (partial days counted as hoursWorked/8). Quantities are added up per rate
+            // first, so a single rate gives exactly rate × total.
             InvoiceType.Monthly when dto.WorkDays != null =>
-                new Money(
-                    rate.Price.Amount * dto.WorkDays
-                        .Where(wd => wd.DayType == DayType.Worked)
-                        .Sum(wd => (wd.HoursWorked ?? 8m) / 8m),
-                    rate.Price.Currency),
-            
+                SumWorkedDays(dto.WorkDays, rates),
+
             // One-time: hours × the hourly rate, or the rate's price as a fixed amount
             InvoiceType.OneTime when rate.Type == RateType.Hourly =>
                 new Money(rate.Price.Amount * (dto.Hours ?? 0m), rate.Price.Currency),
@@ -400,6 +426,18 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             InvoiceType.OneTime => rate.Price,
             _ => throw new InvalidOperationException($"Cannot calculate subtotal for invoice type {dto.InvoiceType}")
         };
+    }
+
+    private static Money SumWorkedDays(IEnumerable<WorkDayDto> workDays, DayRates rates)
+    {
+        var amount = workDays
+            .Where(wd => wd.DayType == DayType.Worked)
+            .GroupBy(wd => rates.For(wd))
+            .Sum(group => group.Key.Price.Amount * group.Sum(wd => group.Key.Type == RateType.Hourly
+                ? GetDayHours(wd)
+                : (wd.HoursWorked ?? 8m) / 8m));
+
+        return new Money(amount, rates.Default.Price.Currency);
     }
 
     private Money CalculateExpensesTotal(ICollection<ExpenseDto>? expenses, string defaultCurrency)
@@ -423,9 +461,11 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         Invoice invoice,
         Customer customer,
         GenerateInvoiceDto dto,
-        Rate rate,
+        DayRates rates,
         IEnumerable<WorkDayDto>? workDays = null)
     {
+        var rate = rates.Default;
+
         // Calculate monthly-specific values upfront
         int? workedDays = null;
         int? monthNumber = null;
@@ -470,8 +510,8 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
                 }
             },
 
-            LineItems = BuildLineItems(invoice, dto, rate, workDays, customer.Locale),
-            ProjectSummary = BuildProjectSummary(workDays, rate),
+            LineItems = BuildLineItems(invoice, dto, rates, workDays, customer.Locale),
+            ProjectSummary = BuildProjectSummary(workDays, rates),
             Taxes = invoice.TaxLines.Select(t => new TaxTemplateModel
             {
                 Description = t.Description,
@@ -521,16 +561,18 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     /// Builds line items for the template.
     /// For Daily/Hourly rates with project allocations: one line item per project.
     /// For Daily/Hourly rates without allocations: one line item per worked day (date as description).
+    /// Days billed at different rates get their own lines, each saying which rate it is.
     /// For Monthly rates: a single consolidated line.
     /// Expenses are added as separate line items.
     /// </summary>
     private List<LineItemTemplateModel> BuildLineItems(
         Invoice invoice,
         GenerateInvoiceDto dto,
-        Rate rate,
+        DayRates rates,
         IEnumerable<WorkDayDto>? workDays,
         string locale = "en-US")
     {
+        var rate = rates.Default;
         var lineItems = new List<LineItemTemplateModel>();
 
         if (dto.InvoiceType == InvoiceType.Monthly && invoice.WorkedDays.HasValue)
@@ -541,30 +583,22 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
                 .ToList();
 
             var perDayRate = rate.Type is RateType.Daily or RateType.Hourly;
-            var hasAllocations = workedDaysList?.Any(wd => wd.Projects is { Count: > 0 }) == true;
 
-            if (workedDaysList is { Count: > 0 } && perDayRate && hasAllocations)
+            if (workedDaysList is { Count: > 0 } && perDayRate)
             {
-                // One line item per project (time grouped across the month)
-                lineItems.AddRange(BuildProjectLineItems(workedDaysList, rate));
-            }
-            else if (workedDaysList is { Count: > 0 } && perDayRate)
-            {
-                // One line item per worked day
-                foreach (var wd in workedDaysList)
+                // Days at the same rate are billed together, in the order the rates first appear
+                var groups = workedDaysList.GroupBy(wd => rates.For(wd).Id).Select(g => g.ToList()).ToList();
+                var mixed = groups.Count > 1;
+
+                foreach (var days in groups)
                 {
-                    var culture = System.Globalization.CultureInfo.GetCultureInfo(locale);
-                    var description = wd.Date.ToString("d", culture);
-                    var quantity = rate.Type == RateType.Hourly ? GetDayHours(wd) : 1m;
-                    var amount = rate.Price.Amount * quantity;
+                    var groupRate = rates.For(days[0]);
+                    var lines = BuildRateLineItems(days, groupRate, locale);
 
-                    lineItems.Add(new LineItemTemplateModel
-                    {
-                        Description = description,
-                        Quantity = quantity,
-                        Rate = rate.Price.Amount,
-                        Amount = amount
-                    });
+                    // With several rates on one invoice, say which rate each line is billed at
+                    lineItems.AddRange(mixed
+                        ? lines.Select(l => l with { Description = $"{l.Description} - {DayRates.Label(groupRate)}" })
+                        : lines);
                 }
             }
             else
@@ -615,6 +649,33 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         }
 
         return lineItems;
+    }
+
+    /// <summary>The lines for worked days billed at one daily or hourly rate: per project, or per day.</summary>
+    private static List<LineItemTemplateModel> BuildRateLineItems(List<WorkDayDto> days, Rate rate, string locale)
+    {
+        var hasAllocations = days.Any(wd => wd.Projects is { Count: > 0 });
+        if (hasAllocations)
+        {
+            // One line item per project (time grouped across the month)
+            return BuildProjectLineItems(days, rate).ToList();
+        }
+
+        // One line item per worked day
+        var culture = System.Globalization.CultureInfo.GetCultureInfo(locale);
+        return days
+            .Select(wd =>
+            {
+                var quantity = rate.Type == RateType.Hourly ? GetDayHours(wd) : 1m;
+                return new LineItemTemplateModel
+                {
+                    Description = wd.Date.ToString("d", culture),
+                    Quantity = quantity,
+                    Rate = rate.Price.Amount,
+                    Amount = rate.Price.Amount * quantity
+                };
+            })
+            .ToList();
     }
 
     /// <summary>
@@ -698,7 +759,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     /// </summary>
     private static List<ProjectSummaryTemplateModel> BuildProjectSummary(
         IEnumerable<WorkDayDto>? workDays,
-        Rate rate)
+        DayRates rates)
     {
         if (workDays is null)
             return [];
@@ -713,6 +774,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
                 continue;
 
             var dayHours = allocations.Sum(a => a.Hours);
+            var rate = rates.For(wd);
 
             foreach (var allocation in allocations)
             {
@@ -744,7 +806,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
                     Name = name,
                     TotalHours = acc.Hours,
                     WorkedDays = acc.Days.Count,
-                    Amount = rate.Type == RateType.Monthly ? null : acc.Amount
+                    Amount = rates.IsFixedMonthly ? null : acc.Amount
                 };
             })
             .ToList();
@@ -783,7 +845,10 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
         foreach (var dto in workDayDtos)
         {
-            var workDay = new WorkDay(customerId, dto.Date, dto.DayType, dto.HoursWorked, dto.Notes);
+            var workDay = new WorkDay(customerId, dto.Date, dto.DayType, dto.HoursWorked, dto.Notes)
+            {
+                RateId = dto.DayType == DayType.Worked ? dto.RateId : null
+            };
             List<WorkDayProjectDto>? normalizedAllocations = null;
 
             if (dto.Projects is { Count: > 0 })

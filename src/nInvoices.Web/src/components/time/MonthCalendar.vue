@@ -34,6 +34,7 @@
 
           <template v-if="kindOf(day.date) === DayType.Worked">
             <span class="cell-hours">{{ formatHours(billedHours(get(day.date)!)) }}</span>
+            <span v-if="rateBadge?.(day.date)" class="cell-rate" :title="`Billed at ${rateBadge(day.date)}`">{{ rateBadge(day.date) }}</span>
             <span class="cell-project">{{ projectLabel(day.date) }}</span>
           </template>
           <span v-else-if="kindOf(day.date) === DayType.PublicHoliday" class="cell-label">Holiday</span>
@@ -58,7 +59,11 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { DayType } from '@/types'
 import { billedHours, localDateString, FULL_DAY_HOURS, type CalendarDay, type WorkMonth } from '@/composables/useWorkMonth'
 
-const props = defineProps<{ month: WorkMonth }>()
+const props = defineProps<{
+  month: WorkMonth
+  /** A short label for days billed at a rate other than the invoice's; empty for the others. */
+  rateBadge?: (date: string) => string
+}>()
 
 const { calendarDays, dayHeaders, selected, anchor, get, kindOf, select, selectRange, clearSelection, moveSelection, setKind, setHours, selectedDays } = props.month
 
@@ -287,6 +292,21 @@ function onKeydown(event: KeyboardEvent) {
   overflow: hidden;
   text-overflow: ellipsis;
   min-height: 1em;
+}
+
+/* a day billed at a rate other than the invoice's */
+.cell-rate {
+  align-self: start;
+  max-width: 100%;
+  padding: 0 0.3rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 0.65rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cell-label {

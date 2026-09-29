@@ -224,6 +224,14 @@ Built-in handlers:
   shared active one (`ScopedTemplates.PickEffective`); a user has one active shared invoice template per type
   (partial unique index). API: `GET /api/{invoicetemplates|monthlyreporttemplates|emailtemplates}/shared`.
 
+### Rates
+
+- A customer can have any number of `Rate`s, including several of the same type; the optional `Name` tells them apart.
+- An invoice has a default rate (`Invoice.RateId`). On a monthly invoice a worked day can choose its own
+  (`WorkDay.RateId` / `WorkDayDto.RateId`): only daily and hourly rates, in the invoice's currency, and not on an
+  invoice billed at a fixed monthly rate. `DayRates` resolves the rate of each day; the subtotal, the invoice lines
+  (one group per rate, each saying which rate) and the per-project summary all use it.
+
 ### Invoice Numbering
 
 Numbering is per user (`InvoiceSequence`, one row per owner, created on first use):

@@ -121,17 +121,21 @@ export interface RateDto {
   isActive: boolean;
   createdAt: string;
   updatedAt?: string;
+  /** What the rate is for ("Senior developer"); several rates of a type are told apart by it. */
+  name?: string | null;
 }
 
 export interface CreateRateDto {
   customerId: number;
   type: RateType;
   price: MoneyDto;
+  name?: string | null;
 }
 
 export interface UpdateRateDto {
   type: RateType;
   price: MoneyDto;
+  name?: string | null;
 }
 
 export interface TaxDto {
@@ -231,6 +235,8 @@ export interface WorkDayDto {
   hoursWorked?: number;
   notes?: string;
   projects?: WorkDayProjectDto[];
+  /** The rate this day is billed at; absent uses the invoice's rate. */
+  rateId?: number | null;
 }
 
 export interface ExpenseDto {
