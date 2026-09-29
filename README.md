@@ -42,7 +42,7 @@ nInvoices is built around that monthly routine:
 - **Shared templates.** Invoice, timesheet and email templates can be shared by all your customers (Templates in the sidebar). A customer uses the shared one unless it has an active template of its own, which you can create from the shared one with "Override for this customer".
 - **Template editor with live preview** and a panel of available variables.
 - **Pixel-exact PDFs** rendered by headless Chrome, for invoices, timesheets and a worked-days calendar.
-- **Configurable invoice numbers, per user**: each user has their own sequence and pattern, e.g. `{YEAR}-{MONTH:00}-{NUMBER:000}`, set in Settings.
+- **Configurable invoice numbers, per user**: each user has their own sequence and pattern, e.g. `{YEAR}-{MONTH:00}-{NUMBER:000}`, set in Settings. An invoice takes its number when you finalize it; until then every draft shows the next number, so deleting a draft never leaves a gap.
 
 ### Getting paid
 - **Invoice lifecycle:** Draft → Finalized → Sent → Paid, or Cancelled.

@@ -11,17 +11,20 @@ namespace nInvoices.Application.Features.Invoices.Commands;
 public sealed class GenerateInvoiceCommandHandler : IRequestHandler<GenerateInvoiceCommand, InvoiceDto>
 {
     private readonly IInvoiceGenerationService _invoiceGenerationService;
+    private readonly IDraftInvoiceSynchronizer _drafts;
     private readonly IRepository<Invoice> _repository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<GenerateInvoiceCommandHandler> _logger;
 
     public GenerateInvoiceCommandHandler(
         IInvoiceGenerationService invoiceGenerationService,
+        IDraftInvoiceSynchronizer drafts,
         IRepository<Invoice> repository,
         IUnitOfWork unitOfWork,
         ILogger<GenerateInvoiceCommandHandler> logger)
     {
         _invoiceGenerationService = invoiceGenerationService;
+        _drafts = drafts;
         _repository = repository;
         _unitOfWork = unitOfWork;
         _logger = logger;
@@ -40,6 +43,10 @@ public sealed class GenerateInvoiceCommandHandler : IRequestHandler<GenerateInvo
 
         await _repository.AddAsync(invoice, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // The new draft shows the next number like every other draft; this also brings along
+        // drafts created before numbers were taken on finalizing
+        await _drafts.RefreshDraftsAsync(cancellationToken);
 
         _logger.LogInformation(
             "Invoice {InvoiceNumber} generated successfully with ID {InvoiceId}",

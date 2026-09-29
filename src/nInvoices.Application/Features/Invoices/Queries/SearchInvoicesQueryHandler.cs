@@ -1,6 +1,8 @@
 using MediatR;
+using Microsoft.Extensions.Logging;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
+using nInvoices.Application.Services;
 using nInvoices.Core.Interfaces;
 
 namespace nInvoices.Application.Features.Invoices.Queries;
@@ -10,14 +12,32 @@ public sealed class SearchInvoicesQueryHandler : IRequestHandler<SearchInvoicesQ
     public const int MaxPageSize = 200;
 
     private readonly IInvoiceRepository _repository;
+    private readonly IDraftInvoiceSynchronizer _drafts;
+    private readonly ILogger<SearchInvoicesQueryHandler> _logger;
 
-    public SearchInvoicesQueryHandler(IInvoiceRepository repository)
+    public SearchInvoicesQueryHandler(
+        IInvoiceRepository repository,
+        IDraftInvoiceSynchronizer drafts,
+        ILogger<SearchInvoicesQueryHandler> logger)
     {
         _repository = repository;
+        _drafts = drafts;
+        _logger = logger;
     }
 
     public async Task<InvoicePageDto> Handle(SearchInvoicesQuery request, CancellationToken cancellationToken)
     {
+        // Drafts show the next number; make sure the list does, whatever last changed it (or
+        // when the drafts were created). Never lets a problem here stop the list from loading.
+        try
+        {
+            await _drafts.RefreshDraftsAsync(cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(ex, "The draft invoice numbers could not be refreshed");
+        }
+
         var dto = request.Search;
         var pageSize = Math.Clamp(dto.PageSize, 1, MaxPageSize);
         var criteria = new InvoiceSearchCriteria(

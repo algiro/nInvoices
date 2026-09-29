@@ -1,7 +1,7 @@
 <template>
   <BasePanel
     title="Invoice numbering"
-    description="Every new invoice takes the next number in your sequence, formatted with your pattern. Each user has their own sequence and pattern."
+    description="An invoice takes the next number in your sequence, formatted with your pattern, when it is finalized. Until then, all drafts show that next number. Each user has their own sequence and pattern."
   >
     <LoadingState v-if="loading && !numbering" label="Loading the numbering…" />
 

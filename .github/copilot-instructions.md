@@ -231,6 +231,10 @@ Numbering is per user (`InvoiceSequence`, one row per owner, created on first us
   pattern from `InvoiceSettings` (e.g. `INV-{YEAR}-{NUMBER:000}`)
 - Supports {YEAR}, {MONTH}, {NUMBER}, {CUSTOMER} placeholders
 - Managed through `GET/PUT /api/invoices/numbering` (Settings page)
+- A number is taken from the sequence only when an invoice is finalized (`IInvoiceNumbering.TakeAsync`, in the
+  same save as the status change). A draft holds the next number (`PeekAsync`) without taking it, and
+  `IDraftInvoiceSynchronizer.RefreshDraftsAsync` keeps every draft (number and rendered document) in step with it
+  after a finalize, a sequence or pattern edit, a new draft, and when the invoice list loads
 
 ## Database Context
 

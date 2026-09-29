@@ -14,6 +14,8 @@ public static class ApplicationServicesExtensions
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<IInvoiceGenerationService, InvoiceGenerationService>();
+        services.AddScoped<IInvoiceNumbering, InvoiceNumbering>();
+        services.AddScoped<IDraftInvoiceSynchronizer, DraftInvoiceSynchronizer>();
         services.AddScoped<IMonthlyReportGenerationService, MonthlyReportGenerationService>();
         services.AddScoped<ITemplateRenderer, ScribanTemplateRenderer>();
         services.AddScoped<ITemplatePreviewService, TemplatePreviewService>();
