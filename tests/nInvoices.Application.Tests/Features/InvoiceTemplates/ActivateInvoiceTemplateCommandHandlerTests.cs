@@ -20,6 +20,10 @@ public sealed class ActivateInvoiceTemplateCommandHandlerTests
     {
         _repository = new Mock<IRepository<InvoiceTemplate>>();
         _unitOfWork = new Mock<IUnitOfWork>();
+        // Run the operation like the real unit of work does; the transaction itself is tested there
+        _unitOfWork
+            .Setup(u => u.ExecuteInTransactionAsync(It.IsAny<Func<CancellationToken, Task>>(), It.IsAny<CancellationToken>()))
+            .Returns((Func<CancellationToken, Task> operation, CancellationToken ct) => operation(ct));
         _handler = new ActivateInvoiceTemplateCommandHandler(_repository.Object, _unitOfWork.Object);
     }
 
@@ -66,11 +70,13 @@ public sealed class ActivateInvoiceTemplateCommandHandlerTests
         next.IsActive.ShouldBeTrue();
         savedStates.ShouldBe([(false, false), (false, true)]);
         savedStates.ShouldAllBe(s => !(s.Current && s.Next));
-        _unitOfWork.Verify(u => u.CommitTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(
+            u => u.ExecuteInTransactionAsync(It.IsAny<Func<CancellationToken, Task>>(), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Test]
-    public async Task Handle_WhenSaveFails_RollsBack()
+    public async Task Handle_WhenSaveFails_ThrowsSoTheTransactionRollsBack()
     {
         var next = Template(4, active: false);
         _repository
@@ -86,7 +92,6 @@ public sealed class ActivateInvoiceTemplateCommandHandlerTests
         await Should.ThrowAsync<InvalidOperationException>(
             () => _handler.Handle(new ActivateInvoiceTemplateCommand(4), TestContext.CurrentContext.CancellationToken));
 
-        _unitOfWork.Verify(u => u.RollbackTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _unitOfWork.Verify(u => u.CommitTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        next.IsActive.ShouldBeFalse();
     }
 }

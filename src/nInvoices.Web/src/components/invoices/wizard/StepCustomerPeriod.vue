@@ -50,6 +50,34 @@
       </BaseField>
     </div>
 
+    <div v-if="form.customerId && customerRates.length > 0" class="grid rate-fields">
+      <BaseField
+        v-if="customerRates.length > 1"
+        label="Rate"
+        for="rate"
+        required
+        :class="{ 'span-2': !showHours }"
+        help="The rate this invoice bills with."
+      >
+        <select id="rate" v-model="form.rateId" class="control">
+          <option v-for="rate in customerRates" :key="rate.id" :value="rate.id">
+            {{ rateLabel(rate) }}
+          </option>
+        </select>
+      </BaseField>
+
+      <BaseField
+        v-if="showHours"
+        label="Hours"
+        for="hours"
+        required
+        :class="{ 'span-2': customerRates.length <= 1 }"
+        :help="hoursHelp"
+      >
+        <input id="hours" v-model.number="form.hours" type="number" min="0" step="0.25" class="control num" placeholder="0" />
+      </BaseField>
+    </div>
+
     <div v-if="form.customerId" class="rate-line" :class="{ missing: noRate }">
       <template v-if="selectedRate">
         <AppIcon name="coins" />
@@ -65,7 +93,9 @@
 </template>
 
 <script setup lang="ts">
-import { InvoiceType } from '@/types'
+import { computed } from 'vue'
+import { InvoiceType, RateType } from '@/types'
+import type { RateDto } from '@/types'
 import type { InvoiceDraft } from '@/composables/useInvoiceDraft'
 import BasePanel from '@/components/ui/BasePanel.vue'
 import BaseField from '@/components/ui/BaseField.vue'
@@ -81,8 +111,10 @@ const {
   selectedMonth,
   selectedYear,
   selectedRate,
+  customerRates,
   noRate,
   isMonthly,
+  isHourlyRate,
   years,
   sortedCustomers,
   availableTemplates,
@@ -90,6 +122,19 @@ const {
   rateUnit,
   shiftMonth
 } = props.draft
+
+// A one-time invoice with an hourly rate bills the hours entered here
+const showHours = computed(() => !isMonthly.value && isHourlyRate.value)
+const hoursHelp = computed(() => {
+  const rate = selectedRate.value
+  const hours = Number(form.hours)
+  return rate && hours > 0 ? `${hours}h × ${formatMoney(rate.price.amount, rate.price.currency)} = ${formatMoney(hours * rate.price.amount, rate.price.currency)}` : 'Hours to bill at the hourly rate.'
+})
+
+function rateLabel(rate: RateDto): string {
+  const unit = rate.type === RateType.Hourly ? 'per hour' : rate.type === RateType.Monthly ? 'per month' : 'per day'
+  return `${formatMoney(rate.price.amount, rate.price.currency)} ${unit}`
+}
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i + 1,
@@ -106,6 +151,10 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 
 .span-2 {
   grid-column: span 2;
+}
+
+.rate-fields {
+  margin-top: 1rem;
 }
 
 @media (max-width: 900px) {

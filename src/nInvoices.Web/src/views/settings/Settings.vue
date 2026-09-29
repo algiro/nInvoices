@@ -1,63 +1,13 @@
 <template>
   <div class="settings-page">
-    <PageHeader title="Settings" subtitle="Appearance, invoice numbering, images for templates, Gmail, and backups." />
+    <PageHeader title="Settings" subtitle="Appearance, invoice numbering, calendar, images for templates, Gmail, and backups." />
 
     <div class="sections">
       <BasePanel title="Appearance" description="Pick a light and a dark theme; the mode decides which one is shown. Saved in this browser.">
         <ThemePicker />
       </BasePanel>
 
-      <BasePanel title="Invoice numbering" description="Every new invoice takes the next number in the sequence, formatted with the pattern below.">
-        <LoadingState v-if="sequenceLoading" label="Loading the sequence…" />
-
-        <EmptyState v-else-if="sequenceError && !sequenceLoaded" icon="alert" title="The sequence could not be loaded" :description="sequenceError" compact>
-          <BaseButton @click="loadSequence">Try again</BaseButton>
-        </EmptyState>
-
-        <div v-else class="numbering">
-          <div class="next-number">
-            <span class="label">Next invoice number</span>
-            <span class="value mono">{{ nextInvoiceNumber }}</span>
-            <span class="hint">Sequence value {{ currentSequence }} · pattern <code>{{ numberFormat }}</code></span>
-          </div>
-
-          <form class="sequence-form" novalidate @submit.prevent="handleUpdateSequence">
-            <BaseField
-              label="Change the next sequence value"
-              for="newSequence"
-              :help="newSequenceValue && newSequenceValue < currentSequence ? 'Lower than the current value: numbers already used may be issued again.' : 'Use this after importing invoices or when moving from another tool.'"
-            >
-              <div class="inline">
-                <input
-                  id="newSequence"
-                  v-model.number="newSequenceValue"
-                  type="number"
-                  min="1"
-                  class="control num"
-                  :placeholder="String(currentSequence)"
-                />
-                <BaseButton type="submit" variant="primary" :loading="sequenceUpdating" :disabled="!isSequenceValid">Save</BaseButton>
-              </div>
-            </BaseField>
-            <BaseButton variant="ghost-danger" :disabled="sequenceUpdating" @click="handleResetSequence">Reset to 1…</BaseButton>
-          </form>
-        </div>
-
-        <details class="tokens">
-          <summary>How the pattern works</summary>
-          <p>The pattern is set in <code>Invoice.NumberFormat</code> in the API's appsettings.json; restart the API after changing it.</p>
-          <table class="data-table compact">
-            <thead><tr><th scope="col">Token</th><th scope="col">Becomes</th><th scope="col">Example</th></tr></thead>
-            <tbody>
-              <tr v-for="token in tokens" :key="token.code">
-                <td><code>{{ token.code }}</code></td>
-                <td>{{ token.meaning }}</td>
-                <td class="mono">{{ token.example }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </details>
-      </BasePanel>
+      <InvoiceNumberingPanel />
 
       <BasePanel title="Calendar" description="How the worked-days calendar lays out weeks.">
         <dl class="facts">
@@ -173,7 +123,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue'
-import { invoicesApi, importExportApi, imageAssetsApi } from '@/api'
+import { importExportApi, imageAssetsApi } from '@/api'
 import type { ImageAssetDto } from '@/api/imageAssets'
 import type { DataExport } from '@/api/importExport'
 import { useSettingsStore } from '@/stores/settings'
@@ -186,6 +136,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import ThemePicker from '@/components/settings/ThemePicker.vue'
+import InvoiceNumberingPanel from '@/components/settings/InvoiceNumberingPanel.vue'
 import GmailConnectionPanel from '@/components/settings/GmailConnectionPanel.vue'
 import HolidayCalendarsPanel from '@/components/settings/HolidayCalendarsPanel.vue'
 
@@ -194,53 +145,6 @@ const { confirm } = useConfirm()
 
 const settingsStore = useSettingsStore()
 
-const currentSequence = ref(1)
-const newSequenceValue = ref<number | null>(null)
-const sequenceLoading = ref(false)
-const sequenceUpdating = ref(false)
-const sequenceError = ref<string | null>(null)
-
-const isSequenceValid = computed(() => {
-  return newSequenceValue.value !== null && newSequenceValue.value >= 1
-})
-
-const sequenceLoaded = ref(false)
-
-// The pattern configured in the API (Invoice.NumberFormat)
-const numberFormat = computed(() => settingsStore.invoiceSettings?.numberFormat || '{YEAR:yy}-{MONTH:00}-{NUMBER:000}')
-
-/**
- * Mirrors InvoiceNumber.Format in the backend. The stored sequence value is the number the
- * next invoice receives (the backend hands it out, then increments it).
- */
-function formatInvoiceNumber(pattern: string, sequence: number, date = new Date(), customerCode = 'ACME'): string {
-  return pattern
-    .replace(/\{YEAR:yy\}/g, String(date.getFullYear()).slice(-2))
-    .replace(/\{YEAR\}/g, String(date.getFullYear()))
-    .replace(/\{MONTH:00\}/g, String(date.getMonth() + 1).padStart(2, '0'))
-    .replace(/\{MONTH\}/g, String(date.getMonth() + 1))
-    .replace(/\{CUSTOMER:3\}/g, customerCode.slice(0, 3).toUpperCase())
-    .replace(/\{CUSTOMER\}/g, customerCode.toUpperCase())
-    .replace(/\{NUMBER:(0+)\}/g, (_, zeros: string) => String(sequence).padStart(zeros.length, '0'))
-    .replace(/\{NUMBER\}/g, String(sequence))
-}
-
-const nextInvoiceNumber = computed(() => formatInvoiceNumber(numberFormat.value, currentSequence.value))
-
-const tokens = computed(() => {
-  const now = new Date()
-  return [
-    { code: '{YEAR}', meaning: 'Year of the issue date', example: String(now.getFullYear()) },
-    { code: '{YEAR:yy}', meaning: 'Two-digit year', example: String(now.getFullYear()).slice(-2) },
-    { code: '{MONTH}', meaning: 'Month number', example: String(now.getMonth() + 1) },
-    { code: '{MONTH:00}', meaning: 'Month number, two digits', example: String(now.getMonth() + 1).padStart(2, '0') },
-    { code: '{NUMBER}', meaning: 'Sequence value', example: String(currentSequence.value) },
-    { code: '{NUMBER:000}', meaning: 'Sequence value padded with zeros (one 0 per digit)', example: String(currentSequence.value).padStart(3, '0') },
-    { code: '{CUSTOMER}', meaning: 'Customer VAT number / fiscal ID, upper case', example: 'IT0123…' },
-    { code: '{CUSTOMER:3}', meaning: 'First three characters of it', example: 'IT0' }
-  ]
-})
-
 const firstDayOfWeekName = computed(() => {
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   const firstDay = settingsStore.invoiceSettings?.firstDayOfWeek ?? 1
@@ -248,82 +152,9 @@ const firstDayOfWeekName = computed(() => {
 })
 
 onMounted(() => {
-  loadSequence()
   settingsStore.fetchInvoiceSettings()
   loadImageAssets()
 })
-
-async function loadSequence() {
-  sequenceLoading.value = true
-  sequenceError.value = null
-  try {
-    const result = await invoicesApi.getSequence()
-    currentSequence.value = result.currentValue
-    newSequenceValue.value = null
-    sequenceLoaded.value = true
-  } catch (error: any) {
-    sequenceError.value = error.message || 'Failed to load sequence'
-  } finally {
-    sequenceLoading.value = false
-  }
-}
-
-async function handleUpdateSequence() {
-  if (!isSequenceValid.value || newSequenceValue.value === null) {
-    return
-  }
-
-  const value = newSequenceValue.value
-
-  if (value < currentSequence.value) {
-    const confirmed = await confirm({
-      title: 'Lower the invoice sequence?',
-      message: `The sequence goes from ${currentSequence.value} down to ${value}. New invoices may reuse numbers that already exist.`,
-      confirmLabel: 'Lower sequence',
-      tone: 'danger'
-    })
-    if (!confirmed) return
-  }
-
-  sequenceUpdating.value = true
-  sequenceError.value = null
-  try {
-    const result = await invoicesApi.setSequence(value)
-    currentSequence.value = result.currentValue
-    newSequenceValue.value = null
-    toast.success('Invoice sequence updated', { message: `Next sequence value: ${result.currentValue}` })
-  } catch (error: any) {
-    sequenceError.value = error.message || 'Failed to update sequence'
-    toast.error('Failed to update sequence', { message: sequenceError.value ?? undefined })
-  } finally {
-    sequenceUpdating.value = false
-  }
-}
-
-async function handleResetSequence() {
-  const confirmed = await confirm({
-    title: 'Reset the invoice sequence to 1?',
-    message: 'New invoices will very likely reuse numbers that already exist.',
-    confirmLabel: 'Reset to 1',
-    tone: 'danger'
-  })
-
-  if (!confirmed) return
-
-  sequenceUpdating.value = true
-  sequenceError.value = null
-  try {
-    const result = await invoicesApi.setSequence(1)
-    currentSequence.value = result.currentValue
-    newSequenceValue.value = null
-    toast.success('Invoice sequence reset to 1')
-  } catch (error: any) {
-    sequenceError.value = error.message || 'Failed to reset sequence'
-    toast.error('Failed to reset sequence', { message: sequenceError.value ?? undefined })
-  } finally {
-    sequenceUpdating.value = false
-  }
-}
 
 // Image Assets state
 const imageAssets = ref<ImageAssetDto[]>([])
@@ -526,85 +357,6 @@ code {
   margin: 0.75rem 0 0;
   font-size: var(--text-md);
   color: var(--color-text-muted);
-}
-
-/* numbering */
-.numbering {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-  gap: 1.25rem;
-  align-items: start;
-}
-
-@media (max-width: 760px) {
-  .numbering {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.next-number {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  padding: 1rem 1.1rem;
-  border-radius: var(--radius-md);
-  background: var(--color-primary-soft);
-}
-
-.next-number .label {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.next-number .value {
-  font-size: 1.6rem;
-  font-weight: 650;
-  color: var(--color-primary);
-}
-
-.next-number .hint {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.sequence-form {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.6rem;
-}
-
-.sequence-form :deep(.field) {
-  width: 100%;
-}
-
-.inline {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.inline .control {
-  max-width: 10rem;
-}
-
-.tokens {
-  margin-top: 1.25rem;
-  font-size: var(--text-md);
-}
-
-.tokens summary {
-  cursor: pointer;
-  color: var(--color-primary);
-  font-weight: 500;
-}
-
-.tokens p {
-  color: var(--color-text-muted);
-}
-
-.data-table.compact td,
-.data-table.compact th {
-  padding: 0.4rem 0.7rem;
 }
 
 /* calendar */

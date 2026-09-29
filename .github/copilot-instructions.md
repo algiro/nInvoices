@@ -222,10 +222,11 @@ Built-in handlers:
 
 ### Invoice Numbering
 
-Configurable format via InvoiceSettings:
-- Pattern: `INV-{YEAR}-{NUMBER:000}`
-- Supports {YEAR}, {MONTH}, {DAY}, {NUMBER} placeholders
-- Auto-increments per format pattern
+Numbering is per user (`InvoiceSequence`, one row per owner, created on first use):
+- Each user has their own counter and pattern; their `NumberFormat` overrides the default
+  pattern from `InvoiceSettings` (e.g. `INV-{YEAR}-{NUMBER:000}`)
+- Supports {YEAR}, {MONTH}, {NUMBER}, {CUSTOMER} placeholders
+- Managed through `GET/PUT /api/invoices/numbering` (Settings page)
 
 ## Database Context
 

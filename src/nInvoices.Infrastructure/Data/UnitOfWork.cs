@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore;
 using nInvoices.Core.Interfaces;
 
 namespace nInvoices.Infrastructure.Data;
@@ -10,7 +10,6 @@ namespace nInvoices.Infrastructure.Data;
 public sealed class UnitOfWork : IUnitOfWork
 {
     private readonly ApplicationDbContext _context;
-    private IDbContextTransaction? _transaction;
 
     public UnitOfWork(ApplicationDbContext context)
     {
@@ -22,49 +21,26 @@ public sealed class UnitOfWork : IUnitOfWork
         return await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
+    public Task ExecuteInTransactionAsync(
+        Func<CancellationToken, Task> operation,
+        CancellationToken cancellationToken = default)
     {
-        if (_transaction is not null)
-            throw new InvalidOperationException("Transaction already started");
+        ArgumentNullException.ThrowIfNull(operation);
 
-        _transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
-    }
-
-    public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
-    {
-        if (_transaction is null)
-            throw new InvalidOperationException("No transaction to commit");
-
-        try
+        // A retrying execution strategy (PostgreSQL) rejects a transaction started outside it:
+        // the strategy has to run the whole transaction as one retriable unit
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return strategy.ExecuteAsync(async ct =>
         {
-            await _context.SaveChangesAsync(cancellationToken);
-            await _transaction.CommitAsync(cancellationToken);
-        }
-        catch
-        {
-            await RollbackTransactionAsync(cancellationToken);
-            throw;
-        }
-        finally
-        {
-            await _transaction.DisposeAsync();
-            _transaction = null;
-        }
-    }
-
-    public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
-    {
-        if (_transaction is null)
-            throw new InvalidOperationException("No transaction to rollback");
-
-        await _transaction.RollbackAsync(cancellationToken);
-        await _transaction.DisposeAsync();
-        _transaction = null;
+            // Disposed without a commit, the transaction is rolled back
+            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+            await operation(ct);
+            await transaction.CommitAsync(ct);
+        }, cancellationToken);
     }
 
     public void Dispose()
     {
-        _transaction?.Dispose();
         _context.Dispose();
     }
 }

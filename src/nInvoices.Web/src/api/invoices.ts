@@ -11,7 +11,9 @@ import type {
   UpdateInvoiceDto,
   InvoiceEmailComposeDto,
   CreateInvoiceEmailDraftDto,
-  InvoiceEmailDto
+  InvoiceEmailDto,
+  InvoiceNumberingDto,
+  UpdateInvoiceNumberingDto
 } from '../types';
 
 /**
@@ -112,12 +114,14 @@ export const invoicesApi = {
     return apiClient.post(`/api/invoices/${id}/monthlyreport/regenerate`, {});
   },
 
-  async getSequence(): Promise<{ currentValue: number }> {
-    return apiClient.get<{ currentValue: number }>('/api/invoices/sequence');
+  /** How the user's invoices are numbered: the sequence, the pattern and the next number. */
+  async getNumbering(): Promise<InvoiceNumberingDto> {
+    return apiClient.get<InvoiceNumberingDto>('/api/invoices/numbering');
   },
 
-  async setSequence(value: number): Promise<{ currentValue: number; message: string }> {
-    return apiClient.put<{ currentValue: number; message: string }>('/api/invoices/sequence', { value });
+  /** Sets the next sequence value and the pattern (blank pattern = the default one). */
+  async updateNumbering(data: UpdateInvoiceNumberingDto): Promise<InvoiceNumberingDto> {
+    return apiClient.put<InvoiceNumberingDto>('/api/invoices/numbering', data);
   },
 
   /** The email for this invoice, rendered from the customer's active (or the given) email template. */

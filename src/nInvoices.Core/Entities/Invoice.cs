@@ -22,6 +22,12 @@ public sealed class Invoice : OwnedEntityBase
     public int? Month { get; set; }
     public long? MonthlyReportTemplateId { get; set; }
 
+    /// <summary>The rate the invoice was billed with; null when it was billed with the default one.</summary>
+    public long? RateId { get; set; }
+
+    /// <summary>Hours billed on a one-time invoice with an hourly rate; null otherwise.</summary>
+    public decimal? Hours { get; set; }
+
     public Money Subtotal { get; set; } = null!;
     public Money TotalExpenses { get; set; } = null!;
     public Money TotalTaxes { get; set; } = null!;

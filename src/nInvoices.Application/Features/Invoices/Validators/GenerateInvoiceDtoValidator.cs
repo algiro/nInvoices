@@ -38,6 +38,17 @@ public sealed class GenerateInvoiceDtoValidator : AbstractValidator<GenerateInvo
                 .WithMessage("Work days are required for monthly invoices");
         });
 
+        RuleFor(x => x.RateId)
+            .GreaterThan(0)
+            .When(x => x.RateId.HasValue)
+            .WithMessage("Rate ID must be positive");
+
+        RuleFor(x => x.Hours)
+            .GreaterThan(0)
+            .LessThanOrEqualTo(100_000)
+            .When(x => x.Hours.HasValue)
+            .WithMessage("Hours must be greater than zero");
+
         RuleForEach(x => x.Expenses)
             .SetValidator(new ExpenseDtoValidator())
             .When(x => x.Expenses != null);

@@ -15,6 +15,9 @@ public sealed class InvoiceSequenceConfiguration : IEntityTypeConfiguration<Invo
         builder.Property(s => s.CurrentValue)
             .IsRequired();
 
+        builder.Property(s => s.NumberFormat)
+            .HasMaxLength(100);
+
         builder.Property(s => s.CreatedAt)
             .IsRequired();
 

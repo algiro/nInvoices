@@ -35,6 +35,9 @@ public sealed class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
 
         builder.Property(i => i.DueDate);
 
+        builder.Property(i => i.Hours)
+            .HasPrecision(9, 2);
+
         builder.Property(i => i.WorkedDays);
         builder.Property(i => i.Year);
         builder.Property(i => i.Month);

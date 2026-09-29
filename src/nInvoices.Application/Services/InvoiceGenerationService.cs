@@ -121,7 +121,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         CancellationToken cancellationToken)
     {
         var template = await GetTemplateAsync(dto.CustomerId, dto.InvoiceType, cancellationToken);
-        var rate = await GetRateAsync(dto.CustomerId, dto.InvoiceType, cancellationToken);
+        var rate = await GetRateAsync(dto.CustomerId, dto.InvoiceType, dto.RateId, cancellationToken);
         var customerTaxes = await GetCustomerTaxesAsync(dto.CustomerId, cancellationToken);
 
         // Validate hourly rate requirements
@@ -140,11 +140,16 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
                     $"(via a project allocation or the day's hours). Missing hours for {workedDaysWithoutHours.Count} day(s).");
         }
 
+        if (rate.Type == RateType.Hourly && dto.InvoiceType == InvoiceType.OneTime && dto.Hours is not > 0)
+            throw new InvalidOperationException("Hours are required for a one-time invoice with an hourly rate.");
+
         var subtotal = CalculateSubtotal(dto, rate);
         var expensesTotal = CalculateExpensesTotal(dto.Expenses, rate.Price.Currency);
+        var customer = await _customerRepository.GetByIdAsync(dto.CustomerId, cancellationToken)
+            ?? throw new InvalidOperationException($"Customer {dto.CustomerId} not found");
         var invoiceNumber = persist
-            ? await GenerateInvoiceNumberAsync(dto.CustomerId, dto.IssueDate, cancellationToken)
-            : await PeekInvoiceNumberAsync(dto.CustomerId, dto.IssueDate, cancellationToken);
+            ? await GenerateInvoiceNumberAsync(customer, dto.IssueDate, cancellationToken)
+            : await PeekInvoiceNumberAsync(customer, dto.IssueDate, cancellationToken);
 
         var (totalTax, taxLines) = _taxCalculationService.CalculateTaxes(customerTaxes, subtotal + expensesTotal);
 
@@ -154,7 +159,11 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             dto.InvoiceType,
             dto.IssueDate,
             subtotal,
-            rate.Price.Currency);
+            rate.Price.Currency)
+        {
+            RateId = dto.RateId,
+            Hours = rate.Type == RateType.Hourly && dto.InvoiceType == InvoiceType.OneTime ? dto.Hours : null
+        };
 
         var workDays = dto.WorkDays;
 
@@ -201,9 +210,6 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         invoice.AddTaxes(totalTax);
 
         // NEW: Use Scriban template renderer instead of old template engine
-        var customer = await _customerRepository.GetByIdAsync(dto.CustomerId, cancellationToken)
-            ?? throw new InvalidOperationException($"Customer {dto.CustomerId} not found");
-
         var templateModel = BuildTemplateModel(invoice, customer, dto, rate, workDays);
         var renderedHtml = await _templateRenderer.RenderAsync(template.Content, templateModel, cancellationToken);
 
@@ -242,7 +248,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             ?? throw new InvalidOperationException($"Customer {invoice.CustomerId} not found");
 
         var template = await GetTemplateAsync(invoice.CustomerId, invoice.Type, cancellationToken);
-        var rate = await GetRateAsync(invoice.CustomerId, invoice.Type, cancellationToken);
+        var rate = await GetRateAsync(invoice.CustomerId, invoice.Type, invoice.RateId, cancellationToken);
 
         // Load saved work days (with project allocations) from the database for line items
         ICollection<WorkDayDto>? workDayDtos = null;
@@ -268,6 +274,8 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             CustomerId = invoice.CustomerId,
             InvoiceType = invoice.Type,
             IssueDate = invoice.IssueDate,
+            RateId = invoice.RateId,
+            Hours = invoice.Hours,
             Year = invoice.Year,
             Month = invoice.Month,
             WorkDays = workDayDtos,
@@ -307,23 +315,31 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     private async Task<Rate> GetRateAsync(
         long customerId,
         InvoiceType invoiceType,
+        long? rateId,
         CancellationToken cancellationToken)
     {
-        // For Monthly invoices, prefer Daily rate (daily rate × worked days)
-        // Fall back to Monthly rate for fixed monthly billing, or Hourly rate (hourly rate × hours worked)
-        var preferredRateType = invoiceType switch
-        {
-            InvoiceType.Monthly => RateType.Daily,
-            InvoiceType.OneTime => RateType.Daily,
-            _ => throw new ArgumentException($"Unsupported invoice type: {invoiceType}", nameof(invoiceType))
-        };
+        if (invoiceType is not (InvoiceType.Monthly or InvoiceType.OneTime))
+            throw new ArgumentException($"Unsupported invoice type: {invoiceType}", nameof(invoiceType));
 
+        // The rate chosen for the invoice, which must be one of the customer's
+        if (rateId.HasValue)
+        {
+            var chosen = (await _rateRepository.FindAsync(
+                r => r.Id == rateId.Value && r.CustomerId == customerId,
+                cancellationToken)).FirstOrDefault();
+
+            return chosen
+                ?? throw new InvalidOperationException($"Rate {rateId.Value} not found for customer {customerId}.");
+        }
+
+        // Otherwise prefer the Daily rate (daily rate × worked days), then the Monthly rate
+        // (fixed monthly billing), then the Hourly rate (hourly rate × hours)
         var rates = await _rateRepository.FindAsync(
-            r => r.CustomerId == customerId && r.Type == preferredRateType,
+            r => r.CustomerId == customerId && r.Type == RateType.Daily,
             cancellationToken);
 
         var rate = rates.FirstOrDefault();
-        if (rate == null && invoiceType == InvoiceType.Monthly)
+        if (rate == null)
         {
             // Fall back to Monthly rate
             rates = await _rateRepository.FindAsync(
@@ -381,6 +397,10 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
                         .Sum(wd => (wd.HoursWorked ?? 8m) / 8m),
                     rate.Price.Currency),
             
+            // One-time: hours × the hourly rate, or the rate's price as a fixed amount
+            InvoiceType.OneTime when rate.Type == RateType.Hourly =>
+                new Money(rate.Price.Amount * (dto.Hours ?? 0m), rate.Price.Currency),
+
             InvoiceType.OneTime => rate.Price,
             _ => throw new InvalidOperationException($"Cannot calculate subtotal for invoice type {dto.InvoiceType}")
         };
@@ -399,11 +419,11 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     }
 
     private async Task<InvoiceNumber> GenerateInvoiceNumberAsync(
-        long customerId,
+        Customer customer,
         DateOnly issueDate,
         CancellationToken cancellationToken)
     {
-        // Get or create the current user's sequence record (the query filter returns only theirs)
+        // Get or create the current user's numbering (the query filter returns only theirs)
         var sequence = (await _sequenceRepository.GetAllAsync(cancellationToken)).FirstOrDefault();
         if (sequence == null)
         {
@@ -417,35 +437,28 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         await _sequenceRepository.UpdateAsync(sequence, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return await FormatInvoiceNumberAsync(customerId, sequenceNumber, issueDate, cancellationToken);
+        return FormatInvoiceNumber(sequence.NumberFormat, customer, sequenceNumber, issueDate);
     }
 
     /// <summary>The number the next generated invoice will get, without advancing the sequence.</summary>
     private async Task<InvoiceNumber> PeekInvoiceNumberAsync(
-        long customerId,
+        Customer customer,
         DateOnly issueDate,
         CancellationToken cancellationToken)
     {
         var sequence = (await _sequenceRepository.GetAllAsync(cancellationToken)).FirstOrDefault();
         var sequenceNumber = sequence?.CurrentValue ?? 1;
 
-        return await FormatInvoiceNumberAsync(customerId, sequenceNumber, issueDate, cancellationToken);
+        return FormatInvoiceNumber(sequence?.NumberFormat, customer, sequenceNumber, issueDate);
     }
 
-    private async Task<InvoiceNumber> FormatInvoiceNumberAsync(
-        long customerId,
-        int sequenceNumber,
-        DateOnly issueDate,
-        CancellationToken cancellationToken)
+    /// <param name="userFormat">The user's own pattern; null to use the default from appsettings.</param>
+    private InvoiceNumber FormatInvoiceNumber(string? userFormat, Customer customer, int sequenceNumber, DateOnly issueDate)
     {
-        // Use configured pattern from appsettings
-        var pattern = _invoiceSettings.NumberFormat;
+        var pattern = userFormat ?? _invoiceSettings.NumberFormat;
         var date = issueDate.ToDateTime(TimeOnly.MinValue);
 
-        var customer = await _customerRepository.GetByIdAsync(customerId, cancellationToken);
-        var customerCode = customer?.FiscalId;
-
-        return InvoiceNumber.Generate(pattern, sequenceNumber, date, customerCode);
+        return InvoiceNumber.Generate(pattern, sequenceNumber, date, customer.FiscalId);
     }
 
     /// <summary>
@@ -623,10 +636,11 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         }
         else if (dto.InvoiceType == InvoiceType.OneTime)
         {
+            var hourly = rate.Type == RateType.Hourly && dto.Hours.HasValue;
             lineItems.Add(new LineItemTemplateModel
             {
                 Description = "Professional Services",
-                Quantity = 1,
+                Quantity = hourly ? dto.Hours!.Value : 1,
                 Rate = rate.Price.Amount,
                 Amount = invoice.Subtotal.Amount
             });

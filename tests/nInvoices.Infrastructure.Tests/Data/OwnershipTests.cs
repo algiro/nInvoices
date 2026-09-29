@@ -1,5 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.ValueObjects;
@@ -260,5 +262,40 @@ public sealed class OwnershipTests
         await context.Database.MigrateAsync(Token);
 
         (await context.AssignUnownedDataAsync(null, Token)).ShouldBe((0, 0));
+    }
+
+    [Test]
+    public async Task Migrations_PerCustomerSequences_BecomeOneSequencePerUser()
+    {
+        await using var connection = new SqliteConnection("DataSource=:memory:");
+        await connection.OpenAsync(Token);
+        await using var context = new ApplicationDbContext(
+            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).Options);
+        var migrator = context.GetService<IMigrator>();
+        await migrator.MigrateAsync("20260929101858_AddRateAndHoursToInvoice", Token);
+
+        // As left by the per-customer numbering: alice has three counters and a pattern shared by
+        // her customers, bob two different patterns
+        await context.Database.ExecuteSqlRawAsync("""
+            INSERT INTO "Customers" ("Id","OwnerId","Name","FiscalId","Locale","CreatedAt","NumberFormat","Address_Street","Address_HouseNumber","Address_City","Address_ZipCode","Address_Country")
+            VALUES (1,'alice','A1','A1','en-US','2026-01-01','A-{{NUMBER:000}}','S','1','C','Z','IT'),
+                   (2,'alice','A2','A2','en-US','2026-01-01','A-{{NUMBER:000}}','S','1','C','Z','IT'),
+                   (3,'alice','A3','A3','en-US','2026-01-01',NULL,'S','1','C','Z','IT'),
+                   (4,'bob','B1','B1','en-US','2026-01-01','X-{{NUMBER}}','S','1','C','Z','IT'),
+                   (5,'bob','B2','B2','en-US','2026-01-01','Y-{{NUMBER}}','S','1','C','Z','IT');
+            DELETE FROM "InvoiceSequence";
+            INSERT INTO "InvoiceSequence" ("OwnerId","CustomerId","CurrentValue","CreatedAt")
+            VALUES ('alice',1,12,'2026-01-01'), ('alice',2,14,'2026-01-01'), ('alice',3,12,'2026-01-01'),
+                   ('bob',4,3,'2026-01-01'), ('bob',5,3,'2026-01-01');
+            """, Token);
+
+        await migrator.MigrateAsync(null, Token);
+
+        var rows = await context.InvoiceSequences.IgnoreQueryFilters()
+            .OrderBy(x => x.OwnerId)
+            .Select(x => new { x.OwnerId, x.CurrentValue, x.NumberFormat })
+            .ToListAsync(Token);
+        rows.Select(r => (r.OwnerId, r.CurrentValue, r.NumberFormat))
+            .ShouldBe([("alice", 14, "A-{NUMBER:000}"), ("bob", 3, (string?)null)]);
     }
 }
