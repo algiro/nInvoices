@@ -49,7 +49,7 @@ public sealed class InvoiceEmailComposerTests
 
     private static CancellationToken Ct => TestContext.CurrentContext.CancellationToken;
 
-    private EmailTemplate AddTemplate(long customerId, string name, bool active)
+    private EmailTemplate AddTemplate(long? customerId, string name, bool active)
     {
         var template = new EmailTemplate(customerId, name, $"{name} subject", $"<p>{name}</p>");
         if (active)
@@ -87,6 +87,46 @@ public sealed class InvoiceEmailComposerTests
 
         (await _composer.ResolveTemplateAsync(3, own.Id, Ct)).TemplateId.ShouldBe(own.Id);
         (await _composer.ResolveTemplateAsync(3, other.Id, Ct)).TemplateId.ShouldBeNull();
+    }
+
+    [Test]
+    public async Task ResolveTemplateAsync_CustomerHasNoTemplate_UsesTheActiveSharedOne()
+    {
+        AddTemplate(null, "Shared inactive", active: false);
+        var shared = AddTemplate(null, "Shared", active: true);
+        AddTemplate(9, "Other customer", active: true);
+
+        var content = await _composer.ResolveTemplateAsync(3, null, Ct);
+
+        content.TemplateId.ShouldBe(shared.Id);
+    }
+
+    [Test]
+    public async Task ResolveTemplateAsync_CustomerHasItsOwnActiveTemplate_WinsOverTheSharedOne()
+    {
+        AddTemplate(null, "Shared", active: true);
+        var own = AddTemplate(3, "Own", active: true);
+
+        var content = await _composer.ResolveTemplateAsync(3, null, Ct);
+
+        content.TemplateId.ShouldBe(own.Id);
+    }
+
+    [Test]
+    public async Task ResolveTemplateAsync_CustomerOnlyHasAnInactiveTemplate_StillUsesTheSharedOne()
+    {
+        AddTemplate(3, "Own but off", active: false);
+        var shared = AddTemplate(null, "Shared", active: true);
+
+        (await _composer.ResolveTemplateAsync(3, null, Ct)).TemplateId.ShouldBe(shared.Id);
+    }
+
+    [Test]
+    public async Task ResolveTemplateAsync_RequestedSharedTemplate_IsAllowed()
+    {
+        var shared = AddTemplate(null, "Shared", active: false);
+
+        (await _composer.ResolveTemplateAsync(3, shared.Id, Ct)).TemplateId.ShouldBe(shared.Id);
     }
 
     [Test]
@@ -134,5 +174,14 @@ public sealed class InvoiceEmailComposerTests
 
         preview.Errors.ShouldBeEmpty();
         preview.Subject.ShouldBe("26-09-001 for billing@acme.it");
+    }
+
+    [Test]
+    public async Task PreviewAsync_SharedTemplateWithNoCustomer_UsesSampleData()
+    {
+        var preview = await _composer.PreviewAsync("Invoice for [[ customer.name ]]", "<p>[[ total ]]</p>", null, Ct);
+
+        preview.Errors.ShouldBeEmpty();
+        preview.Subject.ShouldBe("Invoice for Northwind Capital S.p.A.");
     }
 }

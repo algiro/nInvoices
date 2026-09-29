@@ -36,7 +36,8 @@ public interface IInvoiceEmailComposer
     /// Renders a template being edited, using the customer's most recent invoice (or sample
     /// figures when the customer has none yet).
     /// </summary>
-    Task<RenderedEmail> PreviewAsync(string subject, string body, long customerId, CancellationToken cancellationToken = default);
+    /// <param name="customerId">The customer to preview for; null (a shared template) previews with a sample customer.</param>
+    Task<RenderedEmail> PreviewAsync(string subject, string body, long? customerId, CancellationToken cancellationToken = default);
 
     /// <exception cref="InvoiceEmailException">A document could not be generated.</exception>
     Task<IReadOnlyList<EmailAttachment>> BuildAttachmentsAsync(
@@ -88,12 +89,17 @@ public sealed class InvoiceEmailComposer : IInvoiceEmailComposer
         if (templateId.HasValue)
         {
             var requested = await _templateRepository.GetByIdAsync(templateId.Value, cancellationToken);
-            if (requested is not null && requested.CustomerId == customerId)
+            // The customer's own templates and the shared ones can be picked
+            if (requested is not null && (requested.CustomerId == customerId || requested.CustomerId is null))
                 return ToContent(requested);
         }
 
-        var templates = await _templateRepository.FindAsync(t => t.CustomerId == customerId && t.IsActive, cancellationToken);
-        var active = templates.OrderByDescending(t => t.UpdatedAt ?? t.CreatedAt).FirstOrDefault();
+        // The customer's own active template, else the shared one
+        var templates = await _templateRepository.FindAsync(
+            t => (t.CustomerId == customerId || t.CustomerId == null) && t.IsActive,
+            cancellationToken);
+        var active = ScopedTemplates.PickEffective(
+            templates.OrderByDescending(t => t.UpdatedAt ?? t.CreatedAt).ToList(), customerId);
 
         return active is not null
             ? ToContent(active)
@@ -140,9 +146,16 @@ public sealed class InvoiceEmailComposer : IInvoiceEmailComposer
             : new RenderedEmail(CollapseWhitespace(renderedSubject!), renderedBody, []);
     }
 
-    public async Task<RenderedEmail> PreviewAsync(string subject, string body, long customerId, CancellationToken cancellationToken = default)
+    public async Task<RenderedEmail> PreviewAsync(string subject, string body, long? customerId, CancellationToken cancellationToken = default)
     {
-        var customer = await _customerRepository.GetByIdAsync(customerId, cancellationToken);
+        // A shared template belongs to no customer: preview it with sample data
+        if (customerId is null)
+        {
+            var sample = new Customer("Northwind Capital S.p.A.", "IT01234567890", new Address("Via Roma", "10", "Milano", "20121", "Italy"));
+            return await RenderAsync(subject, body, SampleModel(sample), cancellationToken);
+        }
+
+        var customer = await _customerRepository.GetByIdAsync(customerId.Value, cancellationToken);
         if (customer is null)
             return new RenderedEmail(null, null, [$"Customer {customerId} not found"]);
 

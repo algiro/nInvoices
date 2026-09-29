@@ -301,11 +301,12 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         InvoiceType invoiceType,
         CancellationToken cancellationToken)
     {
+        // The customer's own active template, else the shared one
         var templates = await _templateRepository.FindAsync(
-            t => t.CustomerId == customerId && t.InvoiceType == invoiceType && t.IsActive,
+            t => (t.CustomerId == customerId || t.CustomerId == null) && t.InvoiceType == invoiceType && t.IsActive,
             cancellationToken);
 
-        var template = templates.FirstOrDefault();
+        var template = ScopedTemplates.PickEffective(templates, customerId);
         if (template == null)
             throw new InvalidOperationException($"No active template found for customer {customerId} and type {invoiceType}");
 

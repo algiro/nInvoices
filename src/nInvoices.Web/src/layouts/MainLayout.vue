@@ -121,6 +121,7 @@ const navItems: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: 'dashboard', section: 'dashboard' },
   { to: '/customers', label: 'Customers', icon: 'customers', section: 'customers' },
   { to: '/invoices', label: 'Invoices', icon: 'invoices', section: 'invoices' },
+  { to: '/templates', label: 'Templates', icon: 'template', section: 'templates' },
   { to: '/settings', label: 'Settings', icon: 'settings', section: 'settings' }
 ]
 

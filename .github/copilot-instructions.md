@@ -219,6 +219,10 @@ Built-in handlers:
 - Validation via ValidateTemplateCommand
 - PDF generation via QuestPDF
 - Sample templates in `Docs/` folder
+- Templates (`InvoiceTemplate`, `MonthlyReportTemplate`, `EmailTemplate`) belong to a customer or, with a null
+  `CustomerId`, are shared by all of the user's customers. The customer's own active template wins over the
+  shared active one (`ScopedTemplates.PickEffective`); a user has one active shared invoice template per type
+  (partial unique index). API: `GET /api/{invoicetemplates|monthlyreporttemplates|emailtemplates}/shared`.
 
 ### Invoice Numbering
 

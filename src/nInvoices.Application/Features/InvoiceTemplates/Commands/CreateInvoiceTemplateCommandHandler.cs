@@ -32,9 +32,12 @@ public sealed class CreateInvoiceTemplateCommandHandler : IRequestHandler<Create
     {
         var dto = request.Template;
 
-        var customer = await _customerRepository.GetByIdAsync(dto.CustomerId, cancellationToken);
-        if (customer == null)
-            throw new KeyNotFoundException($"Customer with ID {dto.CustomerId} not found");
+        if (dto.CustomerId.HasValue)
+        {
+            var customer = await _customerRepository.GetByIdAsync(dto.CustomerId.Value, cancellationToken);
+            if (customer == null)
+                throw new KeyNotFoundException($"Customer with ID {dto.CustomerId} not found");
+        }
 
         if (!_templateEngine.ValidateTemplate(dto.Content, out var errors))
         {

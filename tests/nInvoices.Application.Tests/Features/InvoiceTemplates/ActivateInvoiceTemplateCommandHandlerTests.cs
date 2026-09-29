@@ -27,8 +27,8 @@ public sealed class ActivateInvoiceTemplateCommandHandlerTests
         _handler = new ActivateInvoiceTemplateCommandHandler(_repository.Object, _unitOfWork.Object);
     }
 
-    private static InvoiceTemplate Template(long id, bool active) =>
-        new(1, InvoiceType.Monthly, $"Template {id}", "<p>[[ total ]]</p>") { Id = id, IsActive = active };
+    private static InvoiceTemplate Template(long id, bool active, long? customerId = 1) =>
+        new(customerId, InvoiceType.Monthly, $"Template {id}", "<p>[[ total ]]</p>") { Id = id, IsActive = active };
 
     [Test]
     public async Task Handle_WhenTemplateMissing_ReturnsFalse()
@@ -93,5 +93,52 @@ public sealed class ActivateInvoiceTemplateCommandHandlerTests
             () => _handler.Handle(new ActivateInvoiceTemplateCommand(4), TestContext.CurrentContext.CancellationToken));
 
         next.IsActive.ShouldBeFalse();
+    }
+
+    [Test]
+    public async Task Handle_SharedTemplate_ReplacesOnlyTheActiveSharedOneNotTheCustomers()
+    {
+        var customerActive = Template(2, active: true, customerId: 1);
+        var sharedActive = Template(3, active: true, customerId: null);
+        var next = Template(4, active: false, customerId: null);
+        _repository
+            .Setup(r => r.GetByIdAsync(4, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(next);
+        _repository
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<InvoiceTemplate, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Expression<Func<InvoiceTemplate, bool>> predicate, CancellationToken _) =>
+                new[] { customerActive, sharedActive, next }.Where(predicate.Compile()).ToList());
+        _unitOfWork
+            .Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        var result = await _handler.Handle(new ActivateInvoiceTemplateCommand(4), TestContext.CurrentContext.CancellationToken);
+
+        result.ShouldBeTrue();
+        next.IsActive.ShouldBeTrue();
+        sharedActive.IsActive.ShouldBeFalse();
+        customerActive.IsActive.ShouldBeTrue();
+    }
+
+    [Test]
+    public async Task Handle_CustomerTemplate_LeavesTheSharedActiveOneAlone()
+    {
+        var sharedActive = Template(3, active: true, customerId: null);
+        var next = Template(4, active: false, customerId: 1);
+        _repository
+            .Setup(r => r.GetByIdAsync(4, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(next);
+        _repository
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<InvoiceTemplate, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Expression<Func<InvoiceTemplate, bool>> predicate, CancellationToken _) =>
+                new[] { sharedActive, next }.Where(predicate.Compile()).ToList());
+        _unitOfWork
+            .Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        await _handler.Handle(new ActivateInvoiceTemplateCommand(4), TestContext.CurrentContext.CancellationToken);
+
+        next.IsActive.ShouldBeTrue();
+        sharedActive.IsActive.ShouldBeTrue();
     }
 }

@@ -171,7 +171,7 @@ export interface UpdateTaxDto {
 
 export interface InvoiceTemplateDto {
   id: number;
-  customerId: number;
+  customerId: number | null; // null = shared by all customers
   invoiceType: InvoiceType;
   name: string;
   content: string;
@@ -181,7 +181,7 @@ export interface InvoiceTemplateDto {
 }
 
 export interface CreateInvoiceTemplateDto {
-  customerId: number;
+  customerId: number | null; // null = shared by all customers
   invoiceType: InvoiceType;
   name: string;
   content: string;
@@ -328,7 +328,7 @@ export interface TemplatePreviewDto {
 
 export interface MonthlyReportTemplateDto {
   id: number;
-  customerId: number;
+  customerId: number | null; // null = shared by all customers
   invoiceType: InvoiceType;
   name: string;
   content: string;
@@ -338,7 +338,7 @@ export interface MonthlyReportTemplateDto {
 }
 
 export interface CreateMonthlyReportTemplateDto {
-  customerId: number;
+  customerId: number | null; // null = shared by all customers
   name: string;
   content: string;
   invoiceType?: InvoiceType;
@@ -366,7 +366,7 @@ export interface PaginatedResponse<T> {
 
 export interface EmailTemplateDto {
   id: number;
-  customerId: number;
+  customerId: number | null; // null = shared by all customers
   name: string;
   subject: string;
   body: string;
@@ -376,7 +376,7 @@ export interface EmailTemplateDto {
 }
 
 export interface CreateEmailTemplateDto {
-  customerId: number;
+  customerId: number | null; // null = shared by all customers
   name: string;
   subject: string;
   body: string;

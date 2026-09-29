@@ -72,6 +72,31 @@ const router = createRouter({
           component: () => import('../views/templates/TemplateEditor.vue'),
         },
         {
+          path: 'templates',
+          name: 'shared-templates',
+          meta: { title: 'Shared templates', section: 'templates' },
+          component: () => import('../views/templates/SharedTemplates.vue'),
+        },
+        {
+          // Templates shared by all customers: the editor without a customer in the URL
+          path: 'templates/invoice/:templateId',
+          name: 'shared-invoice-template-editor',
+          meta: { title: 'Shared invoice template', section: 'templates', parent: { label: 'Templates', to: '/templates' }, kind: 'invoice' },
+          component: () => import('../views/templates/TemplateEditor.vue'),
+        },
+        {
+          path: 'templates/monthly-report/:templateId',
+          name: 'shared-monthly-report-template-editor',
+          meta: { title: 'Shared monthly report template', section: 'templates', parent: { label: 'Templates', to: '/templates' }, kind: 'monthly-report' },
+          component: () => import('../views/templates/TemplateEditor.vue'),
+        },
+        {
+          path: 'templates/email/:templateId',
+          name: 'shared-email-template-editor',
+          meta: { title: 'Shared email template', section: 'templates', parent: { label: 'Templates', to: '/templates' }, kind: 'email' },
+          component: () => import('../views/templates/TemplateEditor.vue'),
+        },
+        {
           path: 'invoices',
           name: 'invoices',
           meta: { title: 'Invoices', section: 'invoices' },

@@ -51,11 +51,15 @@ public sealed class GetInvoiceEmailComposeQueryHandler : IRequestHandler<GetInvo
         var model = _composer.BuildModel(invoice, customer, connection?.EmailAddress);
         var rendered = await _composer.RenderAsync(template.Subject, template.Body, model, cancellationToken);
 
-        var customerTemplates = await _templateRepository.FindAsync(t => t.CustomerId == customer.Id, cancellationToken);
-        var options = customerTemplates
-            .OrderByDescending(t => t.IsActive)
+        // The customer's own templates and the shared ones; only the one that applies by default
+        // (the customer's active, else the shared active) is flagged as active
+        var available = await _templateRepository.FindAsync(t => t.CustomerId == customer.Id || t.CustomerId == null, cancellationToken);
+        var defaultId = ScopedTemplates.PickEffective(available.Where(t => t.IsActive).ToList(), customer.Id)?.Id;
+        var options = available
+            .OrderBy(t => t.CustomerId is null)
+            .ThenByDescending(t => t.Id == defaultId)
             .ThenBy(t => t.Name)
-            .Select(t => new EmailTemplateOptionDto(t.Id, t.Name, t.IsActive))
+            .Select(t => new EmailTemplateOptionDto(t.Id, t.CustomerId is null ? $"{t.Name} (shared)" : t.Name, t.Id == defaultId))
             .ToList();
         if (template.TemplateId is null)
             options.Insert(0, new EmailTemplateOptionDto(null, "Default (built-in)", options.Count == 0));

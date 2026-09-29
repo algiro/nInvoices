@@ -12,6 +12,10 @@ export const monthlyReportTemplatesApi = {
     return apiClient.get<MonthlyReportTemplateDto[]>(`/api/monthlyreporttemplates/customer/${customerId}`);
   },
 
+  /** The templates shared by all customers. */
+  getShared: async (): Promise<MonthlyReportTemplateDto[]> => {
+    return apiClient.get<MonthlyReportTemplateDto[]>('/api/monthlyreporttemplates/shared');
+  },
   getById: async (id: number): Promise<MonthlyReportTemplateDto> => {
     return apiClient.get<MonthlyReportTemplateDto>(`/api/monthlyreporttemplates/${id}`);
   },

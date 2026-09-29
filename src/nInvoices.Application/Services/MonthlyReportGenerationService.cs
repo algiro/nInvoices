@@ -100,7 +100,7 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
             throw new InvalidOperationException("Invoice must have month and year set");
     }
 
-    /// <summary>The template chosen on the invoice, otherwise the customer's active one.</summary>
+    /// <summary>The template chosen on the invoice, otherwise the customer's active one, else the shared one.</summary>
     private async Task<MonthlyReportTemplate> GetTemplateAsync(
         Invoice invoice,
         Customer customer,
@@ -113,10 +113,10 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
         }
 
         var templates = await _templateRepository.FindAsync(
-            t => t.CustomerId == customer.Id && t.InvoiceType == InvoiceType.Monthly && t.IsActive,
+            t => (t.CustomerId == customer.Id || t.CustomerId == null) && t.InvoiceType == InvoiceType.Monthly && t.IsActive,
             cancellationToken);
 
-        return templates.FirstOrDefault()
+        return ScopedTemplates.PickEffective(templates, customer.Id)
             ?? throw new InvalidOperationException($"No active monthly report template found for customer {customer.Id}");
     }
 

@@ -3,11 +3,11 @@ using nInvoices.Core.Enums;
 namespace nInvoices.Application.DTOs;
 
 /// <summary>
-/// DTO for monthly report template information.
+/// DTO for monthly report template information. <see cref="CustomerId"/> is null for a shared template.
 /// </summary>
 public sealed record MonthlyReportTemplateDto(
     long Id,
-    long CustomerId,
+    long? CustomerId,
     InvoiceType InvoiceType,
     string Name,
     string Content,
@@ -19,7 +19,7 @@ public sealed record MonthlyReportTemplateDto(
 /// DTO for creating a new monthly report template.
 /// </summary>
 public sealed record CreateMonthlyReportTemplateDto(
-    long CustomerId,
+    long? CustomerId,
     string Name,
     string Content,
     InvoiceType InvoiceType = InvoiceType.Monthly);

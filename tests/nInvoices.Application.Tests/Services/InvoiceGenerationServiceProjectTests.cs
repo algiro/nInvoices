@@ -39,6 +39,8 @@ public sealed class InvoiceGenerationServiceProjectTests
     private Mock<IUnitOfWork> _unitOfWork = null!;
 
     private List<Rate> _rates = null!;
+    private List<InvoiceTemplate> _templates = null!;
+    private string _renderedTemplate = null!;
     private List<WorkDay> _savedWorkDays = null!;
     private Dictionary<string, Project> _projectsByName = null!;
     private long _nextProjectId;
@@ -67,14 +69,14 @@ public sealed class InvoiceGenerationServiceProjectTests
         _taxCalculationService = new Mock<ITaxCalculationService>();
         _unitOfWork = new Mock<IUnitOfWork>();
 
-        var templates = new[] { InvoiceType.Monthly, InvoiceType.OneTime }
-            .Select(type => new InvoiceTemplate(CustomerId, type, "T", "<html/>"))
+        _templates = new[] { InvoiceType.Monthly, InvoiceType.OneTime }
+            .Select(type => new InvoiceTemplate(CustomerId, type, "T", "own"))
             .ToList();
-        templates.ForEach(t => t.Activate());
+        _templates.ForEach(t => t.Activate());
         _templateRepository
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<InvoiceTemplate, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Expression<Func<InvoiceTemplate, bool>> p, CancellationToken _) =>
-                templates.Where(p.Compile()).ToList());
+                _templates.Where(p.Compile()).ToList());
 
         _rateRepository
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Rate, bool>>>(), It.IsAny<CancellationToken>()))
@@ -120,8 +122,9 @@ public sealed class InvoiceGenerationServiceProjectTests
 
         _templateRenderer
             .Setup(r => r.RenderAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string _, object model, CancellationToken _) =>
+            .ReturnsAsync((string content, object model, CancellationToken _) =>
             {
+                _renderedTemplate = content;
                 _capturedModel = (InvoiceTemplateModel)model;
                 return "<html>rendered</html>";
             });
@@ -382,6 +385,58 @@ public sealed class InvoiceGenerationServiceProjectTests
             MonthlyDto(WorkedDay(1, ("Alpha", 8m))), TestContext.CurrentContext.CancellationToken);
 
         invoice.Number.ToString().ShouldEndWith("-00012");
+    }
+
+    private static InvoiceTemplate ActiveTemplate(long? customerId, InvoiceType type, string content)
+    {
+        var template = new InvoiceTemplate(customerId, type, "T", content);
+        template.Activate();
+        return template;
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_CustomerHasNoActiveTemplate_UsesTheSharedOne()
+    {
+        GivenRate(RateType.Daily, 400m);
+        _templates.Clear();
+        _templates.Add(ActiveTemplate(null, InvoiceType.OneTime, "shared"));
+
+        await _service.GenerateInvoiceAsync(OneTimeDto(), TestContext.CurrentContext.CancellationToken);
+
+        _renderedTemplate.ShouldBe("shared");
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_CustomerHasItsOwnActiveTemplate_WinsOverTheSharedOne()
+    {
+        GivenRate(RateType.Daily, 400m);
+        _templates.Insert(0, ActiveTemplate(null, InvoiceType.OneTime, "shared"));
+
+        await _service.GenerateInvoiceAsync(OneTimeDto(), TestContext.CurrentContext.CancellationToken);
+
+        _renderedTemplate.ShouldBe("own");
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_SharedTemplateOfAnotherType_IsNotUsed()
+    {
+        GivenRate(RateType.Daily, 400m);
+        _templates.Clear();
+        _templates.Add(ActiveTemplate(null, InvoiceType.Monthly, "shared monthly"));
+
+        await Should.ThrowAsync<InvalidOperationException>(() =>
+            _service.GenerateInvoiceAsync(OneTimeDto(), TestContext.CurrentContext.CancellationToken));
+    }
+
+    [Test]
+    public async Task GenerateInvoiceAsync_AnotherCustomersTemplate_IsNotUsed()
+    {
+        GivenRate(RateType.Daily, 400m);
+        _templates.Clear();
+        _templates.Add(ActiveTemplate(CustomerId + 1, InvoiceType.OneTime, "another customer"));
+
+        await Should.ThrowAsync<InvalidOperationException>(() =>
+            _service.GenerateInvoiceAsync(OneTimeDto(), TestContext.CurrentContext.CancellationToken));
     }
 
     private GenerateInvoiceDto OneTimeDto(decimal? hours = null, long? rateId = null) => new()

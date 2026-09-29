@@ -2,7 +2,7 @@ namespace nInvoices.Application.DTOs;
 
 public sealed record EmailTemplateDto(
     long Id,
-    long CustomerId,
+    long? CustomerId,
     string Name,
     string Subject,
     string Body,
@@ -10,12 +10,12 @@ public sealed record EmailTemplateDto(
     DateTime CreatedAt,
     DateTime? UpdatedAt);
 
-public sealed record CreateEmailTemplateDto(long CustomerId, string Name, string Subject, string Body);
+public sealed record CreateEmailTemplateDto(long? CustomerId, string Name, string Subject, string Body);
 
 public sealed record UpdateEmailTemplateDto(string Name, string Subject, string Body);
 
 /// <summary>Request to render an email template being edited, for a customer.</summary>
-public sealed record PreviewEmailTemplateDto(string Subject, string Body, long CustomerId);
+public sealed record PreviewEmailTemplateDto(string Subject, string Body, long? CustomerId = null);
 
 /// <summary>Rendered subject and body, or the errors that prevented rendering.</summary>
 public sealed record EmailTemplatePreviewDto(string? Subject, string? Html, IReadOnlyList<string> Errors);

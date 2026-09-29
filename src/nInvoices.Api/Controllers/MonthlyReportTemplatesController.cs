@@ -38,6 +38,19 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
     }
 
     /// <summary>
+    /// Gets the monthly report templates shared by all of the user's customers.
+    /// </summary>
+    [HttpGet("shared")]
+    [ProducesResponseType(typeof(IEnumerable<MonthlyReportTemplateDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetShared(CancellationToken cancellationToken)
+    {
+        var templates = await _repository.FindAsync(t => t.CustomerId == null, cancellationToken);
+
+        return Ok(templates.Select(t => new MonthlyReportTemplateDto(
+            t.Id, t.CustomerId, t.InvoiceType, t.Name, t.Content, t.IsActive, t.CreatedAt, t.UpdatedAt)));
+    }
+
+    /// <summary>
     /// Gets all monthly report templates for a specific customer.
     /// </summary>
     [HttpGet("customer/{customerId}")]
@@ -110,7 +123,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
             _logger.LogInformation(
                 "Monthly report template {TemplateId} created for customer {CustomerId}",
                 template.Id,
-                template.CustomerId);
+                template.CustomerId?.ToString() ?? "(shared)");
 
             var resultDto = new MonthlyReportTemplateDto(
                 template.Id,
