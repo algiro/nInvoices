@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using MediatR;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -34,6 +35,7 @@ public sealed class DraftInvoiceNumberingTests
     private InvoiceNumbering _numbering = null!;
     private DraftInvoiceSynchronizer _drafts = null!;
     private FinalizeInvoiceCommandHandler _finalize = null!;
+    private Mock<IPublisher> _publisher = null!;
 
     private static CancellationToken Token => TestContext.CurrentContext.CancellationToken;
 
@@ -67,8 +69,9 @@ public sealed class DraftInvoiceNumberingTests
         _drafts = new DraftInvoiceSynchronizer(
             _invoiceRepository.Object, _customers, _numbering, _generation.Object, _unitOfWork.Object,
             NullLogger<DraftInvoiceSynchronizer>.Instance);
+        _publisher = new Mock<IPublisher>();
         _finalize = new FinalizeInvoiceCommandHandler(
-            _invoiceRepository.Object, _customers, _numbering, _drafts, _unitOfWork.Object);
+            _invoiceRepository.Object, _customers, _numbering, _drafts, _unitOfWork.Object, _publisher.Object);
     }
 
     private int SequenceValue => _sequences.Items.Single().CurrentValue;
@@ -111,6 +114,20 @@ public sealed class DraftInvoiceNumberingTests
         first.Number.ToString().ShouldBe("N-006");
         third.Number.ToString().ShouldBe("N-006");
         _rendered.Order().ShouldBe([1L, 3L]);
+    }
+
+    [Test]
+    public async Task Finalize_AnnouncesTheFinalizedInvoice_SoComplianceStepsCanFollow()
+    {
+        await NewDraftAsync(1);
+        await NewDraftAsync(2);
+
+        await _finalize.Handle(new FinalizeInvoiceCommand(2), Token);
+
+        _publisher.Verify(
+            p => p.Publish(It.Is<nInvoices.Application.Features.Invoices.Notifications.InvoiceFinalizedNotification>(n => n.InvoiceId == 2), It.IsAny<CancellationToken>()),
+            Times.Once);
+        _publisher.VerifyNoOtherCalls();
     }
 
     [Test]
