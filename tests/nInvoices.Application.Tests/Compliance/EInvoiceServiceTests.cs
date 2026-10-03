@@ -72,7 +72,7 @@ public sealed class EInvoiceServiceTests
         var gate = new ComplianceGate(registry, _settings);
 
         _service = new EInvoiceService(
-            gate, [format], _invoices.Object, _customers, _stored, _documents.Object, new PlainProtector(), _unitOfWork.Object, _time);
+            gate, [format], _invoices.Object, _customers, _stored, _documents.Object, new SigningCertificateLoader(new PlainProtector(), _time), _unitOfWork.Object);
     }
 
     private static Invoice NewInvoice(InvoiceStatus status)
