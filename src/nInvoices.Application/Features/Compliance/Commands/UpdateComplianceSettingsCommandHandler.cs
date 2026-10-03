@@ -66,6 +66,6 @@ public sealed class UpdateComplianceSettingsCommandHandler : IRequestHandler<Upd
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ComplianceMapper.ToDto(module, settings);
+        return ComplianceMapper.ToDto(module, settings, _registry.RequiresSigningCertificate(module.CountryCode));
     }
 }
