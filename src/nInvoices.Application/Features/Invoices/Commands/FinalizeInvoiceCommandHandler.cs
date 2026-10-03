@@ -1,4 +1,5 @@
 using MediatR;
+using nInvoices.Application.Features.Invoices.Notifications;
 using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
@@ -16,19 +17,22 @@ public sealed class FinalizeInvoiceCommandHandler : IRequestHandler<FinalizeInvo
     private readonly IInvoiceNumbering _numbering;
     private readonly IDraftInvoiceSynchronizer _drafts;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IPublisher _publisher;
 
     public FinalizeInvoiceCommandHandler(
         IRepository<Invoice> repository,
         IRepository<Customer> customerRepository,
         IInvoiceNumbering numbering,
         IDraftInvoiceSynchronizer drafts,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IPublisher publisher)
     {
         _repository = repository;
         _customerRepository = customerRepository;
         _numbering = numbering;
         _drafts = drafts;
         _unitOfWork = unitOfWork;
+        _publisher = publisher;
     }
 
     public async Task<Unit> Handle(FinalizeInvoiceCommand request, CancellationToken cancellationToken)
@@ -55,6 +59,8 @@ public sealed class FinalizeInvoiceCommandHandler : IRequestHandler<FinalizeInvo
             await _drafts.RerenderAsync([invoice.Id], cancellationToken);
 
         await _drafts.RefreshDraftsAsync(cancellationToken);
+
+        await _publisher.Publish(new InvoiceFinalizedNotification(invoice.Id), cancellationToken);
 
         return Unit.Value;
     }

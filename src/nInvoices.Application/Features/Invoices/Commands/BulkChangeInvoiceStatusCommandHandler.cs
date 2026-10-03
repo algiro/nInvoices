@@ -1,5 +1,6 @@
 using MediatR;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Features.Invoices.Notifications;
 using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
@@ -16,19 +17,22 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
     private readonly IInvoiceNumbering _numbering;
     private readonly IDraftInvoiceSynchronizer _drafts;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IPublisher _publisher;
 
     public BulkChangeInvoiceStatusCommandHandler(
         IInvoiceRepository repository,
         IRepository<Customer> customerRepository,
         IInvoiceNumbering numbering,
         IDraftInvoiceSynchronizer drafts,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IPublisher publisher)
     {
         _repository = repository;
         _customerRepository = customerRepository;
         _numbering = numbering;
         _drafts = drafts;
         _unitOfWork = unitOfWork;
+        _publisher = publisher;
     }
 
     public async Task<BulkInvoiceResultDto> Handle(BulkChangeInvoiceStatusCommand request, CancellationToken cancellationToken)
@@ -95,6 +99,9 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
         {
             await _drafts.RerenderAsync(renumbered, cancellationToken);
             await _drafts.RefreshDraftsAsync(cancellationToken);
+
+            foreach (var id in succeeded)
+                await _publisher.Publish(new InvoiceFinalizedNotification(id), cancellationToken);
         }
 
         return new BulkInvoiceResultDto(succeeded, skipped);

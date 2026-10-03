@@ -1,3 +1,4 @@
+using MediatR;
 using Microsoft.Extensions.Options;
 using Moq;
 using nInvoices.Application.Features.Invoices.Commands;
@@ -20,6 +21,7 @@ public sealed class BulkChangeInvoiceStatusTests
     private Mock<IDraftInvoiceSynchronizer> _drafts = null!;
     private InMemoryRepository<InvoiceSequence> _sequences = null!;
     private BulkChangeInvoiceStatusCommandHandler _handler = null!;
+    private Mock<IPublisher> _publisher = null!;
     private List<Invoice> _invoices = null!;
 
     [SetUp]
@@ -37,8 +39,9 @@ public sealed class BulkChangeInvoiceStatusTests
         _sequences = new InMemoryRepository<InvoiceSequence>(new InvoiceSequence(10));
         var numbering = new InvoiceNumbering(_sequences, Options.Create(new InvoiceSettings { NumberFormat = "N-{NUMBER:000}" }));
 
+        _publisher = new Mock<IPublisher>();
         _handler = new BulkChangeInvoiceStatusCommandHandler(
-            _repository.Object, new InMemoryRepository<Customer>(customer), numbering, _drafts.Object, _unitOfWork.Object);
+            _repository.Object, new InMemoryRepository<Customer>(customer), numbering, _drafts.Object, _unitOfWork.Object, _publisher.Object);
     }
 
     private Invoice Given(long id, InvoiceStatus status)
@@ -101,6 +104,14 @@ public sealed class BulkChangeInvoiceStatusTests
         one.Status.ShouldBe(InvoiceStatus.Finalized);
         _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _drafts.Verify(d => d.RefreshDraftsAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+        // Each finalized invoice is announced, so compliance steps follow it
+        foreach (var id in new[] { 1L, 2L, 3L })
+        {
+            _publisher.Verify(
+                p => p.Publish(It.Is<nInvoices.Application.Features.Invoices.Notifications.InvoiceFinalizedNotification>(n => n.InvoiceId == id), It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
     }
 
     [Test]
