@@ -51,6 +51,26 @@
         </div>
       </BasePanel>
 
+      <BasePanel
+        v-for="country in complianceCountries"
+        :key="country.countryCode"
+        :title="`${country.name} invoicing`"
+        description="Extra data the rules of this country ask for when invoicing this customer."
+      >
+        <div class="grid">
+          <ComplianceFieldInput
+            v-for="field in country.customerFields"
+            :key="field.key"
+            :field="field"
+            :id="`customer-${country.countryCode}-${field.key}`"
+            :value="complianceValue(country.countryCode, field.key)"
+            :error="complianceErrors[field.key]"
+            :class="{ 'span-2': field.type === 'Boolean' }"
+            @update="value => setComplianceValue(country.countryCode, field.key, value)"
+          />
+        </div>
+      </BasePanel>
+
       <BasePanel title="Public holidays" description="On time sheets, these days are marked as public holidays when a month is filled in.">
         <div class="grid">
           <BaseField label="Holiday calendar" for="customer-holiday-country" :help="holidayHelp">
@@ -96,8 +116,10 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCustomersStore } from '@/stores/customers'
-import type { CreateCustomerDto, UpdateCustomerDto, HolidayCountryDto } from '@/types'
+import type { CreateCustomerDto, UpdateCustomerDto, HolidayCountryDto, ComplianceCountryDto } from '@/types'
 import { holidaysApi } from '@/api/holidays'
+import { complianceApi } from '@/api/compliance'
+import ComplianceFieldInput from '@/components/settings/ComplianceFieldInput.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import BasePanel from '@/components/ui/BasePanel.vue'
 import BaseField from '@/components/ui/BaseField.vue'
@@ -132,8 +154,21 @@ const form = reactive<CreateCustomerDto | UpdateCustomerDto>({
     zipCode: '',
     country: '',
     state: undefined
-  }
+  },
+  complianceValues: {}
 })
+
+// The countries the user turned on that ask for extra data on each customer (none for most users)
+const complianceCountries = ref<ComplianceCountryDto[]>([])
+const complianceErrors = reactive<Record<string, string>>({})
+
+function complianceValue(country: string, key: string): string {
+  return form.complianceValues?.[`${country}.${key}`] ?? ''
+}
+
+function setComplianceValue(country: string, key: string, value: string) {
+  form.complianceValues = { ...form.complianceValues, [`${country}.${key}`]: value }
+}
 
 // Empty email fields are sent as null; the inputs work with strings
 const emailValue = computed({
@@ -184,6 +219,9 @@ onMounted(async () => {
   holidaysApi.getCountries()
     .then(countries => { holidayCountries.value = countries })
     .catch(() => { /* the list is a convenience: without it only "address country" is offered */ })
+  complianceApi.getCountries()
+    .then(countries => { complianceCountries.value = countries.filter(c => c.settings.isEnabled && c.customerFields.length > 0) })
+    .catch(() => { /* without the list the customer is saved without country-specific data */ })
   if (isEditMode.value && props.customerId) {
     await loadCustomer(props.customerId)
   }
@@ -201,6 +239,7 @@ async function loadCustomer(id: number) {
       form.email = customer.email ?? null
       form.ccEmails = customer.ccEmails ?? null
       form.holidayCountry = customer.holidayCountry ?? null
+      form.complianceValues = { ...(customer.complianceValues ?? {}) }
       addressHolidayCountry.value = customer.holidayCountry ? null : customer.effectiveHolidayCountry ?? null
       loadedName.value = customer.name
       setPageTitle(`Edit ${customer.name}`)
@@ -255,8 +294,15 @@ async function handleSubmit() {
       toast.success('Customer created', { message: 'Next, add a rate so you can invoice them.' })
       router.push(created?.id ? { path: `/customers/${created.id}`, query: { tab: 'rates' } } : '/customers')
     }
-  } catch (error) {
-    toast.failure('Could not save the customer', error)
+  } catch (error: any) {
+    const issues = error?.response?.data?.issues as { field?: string | null; message: string }[] | undefined
+    Object.keys(complianceErrors).forEach(key => delete complianceErrors[key])
+    if (error?.response?.status === 400 && issues?.length) {
+      for (const issue of issues) complianceErrors[issue.field ?? 'general'] = issue.message
+      toast.failure('Some invoicing details are missing', error)
+    } else {
+      toast.failure('Could not save the customer', error)
+    }
   } finally {
     saving.value = false
   }

@@ -91,6 +91,8 @@ export interface CustomerDto {
   holidayCountry?: string | null;
   /** The holiday country that applies: the chosen one, or the address country's code (null when not recognized) */
   effectiveHolidayCountry?: string | null;
+  /** Data country invoicing regimes ask for, keyed "COUNTRY.field" (e.g. "ES.dir3ManagingBody") */
+  complianceValues?: Record<string, string>;
 }
 
 export interface CreateCustomerDto {
@@ -101,6 +103,7 @@ export interface CreateCustomerDto {
   email?: string | null;
   ccEmails?: string | null;
   holidayCountry?: string | null;
+  complianceValues?: Record<string, string>;
 }
 
 export interface UpdateCustomerDto {
@@ -111,6 +114,7 @@ export interface UpdateCustomerDto {
   email?: string | null;
   ccEmails?: string | null;
   holidayCountry?: string | null;
+  complianceValues?: Record<string, string>;
 }
 
 export interface RateDto {
