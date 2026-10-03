@@ -35,6 +35,14 @@ public interface IInvoiceGenerationService
     Task RegenerateInvoiceHtmlAsync(
         long invoiceId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The model the invoice renders from (customer, line items, taxes), rebuilt from what is saved.
+    /// Throws <see cref="KeyNotFoundException"/> when the invoice does not exist.
+    /// </summary>
+    Task<InvoiceTemplateModel> BuildTemplateModelAsync(
+        long invoiceId,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -241,6 +249,29 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         long invoiceId,
         CancellationToken cancellationToken = default)
     {
+        var (invoice, _, templateModel) = await RebuildTemplateModelAsync(invoiceId, cancellationToken);
+
+        var template = await GetTemplateAsync(invoice.CustomerId, invoice.Type, cancellationToken);
+        var renderedHtml = await _templateRenderer.RenderAsync(template.Content, templateModel, cancellationToken);
+
+        invoice.SetRenderedContent(renderedHtml);
+        await _invoiceRepository.UpdateAsync(invoice, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<InvoiceTemplateModel> BuildTemplateModelAsync(
+        long invoiceId,
+        CancellationToken cancellationToken = default)
+    {
+        var (_, _, templateModel) = await RebuildTemplateModelAsync(invoiceId, cancellationToken);
+        return templateModel;
+    }
+
+    /// <summary>The model an existing invoice renders from, rebuilt from the saved invoice, work days and rates.</summary>
+    private async Task<(Invoice Invoice, Customer Customer, InvoiceTemplateModel Model)> RebuildTemplateModelAsync(
+        long invoiceId,
+        CancellationToken cancellationToken)
+    {
         // Use the specialized repository method to eagerly load related entities
         var invoice = await _invoiceRepository.GetByIdWithRelatedAsync(invoiceId, cancellationToken)
             ?? throw new KeyNotFoundException($"Invoice {invoiceId} not found");
@@ -248,7 +279,6 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         var customer = await _customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken)
             ?? throw new InvalidOperationException($"Customer {invoice.CustomerId} not found");
 
-        var template = await GetTemplateAsync(invoice.CustomerId, invoice.Type, cancellationToken);
         var rate = await GetRateAsync(invoice.CustomerId, invoice.Type, invoice.RateId, cancellationToken);
 
         // Load saved work days (with project allocations) from the database for line items
@@ -292,11 +322,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
         var rates = await LoadDayRatesAsync(invoice.CustomerId, rate, workDayDtos, cancellationToken);
         var templateModel = BuildTemplateModel(invoice, customer, dto, rates, workDayDtos);
-        var renderedHtml = await _templateRenderer.RenderAsync(template.Content, templateModel, cancellationToken);
-
-        invoice.SetRenderedContent(renderedHtml);
-        await _invoiceRepository.UpdateAsync(invoice, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return (invoice, customer, templateModel);
     }
 
     private async Task<InvoiceTemplate> GetTemplateAsync(
