@@ -1,6 +1,4 @@
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using nInvoices.Core.Entities;
 
@@ -39,14 +37,7 @@ public sealed class ComplianceSettingsConfiguration : IEntityTypeConfiguration<C
 
         // The country module own settings, as one JSON object
         builder.Property(s => s.Values)
-            .HasConversion(
-                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                v => JsonSerializer.Deserialize<Dictionary<string, string>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, string>(),
-                new ValueComparer<Dictionary<string, string>>(
-                    (a, b) => a != null && b != null && a.Count == b.Count && !a.Except(b).Any(),
-                    v => v.Aggregate(0, (hash, kv) => HashCode.Combine(hash, kv.Key, kv.Value)),
-                    v => new Dictionary<string, string>(v)))
-            .IsRequired();
+            .HasJsonMapConversion();
 
         builder.Property(s => s.ProtectedCertificate);
         builder.Property(s => s.ProtectedCertificatePassword).HasMaxLength(4000);

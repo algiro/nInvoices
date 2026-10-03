@@ -32,14 +32,7 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
 
         // The data country regimes ask for, as one JSON object keyed "<COUNTRY>.<field>"
         builder.Property(c => c.ComplianceValues)
-            .HasConversion(
-                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
-                v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, string>(),
-                new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<Dictionary<string, string>>(
-                    (a, b) => a != null && b != null && a.Count == b.Count && !a.Except(b).Any(),
-                    v => v.Aggregate(0, (hash, kv) => HashCode.Combine(hash, kv.Key, kv.Value)),
-                    v => new Dictionary<string, string>(v)))
-            .IsRequired()
+            .HasJsonMapConversion()
             .HasDefaultValue(new Dictionary<string, string>());
 
         // Configure Address value object as owned entity
