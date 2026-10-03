@@ -4,7 +4,8 @@ namespace nInvoices.Application.DTOs;
 /// Data transfer object for customer information.
 /// <see cref="HolidayCountry"/> is the country chosen for public holidays (null to follow the
 /// address); <see cref="EffectiveHolidayCountry"/> is the one that applies, null when the
-/// address country isn't recognized.
+/// address country isn't recognized. <see cref="ComplianceValues"/> holds the data country
+/// invoicing regimes ask for, keyed "COUNTRY.field" (e.g. "ES.dir3ManagingBody").
 /// </summary>
 public sealed record CustomerDto(
     long Id,
@@ -17,4 +18,5 @@ public sealed record CustomerDto(
     string? Email = null,
     string? CcEmails = null,
     string? HolidayCountry = null,
-    string? EffectiveHolidayCountry = null);
+    string? EffectiveHolidayCountry = null,
+    IReadOnlyDictionary<string, string>? ComplianceValues = null);

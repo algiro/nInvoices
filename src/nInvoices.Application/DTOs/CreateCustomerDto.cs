@@ -10,4 +10,5 @@ public sealed record CreateCustomerDto(
     string Locale = "en-US",
     string? Email = null,
     string? CcEmails = null,
-    string? HolidayCountry = null);
+    string? HolidayCountry = null,
+    Dictionary<string, string>? ComplianceValues = null);

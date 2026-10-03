@@ -8,17 +8,13 @@ namespace nInvoices.Application.Mappings;
 public static class ComplianceMapper
 {
     /// <param name="settings">The user's settings for the country; null if none were saved yet.</param>
-    public static ComplianceCountryDto ToDto(ICountryComplianceModule module, ComplianceSettings? settings) => new(
+    public static ComplianceCountryDto ToDto(ICountryComplianceModule module, ComplianceSettings? settings, bool requiresCertificate) => new(
         module.CountryCode,
         module.DisplayName,
         module.Capabilities.Select(c => c.ToString()).Order().ToList(),
-        module.Fields.Select(f => new ComplianceFieldDto(
-            f.Key,
-            f.Label,
-            f.Type.ToString(),
-            f.Required,
-            f.Help,
-            f.Options?.Select(o => new ComplianceFieldOptionDto(o.Value, o.Label)).ToList())).ToList(),
+        module.Fields.Select(ToDto).ToList(),
+        module.CustomerFields.Select(ToDto).ToList(),
+        requiresCertificate,
         settings is null
             ? new ComplianceSettingsDto(false, null, null, null, new Dictionary<string, string>())
             : new ComplianceSettingsDto(
@@ -26,7 +22,22 @@ public static class ComplianceMapper
                 settings.LegalName,
                 settings.TaxId,
                 ToDto(settings.Address),
-                settings.Values));
+                settings.Values,
+                settings.HasCertificate
+                    ? new SigningCertificateDto(
+                        settings.CertificateSubject ?? "",
+                        settings.CertificateThumbprint ?? "",
+                        settings.CertificateNotAfter ?? DateTime.MinValue,
+                        settings.CertificateNotAfter < DateTime.UtcNow)
+                    : null));
+
+    private static ComplianceFieldDto ToDto(ComplianceField f) => new(
+        f.Key,
+        f.Label,
+        f.Type.ToString(),
+        f.Required,
+        f.Help,
+        f.Options?.Select(o => new ComplianceFieldOptionDto(o.Value, o.Label)).ToList());
 
     /// <returns>The address, or null when every part is blank.</returns>
     /// <exception cref="ArgumentException">Only some parts are filled in.</exception>
