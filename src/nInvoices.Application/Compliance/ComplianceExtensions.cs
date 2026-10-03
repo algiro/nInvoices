@@ -1,4 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using nInvoices.Application.Compliance.Spain.Facturae;
+using nInvoices.Application.Compliance.EInvoice;
+using nInvoices.Core.Compliance.EInvoice;
 using nInvoices.Application.Compliance.Spain;
 using nInvoices.Core.Compliance;
 
@@ -13,10 +17,16 @@ public static class ComplianceExtensions
     /// </summary>
     public static IServiceCollection AddCompliance(this IServiceCollection services)
     {
-        services.AddSingleton<ICountryComplianceModule, SpainComplianceModule>();
+        services.AddSingleton<SpainComplianceModule>();
+        services.AddSingleton<ICountryComplianceModule>(sp => sp.GetRequiredService<SpainComplianceModule>());
+        services.AddSingleton<IEInvoiceFormat, FacturaeFormat>();
+        services.TryAddSingleton(TimeProvider.System);
 
         services.AddSingleton<IComplianceRegistry, ComplianceRegistry>();
         services.AddScoped<IComplianceGate, ComplianceGate>();
+        services.AddScoped<ICustomerCompliance, CustomerCompliance>();
+        services.AddScoped<IEInvoiceDocumentFactory, EInvoiceDocumentFactory>();
+        services.AddScoped<IEInvoiceService, EInvoiceService>();
         return services;
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using nInvoices.Core.Compliance;
+using nInvoices.Core.Compliance.EInvoice;
 using nInvoices.Core.Configuration;
 
 namespace nInvoices.Application.Compliance;
@@ -11,14 +12,23 @@ public interface IComplianceRegistry
 
     /// <returns>The module for the country, or null if there is none or the installation switched it off.</returns>
     ICountryComplianceModule? Find(string countryCode);
+
+    /// <summary>Whether one of the country's e-invoice formats needs the user to upload a signing certificate.</summary>
+    bool RequiresSigningCertificate(string countryCode);
 }
 
 public sealed class ComplianceRegistry : IComplianceRegistry
 {
     private readonly Dictionary<string, ICountryComplianceModule> _modules;
 
-    public ComplianceRegistry(IEnumerable<ICountryComplianceModule> modules, IOptions<ComplianceOptions> options)
+    private readonly IReadOnlyList<IEInvoiceFormat> _formats;
+
+    public ComplianceRegistry(
+        IEnumerable<ICountryComplianceModule> modules,
+        IEnumerable<IEInvoiceFormat> formats,
+        IOptions<ComplianceOptions> options)
     {
+        _formats = formats.ToList();
         _modules = modules
             .Where(m => options.Value.IsOffered(m.CountryCode))
             .OrderBy(m => m.DisplayName, StringComparer.CurrentCultureIgnoreCase)
@@ -29,4 +39,7 @@ public sealed class ComplianceRegistry : IComplianceRegistry
 
     public ICountryComplianceModule? Find(string countryCode) =>
         _modules.GetValueOrDefault(countryCode);
+
+    public bool RequiresSigningCertificate(string countryCode) =>
+        _formats.Any(f => f.RequiresSignature && string.Equals(f.CountryCode, countryCode, StringComparison.OrdinalIgnoreCase));
 }
