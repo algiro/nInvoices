@@ -96,6 +96,8 @@
             </dl>
           </BasePanel>
 
+          <InvoiceEInvoicePanel :invoice-id="invoice.id" :status="status.name" />
+
           <BasePanel v-if="canEmail || emails.length" title="Emails" description="Drafts created in your Gmail for this invoice.">
             <ul v-if="emails.length" class="emails">
               <li v-for="email in emails" :key="email.id">
@@ -145,6 +147,7 @@ import LoadingState from '@/components/ui/LoadingState.vue'
 import ActionMenu, { type ActionMenuItem } from '@/components/ui/ActionMenu.vue'
 import TemplatePreviewPane from '@/components/templates/editor/TemplatePreviewPane.vue'
 import InvoiceEmailDialog from '@/components/invoices/InvoiceEmailDialog.vue'
+import InvoiceEInvoicePanel from '@/components/invoices/InvoiceEInvoicePanel.vue'
 import { invoicesApi } from '@/api/invoices'
 import { useInvoiceActions, actionsFor, isMonthly, type InvoiceActionId } from '@/composables/useInvoiceActions'
 import { setPageTitle } from '@/composables/usePageTitle'
