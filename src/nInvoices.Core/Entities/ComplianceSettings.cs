@@ -25,6 +25,19 @@ public sealed class ComplianceSettings : OwnedEntityBase
     /// <summary>The module's own settings, by field key.</summary>
     public Dictionary<string, string> Values { get; private set; } = new();
 
+    /// <summary>The signing certificate (.p12/.pfx bytes, base64), encrypted; null if none was uploaded.</summary>
+    public string? ProtectedCertificate { get; private set; }
+
+    /// <summary>The certificate password, encrypted.</summary>
+    public string? ProtectedCertificatePassword { get; private set; }
+
+    /// <summary>What to show about the certificate without decrypting it.</summary>
+    public string? CertificateSubject { get; private set; }
+    public string? CertificateThumbprint { get; private set; }
+    public DateTime? CertificateNotAfter { get; private set; }
+
+    public bool HasCertificate => ProtectedCertificate is not null;
+
     private ComplianceSettings() { }
 
     /// <exception cref="ArgumentException">The country code is not two letters.</exception>
@@ -50,6 +63,26 @@ public sealed class ComplianceSettings : OwnedEntityBase
         Values = (values ?? new Dictionary<string, string>())
             .Where(v => !string.IsNullOrWhiteSpace(v.Value))
             .ToDictionary(v => v.Key, v => v.Value.Trim());
+    }
+
+    public void SetCertificate(string protectedCertificate, string protectedPassword, string subject, string thumbprint, DateTime notAfter)
+    {
+        ProtectedCertificate = protectedCertificate;
+        ProtectedCertificatePassword = protectedPassword;
+        CertificateSubject = subject;
+        CertificateThumbprint = thumbprint;
+        CertificateNotAfter = notAfter;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ClearCertificate()
+    {
+        ProtectedCertificate = null;
+        ProtectedCertificatePassword = null;
+        CertificateSubject = null;
+        CertificateThumbprint = null;
+        CertificateNotAfter = null;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public IssuerProfile ToIssuerProfile() => new(LegalName, TaxId, Address, Values);
