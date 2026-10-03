@@ -43,6 +43,7 @@ nInvoices is built around that monthly routine:
 - **Template editor with live preview** and a panel of available variables.
 - **Pixel-exact PDFs** rendered by headless Chrome, for invoices, timesheets and a worked-days calendar.
 - **Configurable invoice numbers, per user**: each user has their own sequence and pattern, e.g. `{YEAR}-{MONTH:00}-{NUMBER:000}`, set in Settings. An invoice takes its number when you finalize it; until then every draft shows the next number, so deleting a draft never leaves a gap.
+- **Spanish e-invoicing (optional, off by default):** signed Facturae 3.2.2 for public administrations (FACe), per user. See [`Docs/SPAIN-EINVOICING.md`](Docs/SPAIN-EINVOICING.md), including how to get and upload your signing certificate.
 
 ### Getting paid
 - **Invoice lifecycle:** Draft → Finalized → Sent → Paid, or Cancelled.
