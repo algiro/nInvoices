@@ -35,38 +35,15 @@
               <input :id="`${country.countryCode}-taxId`" v-model="forms[country.countryCode].taxId" type="text" class="control mono" maxlength="50" />
             </BaseField>
 
-            <BaseField
+            <ComplianceFieldInput
               v-for="field in country.fields"
               :key="field.key"
-              :label="field.label"
-              :for="`${country.countryCode}-${field.key}`"
-              :help="field.help ?? undefined"
+              :field="field"
+              :id="`${country.countryCode}-${field.key}`"
+              :value="forms[country.countryCode].values[field.key] ?? ''"
               :error="errors[country.countryCode]?.[field.key]"
-            >
-              <select
-                v-if="field.type === 'Choice'"
-                :id="`${country.countryCode}-${field.key}`"
-                v-model="forms[country.countryCode].values[field.key]"
-                class="control"
-              >
-                <option value="">Select…</option>
-                <option v-for="option in field.options ?? []" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-              <input
-                v-else-if="field.type === 'Boolean'"
-                :id="`${country.countryCode}-${field.key}`"
-                type="checkbox"
-                :checked="forms[country.countryCode].values[field.key] === 'true'"
-                @change="forms[country.countryCode].values[field.key] = ($event.target as HTMLInputElement).checked ? 'true' : ''"
-              />
-              <input
-                v-else
-                :id="`${country.countryCode}-${field.key}`"
-                v-model="forms[country.countryCode].values[field.key]"
-                type="text"
-                class="control"
-              />
-            </BaseField>
+              @update="value => forms[country.countryCode].values[field.key] = value"
+            />
           </div>
 
           <fieldset class="address">
@@ -84,7 +61,7 @@
               <BaseField label="City" :for="`${country.countryCode}-city`">
                 <input :id="`${country.countryCode}-city`" v-model="forms[country.countryCode].address.city" type="text" class="control" maxlength="100" />
               </BaseField>
-              <BaseField label="Province / state" :for="`${country.countryCode}-state`" optional>
+              <BaseField label="Province / state" :for="`${country.countryCode}-state`">
                 <input :id="`${country.countryCode}-state`" v-model="forms[country.countryCode].address.state" type="text" class="control" maxlength="100" />
               </BaseField>
               <BaseField label="Country" :for="`${country.countryCode}-country`">
@@ -95,6 +72,43 @@
           </fieldset>
 
           <p v-if="errors[country.countryCode]?.general" class="field-error" role="alert">{{ errors[country.countryCode]?.general }}</p>
+
+          <fieldset v-if="country.requiresCertificate" class="certificate">
+            <legend>Signing certificate</legend>
+            <p class="cert-intro">
+              {{ country.name }} e-invoices must be signed. Upload your electronic certificate (a .p12 or .pfx file); it is
+              kept encrypted on the server and only used to sign your invoices.
+            </p>
+
+            <div v-if="country.settings.certificate" class="cert-current">
+              <StatusPill :tone="country.settings.certificate.isExpired ? 'danger' : 'success'">
+                {{ country.settings.certificate.isExpired ? 'Expired' : 'In use' }}
+              </StatusPill>
+              <div class="cert-details">
+                <strong class="mono">{{ country.settings.certificate.subject }}</strong>
+                <span class="muted">valid until {{ formatDate(country.settings.certificate.notAfter) }}</span>
+              </div>
+              <BaseButton variant="ghost-danger" :loading="certBusy === country.countryCode + ':remove'" :disabled="!!certBusy" @click="removeCertificate(country)">
+                Remove
+              </BaseButton>
+            </div>
+
+            <div class="cert-upload">
+              <BaseField :label="country.settings.certificate ? 'Replace with' : 'Certificate file'" :for="`${country.countryCode}-cert-file`" :error="errors[country.countryCode]?.certificate">
+                <input :id="`${country.countryCode}-cert-file`" type="file" accept=".p12,.pfx" class="control" @change="onCertificateFile(country.countryCode, $event)" />
+              </BaseField>
+              <BaseField label="Certificate password" :for="`${country.countryCode}-cert-password`">
+                <input :id="`${country.countryCode}-cert-password`" v-model="certPasswords[country.countryCode]" type="password" class="control" autocomplete="off" />
+              </BaseField>
+              <BaseButton
+                :loading="certBusy === country.countryCode + ':upload'"
+                :disabled="!!certBusy || !certFiles[country.countryCode]"
+                @click="uploadCertificate(country)"
+              >
+                Upload
+              </BaseButton>
+            </div>
+          </fieldset>
 
           <div class="actions">
             <BaseButton type="submit" variant="primary" :loading="saving === country.countryCode" :disabled="!!saving">Save</BaseButton>
@@ -115,6 +129,8 @@ import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import StatusPill from '@/components/ui/StatusPill.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import ComplianceFieldInput from '@/components/settings/ComplianceFieldInput.vue'
+import { formatDate } from '@/utils/format'
 
 interface CountryForm {
   isEnabled: boolean
@@ -132,6 +148,60 @@ const forms = reactive<Record<string, CountryForm>>({})
 const errors = reactive<Record<string, Record<string, string>>>({})
 const loadError = ref<string | null>(null)
 const saving = ref<string | null>(null)
+
+// Certificate upload: the chosen file (as base64) and password per country
+const certFiles = reactive<Record<string, string | null>>({})
+const certPasswords = reactive<Record<string, string>>({})
+const certBusy = ref<string | null>(null)
+
+async function onCertificateFile(code: string, event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  certFiles[code] = null
+  if (!file) return
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  certFiles[code] = btoa(binary)
+}
+
+async function uploadCertificate(country: ComplianceCountryDto) {
+  const code = country.countryCode
+  const pfx = certFiles[code]
+  if (!pfx) return
+  errors[code] = { ...errors[code], certificate: '' }
+  certBusy.value = `${code}:upload`
+  try {
+    const result = await complianceApi.setCertificate(code, pfx, certPasswords[code] ?? '')
+    replaceKeepingForm(result)
+    certFiles[code] = null
+    certPasswords[code] = ''
+    toast.success('Certificate stored', { message: result.settings.certificate?.subject })
+  } catch (err: any) {
+    if (err.response?.status === 400) errors[code] = { ...errors[code], certificate: err.response.data?.error || 'The certificate was not accepted' }
+    else toast.failure('Failed to store the certificate', err)
+  } finally {
+    certBusy.value = null
+  }
+}
+
+async function removeCertificate(country: ComplianceCountryDto) {
+  const code = country.countryCode
+  certBusy.value = `${code}:remove`
+  try {
+    replaceKeepingForm(await complianceApi.removeCertificate(code))
+    toast.success('Certificate removed')
+  } catch (err: any) {
+    toast.failure('Failed to remove the certificate', err)
+  } finally {
+    certBusy.value = null
+  }
+}
+
+// Refreshes what the server owns (the certificate) without discarding what the user has typed in the form
+function replaceKeepingForm(country: ComplianceCountryDto) {
+  const index = countries.value.findIndex(c => c.countryCode === country.countryCode)
+  if (index >= 0) countries.value[index] = country
+}
 
 function toForm(country: ComplianceCountryDto): CountryForm {
   const s = country.settings
@@ -302,5 +372,50 @@ form {
 .actions {
   display: flex;
   justify-content: flex-end;
+}
+
+.certificate {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.9rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.certificate legend {
+  padding: 0 0.3rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.cert-intro,
+.muted {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.cert-current {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.cert-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.cert-upload {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem 1rem;
+  align-items: end;
 }
 </style>
