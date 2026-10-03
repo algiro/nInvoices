@@ -61,6 +61,20 @@
       </select>
     </BaseField>
 
+    <!-- What the countries the user turned on ask about a tax, e.g. why a 0% VAT charges nothing -->
+    <template v-if="form.rate === 0 && form.handlerId !== 'FIXED_AMOUNT'">
+      <template v-for="country in complianceCountries" :key="country.countryCode">
+        <ComplianceFieldInput
+          v-for="field in country.taxFields"
+          :key="`${country.countryCode}.${field.key}`"
+          :field="field"
+          :id="`tax-${country.countryCode}-${field.key}`"
+          :value="complianceValue(country.countryCode, field.key)"
+          @update="value => setComplianceValue(country.countryCode, field.key, value)"
+        />
+      </template>
+    </template>
+
     <p v-if="errors.form" class="form-error" role="alert">{{ errors.form }}</p>
 
     <div class="form-actions">
@@ -76,7 +90,9 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useTaxesStore } from '@/stores/taxes'
 import { TaxApplicationType } from '@/types'
-import type { CreateTaxDto, UpdateTaxDto } from '@/types'
+import type { CreateTaxDto, UpdateTaxDto, ComplianceCountryDto } from '@/types'
+import { complianceApi } from '@/api/compliance'
+import ComplianceFieldInput from '@/components/settings/ComplianceFieldInput.vue'
 import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
@@ -108,8 +124,20 @@ const form = reactive<CreateTaxDto | UpdateTaxDto>({
   rate: 0,
   applicationType: TaxApplicationType.OnSubtotal,
   order: 1,
-  appliedToTaxId: null
+  appliedToTaxId: null,
+  complianceValues: {}
 })
+
+// The countries the user turned on that ask for extra data about a tax (none for most users)
+const complianceCountries = ref<ComplianceCountryDto[]>([])
+
+function complianceValue(country: string, key: string): string {
+  return form.complianceValues?.[`${country}.${key}`] ?? ''
+}
+
+function setComplianceValue(country: string, key: string, value: string) {
+  form.complianceValues = { ...form.complianceValues, [`${country}.${key}`]: value }
+}
 
 const errors = reactive<Record<string, string>>({})
 
@@ -121,6 +149,9 @@ const availableTaxes = computed(() => {
 
 onMounted(async () => {
   loadingTax.value = true
+  complianceApi.getCountries()
+    .then(countries => { complianceCountries.value = countries.filter(c => c.settings.isEnabled && c.taxFields.length > 0) })
+    .catch(() => { /* without the list the tax is saved without country-specific data */ })
   try {
     await taxesStore.fetchByCustomerId(props.customerId)
     if (props.taxId) {
@@ -131,6 +162,7 @@ onMounted(async () => {
         form.rate = tax.rate
         form.order = tax.order
         form.appliedToTaxId = tax.appliedToTaxId
+        form.complianceValues = { ...(tax.complianceValues ?? {}) }
       }
     } else {
       // a new tax goes after the existing ones
