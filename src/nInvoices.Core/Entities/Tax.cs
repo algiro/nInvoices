@@ -1,3 +1,4 @@
+using nInvoices.Core.Compliance;
 using nInvoices.Core.Enums;
 
 namespace nInvoices.Core.Entities;
@@ -17,6 +18,12 @@ public sealed class Tax : OwnedEntityBase
     public long? AppliedToTaxId { get; set; }
     public int Order { get; set; }
     public bool IsActive { get; set; }
+
+    /// <summary>
+    /// Extra data country invoicing regimes ask for about this tax, keyed "COUNTRY.field"
+    /// (e.g. "ES.operation" for how a 0% VAT is treated).
+    /// </summary>
+    public Dictionary<string, string> ComplianceValues { get; private set; } = new();
 
     // Navigation properties
     public Customer Customer { get; set; } = null!;
@@ -57,6 +64,16 @@ public sealed class Tax : OwnedEntityBase
         Rate = rate;
         ApplicationType = applicationType;
         Order = order;
+    }
+
+    /// <summary>One country values, without the country prefix.</summary>
+    public IReadOnlyDictionary<string, string> GetComplianceValues(string countryCode) =>
+        ComplianceValueMap.For(ComplianceValues, countryCode);
+
+    /// <summary>Replaces the values of one country, leaving the other countries alone.</summary>
+    public void SetComplianceValues(string countryCode, IReadOnlyDictionary<string, string> values)
+    {
+        ComplianceValues = ComplianceValueMap.Replace(ComplianceValues, countryCode, values);
     }
 
     public void Update(string description, decimal rate)

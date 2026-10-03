@@ -10,15 +10,19 @@ namespace nInvoices.Infrastructure.Services;
 public sealed class UserContext : IUserContext
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly OwnerOverride? _ownerOverride;
 
-    public UserContext(IHttpContextAccessor httpContextAccessor)
+    public UserContext(IHttpContextAccessor httpContextAccessor, OwnerOverride? ownerOverride = null)
     {
         _httpContextAccessor = httpContextAccessor;
+        _ownerOverride = ownerOverride;
     }
 
     private ClaimsPrincipal? User => _httpContextAccessor.HttpContext?.User;
 
-    public string? UserId => User?.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+    // Background work runs as the user it was set to; a request, as the signed-in one
+    public string? UserId => _ownerOverride?.OwnerId
+        ?? User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
         ?? User?.FindFirst("sub")?.Value;
 
     public string? Username => User?.FindFirst("preferred_username")?.Value 
@@ -40,7 +44,7 @@ public sealed class UserContext : IUserContext
             })
         ?? Enumerable.Empty<string>();
 
-    public bool IsAuthenticated => User?.Identity?.IsAuthenticated ?? false;
+    public bool IsAuthenticated => !string.IsNullOrEmpty(_ownerOverride?.OwnerId) || (User?.Identity?.IsAuthenticated ?? false);
 
     public bool IsInRole(string role) => Roles.Contains(role, StringComparer.OrdinalIgnoreCase);
 }

@@ -98,6 +98,10 @@ public sealed class TaxesController : ControllerBase
             _logger.LogWarning(ex, "Customer not found when creating tax");
             return NotFound(new { message = ex.Message });
         }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>
@@ -124,6 +128,10 @@ public sealed class TaxesController : ControllerBase
         {
             _logger.LogWarning("Tax with ID {TaxId} not found for update", id);
             return NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
         }
     }
 

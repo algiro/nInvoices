@@ -1,3 +1,4 @@
+using nInvoices.Core.Compliance;
 using nInvoices.Core.ValueObjects;
 
 namespace nInvoices.Core.Entities;
@@ -69,32 +70,16 @@ public sealed class Customer : OwnedEntityBase
         UpdatedAt = DateTime.UtcNow;
     }
 
-    /// <summary>One country's values, without the country prefix.</summary>
-    public IReadOnlyDictionary<string, string> GetComplianceValues(string countryCode)
-    {
-        var prefix = countryCode.ToUpperInvariant() + ".";
-        return ComplianceValues
-            .Where(v => v.Key.StartsWith(prefix, StringComparison.Ordinal))
-            .ToDictionary(v => v.Key[prefix.Length..], v => v.Value);
-    }
+    /// <summary>One country values, without the country prefix.</summary>
+    public IReadOnlyDictionary<string, string> GetComplianceValues(string countryCode) =>
+        ComplianceValueMap.For(ComplianceValues, countryCode);
 
     /// <summary>
-    /// Replaces the values of one country, leaving the other countries' alone. Blank values are dropped.
+    /// Replaces the values of one country, leaving the other countries alone. Blank values are dropped.
     /// </summary>
     public void SetComplianceValues(string countryCode, IReadOnlyDictionary<string, string> values)
     {
-        var prefix = countryCode.ToUpperInvariant() + ".";
-        var next = ComplianceValues
-            .Where(v => !v.Key.StartsWith(prefix, StringComparison.Ordinal))
-            .ToDictionary(v => v.Key, v => v.Value);
-
-        foreach (var (key, value) in values)
-        {
-            if (!string.IsNullOrWhiteSpace(value))
-                next[prefix + key] = value.Trim();
-        }
-
-        ComplianceValues = next;
+        ComplianceValues = ComplianceValueMap.Replace(ComplianceValues, countryCode, values);
         UpdatedAt = DateTime.UtcNow;
     }
 
