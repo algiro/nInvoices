@@ -1,3 +1,4 @@
+using nInvoices.Application.Compliance.Spain.Verifactu;
 using nInvoices.Core.Enums;
 
 namespace nInvoices.Application.Models;
@@ -35,6 +36,17 @@ public sealed record InvoiceTemplateModel
     public decimal? MonthlyRate { get; init; }
     public decimal? TotalExpenses { get; init; }
     public List<WorkedDayTemplateModel> WorkedDayItems { get; init; } = [];
+
+    /// <summary>
+    /// What country rules add to the invoice document, by name (e.g. <c>compliance.verifactu</c> with the
+    /// QR code). Every entry a template may refer to is always there, empty until the rules apply to the
+    /// invoice, so a template can print its parts without guarding them (a template engine fails on a
+    /// member of something that is missing).
+    /// </summary>
+    public Dictionary<string, object> Compliance { get; init; } = new()
+    {
+        [VerifactuTemplateContributor.Key] = new VerifactuTemplateModel()
+    };
 }
 
 public sealed record CustomerTemplateModel

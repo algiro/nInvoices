@@ -1,5 +1,6 @@
 using MediatR;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 
@@ -23,17 +24,5 @@ public sealed class GetTaxesByCustomerIdQueryHandler : IRequestHandler<GetTaxesB
         return taxes.Select(MapToDto);
     }
 
-    private static TaxDto MapToDto(Tax tax) => new(
-        tax.Id,
-        tax.CustomerId,
-        tax.TaxId,
-        tax.Description,
-        tax.HandlerId,
-        tax.Rate,
-        tax.ApplicationType,
-        tax.AppliedToTaxId,
-        tax.Order,
-        tax.IsActive,
-        tax.CreatedAt,
-        tax.UpdatedAt ?? tax.CreatedAt);
+    private static TaxDto MapToDto(Tax tax) => TaxMapper.ToDto(tax);
 }

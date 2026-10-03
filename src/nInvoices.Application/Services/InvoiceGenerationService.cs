@@ -66,6 +66,8 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     private readonly IInvoiceNumbering _numbering;
     private readonly IUnitOfWork _unitOfWork;
 
+    private readonly IReadOnlyList<IInvoiceTemplateModelContributor> _contributors;
+
     public InvoiceGenerationService(
         IRepository<InvoiceTemplate> templateRepository,
         IRepository<Customer> customerRepository,
@@ -78,8 +80,10 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         IHtmlToPdfConverter htmlToPdfConverter,
         ITaxCalculationService taxCalculationService,
         IInvoiceNumbering numbering,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IEnumerable<IInvoiceTemplateModelContributor>? contributors = null)
     {
+        _contributors = contributors?.ToList() ?? [];
         _templateRepository = templateRepository;
         _customerRepository = customerRepository;
         _rateRepository = rateRepository;
@@ -322,6 +326,8 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
         var rates = await LoadDayRatesAsync(invoice.CustomerId, rate, workDayDtos, cancellationToken);
         var templateModel = BuildTemplateModel(invoice, customer, dto, rates, workDayDtos);
+        foreach (var contributor in _contributors)
+            templateModel = await contributor.ContributeAsync(invoice, templateModel, cancellationToken);
         return (invoice, customer, templateModel);
     }
 
