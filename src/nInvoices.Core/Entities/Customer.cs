@@ -24,6 +24,12 @@ public sealed class Customer : OwnedEntityBase
     /// </summary>
     public string? HolidayCountry { get; private set; }
 
+    /// <summary>
+    /// Extra data country invoicing regimes ask for, keyed "&lt;COUNTRY&gt;.&lt;field&gt;" (e.g.
+    /// "ES.dir3ManagingBody"). Only the regimes the user turned on are filled in.
+    /// </summary>
+    public Dictionary<string, string> ComplianceValues { get; private set; } = new();
+
     // Navigation properties
     public ICollection<Rate> Rates { get; set; } = [];
     public ICollection<Tax> Taxes { get; set; } = [];
@@ -60,6 +66,35 @@ public sealed class Customer : OwnedEntityBase
         HolidayCountry = string.IsNullOrWhiteSpace(countryCode)
             ? null
             : HolidayCalendar.NormalizeCountryCode(countryCode);
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>One country's values, without the country prefix.</summary>
+    public IReadOnlyDictionary<string, string> GetComplianceValues(string countryCode)
+    {
+        var prefix = countryCode.ToUpperInvariant() + ".";
+        return ComplianceValues
+            .Where(v => v.Key.StartsWith(prefix, StringComparison.Ordinal))
+            .ToDictionary(v => v.Key[prefix.Length..], v => v.Value);
+    }
+
+    /// <summary>
+    /// Replaces the values of one country, leaving the other countries' alone. Blank values are dropped.
+    /// </summary>
+    public void SetComplianceValues(string countryCode, IReadOnlyDictionary<string, string> values)
+    {
+        var prefix = countryCode.ToUpperInvariant() + ".";
+        var next = ComplianceValues
+            .Where(v => !v.Key.StartsWith(prefix, StringComparison.Ordinal))
+            .ToDictionary(v => v.Key, v => v.Value);
+
+        foreach (var (key, value) in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+                next[prefix + key] = value.Trim();
+        }
+
+        ComplianceValues = next;
         UpdatedAt = DateTime.UtcNow;
     }
 

@@ -48,6 +48,12 @@ public sealed class ComplianceSettingsConfiguration : IEntityTypeConfiguration<C
                     v => new Dictionary<string, string>(v)))
             .IsRequired();
 
+        builder.Property(s => s.ProtectedCertificate);
+        builder.Property(s => s.ProtectedCertificatePassword).HasMaxLength(4000);
+        builder.Property(s => s.CertificateSubject).HasMaxLength(500);
+        builder.Property(s => s.CertificateThumbprint).HasMaxLength(100);
+        builder.Property(s => s.CertificateNotAfter);
+
         builder.Property(s => s.CreatedAt)
             .IsRequired();
 
