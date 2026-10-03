@@ -13,4 +13,5 @@ public sealed record CreateTaxDto(
     decimal Rate,
     TaxApplicationType ApplicationType,
     long? AppliedToTaxId = null,
-    int Order = 0);
+    int Order = 0,
+    Dictionary<string, string>? ComplianceValues = null);
