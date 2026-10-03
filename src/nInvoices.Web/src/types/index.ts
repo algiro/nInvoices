@@ -154,6 +154,8 @@ export interface TaxDto {
   isActive: boolean;
   createdAt: string;
   updatedAt?: string;
+  /** Data country invoicing regimes ask for, keyed "COUNTRY.field" (e.g. "ES.operation") */
+  complianceValues?: Record<string, string>;
 }
 
 export interface CreateTaxDto {
@@ -165,6 +167,7 @@ export interface CreateTaxDto {
   applicationType: TaxApplicationType;
   appliedToTaxId?: number | null;
   order: number;
+  complianceValues?: Record<string, string>;
 }
 
 export interface UpdateTaxDto {
@@ -175,6 +178,7 @@ export interface UpdateTaxDto {
   appliedToTaxId?: number;
   order: number;
   isActive: boolean;
+  complianceValues?: Record<string, string>;
 }
 
 export interface InvoiceTemplateDto {
@@ -451,6 +455,8 @@ export interface ComplianceCountryDto {
   fields: ComplianceFieldDto[];
   /** Extra data the country asks for on each customer */
   customerFields: ComplianceFieldDto[];
+  /** Extra data the country asks for on each tax */
+  taxFields: ComplianceFieldDto[];
   /** Whether the user must upload a signing certificate for this country's e-invoices */
   requiresCertificate: boolean;
   settings: ComplianceSettingsDto;
@@ -462,6 +468,51 @@ export interface UpdateComplianceSettingsDto {
   taxId?: string | null;
   address?: AddressDto | null;
   values: Record<string, string>;
+}
+
+/** Where an invoice stands in the user's Verifactu chain (Spain) */
+export interface InvoiceVerifactuDto {
+  isRecorded: boolean;
+  sequence?: number | null;
+  hash?: string | null;
+  generatedAt?: string | null;
+  qrUrl?: string | null;
+  /** The QR code as an SVG image */
+  qrSvg?: string | null;
+  /** The phrase that goes under the QR code */
+  legend: string;
+  /** The text that goes above the QR code */
+  qrHeading: string;
+  isCancelled: boolean;
+  /** Where the record stands with the Tax Agency: Pending, Accepted, AcceptedWithErrors or Rejected */
+  submissionStatus?: 'Pending' | 'Accepted' | 'AcceptedWithErrors' | 'Rejected' | null;
+  /** What the Tax Agency said, or why the last attempt to send failed */
+  submissionMessage?: string | null;
+  /** The Tax Agency verification code of the submission */
+  csv?: string | null;
+}
+
+/** Where the user's Verifactu records stand with the Tax Agency */
+export interface VerifactuStatusDto {
+  pending: number;
+  accepted: number;
+  acceptedWithErrors: number;
+  rejected: number;
+  firstProblem?: string | null;
+}
+
+export interface VerifactuSubmissionRunDto {
+  sent: number;
+  accepted: number;
+  acceptedWithErrors: number;
+  rejected: number;
+  problem?: string | null;
+}
+
+export interface ChainReportDto {
+  records: number;
+  isIntact: boolean;
+  problems: { sequence: number; message: string }[];
 }
 
 export interface ComplianceIssueDto {
