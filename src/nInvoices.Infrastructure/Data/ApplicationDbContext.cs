@@ -52,6 +52,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<HolidayCalendar> HolidayCalendars => Set<HolidayCalendar>();
     public DbSet<HolidayRule> HolidayRules => Set<HolidayRule>();
     public DbSet<ComplianceSettings> ComplianceSettings => Set<ComplianceSettings>();
+    public DbSet<InvoiceEInvoice> InvoiceEInvoices => Set<InvoiceEInvoice>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
