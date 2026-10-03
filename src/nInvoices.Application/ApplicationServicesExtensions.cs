@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using nInvoices.Application.Compliance;
 using nInvoices.Application.Services;
 
 namespace nInvoices.Application;
@@ -22,6 +23,7 @@ public static class ApplicationServicesExtensions
         services.AddScoped<IProjectResolver, ProjectResolver>();
         services.AddScoped<Services.Holidays.IHolidayCalendarService, Services.Holidays.HolidayCalendarService>();
         services.AddScoped<Services.Email.IInvoiceEmailComposer, Services.Email.InvoiceEmailComposer>();
+        services.AddCompliance();
         return services;
     }
 }

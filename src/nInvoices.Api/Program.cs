@@ -53,6 +53,7 @@ builder.Services.AddOpenApi();
 
 // Add Configuration
 builder.Services.Configure<InvoiceSettings>(builder.Configuration.GetSection(InvoiceSettings.SectionName));
+builder.Services.Configure<ComplianceOptions>(builder.Configuration.GetSection(ComplianceOptions.SectionName));
 
 // Add HttpContextAccessor for user context
 builder.Services.AddHttpContextAccessor();
@@ -208,6 +209,11 @@ if (!gmailOptions.IsConfigured)
     Log.Warning("Gmail drafts are off: {Missing} not configured (environment {Environment}, APPDATA {AppData})",
         string.Join(", ", missing), app.Environment.EnvironmentName, Environment.GetEnvironmentVariable("APPDATA"));
 }
+
+// Country invoicing regimes: offered per installation (Compliance:Countries:XX:Enabled), turned on per user
+var complianceRegistry = app.Services.GetRequiredService<nInvoices.Application.Compliance.IComplianceRegistry>();
+Log.Information("Compliance regimes offered: {Countries}",
+    complianceRegistry.Offered.Count == 0 ? "none" : string.Join(", ", complianceRegistry.Offered.Select(m => m.CountryCode)));
 
 // Database:EnsureCreated builds the schema from the current EF model on an EMPTY database
 // (fresh Docker installs, the Aspire AppHost); on a database that already has tables it does

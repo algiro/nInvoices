@@ -81,6 +81,8 @@
 
       <GmailConnectionPanel />
 
+      <ComplianceSettingsPanel />
+
       <BasePanel title="Backup and transfer" description="Export customers or invoices as JSON, for backups or to move them to another installation.">
         <div class="transfer">
           <section>
@@ -138,6 +140,7 @@ import LoadingState from '@/components/ui/LoadingState.vue'
 import ThemePicker from '@/components/settings/ThemePicker.vue'
 import InvoiceNumberingPanel from '@/components/settings/InvoiceNumberingPanel.vue'
 import GmailConnectionPanel from '@/components/settings/GmailConnectionPanel.vue'
+import ComplianceSettingsPanel from '@/components/settings/ComplianceSettingsPanel.vue'
 import HolidayCalendarsPanel from '@/components/settings/HolidayCalendarsPanel.vue'
 
 const toast = useToast()
