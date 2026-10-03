@@ -53,6 +53,8 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<HolidayRule> HolidayRules => Set<HolidayRule>();
     public DbSet<ComplianceSettings> ComplianceSettings => Set<ComplianceSettings>();
     public DbSet<InvoiceEInvoice> InvoiceEInvoices => Set<InvoiceEInvoice>();
+    public DbSet<VerifactuRecord> VerifactuRecords => Set<VerifactuRecord>();
+    public DbSet<VerifactuSubmission> VerifactuSubmissions => Set<VerifactuSubmission>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -116,8 +118,21 @@ public sealed class ApplicationDbContext : DbContext
         bool acceptAllChangesOnSuccess,
         CancellationToken cancellationToken = default)
     {
+        EnsureVerifactuRecordsAreAppendOnly();
         await ApplyOwnershipAsync(cancellationToken);
         return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    /// <summary>
+    /// Verifactu records form a hash chain that must not be altered: once saved, a record can be neither
+    /// modified nor deleted, whoever asks (a deleted invoice, a stray update, a bug).
+    /// </summary>
+    private void EnsureVerifactuRecordsAreAppendOnly()
+    {
+        ChangeTracker.DetectChanges();
+
+        if (ChangeTracker.Entries<VerifactuRecord>().Any(e => e.State is EntityState.Modified or EntityState.Deleted))
+            throw new InvalidOperationException("Verifactu records are append-only: a saved record cannot be changed or deleted.");
     }
 
     /// <summary>

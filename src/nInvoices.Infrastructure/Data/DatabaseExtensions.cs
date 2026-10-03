@@ -50,8 +50,10 @@ public static class DatabaseExtensions
         // Register specialized repositories
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<IWorkDayRepository, WorkDayRepository>();
+        services.AddScoped<IVerifactuRecordRepository, VerifactuRecordRepository>();
 
         // Register User Context
+        services.AddScoped<OwnerOverride>();
         services.AddScoped<IUserContext, UserContext>();
 
         // Readiness probe: "/health" fails when the database is unreachable.
