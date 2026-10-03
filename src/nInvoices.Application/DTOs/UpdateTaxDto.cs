@@ -12,4 +12,5 @@ public sealed record UpdateTaxDto(
     TaxApplicationType ApplicationType,
     long? AppliedToTaxId = null,
     int Order = 0,
-    bool IsActive = true);
+    bool IsActive = true,
+    Dictionary<string, string>? ComplianceValues = null);
