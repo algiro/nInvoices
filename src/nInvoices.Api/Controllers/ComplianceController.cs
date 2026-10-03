@@ -37,6 +37,44 @@ public sealed class ComplianceController : ControllerBase
     }
 
     /// <summary>
+    /// Stores the user signing certificate (a .p12/.pfx file, base64, with its password) for a country.
+    /// It is checked and encrypted; it is never returned.
+    /// </summary>
+    [HttpPut("countries/{countryCode}/certificate")]
+    [ProducesResponseType(typeof(ComplianceCountryDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ComplianceCountryDto>> SetCertificate(
+        string countryCode,
+        [FromBody] UploadCertificateDto dto,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var country = await _mediator.Send(new SetSigningCertificateCommand(countryCode, dto), cancellationToken);
+            if (country is null)
+                return NotFound();
+
+            _logger.LogInformation("Stored the {Country} signing certificate", country.CountryCode);
+            return Ok(country);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>Removes the stored signing certificate of a country.</summary>
+    [HttpDelete("countries/{countryCode}/certificate")]
+    [ProducesResponseType(typeof(ComplianceCountryDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ComplianceCountryDto>> RemoveCertificate(string countryCode, CancellationToken cancellationToken)
+    {
+        var country = await _mediator.Send(new RemoveSigningCertificateCommand(countryCode), cancellationToken);
+        return country is null ? NotFound() : Ok(country);
+    }
+
+    /// <summary>
     /// Saves the user settings for a country. Turning it on checks them against the country rules.
     /// </summary>
     [HttpPut("countries/{countryCode}")]

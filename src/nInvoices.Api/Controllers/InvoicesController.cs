@@ -7,6 +7,8 @@ using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Invoices.Commands;
 using nInvoices.Application.Features.Invoices.Queries;
 using nInvoices.Application.Models;
+using nInvoices.Application.Features.EInvoices.Commands;
+using nInvoices.Application.Features.EInvoices.Queries;
 using nInvoices.Application.Features.InvoiceEmails.Commands;
 using nInvoices.Application.Features.InvoiceEmails.Queries;
 using nInvoices.Application.Services.Email;
@@ -354,6 +356,59 @@ public sealed class InvoicesController : ControllerBase
             return BadRequest(new { error = ex.Message });
         }
     }
+    /// <summary>
+    /// The structured e-invoice formats (Facturae...) that apply to the invoice, with the generated file
+    /// if any. Empty unless the user turned on a country that has such a format.
+    /// </summary>
+    [HttpGet("{id}/einvoices")]
+    [ProducesResponseType(typeof(IReadOnlyList<InvoiceEInvoiceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<InvoiceEInvoiceDto>>> GetEInvoices(long id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _mediator.Send(new GetInvoiceEInvoicesQuery(id), cancellationToken));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    /// <summary>
+    /// Generates the invoice in each e-invoice format that applies, replacing the stored file. A format
+    /// the invoice does not meet comes back with its <c>issues</c>; the others are generated.
+    /// </summary>
+    [HttpPost("{id}/einvoices")]
+    [ProducesResponseType(typeof(IReadOnlyList<EInvoiceGenerationDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<EInvoiceGenerationDto>>> GenerateEInvoices(long id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _mediator.Send(new GenerateInvoiceEInvoicesCommand(id), cancellationToken));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>Downloads the generated e-invoice file (e.g. the signed Facturae XML) of an invoice.</summary>
+    [HttpGet("{id}/einvoices/{formatId}/file")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> DownloadEInvoice(long id, string formatId, CancellationToken cancellationToken)
+    {
+        var file = await _mediator.Send(new GetInvoiceEInvoiceFileQuery(id, formatId), cancellationToken);
+        return file is null ? NotFound() : File(file.Content, file.ContentType, file.FileName);
+    }
+
     /// <summary>
     /// Exports an invoice as PDF.
     /// Returns PDF file for download.
