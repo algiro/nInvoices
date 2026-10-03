@@ -8,9 +8,12 @@ public sealed class CancelInvoiceCommandHandler : IRequestHandler<CancelInvoiceC
 {
     private readonly IRepository<Invoice> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IReadOnlyList<IInvoiceLifecycleStep> _steps;
 
-    public CancelInvoiceCommandHandler(IRepository<Invoice> repository, IUnitOfWork unitOfWork)
+    public CancelInvoiceCommandHandler(
+        IRepository<Invoice> repository, IUnitOfWork unitOfWork, IEnumerable<IInvoiceLifecycleStep>? steps = null)
     {
+        _steps = steps?.ToList() ?? [];
         _repository = repository;
         _unitOfWork = unitOfWork;
     }
@@ -22,6 +25,10 @@ public sealed class CancelInvoiceCommandHandler : IRequestHandler<CancelInvoiceC
             throw new InvalidOperationException($"Invoice with ID {request.InvoiceId} not found");
 
         invoice.Cancel();
+
+        foreach (var step in _steps)
+            await step.OnCancellingAsync(invoice, cancellationToken);
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return Unit.Value;
     }

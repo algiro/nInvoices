@@ -14,6 +14,7 @@ public static class ComplianceMapper
         module.Capabilities.Select(c => c.ToString()).Order().ToList(),
         module.Fields.Select(ToDto).ToList(),
         module.CustomerFields.Select(ToDto).ToList(),
+        module.TaxFields.Select(ToDto).ToList(),
         requiresCertificate,
         settings is null
             ? new ComplianceSettingsDto(false, null, null, null, new Dictionary<string, string>())

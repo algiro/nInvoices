@@ -8,11 +8,14 @@ public sealed class DeleteInvoiceCommandHandler : IRequestHandler<DeleteInvoiceC
 {
     private readonly IRepository<Invoice> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IReadOnlyList<IInvoiceLifecycleStep> _steps;
 
     public DeleteInvoiceCommandHandler(
         IRepository<Invoice> repository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IEnumerable<IInvoiceLifecycleStep>? steps = null)
     {
+        _steps = steps?.ToList() ?? [];
         _repository = repository;
         _unitOfWork = unitOfWork;
     }
@@ -26,6 +29,10 @@ public sealed class DeleteInvoiceCommandHandler : IRequestHandler<DeleteInvoiceC
         // Check status only if not forcing delete
         if (!request.Force && invoice.Status != Core.Enums.InvoiceStatus.Draft)
             throw new InvalidOperationException("Only draft invoices can be deleted. Use force=true to delete finalized invoices.");
+
+        // A step may refuse: an invoice that is part of a Verifactu chain cannot disappear
+        foreach (var step in _steps)
+            await step.OnDeletingAsync(invoice, cancellationToken);
 
         await _repository.DeleteAsync(invoice, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
