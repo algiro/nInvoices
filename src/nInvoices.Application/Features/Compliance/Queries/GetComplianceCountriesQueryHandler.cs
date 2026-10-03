@@ -28,7 +28,7 @@ public sealed class GetComplianceCountriesQueryHandler : IRequestHandler<GetComp
             .ToDictionary(s => s.CountryCode, StringComparer.OrdinalIgnoreCase);
 
         return _registry.Offered
-            .Select(m => ComplianceMapper.ToDto(m, saved.GetValueOrDefault(m.CountryCode)))
+            .Select(m => ComplianceMapper.ToDto(m, saved.GetValueOrDefault(m.CountryCode), _registry.RequiresSigningCertificate(m.CountryCode)))
             .ToList();
     }
 }

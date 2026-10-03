@@ -75,6 +75,10 @@ public sealed class CustomersController : ControllerBase
             _logger.LogInformation("Created customer with ID {CustomerId}", customer.Id);
             return CreatedAtAction(nameof(GetById), new { id = customer.Id }, customer);
         }
+        catch (nInvoices.Application.Features.Compliance.Commands.ComplianceValidationException ex)
+        {
+            return BadRequest(new { error = ex.Message, issues = ex.Issues });
+        }
         catch (ArgumentException ex)
         {
             return BadRequest(new { error = ex.Message });
@@ -105,6 +109,10 @@ public sealed class CustomersController : ControllerBase
         {
             _logger.LogWarning("Customer with ID {CustomerId} not found for update", id);
             return NotFound();
+        }
+        catch (nInvoices.Application.Features.Compliance.Commands.ComplianceValidationException ex)
+        {
+            return BadRequest(new { error = ex.Message, issues = ex.Issues });
         }
         catch (ArgumentException ex)
         {

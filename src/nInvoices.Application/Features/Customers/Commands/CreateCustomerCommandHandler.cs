@@ -1,4 +1,5 @@
 using MediatR;
+using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
@@ -11,11 +12,13 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
 {
     private readonly IRepository<Customer> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ICustomerCompliance _compliance;
 
-    public CreateCustomerCommandHandler(IRepository<Customer> repository, IUnitOfWork unitOfWork)
+    public CreateCustomerCommandHandler(IRepository<Customer> repository, IUnitOfWork unitOfWork, ICustomerCompliance compliance)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _compliance = compliance;
     }
 
     public async Task<CustomerDto> Handle(CreateCustomerCommand request, CancellationToken cancellationToken)
@@ -33,6 +36,7 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
         var customer = new Customer(dto.Name, dto.FiscalId, address, dto.Locale);
         CustomerContact.Apply(customer, dto.Email, dto.CcEmails);
         customer.SetHolidayCountry(dto.HolidayCountry);
+        await _compliance.ApplyAsync(customer, dto.ComplianceValues, cancellationToken);
 
         await _repository.AddAsync(customer, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
