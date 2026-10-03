@@ -3,7 +3,7 @@ using System.Globalization;
 namespace nInvoices.Application.Compliance.Spain.Facturae;
 
 /// <summary>Country facts Facturae needs: three-letter codes and the residence type of a party.</summary>
-internal static class FacturaeCountries
+public static class FacturaeCountries
 {
     private static readonly HashSet<string> EuMembers = new(StringComparer.OrdinalIgnoreCase)
     {

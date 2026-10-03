@@ -24,6 +24,9 @@ public interface ICountryComplianceModule
     /// </summary>
     IReadOnlyList<ComplianceField> CustomerFields { get; }
 
+    /// <summary>Extra data the country asks for on each tax (empty if none).</summary>
+    IReadOnlyList<ComplianceField> TaxFields { get; }
+
     /// <summary>
     /// Checks the issuer against this country rules. Called when the user enables the regime;
     /// an empty result means the profile is acceptable.
