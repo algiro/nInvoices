@@ -46,7 +46,9 @@ public sealed class TaxCalculationService : ITaxCalculationService
             var baseAmount = GetBaseAmount(tax, subtotal, calculatedTaxes);
             
             var context = CreateContext(tax, calculatedTaxes);
-            var taxAmount = handler.Calculate(baseAmount.Amount, tax.Rate, context);
+            // An invoice is issued in cents: each tax is rounded on its own, so the total of the
+            // invoice is exactly the sum of the amounts printed on it (and filed with the tax authority)
+            var taxAmount = Math.Round(handler.Calculate(baseAmount.Amount, tax.Rate, context), 2, MidpointRounding.AwayFromZero);
 
             var taxMoney = new Money(taxAmount, subtotal.Currency);
             calculatedTaxes[tax.Id] = taxMoney;
