@@ -19,6 +19,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The official Facturae 3.2.2 schema (facturae.gob.es) and the XML Signature schema it imports -->
+    <None Update="Compliance\Spain\Schemas\*.xsd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
