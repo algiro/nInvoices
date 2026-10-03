@@ -409,6 +409,44 @@ export interface GmailStatusDto {
   lastUsedAt?: string | null;
 }
 
+export type ComplianceFieldType = 'Text' | 'Choice' | 'Boolean';
+
+export interface ComplianceFieldDto {
+  key: string;
+  label: string;
+  type: ComplianceFieldType;
+  required: boolean;
+  help?: string | null;
+  options?: { value: string; label: string }[] | null;
+}
+
+export interface ComplianceSettingsDto {
+  isEnabled: boolean;
+  legalName?: string | null;
+  taxId?: string | null;
+  address?: AddressDto | null;
+  values: Record<string, string>;
+}
+
+/** A country's invoicing regime as offered to the current user, with their settings for it */
+export interface ComplianceCountryDto {
+  countryCode: string;
+  name: string;
+  /** What the country's rules involve (IssuerIdentity, StructuredEInvoice, ...) */
+  capabilities: string[];
+  /** Country-specific fields, beyond the common issuer identity */
+  fields: ComplianceFieldDto[];
+  settings: ComplianceSettingsDto;
+}
+
+export interface UpdateComplianceSettingsDto {
+  isEnabled: boolean;
+  legalName?: string | null;
+  taxId?: string | null;
+  address?: AddressDto | null;
+  values: Record<string, string>;
+}
+
 export interface EmailTemplateOptionDto {
   /** null for the built-in default */
   id: number | null;

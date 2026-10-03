@@ -9,3 +9,4 @@ export * from './importExport';
 export * from './imageAssets';
 export * from './emailTemplates';
 export * from './gmail';
+export * from './compliance';
