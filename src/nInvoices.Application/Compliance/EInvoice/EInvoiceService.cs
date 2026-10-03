@@ -1,6 +1,4 @@
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using nInvoices.Application.Services.Email;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Compliance.EInvoice;
 using nInvoices.Core.Entities;
@@ -47,9 +45,8 @@ public sealed class EInvoiceService : IEInvoiceService
     private readonly IRepository<Customer> _customers;
     private readonly IRepository<InvoiceEInvoice> _stored;
     private readonly IEInvoiceDocumentFactory _documents;
-    private readonly ISecretProtector _protector;
+    private readonly SigningCertificateLoader _certificates;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly TimeProvider _time;
 
     public EInvoiceService(
         IComplianceGate gate,
@@ -58,9 +55,8 @@ public sealed class EInvoiceService : IEInvoiceService
         IRepository<Customer> customers,
         IRepository<InvoiceEInvoice> stored,
         IEInvoiceDocumentFactory documents,
-        ISecretProtector protector,
-        IUnitOfWork unitOfWork,
-        TimeProvider time)
+        SigningCertificateLoader certificates,
+        IUnitOfWork unitOfWork)
     {
         _gate = gate;
         _formats = formats;
@@ -68,9 +64,8 @@ public sealed class EInvoiceService : IEInvoiceService
         _customers = customers;
         _stored = stored;
         _documents = documents;
-        _protector = protector;
+        _certificates = certificates;
         _unitOfWork = unitOfWork;
-        _time = time;
     }
 
     public async Task<IReadOnlyList<EInvoiceStatus>> GetStatusAsync(long invoiceId, CancellationToken cancellationToken = default)
@@ -124,7 +119,7 @@ public sealed class EInvoiceService : IEInvoiceService
 
             X509Certificate2? certificate = null;
             if (format.RequiresSignature)
-                certificate = LoadCertificate(active.Settings, issues);
+                certificate = _certificates.Load(active.Settings, issues);
 
             if (issues.Count > 0)
             {
@@ -164,32 +159,5 @@ public sealed class EInvoiceService : IEInvoiceService
                 .Where(f => string.Equals(f.CountryCode, a.Module.CountryCode, StringComparison.OrdinalIgnoreCase))
                 .Select(f => (a, f)))
             .ToList();
-    }
-
-    /// <summary>The user's signing certificate; on a problem, null and the reason added to <paramref name="issues"/>.</summary>
-    private X509Certificate2? LoadCertificate(ComplianceSettings settings, List<ComplianceIssue> issues)
-    {
-        if (!settings.HasCertificate)
-        {
-            issues.Add(new ComplianceIssue(null, "Upload your signing certificate in Settings: Facturae invoices must be signed"));
-            return null;
-        }
-
-        if (settings.CertificateNotAfter is { } notAfter && notAfter < _time.GetUtcNow().UtcDateTime)
-        {
-            issues.Add(new ComplianceIssue(null, $"The signing certificate expired on {notAfter:yyyy-MM-dd}"));
-            return null;
-        }
-
-        try
-        {
-            var pfx = Convert.FromBase64String(_protector.Unprotect(settings.ProtectedCertificate!));
-            return X509CertificateLoader.LoadPkcs12(pfx, _protector.Unprotect(settings.ProtectedCertificatePassword!));
-        }
-        catch (Exception ex) when (ex is CryptographicException or FormatException)
-        {
-            issues.Add(new ComplianceIssue(null, "The stored signing certificate can no longer be read: upload it again"));
-            return null;
-        }
     }
 }

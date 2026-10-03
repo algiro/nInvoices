@@ -17,4 +17,5 @@ public sealed record TaxDto(
     int Order,
     bool IsActive,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    IReadOnlyDictionary<string, string>? ComplianceValues = null);
