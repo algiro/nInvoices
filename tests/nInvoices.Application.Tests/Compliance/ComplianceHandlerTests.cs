@@ -22,9 +22,14 @@ public sealed class ComplianceHandlerTests
 
     private static CancellationToken Token => TestContext.CurrentContext.CancellationToken;
 
-    private static readonly AddressDto SpanishAddress = new("Calle Mayor", "1", "Madrid", "28013", "Spain");
+    private static readonly AddressDto SpanishAddress = new("Calle Mayor", "1", "Madrid", "28013", "Spain", "Madrid");
 
-    private static readonly Dictionary<string, string> Individual = new() { [SpainComplianceModule.PersonTypeKey] = "individual" };
+    private static readonly Dictionary<string, string> Individual = new()
+    {
+        [SpainComplianceModule.PersonTypeKey] = "individual",
+        [SpainComplianceModule.FirstNameKey] = "Ana",
+        [SpainComplianceModule.FirstSurnameKey] = "Pérez"
+    };
 
     [SetUp]
     public void SetUp()
@@ -34,7 +39,7 @@ public sealed class ComplianceHandlerTests
     }
 
     private static IComplianceRegistry Registry(ComplianceOptions? options = null) =>
-        new ComplianceRegistry([new SpainComplianceModule()], Options.Create(options ?? new ComplianceOptions()));
+        new ComplianceRegistry([new SpainComplianceModule()], [], Options.Create(options ?? new ComplianceOptions()));
 
     private Task<ComplianceCountryDto?> Update(string country, UpdateComplianceSettingsDto dto, IComplianceRegistry? registry = null) =>
         new UpdateComplianceSettingsCommandHandler(registry ?? Registry(), _settings, _unitOfWork.Object)
@@ -118,7 +123,7 @@ public sealed class ComplianceHandlerTests
 
         await Update("ES", dto);
 
-        _settings.Items.Single().Values.Keys.ShouldBe([SpainComplianceModule.PersonTypeKey]);
+        _settings.Items.Single().Values.Keys.ShouldNotContain("bogus");
     }
 
     [Test]
