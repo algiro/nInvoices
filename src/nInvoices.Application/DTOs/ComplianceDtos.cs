@@ -9,6 +9,8 @@ public sealed record ComplianceCountryDto(
     string Name,
     IReadOnlyList<string> Capabilities,
     IReadOnlyList<ComplianceFieldDto> Fields,
+    IReadOnlyList<ComplianceFieldDto> CustomerFields,
+    bool RequiresCertificate,
     ComplianceSettingsDto Settings);
 
 public sealed record ComplianceFieldDto(
@@ -26,7 +28,11 @@ public sealed record ComplianceSettingsDto(
     string? LegalName,
     string? TaxId,
     AddressDto? Address,
-    IReadOnlyDictionary<string, string> Values);
+    IReadOnlyDictionary<string, string> Values,
+    SigningCertificateDto? Certificate = null);
+
+/// <summary>What is shown about the uploaded signing certificate; the certificate itself is never returned.</summary>
+public sealed record SigningCertificateDto(string Subject, string Thumbprint, DateTime NotAfter, bool IsExpired);
 
 /// <summary>
 /// Replaces the user's settings for a country. Turning the regime on checks them against the

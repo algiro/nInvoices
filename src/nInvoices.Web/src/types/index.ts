@@ -424,12 +424,21 @@ export interface ComplianceFieldDto {
   options?: { value: string; label: string }[] | null;
 }
 
+/** What is shown about the uploaded signing certificate; the certificate itself is never returned */
+export interface SigningCertificateDto {
+  subject: string;
+  thumbprint: string;
+  notAfter: string;
+  isExpired: boolean;
+}
+
 export interface ComplianceSettingsDto {
   isEnabled: boolean;
   legalName?: string | null;
   taxId?: string | null;
   address?: AddressDto | null;
   values: Record<string, string>;
+  certificate?: SigningCertificateDto | null;
 }
 
 /** A country's invoicing regime as offered to the current user, with their settings for it */
@@ -440,6 +449,10 @@ export interface ComplianceCountryDto {
   capabilities: string[];
   /** Country-specific fields, beyond the common issuer identity */
   fields: ComplianceFieldDto[];
+  /** Extra data the country asks for on each customer */
+  customerFields: ComplianceFieldDto[];
+  /** Whether the user must upload a signing certificate for this country's e-invoices */
+  requiresCertificate: boolean;
   settings: ComplianceSettingsDto;
 }
 
@@ -449,6 +462,32 @@ export interface UpdateComplianceSettingsDto {
   taxId?: string | null;
   address?: AddressDto | null;
   values: Record<string, string>;
+}
+
+export interface ComplianceIssueDto {
+  field?: string | null;
+  message: string;
+}
+
+/** An e-invoice format (e.g. Facturae) that applies to an invoice, and whether its file was generated */
+export interface InvoiceEInvoiceDto {
+  countryCode: string;
+  countryName: string;
+  formatId: string;
+  formatName: string;
+  /** The rules require it for this customer (it is generated when the invoice is finalized) */
+  isMandatory: boolean;
+  isGenerated: boolean;
+  generatedAt?: string | null;
+  fileName?: string | null;
+  sha256?: string | null;
+}
+
+export interface EInvoiceGenerationDto {
+  formatId: string;
+  formatName: string;
+  generated: boolean;
+  issues: ComplianceIssueDto[];
 }
 
 export interface EmailTemplateOptionDto {

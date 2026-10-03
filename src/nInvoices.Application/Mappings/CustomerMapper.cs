@@ -23,5 +23,6 @@ public static class CustomerMapper
         customer.Email,
         customer.CcEmails,
         customer.HolidayCountry,
-        customer.HolidayCountry ?? CountryCodes.FromName(customer.Address.Country));
+        customer.HolidayCountry ?? CountryCodes.FromName(customer.Address.Country),
+        customer.ComplianceValues);
 }
