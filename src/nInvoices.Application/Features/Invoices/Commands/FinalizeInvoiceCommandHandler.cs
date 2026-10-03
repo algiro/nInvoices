@@ -18,6 +18,7 @@ public sealed class FinalizeInvoiceCommandHandler : IRequestHandler<FinalizeInvo
     private readonly IDraftInvoiceSynchronizer _drafts;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPublisher _publisher;
+    private readonly IReadOnlyList<IInvoiceLifecycleStep> _steps;
 
     public FinalizeInvoiceCommandHandler(
         IRepository<Invoice> repository,
@@ -25,8 +26,10 @@ public sealed class FinalizeInvoiceCommandHandler : IRequestHandler<FinalizeInvo
         IInvoiceNumbering numbering,
         IDraftInvoiceSynchronizer drafts,
         IUnitOfWork unitOfWork,
-        IPublisher publisher)
+        IPublisher publisher,
+        IEnumerable<IInvoiceLifecycleStep>? steps = null)
     {
+        _steps = steps?.ToList() ?? [];
         _repository = repository;
         _customerRepository = customerRepository;
         _numbering = numbering;
@@ -52,10 +55,15 @@ public sealed class FinalizeInvoiceCommandHandler : IRequestHandler<FinalizeInvo
         var numberChanged = invoice.Number != number;
         invoice.Number = number;
 
+        // What country rules require of an issued invoice is stored in the same save
+        var documentChanged = false;
+        foreach (var step in _steps)
+            documentChanged |= await step.OnFinalizingAsync(invoice, customer, cancellationToken);
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // The document of an up-to-date draft already carries this number
-        if (numberChanged)
+        if (numberChanged || documentChanged)
             await _drafts.RerenderAsync([invoice.Id], cancellationToken);
 
         await _drafts.RefreshDraftsAsync(cancellationToken);

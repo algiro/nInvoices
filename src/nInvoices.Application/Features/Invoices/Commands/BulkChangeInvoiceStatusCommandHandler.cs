@@ -18,6 +18,7 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
     private readonly IDraftInvoiceSynchronizer _drafts;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPublisher _publisher;
+    private readonly IReadOnlyList<IInvoiceLifecycleStep> _steps;
 
     public BulkChangeInvoiceStatusCommandHandler(
         IInvoiceRepository repository,
@@ -25,8 +26,10 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
         IInvoiceNumbering numbering,
         IDraftInvoiceSynchronizer drafts,
         IUnitOfWork unitOfWork,
-        IPublisher publisher)
+        IPublisher publisher,
+        IEnumerable<IInvoiceLifecycleStep>? steps = null)
     {
+        _steps = steps?.ToList() ?? [];
         _repository = repository;
         _customerRepository = customerRepository;
         _numbering = numbering;
@@ -81,6 +84,12 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
                 if (invoice.Number != number)
                     renumbered.Add(invoice.Id);
                 invoice.Number = number;
+
+                foreach (var step in _steps)
+                {
+                    if (await step.OnFinalizingAsync(invoice, customer, cancellationToken))
+                        renumbered.Add(invoice.Id);
+                }
             }
         }
         else
@@ -97,7 +106,7 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
 
         if (request.Action == BulkInvoiceStatusAction.Finalize && succeeded.Count > 0)
         {
-            await _drafts.RerenderAsync(renumbered, cancellationToken);
+            await _drafts.RerenderAsync(renumbered.Distinct().ToList(), cancellationToken);
             await _drafts.RefreshDraftsAsync(cancellationToken);
 
             foreach (var id in succeeded)

@@ -1,5 +1,7 @@
 using MediatR;
+using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 
@@ -9,9 +11,11 @@ public sealed class UpdateTaxCommandHandler : IRequestHandler<UpdateTaxCommand, 
 {
     private readonly IRepository<Tax> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ITaxCompliance _compliance;
 
-    public UpdateTaxCommandHandler(IRepository<Tax> repository, IUnitOfWork unitOfWork)
+    public UpdateTaxCommandHandler(IRepository<Tax> repository, IUnitOfWork unitOfWork, ITaxCompliance compliance)
     {
+        _compliance = compliance;
         _repository = repository;
         _unitOfWork = unitOfWork;
     }
@@ -32,23 +36,13 @@ public sealed class UpdateTaxCommandHandler : IRequestHandler<UpdateTaxCommand, 
         tax.Order = dto.Order;
         tax.IsActive = dto.IsActive;
 
+        await _compliance.ApplyAsync(tax, dto.ComplianceValues, cancellationToken);
+
         await _repository.UpdateAsync(tax, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return MapToDto(tax);
     }
 
-    private static TaxDto MapToDto(Tax tax) => new(
-        tax.Id,
-        tax.CustomerId,
-        tax.TaxId,
-        tax.Description,
-        tax.HandlerId,
-        tax.Rate,
-        tax.ApplicationType,
-        tax.AppliedToTaxId,
-        tax.Order,
-        tax.IsActive,
-        tax.CreatedAt,
-        tax.UpdatedAt ?? tax.CreatedAt);
+    private static TaxDto MapToDto(Tax tax) => TaxMapper.ToDto(tax);
 }
