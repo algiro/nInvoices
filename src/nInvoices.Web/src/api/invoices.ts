@@ -10,6 +10,8 @@ import type {
   BulkInvoiceResultDto,
   UpdateInvoiceDto,
   InvoiceEmailComposeDto,
+  InvoiceEInvoiceDto,
+  EInvoiceGenerationDto,
   CreateInvoiceEmailDraftDto,
   InvoiceEmailDto,
   InvoiceNumberingDto,
@@ -132,6 +134,20 @@ export const invoicesApi = {
   /** Creates a draft in the connected Gmail account with the invoice documents attached. */
   async createEmailDraft(id: number, data: CreateInvoiceEmailDraftDto): Promise<InvoiceEmailDto> {
     return apiClient.post<InvoiceEmailDto>(`/api/invoices/${id}/email/draft`, data);
+  },
+
+  /** The e-invoice formats (Facturae...) that apply to the invoice; empty unless the user turned on a country with one */
+  async getEInvoices(id: number): Promise<InvoiceEInvoiceDto[]> {
+    return apiClient.get<InvoiceEInvoiceDto[]>(`/api/invoices/${id}/einvoices`);
+  },
+
+  /** Generates the invoice in every format that applies; a format the invoice does not meet comes back with its issues */
+  async generateEInvoices(id: number): Promise<EInvoiceGenerationDto[]> {
+    return apiClient.post<EInvoiceGenerationDto[]>(`/api/invoices/${id}/einvoices`);
+  },
+
+  async downloadEInvoice(id: number, formatId: string): Promise<{ blob: Blob; fileName: string | null }> {
+    return apiClient.getForFile(`/api/invoices/${id}/einvoices/${encodeURIComponent(formatId)}/file`);
   },
 
   /** Gmail drafts created for this invoice, newest first. */
