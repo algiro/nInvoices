@@ -1,5 +1,7 @@
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Options;
 using nInvoices.Core.Compliance;
+using nInvoices.Core.Configuration;
 
 namespace nInvoices.Application.Compliance.Spain;
 
@@ -21,6 +23,15 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
     public const string ManagingBodyKey = "dir3ManagingBody";
     public const string ProcessingUnitKey = "dir3ProcessingUnit";
 
+    /// <summary>Issuer setting: issue Verifactu records (hash-chained, sent to AEAT) for every invoice.</summary>
+    public const string VerifactuKey = "verifactu";
+
+    /// <summary>Issuer setting: the signing certificate is a company seal certificate (certificado de sello).</summary>
+    public const string SealCertificateKey = "sealCertificate";
+
+    /// <summary>Tax setting: how a 0% VAT is treated (S1, S2, N1, N2, E1..E6).</summary>
+    public const string OperationKey = "operation";
+
     public const string Individual = "individual";
     public const string LegalEntity = "legalEntity";
 
@@ -29,6 +40,13 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
         new ComplianceFieldOption(Individual, "Individual (autónomo)"),
         new ComplianceFieldOption(LegalEntity, "Legal entity (company)")
     ];
+
+    private readonly VerifactuOptions _verifactu;
+
+    public SpainComplianceModule(IOptions<VerifactuOptions>? verifactu = null)
+    {
+        _verifactu = verifactu?.Value ?? new VerifactuOptions();
+    }
 
     public string CountryCode => CountryCodeValue;
 
@@ -39,7 +57,9 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
         ComplianceCapability.IssuerIdentity,
         ComplianceCapability.CustomerFiscalIdentity,
         ComplianceCapability.StructuredEInvoice,
-        ComplianceCapability.ElectronicSignature
+        ComplianceCapability.ElectronicSignature,
+        ComplianceCapability.TamperEvidentRecords,
+        ComplianceCapability.VerificationMark
     };
 
     public IReadOnlyList<ComplianceField> Fields { get; } =
@@ -53,7 +73,38 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
             Options: PersonTypes),
         new ComplianceField(FirstNameKey, "First name", Help: "Individuals only: the legal name is split into first name and surnames."),
         new ComplianceField(FirstSurnameKey, "First surname", Help: "Individuals only."),
-        new ComplianceField(SecondSurnameKey, "Second surname", Help: "Individuals only, if any.")
+        new ComplianceField(SecondSurnameKey, "Second surname", Help: "Individuals only, if any."),
+        new ComplianceField(
+            VerifactuKey,
+            "Verifactu",
+            ComplianceFieldType.Boolean,
+            Help: "Every invoice you issue is recorded in a tamper-evident chain and reported to the Tax Agency (AEAT), and carries a QR code. Required for autónomos from 1 July 2027."),
+        new ComplianceField(
+            SealCertificateKey,
+            "My certificate is a company seal (certificado de sello)",
+            ComplianceFieldType.Boolean,
+            Help: "For Verifactu: tick it only if the certificate you upload is an electronic seal of a company, not a personal certificate.")
+    ];
+
+    public IReadOnlyList<ComplianceField> TaxFields { get; } =
+    [
+        new ComplianceField(
+            OperationKey,
+            "Verifactu treatment of a 0% tax",
+            ComplianceFieldType.Choice,
+            Help: "Only used when the rate is 0%: why no VAT is charged. A tax above 0% is always taxed.",
+            Options:
+            [
+                new ComplianceFieldOption("S2", "Taxable, reverse charge (inversión del sujeto pasivo)"),
+                new ComplianceFieldOption("N2", "Not subject: place-of-supply rules (e.g. services to a business in another country)"),
+                new ComplianceFieldOption("N1", "Not subject: article 7, 14 or other"),
+                new ComplianceFieldOption("E1", "Exempt: article 20"),
+                new ComplianceFieldOption("E2", "Exempt: article 21 (exports)"),
+                new ComplianceFieldOption("E3", "Exempt: article 22"),
+                new ComplianceFieldOption("E4", "Exempt: articles 23 and 24"),
+                new ComplianceFieldOption("E5", "Exempt: article 25 (intra-community supplies)"),
+                new ComplianceFieldOption("E6", "Exempt: other reasons")
+            ])
     ];
 
     public IReadOnlyList<ComplianceField> CustomerFields { get; } =
@@ -103,6 +154,16 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
                 issues.Add(new ComplianceIssue(FirstNameKey, "An individual needs a first name"));
             if (!HasValue(issuer.Values, FirstSurnameKey))
                 issues.Add(new ComplianceIssue(FirstSurnameKey, "An individual needs a first surname"));
+        }
+
+        if (issuer.Values.GetValueOrDefault(VerifactuKey) == "true")
+        {
+            var missing = _verifactu.Missing();
+            if (missing.Count > 0)
+                issues.Add(new ComplianceIssue(VerifactuKey,
+                    $"Verifactu is not set up on this server: {string.Join(", ", missing)} missing under {VerifactuOptions.SectionName}"));
+            if (!string.IsNullOrWhiteSpace(issuer.TaxId) && SpanishTaxId.Normalize(issuer.TaxId).Length != 9)
+                issues.Add(new ComplianceIssue("taxId", "Verifactu needs a nine-character NIF"));
         }
 
         return issues;

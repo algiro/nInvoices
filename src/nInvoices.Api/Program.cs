@@ -7,6 +7,7 @@ using nInvoices.Infrastructure.TaxHandlers;
 using nInvoices.Infrastructure.TemplateEngine;
 using nInvoices.Infrastructure.PdfExport;
 using nInvoices.Infrastructure.Gmail;
+using nInvoices.Infrastructure.Verifactu;
 using Microsoft.AspNetCore.DataProtection;
 using FluentValidation;
 using System.Text.Json.Serialization;
@@ -54,6 +55,7 @@ builder.Services.AddOpenApi();
 // Add Configuration
 builder.Services.Configure<InvoiceSettings>(builder.Configuration.GetSection(InvoiceSettings.SectionName));
 builder.Services.Configure<ComplianceOptions>(builder.Configuration.GetSection(ComplianceOptions.SectionName));
+builder.Services.Configure<VerifactuOptions>(builder.Configuration.GetSection(VerifactuOptions.SectionName));
 
 // Add HttpContextAccessor for user context
 builder.Services.AddHttpContextAccessor();
@@ -81,6 +83,9 @@ builder.Services.AddGmail(builder.Configuration);
 
 // Add Application Services
 builder.Services.AddApplicationServices();
+
+// Verifactu: the Tax Agency client and the worker that sends the waiting records (idle until set up)
+builder.Services.AddVerifactuSubmission();
 
 // Add MediatR for CQRS
 builder.Services.AddMediatR(cfg =>

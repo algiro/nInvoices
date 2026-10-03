@@ -10,6 +10,7 @@ public sealed record ComplianceCountryDto(
     IReadOnlyList<string> Capabilities,
     IReadOnlyList<ComplianceFieldDto> Fields,
     IReadOnlyList<ComplianceFieldDto> CustomerFields,
+    IReadOnlyList<ComplianceFieldDto> TaxFields,
     bool RequiresCertificate,
     ComplianceSettingsDto Settings);
 
