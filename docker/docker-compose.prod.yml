@@ -78,7 +78,15 @@ services:
       - Gmail__ClientSecret=${GMAIL_CLIENT_SECRET:-}
       - Gmail__RedirectUri=${GMAIL_REDIRECT_URI:-}
       - Gmail__PostConnectRedirect=${GMAIL_POST_CONNECT_REDIRECT:-/settings}
-      # Encryption keys for the stored Gmail token; must persist across redeploys
+      # Spanish Verifactu (optional; users cannot turn it on while VERIFACTU_ENVIRONMENT is empty).
+      # See Docs/SPAIN-EINVOICING.md
+      - Compliance__Spain__Verifactu__Environment=${VERIFACTU_ENVIRONMENT:-}
+      - Compliance__Spain__Verifactu__ProducerName=${VERIFACTU_PRODUCER_NAME:-}
+      - Compliance__Spain__Verifactu__ProducerTaxId=${VERIFACTU_PRODUCER_TAX_ID:-}
+      - Compliance__Spain__Verifactu__SystemId=${VERIFACTU_SYSTEM_ID:-NI}
+      - Compliance__Spain__Verifactu__InstallationNumber=${VERIFACTU_INSTALLATION_NUMBER:-1}
+      - Compliance__Spain__Verifactu__MultipleTaxpayers=${VERIFACTU_MULTIPLE_TAXPAYERS:-false}
+      # Encryption keys for the stored Gmail token and signing certificates; must persist across redeploys
       - DataProtection__KeysPath=/app/keys
     volumes:
       - ./volumes/logs:/app/logs

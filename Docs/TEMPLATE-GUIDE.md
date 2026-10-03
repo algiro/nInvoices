@@ -103,6 +103,40 @@ projectSummary        - Per-project totals for the billed month
 When any worked day has project allocations, `lineItems` contains one line per project
 (days without an allocation are grouped into an "Unassigned" line) instead of one line per day.
 
+#### Country compliance data: `compliance`
+
+`compliance` holds what a country's rules put on the invoice, by name. Each entry is always there, empty until the
+rules apply to that invoice (a draft has no QR code yet, and a user without Verifactu never will), so you can
+print its parts directly without checking first; they simply come out blank. Use `isRecorded` to show something
+only when there is data.
+
+**`compliance.verifactu`** (Spain, Verifactu); `isRecorded` is true once the invoice is finalized and recorded:
+```
+compliance.verifactu.isRecorded   - true if the invoice has its Verifactu record (and so a QR code)
+compliance.verifactu.heading      - "QR tributario:" (must be shown above the QR code)
+compliance.verifactu.qrSvg        - the QR code, as an SVG image to print as it is
+compliance.verifactu.qrDataUri    - the same image as a data URI, for an <img src>
+compliance.verifactu.legend       - "Factura verificable en la sede electrónica de la AEAT" (must be shown below it)
+compliance.verifactu.qrUrl        - the address the QR code holds
+compliance.verifactu.sequence     - position of the invoice's record in the user's chain
+compliance.verifactu.hash         - hash of the record
+compliance.verifactu.isCancelled  - true if the invoice was cancelled (do not print the QR code then)
+```
+AEAT's rules for the QR code: 30 to 40 mm square, at least 2 mm of white around it, near the top of the
+first page, preceded by the heading and followed by the legend, both in a type size no smaller than the
+rest of the invoice. The default template does all this:
+
+```html
+[[ if compliance.verifactu.isRecorded && !compliance.verifactu.isCancelled ]]
+<div class="verifactu-qr">
+    <div>[[ compliance.verifactu.heading ]]</div>
+    <div class="verifactu-qr-code">[[ compliance.verifactu.qrSvg ]]</div>
+    <div>[[ compliance.verifactu.legend ]]</div>
+</div>
+[[ end ]]
+```
+Templates you wrote earlier need this block added by hand to carry the QR code.
+
 ### Monthly Report Template Model
 
 | Property | Type | Description | Example |

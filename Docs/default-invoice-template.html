@@ -267,9 +267,39 @@
             white-space: nowrap;
         }
         [[ end ]]
+
+        /* Verifactu QR code: 34 mm symbol with 3 mm of white around it, headed and followed by the required texts */
+        .verifactu-qr {
+            width: 46mm;
+            margin: 0 0 6mm 0;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: #000;
+        }
+        .verifactu-qr-code {
+            width: 40mm;
+            height: 40mm;
+            padding: 3mm;
+            margin: 1mm auto;
+            background: #fff;
+        }
+        .verifactu-qr-code svg {
+            width: 100%;
+            height: 100%;
+        }
     </style>
 </head>
 <body>
+    [[ # Spanish Verifactu: the QR code and legend, once the invoice is finalized (empty for everyone else) ]]
+    [[ if compliance.verifactu.isRecorded && !compliance.verifactu.isCancelled ]]
+    <div class="verifactu-qr">
+        <div>[[ compliance.verifactu.heading ]]</div>
+        <div class="verifactu-qr-code">[[ compliance.verifactu.qrSvg ]]</div>
+        <div>[[ compliance.verifactu.legend ]]</div>
+    </div>
+    [[ end ]]
+
     <div class="header-wave"></div>
     
     <div class="header-container">

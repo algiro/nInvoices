@@ -1,8 +1,9 @@
-# Spanish e-invoicing (Facturae)
+# Spanish e-invoicing (Facturae and Verifactu)
 
 nInvoices can issue **Facturae 3.2.2**, the structured invoice Spanish public administrations require
-(sent through FACe), signed with your electronic certificate. It is **off by default**: nothing changes
-for you, or for users in other countries, until you turn Spain on in *Settings → Invoicing rules by country*.
+(sent through FACe), signed with your electronic certificate, and keep the **Verifactu** record of every
+invoice (see [Verifactu](#verifactu)). It is **off by default**: nothing changes for you, or for users in
+other countries, until you turn Spain on in *Settings → Invoicing rules by country*.
 
 ## What you need
 
@@ -86,11 +87,82 @@ Upload `test.p12` with the password `changeit`.
 If the invoice breaks a rule (for example a missing DIR3 code, an invalid NIF, or a customer with no tax
 line), the E-invoice panel lists what to fix; fix it and press *Regenerate*.
 
+## Verifactu
+
+**Verifactu** (Real Decreto 1007/2023, Orden HAC/1177/2024) makes billing software keep a tamper-evident record
+of every invoice issued and report it to the Tax Agency (AEAT). It is mandatory for autónomos from
+**1 July 2027** (companies from 1 January 2027), whoever the customer is, and it is independent of Facturae.
+nInvoices implements the **VERI\*FACTU** mode, in which the records are sent to AEAT as invoices are issued
+(no event log or record signing is needed in that mode).
+
+What it does once a user turns it on:
+
+- Finalizing an invoice adds a **record** to the user's chain, in the same save as the invoice. Each record holds
+  the hash (SHA-256) of the one before, so changing or removing one afterwards breaks the chain. Records are
+  append-only: the application refuses to change or delete them, and so does the PostgreSQL database (a trigger).
+- **Cancelling** a recorded invoice adds a cancellation record. A recorded invoice cannot be deleted.
+- The invoice shows the **QR code** and the legend *Factura verificable en la sede electrónica de la AEAT*.
+- The records are **sent to AEAT** in the background, in chain order, authenticated with the user's certificate,
+  keeping to the pause AEAT asks for between submissions. A record AEAT rejects stops the ones after it; the
+  invoice page and Settings say why.
+- Settings can **check the chain** at any time; a record altered or removed shows up there.
+
+### Setting it up on the server (the operator)
+
+Verifactu stays unavailable to users until the server knows who supplies the software. The *producer* is whoever
+distributes nInvoices to its users: the records name it as the billing system, and it is the one who signs the
+software's *declaración responsable* (a legal duty of the producer; nInvoices cannot sign it for you).
+
+| Setting (env var in `.env`) | Meaning |
+|---|---|
+| `Compliance:Spain:Verifactu:Environment` (`VERIFACTU_ENVIRONMENT`) | `Test` (AEAT's external test portal) or `Production`. Empty: unavailable. |
+| `...:ProducerName`, `...:ProducerTaxId` (`VERIFACTU_PRODUCER_NAME`, `VERIFACTU_PRODUCER_TAX_ID`) | Legal name and NIF (9 characters) of the producer. |
+| `...:SystemId` (`VERIFACTU_SYSTEM_ID`) | Two characters that identify the system, `NI` by default. |
+| `...:InstallationNumber` (`VERIFACTU_INSTALLATION_NUMBER`) | Identifies this installation, `1` by default. |
+| `...:MultipleTaxpayers` (`VERIFACTU_MULTIPLE_TAXPAYERS`) | `true` if this installation serves several taxpayers. |
+
+Start with `Test`: the QR codes then point to AEAT's test portal and records go to the test service, so nothing
+reaches the real one. Move to `Production` only after a real invoice has gone through the test environment.
+
+### For each user
+
+1. In *Settings → Invoicing rules by country → Spain*, fill in your data, upload your certificate (AEAT
+   authenticates with it) and tick **Verifactu**. If your certificate is a company *seal* certificate (certificado
+   de sello), tick that too; a personal certificate needs nothing.
+2. Every invoice needs **one VAT line**. If an invoice charges 0% VAT, open that tax (Taxes → edit) and say why:
+   exempt (which article), not subject (place-of-supply rules, or other), or reverse charge. Without it the
+   invoice cannot be finalized, and says so.
+3. Issue invoices as usual. The invoice page shows the QR code, the record, and where it stands with AEAT.
+4. Custom invoice templates need the QR block added by hand; see `Docs/TEMPLATE-GUIDE.md`. The default template
+   already has it.
+
+Once Verifactu has recorded invoices, do not change your NIF in the Spanish settings, and keep Verifactu on:
+turning it off leaves a gap in the chain.
+
+### What has and has not been verified
+
+Checked against AEAT's own published material: the hash against the three official test vectors; the QR URL
+against the official examples (and decoded back from a rendered QR); the record XML and the SOAP answers against
+the official XSDs; the service addresses against the official WSDL; and the real HTTP client against a local
+server that requires a client certificate.
+
+**Not checked: a real submission to AEAT.** That needs a real certificate and AEAT's test portal. Before
+using it for real invoices, send a few from the test environment and check the answers. In particular, confirm:
+
+- that `ImporteTotal` (and the QR amount) leaving out IRPF withholdings is what AEAT expects (it is how the
+  secondary sources describe it; the schemas do not say);
+- the exempt and not-subject operation codes you pick for 0% VAT;
+- the first submission's answers (a record accepted *with errors* is shown with AEAT's remark).
+
 ## Limits
 
-- Taxes calculated on top of another tax cannot be expressed in Facturae and are rejected with a message.
-  An invoice needs at least one tax line (use a 0% tax for an exempt invoice).
+- Taxes calculated on top of another tax cannot be expressed in Facturae or Verifactu and are rejected with a message.
+  An invoice needs at least one tax line (use a 0% tax for an exempt invoice); Verifactu needs exactly one VAT line.
 - Withholdings (such as IRPF) are the taxes with a **negative rate**.
-- Credit notes (facturas rectificativas) and Verifactu are not implemented yet.
-- The signature is XAdES-EPES (the format FACe asks for). Validate your first real invoice in FACe's test
-  environment before relying on it.
+- Corrective invoices (facturas rectificativas) are not implemented, in Facturae or Verifactu. To correct an
+  invoice you cancel it (which records a cancellation) and issue a new one. Verifactu's *subsanación* (correcting
+  a record AEAT accepted with errors) is not implemented either.
+- Verifactu only covers complete invoices (type F1) to customers with a tax id. Simplified invoices (F2) are not supported.
+- The Facturae signature is XAdES-EPES (the format FACe asks for). Validate your first real invoice in FACe's test
+  environment before relying on it. Sending to FACe from nInvoices directly is not built yet.
+- B2B e-invoicing under the Crea y Crece law (UBL/EN 16931) is not implemented.
