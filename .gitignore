@@ -100,5 +100,12 @@ client_secret_*.json
 
 # ASP.NET Data Protection keys (encrypt stored Gmail tokens)
 src/nInvoices.Api/keys/
+# Master key of the column encryption (Docs/ENCRYPTION.md) - never commit it
+src/nInvoices.Api/encryption/
+*.master.key
+master.key
+*-master.key
+docker/secrets/
+docker/encryption/
 
 src/nInvoices.Api/appsettings.Development.json

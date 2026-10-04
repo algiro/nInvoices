@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using nInvoices.Core.Entities;
+using nInvoices.Infrastructure.Encryption;
 
 namespace nInvoices.Infrastructure.Data.Configurations;
 
@@ -31,7 +32,8 @@ public sealed class MonthlyReportTemplateConfiguration : IEntityTypeConfiguratio
             .HasMaxLength(200);
 
         builder.Property(t => t.Content)
-            .IsRequired();
+            .IsRequired()
+            .IsEncrypted("MonthlyReportTemplate.Content");
 
         builder.Property(t => t.IsActive)
             .IsRequired();

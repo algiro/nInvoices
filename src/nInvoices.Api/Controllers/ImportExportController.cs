@@ -172,14 +172,17 @@ public sealed class ImportExportController : ControllerBase
         var skipped = 0;
         var errors = new List<string>();
 
+        // Fiscal ids are encrypted, so they are compared here rather than in SQL
+        var existingFiscalIds = (await _context.Customers.AsNoTracking()
+                .Select(c => c.FiscalId)
+                .ToListAsync(cancellationToken))
+            .ToHashSet(StringComparer.Ordinal);
+
         foreach (var customerData in data.Customers ?? [])
         {
             try
             {
-                var existing = await _context.Customers
-                    .FirstOrDefaultAsync(c => c.FiscalId == customerData.FiscalId, cancellationToken);
-
-                if (existing is not null)
+                if (!existingFiscalIds.Add(customerData.FiscalId))
                 {
                     skipped++;
                     continue;

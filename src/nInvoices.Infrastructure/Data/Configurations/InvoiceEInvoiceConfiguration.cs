@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using nInvoices.Core.Entities;
+using nInvoices.Infrastructure.Encryption;
 
 namespace nInvoices.Infrastructure.Data.Configurations;
 
@@ -14,7 +15,7 @@ public sealed class InvoiceEInvoiceConfiguration : IEntityTypeConfiguration<Invo
 
         builder.Property(e => e.CountryCode).IsRequired().HasMaxLength(2);
         builder.Property(e => e.FormatId).IsRequired().HasMaxLength(50);
-        builder.Property(e => e.Content).IsRequired();
+        builder.Property(e => e.Content).IsRequired().IsEncrypted("InvoiceEInvoice.Content");
         builder.Property(e => e.ContentType).IsRequired().HasMaxLength(100);
         builder.Property(e => e.FileExtension).IsRequired().HasMaxLength(10);
         builder.Property(e => e.Sha256).IsRequired().HasMaxLength(64);

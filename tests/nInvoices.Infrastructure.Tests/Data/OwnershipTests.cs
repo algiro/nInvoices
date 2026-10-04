@@ -46,7 +46,7 @@ public sealed class OwnershipTests
     {
         var context = new ApplicationDbContext(
             new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options,
-            new TestUserContext(userId));
+            TestEncryption.Encryptor, new TestUserContext(userId));
         _contexts.Add(context);
         return context;
     }
@@ -257,7 +257,7 @@ public sealed class OwnershipTests
         await using var connection = new SqliteConnection("DataSource=:memory:");
         await connection.OpenAsync(Token);
         await using var context = new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).Options);
+            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).Options, TestEncryption.Encryptor);
 
         await context.Database.MigrateAsync(Token);
 
@@ -270,7 +270,7 @@ public sealed class OwnershipTests
         await using var connection = new SqliteConnection("DataSource=:memory:");
         await connection.OpenAsync(Token);
         await using var context = new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).Options);
+            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).Options, TestEncryption.Encryptor);
         var migrator = context.GetService<IMigrator>();
         await migrator.MigrateAsync("20260929101858_AddRateAndHoursToInvoice", Token);
 

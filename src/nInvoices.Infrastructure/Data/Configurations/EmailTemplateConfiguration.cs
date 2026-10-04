@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using nInvoices.Core.Entities;
+using nInvoices.Infrastructure.Encryption;
 
 namespace nInvoices.Infrastructure.Data.Configurations;
 
@@ -18,11 +19,11 @@ public sealed class EmailTemplateConfiguration : IEntityTypeConfiguration<EmailT
 
         builder.Property(t => t.Subject)
             .IsRequired()
-            .HasMaxLength(500);
+            .IsEncrypted("EmailTemplate.Subject");
 
         builder.Property(t => t.Body)
             .IsRequired()
-            .HasMaxLength(int.MaxValue);
+            .IsEncrypted("EmailTemplate.Body");
 
         builder.Property(t => t.IsActive).IsRequired();
         builder.Property(t => t.CreatedAt).IsRequired();

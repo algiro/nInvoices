@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using nInvoices.Core.Entities;
+using nInvoices.Infrastructure.Encryption;
 
 namespace nInvoices.Infrastructure.Data.Configurations;
 
@@ -20,7 +21,7 @@ public sealed class WorkDayConfiguration : IEntityTypeConfiguration<WorkDay>
             .HasConversion<int>();
 
         builder.Property(w => w.Notes)
-            .HasMaxLength(500);
+            .IsEncrypted("WorkDay.Notes");
 
         builder.Property(w => w.CreatedAt).IsRequired();
         builder.Property(w => w.UpdatedAt);

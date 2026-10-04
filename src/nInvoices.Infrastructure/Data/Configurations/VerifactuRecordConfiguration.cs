@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using nInvoices.Core.Entities;
+using nInvoices.Infrastructure.Encryption;
 
 namespace nInvoices.Infrastructure.Data.Configurations;
 
@@ -15,16 +16,16 @@ public sealed class VerifactuRecordConfiguration : IEntityTypeConfiguration<Veri
         builder.Property(r => r.Sequence).IsRequired();
         builder.Property(r => r.Kind).IsRequired().HasConversion<string>().HasMaxLength(20);
         builder.Property(r => r.InvoiceId).IsRequired();
-        builder.Property(r => r.IssuerTaxId).IsRequired().HasMaxLength(9);
+        builder.Property(r => r.IssuerTaxId).IsRequired().IsEncrypted("VerifactuRecord.IssuerTaxId");
         builder.Property(r => r.InvoiceNumber).IsRequired().HasMaxLength(60);
         builder.Property(r => r.IssueDate).IsRequired().HasMaxLength(10);
         builder.Property(r => r.InvoiceType).IsRequired().HasMaxLength(2);
-        builder.Property(r => r.TotalTax).IsRequired().HasMaxLength(20);
-        builder.Property(r => r.TotalAmount).IsRequired().HasMaxLength(20);
+        builder.Property(r => r.TotalTax).IsRequired().IsEncrypted("VerifactuRecord.TotalTax");
+        builder.Property(r => r.TotalAmount).IsRequired().IsEncrypted("VerifactuRecord.TotalAmount");
         builder.Property(r => r.PreviousHash).IsRequired().HasMaxLength(64);
         builder.Property(r => r.GeneratedAt).IsRequired().HasMaxLength(40);
         builder.Property(r => r.Hash).IsRequired().HasMaxLength(64);
-        builder.Property(r => r.Xml).IsRequired();
+        builder.Property(r => r.Xml).IsRequired().IsEncrypted("VerifactuRecord.Xml");
         builder.Property(r => r.CreatedAt).IsRequired();
         builder.Property(r => r.UpdatedAt);
 

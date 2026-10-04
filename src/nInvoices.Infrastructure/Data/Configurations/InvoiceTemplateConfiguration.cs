@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using nInvoices.Core.Entities;
+using nInvoices.Infrastructure.Encryption;
 
 namespace nInvoices.Infrastructure.Data.Configurations;
 
@@ -22,7 +23,7 @@ public sealed class InvoiceTemplateConfiguration : IEntityTypeConfiguration<Invo
 
         builder.Property(t => t.Content)
             .IsRequired()
-            .HasMaxLength(int.MaxValue);
+            .IsEncrypted("InvoiceTemplate.Content");
 
         builder.Property(t => t.Format)
             .IsRequired()

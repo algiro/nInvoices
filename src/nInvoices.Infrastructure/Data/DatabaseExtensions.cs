@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using nInvoices.Core.Interfaces;
 using nInvoices.Infrastructure.Data.Repositories;
+using nInvoices.Infrastructure.Encryption;
 using nInvoices.Infrastructure.Services;
 
 namespace nInvoices.Infrastructure.Data;
@@ -60,6 +61,38 @@ public static class DatabaseExtensions
         // Not tagged "live", so it does not affect the "/alive" liveness probe.
         services.AddHealthChecks()
             .AddDbContextCheck<ApplicationDbContext>("database");
+
+        return services;
+    }
+
+    /// <summary>
+    /// Encryption of the sensitive columns. The master key file (<c>Encryption:KeyFile</c>, default
+    /// <c>encryption/master.key</c> under the content root) must exist, except in development where a
+    /// missing one is generated. <c>Encryption:PreviousKeyFiles</c> (comma-separated) lists the keys
+    /// a rotation replaced, until the user keys they wrapped are re-wrapped at startup.
+    /// </summary>
+    public static IServiceCollection AddFieldEncryption(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        string contentRootPath,
+        bool isDevelopment)
+    {
+        var dbType = configuration["Database:Type"] ?? "SQLite";
+        var connectionString = configuration.GetConnectionString("Default")
+            ?? throw new InvalidOperationException("Connection string 'Default' not found");
+
+        var keyStoreOptions = new DbContextOptionsBuilder<KeyStoreDbContext>();
+        ConfigureDatabase(keyStoreOptions, dbType, connectionString);
+
+        var keyFile = configuration["Encryption:KeyFile"] ?? Path.Combine(contentRootPath, "encryption", "master.key");
+        var previousKeyFiles = (configuration["Encryption:PreviousKeyFiles"] ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var createIfMissing = configuration.GetValue<bool?>("Encryption:CreateKeyFileIfMissing") ?? isDevelopment;
+
+        services.AddSingleton<IUserKeyStore>(new EfUserKeyStore(keyStoreOptions.Options));
+        services.AddSingleton(sp => new FieldEncryptor(
+            MasterKeyRing.Load(keyFile, previousKeyFiles, createIfMissing),
+            sp.GetRequiredService<IUserKeyStore>()));
 
         return services;
     }

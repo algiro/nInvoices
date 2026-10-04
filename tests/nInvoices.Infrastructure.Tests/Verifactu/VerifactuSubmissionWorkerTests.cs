@@ -68,6 +68,7 @@ public sealed class VerifactuSubmissionWorkerTests
         services.AddScoped<OwnerOverride>();
         services.AddSingleton<IHttpContextAccessor, NoHttp>();
         services.AddScoped<IUserContext, UserContext>();
+        services.AddSingleton(nInvoices.Infrastructure.Tests.Data.TestEncryption.Encryptor);
         services.AddDbContext<ApplicationDbContext>(o => o.UseSqlite(_connection));
         services.AddScoped<IVerifactuSubmitter>(sp => new RecordingSubmitter(
             sp.GetRequiredService<IUserContext>(), _ranAs, _visible, sp.GetRequiredService<ApplicationDbContext>()));

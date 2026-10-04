@@ -93,9 +93,13 @@ services:
       Gmail__PostConnectRedirect: ${GMAIL_POST_CONNECT_REDIRECT:-/settings}
       # Encryption keys for the stored Gmail token; must persist across redeploys
       DataProtection__KeysPath: /app/keys
+      # Master key of the column encryption: create it once (Docs/ENCRYPTION.md) and back it up
+      # away from the database backups. Without it the API does not start.
+      Encryption__KeyFile: /run/secrets/ninvoices-master.key
     volumes:
       - ./volumes/logs:/app/logs
       - ./volumes/dataprotection:/app/keys
+      - ./secrets/ninvoices-master.key:/run/secrets/ninvoices-master.key:ro
     depends_on:
       postgres:
         condition: service_healthy

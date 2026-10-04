@@ -37,7 +37,7 @@ public sealed class UnitOfWorkTests
     }
 
     private ApplicationDbContext NewContext() =>
-        new(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options, new TestUserContext(Alice));
+        new(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options, TestEncryption.Encryptor, new TestUserContext(Alice));
 
     private static Customer NewCustomer(string name) =>
         new(name, name.ToUpperInvariant(), new Address("Main", "1", "Town", "12345", "Italy"));

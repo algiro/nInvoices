@@ -44,7 +44,7 @@ public sealed class SharedTemplateTests
     {
         var context = new ApplicationDbContext(
             new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options,
-            new TestUserContext(userId));
+            TestEncryption.Encryptor, new TestUserContext(userId));
         _contexts.Add(context);
         return context;
     }
