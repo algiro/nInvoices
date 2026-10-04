@@ -66,7 +66,7 @@ internal static class FacturaeXmlBuilder
                         new XElement("TaxCurrencyCode", invoice.Currency.ToUpperInvariant()),
                         new XElement("LanguageName", PickLanguage(invoice.Language))),
                     new XElement("TaxesOutputs", added.Select(t => new XElement("Tax",
-                        new XElement("TaxTypeCode", "01"),
+                        new XElement("TaxTypeCode", TypeCode(t)),
                         new XElement("TaxRate", Rate(t.Rate)),
                         Amount("TaxableBase", t.TaxableBase),
                         Amount("TaxAmount", t.Amount)))),
@@ -123,12 +123,16 @@ internal static class FacturaeXmlBuilder
                         Amount("TaxableBase", amount),
                         Amount("TaxAmount", withheldShares[n][i])))),
                 new XElement("TaxesOutputs", added.Select((t, n) => new XElement("Tax",
-                    new XElement("TaxTypeCode", "01"),
+                    new XElement("TaxTypeCode", TypeCode(t)),
                     new XElement("TaxRate", Rate(t.Rate)),
                     Amount("TaxableBase", amount),
                     Amount("TaxAmount", addedShares[n][i])))));
         }
     }
+
+    /// <summary>Facturae tax type of a tax that is added: 01 IVA, 03 IGIC (Canary Islands).</summary>
+    private static string TypeCode(EInvoiceTax tax) =>
+        tax.Values?.GetValueOrDefault(SpainComplianceModule.TaxTypeKey) == SpainComplianceModule.Igic ? "03" : "01";
 
     /// <summary>The tax of each line: rate applied to the line, the last one absorbing the rounding difference.</summary>
     private static decimal[] Share(EInvoiceTax tax, IReadOnlyList<EInvoiceLine> lines)

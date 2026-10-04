@@ -201,4 +201,56 @@ public sealed class VerifactuFoundationTests
 
         SchemaErrors(VerifactuXml.Batch("Ana", "12345678Z", [record])).ShouldNotBeEmpty();
     }
+
+    // --- IGIC (Canary Islands) -------------------------------------------------------------------
+
+    [Test]
+    public void Xml_Igic_SaysImpuesto03BeforeTheRegimeKey()
+    {
+        var breakdown = new[] { new VerifactuBreakdown("S1", 7m, 8100.55m, 567.04m, Igic: true) };
+
+        var record = VerifactuXml.Issued(Invoice(breakdown: breakdown), System, null, Stamp, Case1);
+
+        SchemaErrors(VerifactuXml.Batch("Ana", "12345678Z", [record])).ShouldBeEmpty();
+        var detail = record.Descendants(VerifactuXml.Sf + "DetalleDesglose").Single();
+        detail.Elements().Select(e => e.Name.LocalName).Take(2).ShouldBe(["Impuesto", "ClaveRegimen"]);
+        detail.Element(VerifactuXml.Sf + "Impuesto")!.Value.ShouldBe("03");
+        detail.Element(VerifactuXml.Sf + "ClaveRegimen")!.Value.ShouldBe("01");
+        detail.Element(VerifactuXml.Sf + "TipoImpositivo")!.Value.ShouldBe("7.00");
+        detail.Element(VerifactuXml.Sf + "CuotaRepercutida")!.Value.ShouldBe("567.04");
+    }
+
+    [Test]
+    public void Xml_Iva_DoesNotSayImpuesto()
+    {
+        var record = VerifactuXml.Issued(Invoice(), System, null, Stamp, Case1);
+
+        record.Descendants(VerifactuXml.Sf + "Impuesto").ShouldBeEmpty();
+    }
+
+    [TestCase("E7")]
+    [TestCase("E8")]
+    [TestCase("E2")]
+    [TestCase("N1")]
+    [TestCase("N2")]
+    [TestCase("S2")]
+    public void Xml_IgicExemptionsAndNotSubject_AreValid(string operation)
+    {
+        var breakdown = new[] { new VerifactuBreakdown(operation, 0m, 100m, 0m, Igic: true) };
+
+        SchemaErrors(VerifactuXml.Batch("Ana", "12345678Z",
+            [VerifactuXml.Issued(Invoice(breakdown: breakdown), System, null, Stamp, Case1)])).ShouldBeEmpty();
+    }
+
+    [Test]
+    public void Xml_ZeroRateTaxed_IsValid()
+    {
+        // IGIC has a real zero rate (tipo cero): taxed, with a rate and an amount of zero
+        var breakdown = new[] { new VerifactuBreakdown("S1", 0m, 100m, 0m, Igic: true) };
+
+        var record = VerifactuXml.Issued(Invoice(breakdown: breakdown), System, null, Stamp, Case1);
+
+        SchemaErrors(VerifactuXml.Batch("Ana", "12345678Z", [record])).ShouldBeEmpty();
+        record.Descendants(VerifactuXml.Sf + "TipoImpositivo").Single().Value.ShouldBe("0.00");
+    }
 }

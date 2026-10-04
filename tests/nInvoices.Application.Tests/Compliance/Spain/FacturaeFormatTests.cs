@@ -281,4 +281,48 @@ public sealed class FacturaeFormatTests
         Should.Throw<InvalidOperationException>(() => FacturaeTestData.Format().Build(FacturaeTestData.Invoice(), null))
             .Message.ShouldContain("signing certificate");
     }
+
+    // --- IGIC (Canary Islands) -------------------------------------------------------------------
+
+    private static EInvoiceDocument IgicInvoice() => FacturaeTestData.Invoice(withholding: false) with
+    {
+        Taxes =
+        [
+            new EInvoiceTax(EInvoiceTaxKind.Added, "IGIC 7%", 7m, 8100.55m, 567.04m,
+                new Dictionary<string, string> { [SpainComplianceModule.TaxTypeKey] = SpainComplianceModule.Igic }),
+            new EInvoiceTax(EInvoiceTaxKind.Withheld, "IRPF -15%", 15m, 8100.55m, 1215.08m)
+        ],
+        Total = 7452.51m
+    };
+
+    [Test]
+    public void Build_Igic_IsTaxType03_AndTheWithholdingStaysIrpf()
+    {
+        var artifact = Build(IgicInvoice());
+
+        FacturaeTestData.SchemaErrors(artifact.Content).ShouldBeEmpty();
+        var parsed = Parse(artifact);
+        parsed.SelectNodes("//TaxesOutputs/Tax/TaxTypeCode")!.Cast<XmlNode>().Select(n => n.InnerText).Distinct().ShouldBe(["03"]);
+        parsed.SelectNodes("//TaxesWithheld/Tax/TaxTypeCode")!.Cast<XmlNode>().Select(n => n.InnerText).Distinct().ShouldBe(["04"]);
+        parsed.SelectSingleNode("/*/Invoices/Invoice/TaxesOutputs/Tax/TaxRate")!.InnerText.ShouldBe("7.00");
+    }
+
+    [Test]
+    public void Build_Igic_TotalsAreRightAndTheLinesAddUp()
+    {
+        var xml = Xml(Build(IgicInvoice()));
+
+        xml.ShouldContain("<TotalTaxOutputs>567.04</TotalTaxOutputs>");
+        xml.ShouldContain("<TotalTaxesWithheld>1215.08</TotalTaxesWithheld>");
+        xml.ShouldContain("<InvoiceTotal>8667.59</InvoiceTotal>");
+        xml.ShouldContain("<TotalOutstandingAmount>7452.51</TotalOutstandingAmount>");
+    }
+
+    [Test]
+    public void Build_TaxWithoutATaxType_IsStillIva()
+    {
+        var parsed = Parse(Build(FacturaeTestData.Invoice()));
+
+        parsed.SelectNodes("//TaxesOutputs/Tax/TaxTypeCode")!.Cast<XmlNode>().Select(n => n.InnerText).Distinct().ShouldBe(["01"]);
+    }
 }

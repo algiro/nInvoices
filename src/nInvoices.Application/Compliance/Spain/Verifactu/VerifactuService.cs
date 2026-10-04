@@ -255,8 +255,8 @@ public sealed class VerifactuService : IVerifactuService
         var added = invoice.TaxLines.Where(t => t.Rate >= 0).OrderBy(t => t.Order).ToList();
         if (added.Count != 1)
             issues.Add(new ComplianceIssue(null, added.Count == 0
-                ? "The invoice needs a VAT line; for an exempt invoice add a tax at 0% and say why in the tax settings"
-                : "Verifactu is supported with one VAT line per invoice"));
+                ? "The invoice needs a VAT (or IGIC) line; for an exempt invoice add a tax at 0% and say why in the tax settings"
+                : "Verifactu is supported with one VAT (or IGIC) line per invoice"));
 
         var taxableBase = invoice.Subtotal.Amount + invoice.TotalExpenses.Amount;
         var breakdown = new List<VerifactuBreakdown>();
@@ -268,6 +268,10 @@ public sealed class VerifactuService : IVerifactuService
                 continue;
             }
 
+            var values = taxes.FirstOrDefault(t => t.TaxId == line.TaxId)
+                ?.GetComplianceValues(SpainComplianceModule.CountryCodeValue);
+            var igic = values?.GetValueOrDefault(SpainComplianceModule.TaxTypeKey) == SpainComplianceModule.Igic;
+
             string operation;
             if (line.Rate > 0)
             {
@@ -275,15 +279,15 @@ public sealed class VerifactuService : IVerifactuService
             }
             else
             {
-                operation = taxes.FirstOrDefault(t => t.TaxId == line.TaxId)
-                    ?.GetComplianceValues(SpainComplianceModule.CountryCodeValue)
-                    .GetValueOrDefault(SpainComplianceModule.OperationKey) ?? "";
+                operation = values?.GetValueOrDefault(SpainComplianceModule.OperationKey) ?? "";
                 if (operation.Length == 0)
                     issues.Add(new ComplianceIssue(null, $"Choose why tax \"{line.Description}\" is 0% (exempt, not subject...) in Taxes, under Verifactu"));
+                else if (operation is "E7" or "E8" && !igic)
+                    issues.Add(new ComplianceIssue(null, $"Tax \"{line.Description}\": the exemptions E7 and E8 exist for IGIC only; set the tax type to IGIC or choose another"));
             }
 
             breakdown.Add(new VerifactuBreakdown(
-                operation, line.Rate, VerifactuHashRound(line.BaseAmount.Amount), operation == "S1" ? VerifactuHashRound(line.TaxAmount.Amount) : 0m));
+                operation, line.Rate, VerifactuHashRound(line.BaseAmount.Amount), operation == "S1" ? VerifactuHashRound(line.TaxAmount.Amount) : 0m, igic));
         }
 
         if (issues.Count > 0 || recipient is null)

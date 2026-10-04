@@ -87,6 +87,76 @@ Upload `test.p12` with the password `changeit`.
 If the invoice breaks a rule (for example a missing DIR3 code, an invalid NIF, or a customer with no tax
 line), the E-invoice panel lists what to fix; fix it and press *Regenerate*.
 
+## FACe: sending to public administrations
+**FACe** is the portal through which invoices reach Spanish public administrations. nInvoices can send the signed
+Facturae there for you and show where the invoice stands (registered, accounted, paid, rejected...).
+
+### Setting it up on the server (the operator)
+
+Set `FACE_ENVIRONMENT` (`Compliance:Spain:Face:Environment`):
+
+- `Test`: FACe's staging service (`se-ws-face.redsara.es`). Nothing reaches a real administration. Start here.
+- `Production`: the real service (`ws.face.gob.es`).
+
+Left empty, users do not see the *Send* button. `FACE_SIGNATURE_ALGORITHM` is `Sha256` by default; FACe's own
+documentation shows SHA-1, so if FACe refuses the signature, set `Sha1`.
+
+### For each user
+
+1. In FACe's staging portal (see the FACe site for its address) register the **same certificate** you uploaded to
+   nInvoices as the one of your provider account. FACe only accepts requests signed with a registered certificate.
+   (Without that FACe answers with a fault saying the certificate is unknown, and nInvoices shows it.)
+2. In the Spanish settings fill in *Email for FACe notifications*.
+3. Finalize the invoice, generate the Facturae and press *Send to FACe*. On success you get FACe's **registry
+   code**; *Refresh status* asks FACe where the invoice stands now.
+
+Rules to know:
+
+- Only invoices to **public administrations** go through FACe.
+- Sending is always your own action, never automatic, and it **cannot be taken back**. Once sent, the Facturae
+  file can no longer be regenerated and the invoice can no longer be deleted.
+- A refusal by FACe (unknown certificate, invalid file...) shows FACe's message and stores nothing, so you can fix
+  the problem and send again.
+- Asking for a *cancellation* of a sent invoice (solicitud de anulación) is done in FACe itself; nInvoices shows
+  its status after a refresh.
+
+### What has and has not been verified
+
+Checked: the requests against FACe's published documentation (operation names, namespace, SOAPAction,
+WS-Security layout); the signature of the body, which verifies with an independent implementation; the client
+against a local stub, including SOAP faults and network errors.
+
+**Not checked: a real exchange with FACe's staging service.** The first send is the real test. Things that may
+need adjusting, in this order of likelihood: the signature algorithm (`Sha1` option), the shape of the
+production namespace, and the fields of FACe's answer (it is read tolerantly by element name). Response
+signatures from FACe are not verified.
+
+## Canary Islands: IGIC
+
+In the Canary Islands the indirect tax is **IGIC** (Impuesto General Indirecto Canario), not IVA. Both Facturae and
+Verifactu name the tax, so nInvoices needs to know which one a tax is:
+
+1. In *Taxes*, open (or create) the tax, for example *IGIC 7%* with the rate 7. Under the Spanish fields, set
+   **Which tax is this?** to *IGIC (Canary Islands)*. Left empty, a tax is IVA.
+2. Keep the **withholding** as a separate tax with a **negative rate** (for example *IRPF -15%*). It needs no
+   special setting: it is written as an IRPF withholding in Facturae and, as for IVA, is not part of what
+   Verifactu reports.
+
+What changes for an IGIC tax:
+
+- **Facturae**: the tax is written with tax type `03` (IGIC) instead of `01` (IVA), in the invoice totals and on
+  every line.
+- **Verifactu**: the record carries `Impuesto = 03` and the general regime key (`ClaveRegimen 01`).
+- **Zero rates**: IGIC has a real zero rate (*tipo cero*). For a tax at 0% choose *Taxed at 0%* under *Verifactu
+  treatment of a 0% tax*. For an exempt or not-subject operation choose the matching option instead; **E7** and
+  **E8** exist for IGIC only, and AEAT's own list gives a different article for each of E1 to E8 depending on the
+  tax (the option labels name both).
+
+Only the general regime is supported. IGIC's special regimes (simplified regime, small retailers, travel agencies and
+so on, which need other regime keys) are not, and an invoice has one IGIC line, like one VAT line. Not checked: a real
+submission of an IGIC invoice to AEAT's test environment. The rules used here come from AEAT's published validation
+rules (version 1.2.2) and schemas; whether the general regime key `01` is in AEAT's list for IGIC (L8B) is taken from
+secondary sources.
 ## Verifactu
 
 **Verifactu** (Real Decreto 1007/2023, Orden HAC/1177/2024) makes billing software keep a tamper-evident record
@@ -129,7 +199,7 @@ reaches the real one. Move to `Production` only after a real invoice has gone th
 1. In *Settings → Invoicing rules by country → Spain*, fill in your data, upload your certificate (AEAT
    authenticates with it) and tick **Verifactu**. If your certificate is a company *seal* certificate (certificado
    de sello), tick that too; a personal certificate needs nothing.
-2. Every invoice needs **one VAT line**. If an invoice charges 0% VAT, open that tax (Taxes → edit) and say why:
+2. Every invoice needs **one VAT (or IGIC) line**. If an invoice charges 0% VAT, open that tax (Taxes → edit) and say why:
    exempt (which article), not subject (place-of-supply rules, or other), or reverse charge. Without it the
    invoice cannot be finalized, and says so.
 3. Issue invoices as usual. The invoice page shows the QR code, the record, and where it stands with AEAT.
@@ -157,7 +227,7 @@ using it for real invoices, send a few from the test environment and check the a
 ## Limits
 
 - Taxes calculated on top of another tax cannot be expressed in Facturae or Verifactu and are rejected with a message.
-  An invoice needs at least one tax line (use a 0% tax for an exempt invoice); Verifactu needs exactly one VAT line.
+  An invoice needs at least one tax line (use a 0% tax for an exempt invoice); Verifactu needs exactly one VAT (or IGIC) line.
 - Withholdings (such as IRPF) are the taxes with a **negative rate**.
 - Corrective invoices (facturas rectificativas) are not implemented, in Facturae or Verifactu. To correct an
   invoice you cancel it (which records a cancellation) and issue a new one. Verifactu's *subsanación* (correcting
