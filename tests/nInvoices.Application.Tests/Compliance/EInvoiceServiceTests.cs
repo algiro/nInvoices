@@ -27,6 +27,7 @@ public sealed class EInvoiceServiceTests
 
     private InMemoryRepository<ComplianceSettings> _settings = null!;
     private InMemoryRepository<InvoiceEInvoice> _stored = null!;
+    private InMemoryRepository<EInvoiceSubmission> _submissions = null!;
     private InMemoryRepository<Customer> _customers = null!;
     private Mock<IInvoiceRepository> _invoices = null!;
     private Mock<IEInvoiceDocumentFactory> _documents = null!;
@@ -51,6 +52,7 @@ public sealed class EInvoiceServiceTests
         _time = new FixedTimeProvider(FacturaeTestData.Now.UtcDateTime);
         _settings = new InMemoryRepository<ComplianceSettings>();
         _stored = new InMemoryRepository<InvoiceEInvoice>();
+        _submissions = new InMemoryRepository<EInvoiceSubmission>();
         _unitOfWork = new Mock<IUnitOfWork>();
 
         _buyer = FacturaeTestData.PublicAdministration();
@@ -72,7 +74,7 @@ public sealed class EInvoiceServiceTests
         var gate = new ComplianceGate(registry, _settings);
 
         _service = new EInvoiceService(
-            gate, [format], _invoices.Object, _customers, _stored, _documents.Object, new SigningCertificateLoader(new PlainProtector(), _time), _unitOfWork.Object);
+            gate, [format], _invoices.Object, _customers, _stored, _submissions, _documents.Object, new SigningCertificateLoader(new PlainProtector(), _time), _unitOfWork.Object);
     }
 
     private static Invoice NewInvoice(InvoiceStatus status)
@@ -161,6 +163,23 @@ public sealed class EInvoiceServiceTests
         await _service.GenerateAsync(InvoiceId, false, Token);
 
         _stored.Items.ShouldHaveSingleItem();
+    }
+
+    [Test]
+    public async Task Generate_AfterItWasSent_RefusesToChangeWhatWasDelivered()
+    {
+        using var certificate = FacturaeTestData.NewCertificate();
+        SpainOn(certificate);
+        await _service.GenerateAsync(InvoiceId, false, Token);
+        var delivered = _stored.Items.Single();
+        var content = delivered.Content.ToArray();
+        _submissions.Items.Add(new EInvoiceSubmission(delivered.Id, "face", "Test", "REG1", _time.GetUtcNow().UtcDateTime));
+
+        var result = (await _service.GenerateAsync(InvoiceId, false, Token)).ShouldHaveSingleItem();
+
+        result.Generated.ShouldBeFalse();
+        result.Issues.ShouldHaveSingleItem().Message.ShouldContain("already sent");
+        _stored.Items.Single().Content.ShouldBe(content);
     }
 
     [Test]
