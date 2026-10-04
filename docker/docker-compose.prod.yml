@@ -86,6 +86,9 @@ services:
       - Compliance__Spain__Verifactu__SystemId=${VERIFACTU_SYSTEM_ID:-NI}
       - Compliance__Spain__Verifactu__InstallationNumber=${VERIFACTU_INSTALLATION_NUMBER:-1}
       - Compliance__Spain__Verifactu__MultipleTaxpayers=${VERIFACTU_MULTIPLE_TAXPAYERS:-false}
+      # Spanish FACe (optional; sending invoices to public administrations is unavailable while FACE_ENVIRONMENT is empty)
+      - Compliance__Spain__Face__Environment=${FACE_ENVIRONMENT:-}
+      - Compliance__Spain__Face__SignatureAlgorithm=${FACE_SIGNATURE_ALGORITHM:-Sha256}
       # Encryption keys for the stored Gmail token and signing certificates; must persist across redeploys
       - DataProtection__KeysPath=/app/keys
     volumes:
