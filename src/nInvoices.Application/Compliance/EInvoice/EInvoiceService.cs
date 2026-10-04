@@ -44,6 +44,7 @@ public sealed class EInvoiceService : IEInvoiceService
     private readonly IInvoiceRepository _invoices;
     private readonly IRepository<Customer> _customers;
     private readonly IRepository<InvoiceEInvoice> _stored;
+    private readonly IRepository<EInvoiceSubmission> _submissions;
     private readonly IEInvoiceDocumentFactory _documents;
     private readonly SigningCertificateLoader _certificates;
     private readonly IUnitOfWork _unitOfWork;
@@ -54,6 +55,7 @@ public sealed class EInvoiceService : IEInvoiceService
         IInvoiceRepository invoices,
         IRepository<Customer> customers,
         IRepository<InvoiceEInvoice> stored,
+        IRepository<EInvoiceSubmission> submissions,
         IEInvoiceDocumentFactory documents,
         SigningCertificateLoader certificates,
         IUnitOfWork unitOfWork)
@@ -63,6 +65,7 @@ public sealed class EInvoiceService : IEInvoiceService
         _invoices = invoices;
         _customers = customers;
         _stored = stored;
+        _submissions = submissions;
         _documents = documents;
         _certificates = certificates;
         _unitOfWork = unitOfWork;
@@ -111,6 +114,17 @@ public sealed class EInvoiceService : IEInvoiceService
 
         foreach (var (active, format) in applicable)
         {
+            // What was delivered must not change: once sent, the file is final
+            var delivered = existing.FirstOrDefault(e => e.FormatId == format.FormatId) is { } file
+                ? (await _submissions.FindAsync(s => s.InvoiceEInvoiceId == file.Id, cancellationToken)).FirstOrDefault()
+                : null;
+            if (delivered is not null)
+            {
+                results.Add(new EInvoiceResult(format, false,
+                    [new ComplianceIssue(null, $"It was already sent ({delivered.ChannelId.ToUpperInvariant()}, {delivered.Reference}) and cannot be generated again")]));
+                continue;
+            }
+
             var document = await _documents.CreateAsync(invoiceId, active.Settings, cancellationToken);
             if (onlyMandatory && !format.IsMandatoryFor(document.Buyer))
                 continue;
