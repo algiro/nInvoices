@@ -7,6 +7,7 @@ using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Invoices.Commands;
 using nInvoices.Application.Features.Invoices.Queries;
 using nInvoices.Application.Models;
+using nInvoices.Application.Features.EInvoices;
 using nInvoices.Application.Features.EInvoices.Commands;
 using nInvoices.Application.Features.EInvoices.Queries;
 using nInvoices.Application.Features.InvoiceEmails.Commands;
@@ -407,6 +408,50 @@ public sealed class InvoicesController : ControllerBase
     {
         var file = await _mediator.Send(new GetInvoiceEInvoiceFileQuery(id, formatId), cancellationToken);
         return file is null ? NotFound() : File(file.Content, file.ContentType, file.FileName);
+    }
+
+    /// <summary>
+    /// The channels (FACe...) the e-invoice of this invoice can be delivered through, with what is missing
+    /// to use them and the delivery if one was made. Empty unless the invoice goes through one.
+    /// </summary>
+    [HttpGet("{id}/einvoice-channels")]
+    [ProducesResponseType(typeof(IReadOnlyList<EInvoiceChannelDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<EInvoiceChannelDto>>> GetEInvoiceChannels(long id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _mediator.Send(new GetInvoiceChannelsQuery(id), cancellationToken));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    /// <summary>
+    /// Sends the e-invoice through the channel (e.g. face). It reaches a public body and cannot be taken back,
+    /// so it is only ever done on request. A refusal comes back as 400 with the reason; nothing is stored then.
+    /// </summary>
+    [HttpPost("{id}/einvoice-channels/{channelId}/send")]
+    [ProducesResponseType(typeof(EInvoiceDeliveryDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<EInvoiceDeliveryDto>> SendEInvoice(long id, string channelId, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new SendInvoiceEInvoiceCommand(id, channelId), cancellationToken);
+        if (!result.Succeeded)
+            _logger.LogWarning("Sending invoice {InvoiceId} through {Channel} failed: {Message}", id, channelId, result.Message);
+        return result.Succeeded ? Ok(result) : BadRequest(new { error = result.Message, submission = result.Submission });
+    }
+
+    /// <summary>Asks the channel where the sent e-invoice stands now and stores the answer.</summary>
+    [HttpPost("{id}/einvoice-channels/{channelId}/refresh")]
+    [ProducesResponseType(typeof(EInvoiceDeliveryDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<EInvoiceDeliveryDto>> RefreshEInvoice(long id, string channelId, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new RefreshInvoiceEInvoiceCommand(id, channelId), cancellationToken);
+        return result.Succeeded ? Ok(result) : BadRequest(new { error = result.Message, submission = result.Submission });
     }
 
     /// <summary>
