@@ -12,6 +12,8 @@ import type {
   InvoiceEmailComposeDto,
   InvoiceEInvoiceDto,
   EInvoiceGenerationDto,
+  EInvoiceChannelDto,
+  EInvoiceDeliveryDto,
   CreateInvoiceEmailDraftDto,
   InvoiceEmailDto,
   InvoiceNumberingDto,
@@ -148,6 +150,21 @@ export const invoicesApi = {
 
   async downloadEInvoice(id: number, formatId: string): Promise<{ blob: Blob; fileName: string | null }> {
     return apiClient.getForFile(`/api/invoices/${id}/einvoices/${encodeURIComponent(formatId)}/file`);
+  },
+
+  /** The channels (FACe...) the e-invoice can be delivered through, with what is missing and the delivery if made */
+  async getEInvoiceChannels(id: number): Promise<EInvoiceChannelDto[]> {
+    return apiClient.get<EInvoiceChannelDto[]>(`/api/invoices/${id}/einvoice-channels`);
+  },
+
+  /** Sends the e-invoice through the channel. It reaches a public body and cannot be taken back. */
+  async sendEInvoice(id: number, channelId: string): Promise<EInvoiceDeliveryDto> {
+    return apiClient.post<EInvoiceDeliveryDto>(`/api/invoices/${id}/einvoice-channels/${encodeURIComponent(channelId)}/send`);
+  },
+
+  /** Asks the channel where the sent e-invoice stands now */
+  async refreshEInvoice(id: number, channelId: string): Promise<EInvoiceDeliveryDto> {
+    return apiClient.post<EInvoiceDeliveryDto>(`/api/invoices/${id}/einvoice-channels/${encodeURIComponent(channelId)}/refresh`);
   },
 
   /** Gmail drafts created for this invoice, newest first. */
