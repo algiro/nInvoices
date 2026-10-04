@@ -26,6 +26,9 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
     /// <summary>Issuer setting: issue Verifactu records (hash-chained, sent to AEAT) for every invoice.</summary>
     public const string VerifactuKey = "verifactu";
 
+    /// <summary>Issuer setting: the email FACe notifies about the invoices sent through it.</summary>
+    public const string FaceEmailKey = "faceEmail";
+
     /// <summary>Issuer setting: the signing certificate is a company seal certificate (certificado de sello).</summary>
     public const string SealCertificateKey = "sealCertificate";
 
@@ -85,6 +88,10 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
             "Verifactu",
             ComplianceFieldType.Boolean,
             Help: "Every invoice you issue is recorded in a tamper-evident chain and reported to the Tax Agency (AEAT), and carries a QR code. Required for autónomos from 1 July 2027."),
+        new ComplianceField(
+            FaceEmailKey,
+            "Email for FACe notifications",
+            Help: "FACe tells you here when an invoice you send to a public administration is registered, rejected or paid. Needed to send invoices to FACe."),
         new ComplianceField(
             SealCertificateKey,
             "My certificate is a company seal (certificado de sello)",
