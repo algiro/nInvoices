@@ -8,8 +8,9 @@ namespace nInvoices.Application.Compliance.Spain.Verifactu;
 public sealed record VerifactuRecipient(string Name, string? Nif, string? CountryCode, string? IdType, string? Id);
 
 /// <summary>One line of the tax breakdown (DetalleDesglose).</summary>
-/// <param name="Operation">AEAT qualification: S1 (taxed), S2 (reverse charge), N1/N2 (not subject), E1..E6 (exempt).</param>
-public sealed record VerifactuBreakdown(string Operation, decimal Rate, decimal Base, decimal Tax);
+/// <param name="Operation">AEAT qualification: S1 (taxed), S2 (reverse charge), N1/N2 (not subject), E1..E8 (exempt).</param>
+/// <param name="Igic">The tax is IGIC (Canary Islands) instead of IVA.</param>
+public sealed record VerifactuBreakdown(string Operation, decimal Rate, decimal Base, decimal Tax, bool Igic = false);
 
 /// <summary>What the record of an issued invoice is made from.</summary>
 public sealed record VerifactuInvoiceData(

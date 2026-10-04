@@ -61,11 +61,11 @@
       </select>
     </BaseField>
 
-    <!-- What the countries the user turned on ask about a tax, e.g. why a 0% VAT charges nothing -->
-    <template v-if="form.rate === 0 && form.handlerId !== 'FIXED_AMOUNT'">
+    <!-- What the countries the user turned on ask about a tax, e.g. which indirect tax it is, or why a 0% VAT charges nothing -->
+    <template v-if="form.handlerId !== 'FIXED_AMOUNT'">
       <template v-for="country in complianceCountries" :key="country.countryCode">
         <ComplianceFieldInput
-          v-for="field in country.taxFields"
+          v-for="field in visibleFields(country)"
           :key="`${country.countryCode}.${field.key}`"
           :field="field"
           :id="`tax-${country.countryCode}-${field.key}`"
@@ -130,6 +130,11 @@ const form = reactive<CreateTaxDto | UpdateTaxDto>({
 
 // The countries the user turned on that ask for extra data about a tax (none for most users)
 const complianceCountries = ref<ComplianceCountryDto[]>([])
+
+/** The fields that make sense for this tax: the reason for a zero rate is only asked when the rate is 0 */
+function visibleFields(country: ComplianceCountryDto) {
+  return country.taxFields.filter(field => field.key !== 'operation' || form.rate === 0)
+}
 
 function complianceValue(country: string, key: string): string {
   return form.complianceValues?.[`${country}.${key}`] ?? ''

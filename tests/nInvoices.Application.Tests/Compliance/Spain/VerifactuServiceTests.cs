@@ -396,4 +396,79 @@ public sealed class VerifactuServiceTests
         report.Records.ShouldBe(1);
         report.IsIntact.ShouldBeTrue();
     }
+
+    // --- IGIC (Canary Islands) -------------------------------------------------------------------
+
+    private void IgicTax(decimal rate, string? operation = null)
+    {
+        var tax = new Tax(1, "VAT", $"IGIC {rate}%", "PERCENTAGE", rate, TaxApplicationType.OnSubtotal, 0);
+        var values = new Dictionary<string, string> { [SpainComplianceModule.TaxTypeKey] = SpainComplianceModule.Igic };
+        if (operation is not null) values[SpainComplianceModule.OperationKey] = operation;
+        tax.SetComplianceValues("ES", values);
+        _taxes.Items.Add(tax);
+    }
+
+    [Test]
+    public async Task Issued_Igic_RecordsTheTaxAsIgic()
+    {
+        _invoice = NewInvoice(InvoiceId, "26-10-001", vatRate: 7m);
+        IgicTax(7m);
+
+        (await Service().RecordIssuedAsync(_invoice, _customer, Token)).ShouldBeTrue();
+
+        var record = _records.Items.Single();
+        record.Xml.ShouldContain("<sf:Impuesto>03</sf:Impuesto>".Replace("sf:", ""), Case.Insensitive);
+        record.TotalTax.ShouldBe("567.04");
+        record.TotalAmount.ShouldBe("8667.59");
+    }
+
+    [Test]
+    public async Task Issued_Igic_WithTheIrpfWithholdingBesideIt_Works()
+    {
+        _invoice = NewInvoice(InvoiceId, "26-10-001", vatRate: 7m);
+        _invoice.TaxLines.Add(new InvoiceTaxLine("IRPF", "IRPF -15%", -15m, new Money(8100.55m, "EUR"), new Money(-1215.08m, "EUR"), 1));
+        IgicTax(7m);
+
+        (await Service().RecordIssuedAsync(_invoice, _customer, Token)).ShouldBeTrue();
+
+        // The withholding is not part of what AEAT is told
+        var record = _records.Items.Single();
+        record.TotalTax.ShouldBe("567.04");
+        record.TotalAmount.ShouldBe("8667.59");
+    }
+
+    [Test]
+    public async Task Issued_Igic_ZeroRateTaxed_IsRecordedAsTaxed()
+    {
+        _invoice = NewInvoice(InvoiceId, "26-10-001", vatRate: 0m);
+        IgicTax(0m, operation: "S1");
+
+        (await Service().RecordIssuedAsync(_invoice, _customer, Token)).ShouldBeTrue();
+
+        var record = _records.Items.Single();
+        record.Xml.ShouldContain("S1");
+        record.TotalTax.ShouldBe("0.00");
+    }
+
+    [Test]
+    public async Task Issued_Igic_ExemptE7_IsAccepted()
+    {
+        _invoice = NewInvoice(InvoiceId, "26-10-001", vatRate: 0m);
+        IgicTax(0m, operation: "E7");
+
+        (await Service().RecordIssuedAsync(_invoice, _customer, Token)).ShouldBeTrue();
+    }
+
+    [Test]
+    public async Task Issued_IvaWithE7_IsRefused_BecauseItExistsForIgicOnly()
+    {
+        _invoice = NewInvoice(InvoiceId, "26-10-001", vatRate: 0m);
+        var tax = new Tax(1, "VAT", "VAT 0%", "PERCENTAGE", 0m, TaxApplicationType.OnSubtotal, 0);
+        tax.SetComplianceValues("ES", new Dictionary<string, string> { [SpainComplianceModule.OperationKey] = "E7" });
+        _taxes.Items.Add(tax);
+
+        var ex = await Should.ThrowAsync<VerifactuException>(() => Service().RecordIssuedAsync(_invoice, _customer, Token));
+
+        ex.Issues.ShouldContain(i => i.Message.Contains("E7") && i.Message.Contains("IGIC"));
+    }
 }

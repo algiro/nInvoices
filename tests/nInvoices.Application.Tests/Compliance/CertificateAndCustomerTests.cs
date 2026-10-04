@@ -272,15 +272,21 @@ public sealed class CertificateAndCustomerTests
         settings.Update(true, issuer.LegalName, issuer.TaxId, issuer.Address, issuer.Values);
         customer.SetComplianceValues("ES", new Dictionary<string, string> { ["isPublicAdministration"] = "true" });
 
-        var document = await new EInvoiceDocumentFactory(invoices.Object, new InMemoryRepository<Customer>(customer), generation.Object)
+        var igic = new Tax(1, "VAT", "VAT 21%", "PERCENTAGE", 21m, TaxApplicationType.OnSubtotal, 0);
+        igic.SetComplianceValues("ES", new Dictionary<string, string> { ["taxType"] = "IGIC" });
+        var taxSettings = new InMemoryRepository<Tax>(igic);
+
+        var document = await new EInvoiceDocumentFactory(invoices.Object, new InMemoryRepository<Customer>(customer), taxSettings, generation.Object)
             .CreateAsync(5, settings, Token);
 
         document.Number.ShouldBe("26-10-001");
         document.Total.ShouldBe(8480m);
         document.Lines.ShouldHaveSingleItem().Amount.ShouldBe(8000m);
         document.Taxes.Count.ShouldBe(2);
-        document.Taxes[0].ShouldBe(new EInvoiceTax(EInvoiceTaxKind.Added, "VAT 21%", 21m, 8000m, 1680m));
+        document.Taxes[0].ShouldBe(new EInvoiceTax(EInvoiceTaxKind.Added, "VAT 21%", 21m, 8000m, 1680m, document.Taxes[0].Values));
+        document.Taxes[0].Values.ShouldNotBeNull().ShouldContainKeyAndValue("taxType", "IGIC");
         document.Taxes[1].ShouldBe(new EInvoiceTax(EInvoiceTaxKind.Withheld, "IRPF -15%", 15m, 8000m, 1200m));
+        document.Taxes[1].Values.ShouldBeNull();
         document.Buyer.Values.ShouldContainKeyAndValue("isPublicAdministration", "true");
         document.Issuer.TaxId.ShouldBe("12345678Z");
         document.Language.ShouldBe("en");

@@ -29,8 +29,14 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
     /// <summary>Issuer setting: the signing certificate is a company seal certificate (certificado de sello).</summary>
     public const string SealCertificateKey = "sealCertificate";
 
-    /// <summary>Tax setting: how a 0% VAT is treated (S1, S2, N1, N2, E1..E6).</summary>
+    /// <summary>Tax setting: how a 0% VAT is treated (S1, S2, N1, N2, E1..E8).</summary>
     public const string OperationKey = "operation";
+
+    /// <summary>Tax setting: which indirect tax it is, IVA (the default when empty) or IGIC (Canary Islands).</summary>
+    public const string TaxTypeKey = "taxType";
+
+    public const string Iva = "IVA";
+    public const string Igic = "IGIC";
 
     public const string Individual = "individual";
     public const string LegalEntity = "legalEntity";
@@ -89,21 +95,34 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
     public IReadOnlyList<ComplianceField> TaxFields { get; } =
     [
         new ComplianceField(
+            TaxTypeKey,
+            "Which tax is this?",
+            ComplianceFieldType.Choice,
+            Help: "Left empty it is IVA. Choose IGIC (Impuesto General Indirecto Canario) if you invoice from the Canary Islands. A withholding such as IRPF is not affected: it is the tax with a negative rate.",
+            Options:
+            [
+                new ComplianceFieldOption(Iva, "IVA (VAT)"),
+                new ComplianceFieldOption(Igic, "IGIC (Canary Islands)")
+            ]),
+        new ComplianceField(
             OperationKey,
             "Verifactu treatment of a 0% tax",
             ComplianceFieldType.Choice,
-            Help: "Only used when the rate is 0%: why no VAT is charged. A tax above 0% is always taxed.",
+            Help: "Only used when the rate is 0%: why no tax is charged. A tax above 0% is always taxed. The article of each exemption depends on the tax (E7 and E8 exist for IGIC only).",
             Options:
             [
+                new ComplianceFieldOption("S1", "Taxed at 0% (a zero rate, e.g. IGIC tipo cero)"),
                 new ComplianceFieldOption("S2", "Taxable, reverse charge (inversión del sujeto pasivo)"),
                 new ComplianceFieldOption("N2", "Not subject: place-of-supply rules (e.g. services to a business in another country)"),
-                new ComplianceFieldOption("N1", "Not subject: article 7, 14 or other"),
-                new ComplianceFieldOption("E1", "Exempt: article 20"),
-                new ComplianceFieldOption("E2", "Exempt: article 21 (exports)"),
-                new ComplianceFieldOption("E3", "Exempt: article 22"),
-                new ComplianceFieldOption("E4", "Exempt: articles 23 and 24"),
-                new ComplianceFieldOption("E5", "Exempt: article 25 (intra-community supplies)"),
-                new ComplianceFieldOption("E6", "Exempt: other reasons")
+                new ComplianceFieldOption("N1", "Not subject: article 7, 14 or other (IGIC: article 9)"),
+                new ComplianceFieldOption("E1", "Exempt: E1 (IVA article 20)"),
+                new ComplianceFieldOption("E2", "Exempt: E2 (IVA article 21, exports; IGIC article 11)"),
+                new ComplianceFieldOption("E3", "Exempt: E3 (IVA article 22; IGIC article 12)"),
+                new ComplianceFieldOption("E4", "Exempt: E4 (IVA articles 23 and 24; IGIC article 13)"),
+                new ComplianceFieldOption("E5", "Exempt: E5 (IVA article 25, intra-community supplies)"),
+                new ComplianceFieldOption("E6", "Exempt: E6 (other reasons)"),
+                new ComplianceFieldOption("E7", "Exempt: E7 (IGIC only: article 90 of the Canary Islands consolidated text)"),
+                new ComplianceFieldOption("E8", "Exempt: E8 (IGIC only: Ley 20/1991)")
             ])
     ];
 

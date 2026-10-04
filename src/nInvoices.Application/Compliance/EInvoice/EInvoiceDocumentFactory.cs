@@ -17,15 +17,18 @@ public sealed class EInvoiceDocumentFactory : IEInvoiceDocumentFactory
 {
     private readonly IInvoiceRepository _invoices;
     private readonly IRepository<Customer> _customers;
+    private readonly IRepository<Tax> _taxes;
     private readonly IInvoiceGenerationService _generation;
 
     public EInvoiceDocumentFactory(
         IInvoiceRepository invoices,
         IRepository<Customer> customers,
+        IRepository<Tax> taxes,
         IInvoiceGenerationService generation)
     {
         _invoices = invoices;
         _customers = customers;
+        _taxes = taxes;
         _generation = generation;
     }
 
@@ -43,6 +46,8 @@ public sealed class EInvoiceDocumentFactory : IEInvoiceDocumentFactory
             .Select(l => new EInvoiceLine(l.Description, l.Quantity, l.Rate, l.Amount))
             .ToList();
 
+        var taxSettings = (await _taxes.GetAllAsync(cancellationToken)).ToList();
+
         // A negative rate is a withholding (e.g. -15 for an income-tax retention): it is taken off what is paid
         var taxes = invoice.TaxLines
             .OrderBy(t => t.Order)
@@ -51,7 +56,8 @@ public sealed class EInvoiceDocumentFactory : IEInvoiceDocumentFactory
                 t.Description,
                 Math.Abs(t.Rate),
                 t.BaseAmount.Amount,
-                Math.Abs(t.TaxAmount.Amount)))
+                Math.Abs(t.TaxAmount.Amount),
+                taxSettings.FirstOrDefault(x => x.TaxId == t.TaxId)?.GetComplianceValues(settings.CountryCode)))
             .ToList();
 
         return new EInvoiceDocument(

@@ -113,7 +113,12 @@ public static class VerifactuXml
 
     private static XElement Detail(VerifactuBreakdown line)
     {
-        var detail = new XElement(Sf + "DetalleDesglose", Sf.E("ClaveRegimen", "01"));
+        var detail = new XElement(Sf + "DetalleDesglose");
+
+        // IVA is what an absent Impuesto means; IGIC (03) must be said. Its regime key is the general regime (01)
+        if (line.Igic)
+            detail.Add(Sf.E("Impuesto", "03"));
+        detail.Add(Sf.E("ClaveRegimen", "01"));
 
         // S1 is taxed; S2 (reverse charge), N1/N2 (not subject) and E1..E6 (exempt) carry no tax
         if (line.Operation is "S1" or "S2" or "N1" or "N2")
