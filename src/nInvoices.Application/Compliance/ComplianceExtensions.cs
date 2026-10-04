@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using nInvoices.Application.Compliance.Spain.Face;
 using nInvoices.Application.Compliance.Spain.Facturae;
 using nInvoices.Application.Compliance.Spain.Verifactu;
 using nInvoices.Application.Features.Invoices;
@@ -32,10 +33,13 @@ public static class ComplianceExtensions
         services.AddScoped<IEInvoiceDocumentFactory, EInvoiceDocumentFactory>();
         services.AddScoped<SigningCertificateLoader>();
         services.AddScoped<IEInvoiceService, EInvoiceService>();
+        services.AddScoped<IEInvoiceDeliveryService, EInvoiceDeliveryService>();
+        services.AddSingleton<IEInvoiceChannel, FaceChannel>();
 
         services.AddScoped<IVerifactuService, VerifactuService>();
         services.AddScoped<IVerifactuSubmitter, VerifactuSubmitter>();
         services.AddScoped<IInvoiceLifecycleStep, VerifactuLifecycleStep>();
+        services.AddScoped<IInvoiceLifecycleStep, EInvoiceDeliveryLifecycleStep>();
         services.AddScoped<IInvoiceTemplateModelContributor, VerifactuTemplateContributor>();
         return services;
     }
