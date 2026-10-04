@@ -1,7 +1,9 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
+using nInvoices.Infrastructure.Encryption;
 
 namespace nInvoices.Infrastructure.Data;
 
@@ -10,6 +12,8 @@ namespace nInvoices.Infrastructure.Data;
 /// Handles entity mapping, relationships, and value object conversions.
 /// Every <see cref="IOwnedEntity"/> is scoped to the current user: queries only see that user's
 /// rows, and saves stamp and verify ownership.
+/// Columns marked <see cref="EncryptedPropertyExtensions.IsEncrypted{TProperty}(Microsoft.EntityFrameworkCore.Metadata.Builders.PropertyBuilder{TProperty}, string)"/>
+/// are encrypted with the current user's key (<see cref="FieldEncryptor"/>).
 /// </summary>
 public sealed class ApplicationDbContext : DbContext
 {
@@ -20,11 +24,25 @@ public sealed class ApplicationDbContext : DbContext
 
     private readonly IUserContext? _userContext;
 
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IUserContext? userContext = null)
+    public ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options,
+        FieldEncryptor encryptor,
+        IUserContext? userContext = null)
         : base(options)
     {
+        ArgumentNullException.ThrowIfNull(encryptor);
+        Encryptor = encryptor;
         _userContext = userContext;
     }
+
+    /// <summary>Encrypts the sensitive columns. Part of the model cache key: the converters use it.</summary>
+    internal FieldEncryptor Encryptor { get; }
+
+    /// <summary>
+    /// Lets <see cref="LegacyDataEncryption"/> save Verifactu records again to encrypt them: their
+    /// values don't change, only how they are stored.
+    /// </summary>
+    internal bool AllowRewritingVerifactuRecords { get; set; }
 
     /// <summary>
     /// The user whose data this context reads and writes. Null when there is no authenticated
@@ -57,12 +75,16 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<VerifactuRecord> VerifactuRecords => Set<VerifactuRecord>();
     public DbSet<VerifactuSubmission> VerifactuSubmissions => Set<VerifactuSubmission>();
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
+        optionsBuilder.ReplaceService<IModelCacheKeyFactory, EncryptorModelCacheKeyFactory>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
         // Apply all configurations from the assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+        modelBuilder.ApplyEncryption(Encryptor);
 
         // "One active template per (customer, invoice type)" is a partial unique index.
         // The filter predicate is provider-specific: SQLite/SQL Server quote with [ ] and
@@ -121,7 +143,15 @@ public sealed class ApplicationDbContext : DbContext
     {
         EnsureVerifactuRecordsAreAppendOnly();
         await ApplyOwnershipAsync(cancellationToken);
-        return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+
+        var ownerId = CurrentOwnerId;
+        if (string.IsNullOrEmpty(ownerId))
+            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+
+        // Encrypted columns are written with the current user's key
+        await Encryptor.EnsureKeyAsync(ownerId, cancellationToken);
+        using (FieldEncryptor.BeginWriting(ownerId))
+            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 
     /// <summary>
@@ -132,7 +162,8 @@ public sealed class ApplicationDbContext : DbContext
     {
         ChangeTracker.DetectChanges();
 
-        if (ChangeTracker.Entries<VerifactuRecord>().Any(e => e.State is EntityState.Modified or EntityState.Deleted))
+        if (ChangeTracker.Entries<VerifactuRecord>().Any(e =>
+                e.State == EntityState.Deleted || (e.State == EntityState.Modified && !AllowRewritingVerifactuRecords)))
             throw new InvalidOperationException("Verifactu records are append-only: a saved record cannot be changed or deleted.");
     }
 

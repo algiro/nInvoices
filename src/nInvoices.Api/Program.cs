@@ -64,6 +64,7 @@ builder.Services.AddHttpContextAccessor();
 
 // Add Database
 builder.Services.AddDatabase(builder.Configuration);
+builder.Services.AddFieldEncryption(builder.Configuration, builder.Environment.ContentRootPath, builder.Environment.IsDevelopment());
 
 // Add Tax Handlers
 builder.Services.AddTaxHandlers();
@@ -255,6 +256,16 @@ if (assignedRows > 0)
 if (unownedRows > 0)
     Log.Warning("{Count} rows have no owner and are hidden from every user. Set MultiUser:LegacyOwnerId to the " +
         "user id that should own them (logged at sign-in as 'Token validated for user: <id>') and restart", unownedRows);
+
+// Sensitive columns are encrypted with per-user keys, wrapped by the master key file (Docs/ENCRYPTION.md).
+// Loading the encryptor here makes a missing key file stop the app at startup, not at the first request.
+var fieldEncryptor = app.Services.GetRequiredService<nInvoices.Infrastructure.Encryption.FieldEncryptor>();
+var rewrappedKeys = await fieldEncryptor.RewrapUserKeysAsync();
+if (rewrappedKeys > 0)
+    Log.Information("Re-wrapped {Count} user keys with the current master key", rewrappedKeys);
+var encryptedRows = await nInvoices.Infrastructure.Encryption.LegacyDataEncryption.EncryptLegacyDataAsync(app.Services);
+if (encryptedRows > 0)
+    Log.Information("Encrypted {Count} rows stored before their columns were encrypted", encryptedRows);
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

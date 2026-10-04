@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using nInvoices.Core.Entities;
+using nInvoices.Infrastructure.Encryption;
 
 namespace nInvoices.Infrastructure.Data.Configurations;
 
@@ -12,11 +13,11 @@ public sealed class InvoiceEmailConfiguration : IEntityTypeConfiguration<Invoice
 
         builder.HasKey(e => e.Id);
 
-        builder.Property(e => e.From).IsRequired().HasMaxLength(320);
-        builder.Property(e => e.To).IsRequired().HasMaxLength(2000);
-        builder.Property(e => e.Cc).HasMaxLength(2000);
-        builder.Property(e => e.Subject).IsRequired().HasMaxLength(1000);
-        builder.Property(e => e.Attachments).IsRequired().HasMaxLength(2000);
+        builder.Property(e => e.From).IsRequired().IsEncrypted("InvoiceEmail.From");
+        builder.Property(e => e.To).IsRequired().IsEncrypted("InvoiceEmail.To");
+        builder.Property(e => e.Cc).IsEncrypted("InvoiceEmail.Cc");
+        builder.Property(e => e.Subject).IsRequired().IsEncrypted("InvoiceEmail.Subject");
+        builder.Property(e => e.Attachments).IsRequired().IsEncrypted("InvoiceEmail.Attachments");
         builder.Property(e => e.GmailDraftId).IsRequired().HasMaxLength(200);
         builder.Property(e => e.GmailMessageId).IsRequired().HasMaxLength(200);
         builder.Property(e => e.RfcMessageId).IsRequired().HasMaxLength(500);

@@ -131,6 +131,12 @@ against a running API + frontend.
   entities should derive from `OwnedEntityBase`; per-user unique indexes include `OwnerId`.
   Rows with an empty owner (pre-multi-user data) are assigned at startup to
   `MultiUser:LegacyOwnerId` (`UnownedDataExtensions`).
+- **Sensitive columns are encrypted** (`.IsEncrypted("Entity.Column")` in the EF configuration,
+  per-user keys wrapped by a master key file; `Docs/ENCRYPTION.md`). They are stored as text even
+  when decimal, so **never filter, sort, group or sum them in SQL**: load and do it in memory
+  (see `InvoiceRepository`). Comparing one in a query throws. Never rename a purpose string, and
+  don't touch encrypted columns with `ExecuteUpdate` or raw SQL. `ApplicationDbContext` takes a
+  `FieldEncryptor`; tests use `TestEncryption.Encryptor`.
 - Database provider is chosen by `Database:Type` config (`SQLite` | `PostgreSQL`); the
   connection string key is `ConnectionStrings:Default`. Migrations assembly is
   `nInvoices.Infrastructure` for both providers, so a single migration set must work on both.

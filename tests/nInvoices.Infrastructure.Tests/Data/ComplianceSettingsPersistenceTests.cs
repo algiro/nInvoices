@@ -26,7 +26,7 @@ public sealed class ComplianceSettingsPersistenceTests
     public async Task TearDown() => await _connection.DisposeAsync();
 
     private ApplicationDbContext ContextFor(string? userId) =>
-        new(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options, new TestUserContext(userId));
+        new(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options, TestEncryption.Encryptor, new TestUserContext(userId));
 
     private static ComplianceSettings Spain()
     {

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using nInvoices.Core.Entities;
+using nInvoices.Infrastructure.Encryption;
 
 namespace nInvoices.Infrastructure.Data.Configurations;
 
@@ -28,7 +29,7 @@ public sealed class InvoiceTaxLineConfiguration : IEntityTypeConfiguration<Invoi
         {
             money.Property(m => m.Amount)
                 .HasColumnName("BaseAmount")
-                .HasPrecision(18, 2)
+                .IsEncrypted("InvoiceTaxLine.BaseAmount")
                 .IsRequired();
             money.Property(m => m.Currency)
                 .HasColumnName("BaseCurrency")
@@ -40,7 +41,7 @@ public sealed class InvoiceTaxLineConfiguration : IEntityTypeConfiguration<Invoi
         {
             money.Property(m => m.Amount)
                 .HasColumnName("TaxAmount")
-                .HasPrecision(18, 2)
+                .IsEncrypted("InvoiceTaxLine.TaxAmount")
                 .IsRequired();
             money.Property(m => m.Currency)
                 .HasColumnName("TaxCurrency")

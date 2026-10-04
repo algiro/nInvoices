@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using nInvoices.Core.Entities;
+using nInvoices.Infrastructure.Encryption;
 
 namespace nInvoices.Infrastructure.Data.Configurations;
 
@@ -20,19 +21,19 @@ public sealed class ComplianceSettingsConfiguration : IEntityTypeConfiguration<C
             .IsRequired();
 
         builder.Property(s => s.LegalName)
-            .HasMaxLength(200);
+            .IsEncrypted("ComplianceSettings.LegalName");
 
         builder.Property(s => s.TaxId)
-            .HasMaxLength(50);
+            .IsEncrypted("ComplianceSettings.TaxId");
 
         builder.OwnsOne(s => s.Address, address =>
         {
-            address.Property(a => a.Street).HasMaxLength(200);
-            address.Property(a => a.HouseNumber).HasMaxLength(20);
-            address.Property(a => a.City).HasMaxLength(100);
-            address.Property(a => a.ZipCode).HasMaxLength(20);
-            address.Property(a => a.Country).HasMaxLength(100);
-            address.Property(a => a.State).HasMaxLength(100);
+            address.Property(a => a.Street).IsEncrypted("ComplianceSettings.Address.Street");
+            address.Property(a => a.HouseNumber).IsEncrypted("ComplianceSettings.Address.HouseNumber");
+            address.Property(a => a.City).IsEncrypted("ComplianceSettings.Address.City");
+            address.Property(a => a.ZipCode).IsEncrypted("ComplianceSettings.Address.ZipCode");
+            address.Property(a => a.Country).IsEncrypted("ComplianceSettings.Address.Country");
+            address.Property(a => a.State).IsEncrypted("ComplianceSettings.Address.State");
         });
 
         // The country module own settings, as one JSON object

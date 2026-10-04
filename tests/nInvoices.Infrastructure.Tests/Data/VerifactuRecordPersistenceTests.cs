@@ -30,7 +30,7 @@ public sealed class VerifactuRecordPersistenceTests
     private ApplicationDbContext ContextFor(string? userId)
     {
         var context = new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options, new TestUserContext(userId));
+            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options, TestEncryption.Encryptor, new TestUserContext(userId));
         // SQLite does not enforce foreign keys unless asked, and the chain relies on them
         context.Database.ExecuteSqlRaw("PRAGMA foreign_keys = ON;");
         return context;

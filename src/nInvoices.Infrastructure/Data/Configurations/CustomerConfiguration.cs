@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using nInvoices.Core.Entities;
 using nInvoices.Core.ValueObjects;
+using nInvoices.Infrastructure.Encryption;
 
 namespace nInvoices.Infrastructure.Data.Configurations;
 
@@ -13,19 +14,20 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
 
         builder.HasKey(c => c.Id);
 
+        // Encrypted columns: lengths are checked by the validators, on the plain values
         builder.Property(c => c.Name)
             .IsRequired()
-            .HasMaxLength(200);
+            .IsEncrypted("Customer.Name");
 
         builder.Property(c => c.FiscalId)
             .IsRequired()
-            .HasMaxLength(50);
+            .IsEncrypted("Customer.FiscalId");
 
         builder.Property(c => c.Email)
-            .HasMaxLength(320);
+            .IsEncrypted("Customer.Email");
 
         builder.Property(c => c.CcEmails)
-            .HasMaxLength(1000);
+            .IsEncrypted("Customer.CcEmails");
 
         builder.Property(c => c.HolidayCountry)
             .HasMaxLength(2);
@@ -38,12 +40,12 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         // Configure Address value object as owned entity
         builder.OwnsOne(c => c.Address, address =>
         {
-            address.Property(a => a.Street).HasMaxLength(200).IsRequired();
-            address.Property(a => a.HouseNumber).HasMaxLength(20).IsRequired();
-            address.Property(a => a.City).HasMaxLength(100).IsRequired();
-            address.Property(a => a.ZipCode).HasMaxLength(20).IsRequired();
-            address.Property(a => a.Country).HasMaxLength(100).IsRequired();
-            address.Property(a => a.State).HasMaxLength(100);
+            address.Property(a => a.Street).IsRequired().IsEncrypted("Customer.Address.Street");
+            address.Property(a => a.HouseNumber).IsRequired().IsEncrypted("Customer.Address.HouseNumber");
+            address.Property(a => a.City).IsRequired().IsEncrypted("Customer.Address.City");
+            address.Property(a => a.ZipCode).IsRequired().IsEncrypted("Customer.Address.ZipCode");
+            address.Property(a => a.Country).IsRequired().IsEncrypted("Customer.Address.Country");
+            address.Property(a => a.State).IsEncrypted("Customer.Address.State");
         });
 
         builder.Property(c => c.CreatedAt)
@@ -71,8 +73,5 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
             .WithOne(i => i.Customer)
             .HasForeignKey(i => i.CustomerId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        // Index
-        builder.HasIndex(c => c.FiscalId);
     }
 }

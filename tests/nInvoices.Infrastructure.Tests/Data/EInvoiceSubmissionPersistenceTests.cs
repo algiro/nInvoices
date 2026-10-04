@@ -31,7 +31,7 @@ public sealed class EInvoiceSubmissionPersistenceTests
     private ApplicationDbContext ContextFor(string? userId)
     {
         var context = new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options, new TestUserContext(userId));
+            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options, TestEncryption.Encryptor, new TestUserContext(userId));
         context.Database.ExecuteSqlRaw("PRAGMA foreign_keys = ON;");
         return context;
     }

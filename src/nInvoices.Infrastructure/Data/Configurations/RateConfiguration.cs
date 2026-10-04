@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using nInvoices.Core.Entities;
+using nInvoices.Infrastructure.Encryption;
 
 namespace nInvoices.Infrastructure.Data.Configurations;
 
@@ -21,7 +22,7 @@ public sealed class RateConfiguration : IEntityTypeConfiguration<Rate>
         {
             money.Property(m => m.Amount)
                 .HasColumnName("PriceAmount")
-                .HasPrecision(18, 2)
+                .IsEncrypted("Rate.Price")
                 .IsRequired();
 
             money.Property(m => m.Currency)

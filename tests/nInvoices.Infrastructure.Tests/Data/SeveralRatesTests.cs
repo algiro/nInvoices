@@ -44,7 +44,7 @@ public sealed class SeveralRatesTests
     {
         var context = new ApplicationDbContext(
             new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options,
-            new TestUserContext(userId));
+            TestEncryption.Encryptor, new TestUserContext(userId));
         _contexts.Add(context);
         return context;
     }
@@ -106,7 +106,7 @@ public sealed class SeveralRatesTests
         await using var connection = new SqliteConnection("DataSource=:memory:");
         await connection.OpenAsync(Token);
         await using var context = new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).Options);
+            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).Options, TestEncryption.Encryptor);
         await context.Database.MigrateAsync(Token);
 
         await context.Database.ExecuteSqlRawAsync("""

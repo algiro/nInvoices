@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using nInvoices.Core.Entities;
+using nInvoices.Infrastructure.Encryption;
 
 namespace nInvoices.Infrastructure.Data.Configurations;
 
@@ -47,7 +48,7 @@ public sealed class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
         {
             money.Property(m => m.Amount)
                 .HasColumnName("SubtotalAmount")
-                .HasPrecision(18, 2)
+                .IsEncrypted("Invoice.Subtotal")
                 .IsRequired();
             money.Property(m => m.Currency)
                 .HasColumnName("SubtotalCurrency")
@@ -59,7 +60,7 @@ public sealed class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
         {
             money.Property(m => m.Amount)
                 .HasColumnName("TotalExpensesAmount")
-                .HasPrecision(18, 2)
+                .IsEncrypted("Invoice.TotalExpenses")
                 .IsRequired();
             money.Property(m => m.Currency)
                 .HasColumnName("TotalExpensesCurrency")
@@ -71,7 +72,7 @@ public sealed class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
         {
             money.Property(m => m.Amount)
                 .HasColumnName("TotalTaxesAmount")
-                .HasPrecision(18, 2)
+                .IsEncrypted("Invoice.TotalTaxes")
                 .IsRequired();
             money.Property(m => m.Currency)
                 .HasColumnName("TotalTaxesCurrency")
@@ -83,7 +84,7 @@ public sealed class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
         {
             money.Property(m => m.Amount)
                 .HasColumnName("TotalAmount")
-                .HasPrecision(18, 2)
+                .IsEncrypted("Invoice.Total")
                 .IsRequired();
             money.Property(m => m.Currency)
                 .HasColumnName("TotalCurrency")
@@ -92,10 +93,10 @@ public sealed class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
         });
 
         builder.Property(i => i.RenderedContent)
-            .HasMaxLength(int.MaxValue);
+            .IsEncrypted("Invoice.RenderedContent");
 
         builder.Property(i => i.Notes)
-            .HasMaxLength(2000);
+            .IsEncrypted("Invoice.Notes");
 
         builder.Property(i => i.CreatedAt).IsRequired();
         builder.Property(i => i.UpdatedAt);

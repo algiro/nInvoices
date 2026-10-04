@@ -13,6 +13,8 @@ services:
     volumes:
       - ./data:/data
       - ./logs:/app/logs
+      # Master key of the column encryption, generated on first start (Development); back it up
+      - ./encryption:/app/encryption
     networks:
       - ninvoices-network
 

@@ -78,6 +78,8 @@ services:
       - Cors__Origins=${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
     volumes:
       - ./volumes/logs:/app/logs
+      # Master key of the column encryption, generated on first start (Development); back it up
+      - ./volumes/encryption:/app/encryption
     ports:
       - "${API_PORT:-5000}:8080"
     depends_on:
