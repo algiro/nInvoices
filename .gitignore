@@ -100,3 +100,5 @@ client_secret_*.json
 
 # ASP.NET Data Protection keys (encrypt stored Gmail tokens)
 src/nInvoices.Api/keys/
+
+src/nInvoices.Api/appsettings.Development.json

@@ -81,13 +81,14 @@ Upload `test.p12` with the password `changeit`.
 3. Create and **finalize** the invoice as usual. The signed Facturae is generated automatically for
    public administrations. For other customers (Facturae is optional between businesses) use
    *Generate* in the **E-invoice** panel of the invoice.
-4. **Download** the `.xsig` file from the invoice page and upload it to FACe
-   (<https://face.gob.es>). Sending to FACe from nInvoices directly is not built yet.
+4. Send it to FACe: either press *Send to FACe* in the **E-invoice** panel (see [FACe](#face-sending-to-public-administrations)),
+   or **download** the `.xsig` file and upload it at <https://face.gob.es> yourself.
 
 If the invoice breaks a rule (for example a missing DIR3 code, an invalid NIF, or a customer with no tax
 line), the E-invoice panel lists what to fix; fix it and press *Regenerate*.
 
 ## FACe: sending to public administrations
+
 **FACe** is the portal through which invoices reach Spanish public administrations. nInvoices can send the signed
 Facturae there for you and show where the invoice stands (registered, accounted, paid, rejected...).
 
@@ -157,6 +158,7 @@ so on, which need other regime keys) are not, and an invoice has one IGIC line, 
 submission of an IGIC invoice to AEAT's test environment. The rules used here come from AEAT's published validation
 rules (version 1.2.2) and schemas; whether the general regime key `01` is in AEAT's list for IGIC (L8B) is taken from
 secondary sources.
+
 ## Verifactu
 
 **Verifactu** (Real Decreto 1007/2023, Orden HAC/1177/2024) makes billing software keep a tamper-evident record
@@ -234,5 +236,7 @@ using it for real invoices, send a few from the test environment and check the a
   a record AEAT accepted with errors) is not implemented either.
 - Verifactu only covers complete invoices (type F1) to customers with a tax id. Simplified invoices (F2) are not supported.
 - The Facturae signature is XAdES-EPES (the format FACe asks for). Validate your first real invoice in FACe's test
-  environment before relying on it. Sending to FACe from nInvoices directly is not built yet.
+  environment before relying on it.
+- FACe: sending and reading the status are built; requesting a cancellation (anulación) and the detailed list of
+  status changes are not.
 - B2B e-invoicing under the Crea y Crece law (UBL/EN 16931) is not implemented.
