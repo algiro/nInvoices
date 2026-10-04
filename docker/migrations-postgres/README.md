@@ -32,4 +32,10 @@ so the app's migration bookkeeping stays consistent.
 
 ## Naming
 
-`<yyyyMMdd>_<slug>.sql`, matching the EF migration it mirrors where there is one.
+`<yyyyMMdd>-<HHmm>_<slug>.sql`, with the date and time taken from the EF migration it
+mirrors (`20261003094352_AddEInvoicing` → `20261003-0943_add-einvoicing.sql`).
+
+Files run in **filename order**, so the time matters: with the date alone, files from the same
+day sort by slug, and a file can run before the one that creates the tables it needs
+(`add-einvoice-submissions` before `add-einvoicing`). Older files with the date alone
+(`<yyyyMMdd>_<slug>.sql`) are already applied everywhere and keep their names.
