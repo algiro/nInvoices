@@ -43,7 +43,43 @@ nInvoices is built around that monthly routine:
 - **Template editor with live preview** and a panel of available variables.
 - **Pixel-exact PDFs** rendered by headless Chrome, for invoices, timesheets and a worked-days calendar.
 - **Configurable invoice numbers, per user**: each user has their own sequence and pattern, e.g. `{YEAR}-{MONTH:00}-{NUMBER:000}`, set in Settings. An invoice takes its number when you finalize it; until then every draft shows the next number, so deleting a draft never leaves a gap.
-- **Spanish e-invoicing (optional, off by default):** signed Facturae 3.2.2 for public administrations (FACe) and Verifactu (hash-chained invoice records sent to the Tax Agency, with the QR code), per user. See [`Docs/SPAIN-EINVOICING.md`](Docs/SPAIN-EINVOICING.md), including how to get and upload your signing certificate.
+- **E-invoicing rules per country (optional, off by default).** Each user can turn on the rules of their own country; nobody else sees a thing. Spain is built in (see [below](#e-invoicing-by-country)), and the design is made so other countries can be added.
+
+### E-invoicing by country
+
+Some countries ask freelancers for more than a PDF: a signed structured invoice, a tamper-evident record, a QR code, delivery through a government portal. nInvoices keeps all of that **optional and per user**: the server operator chooses which countries are offered, each user turns on theirs in *Settings → Invoicing rules by country*, and with nothing turned on nInvoices behaves exactly as before.
+
+**Spain** is implemented. Full guide, including how to get and upload your signing certificate: [`Docs/SPAIN-EINVOICING.md`](Docs/SPAIN-EINVOICING.md).
+
+- **Facturae 3.2.2** with an XAdES-EPES signature, validated against the official schema. Generated automatically for public administrations, on request for anyone else.
+- **FACe:** send the Facturae to a public administration from the invoice page and follow its status (registered, accounted, paid...). Test and production environments.
+- **Verifactu** (VERI\*FACTU mode): every invoice you finalize adds a record to a hash-chained, append-only log, shows the QR code and legend, and is reported to the Tax Agency (AEAT) in the background. A built-in check detects an altered or missing record.
+- **IGIC** (Canary Islands) as well as IVA, and IRPF-style withholdings (a tax with a negative rate).
+- Spanish customers can carry the DIR3 codes public administrations need, and taxes can say why they charge 0% (exempt, not subject, reverse charge).
+
+> **Status:** built against the official schemas, specifications and test vectors, and exercised with local stand-ins for the services. **It has not yet been run against AEAT's or FACe's real test environments**, so treat it as a preview and try it there before relying on it. [`Docs/SPAIN-EINVOICING.md`](Docs/SPAIN-EINVOICING.md) lists exactly what is and isn't verified, and what isn't built yet (corrective invoices, simplified invoices, B2B e-invoicing).
+
+#### Help wanted: more countries
+
+If you freelance in a country with its own e-invoicing rules (Italy's SDI/FatturaPA, Portugal's SAF-T/ATCUD, Poland's KSeF, Germany's XRechnung/ZUGFeRD, France's Factur-X, Belgium and the Netherlands' Peppol...) **your help would be very welcome**, and nobody knows these rules better than the people who live under them.
+
+The code is split so a country is a plug-in, not a rewrite. Most countries need only some of these pieces:
+
+| You need to... | Implement | Spain's example |
+|---|---|---|
+| Describe the country: its extra fields on the issuer, customers and taxes, and its validation | `ICountryComplianceModule` | `SpainComplianceModule` |
+| Produce a structured invoice file (and sign it) | `IEInvoiceFormat` | `FacturaeFormat` |
+| Deliver it to a portal or network, and read its status | `IEInvoiceChannel` | `FaceChannel` |
+| Do something when an invoice is finalized, cancelled or deleted (a fiscal record, a sequence, a hash chain) | `IInvoiceLifecycleStep` | the Verifactu record |
+| Print something on the PDF (a QR code, a legend, a code) | `IInvoiceTemplateModelContributor` | `compliance.verifactu` in the template |
+
+Country-specific data is stored with the issuer, customer and tax as simple `COUNTRY.field` values, so adding a country needs no database change. Modules are registered in `ComplianceExtensions.AddCompliance` and offered by the operator with `Compliance:Countries:XX:Enabled`. Reading `src/nInvoices.Core/Compliance` and the Spanish module under `src/nInvoices.Application/Compliance/Spain` is the quickest way in.
+
+**How you can help**, whatever your level:
+- **Tell us the rules.** Open an [issue](https://github.com/algiro/nInvoices/issues) naming the country, the regime and the official specification. Even "this is what a freelancer here must do, and by when" is valuable.
+- **Test the Spanish part** against the real AEAT and FACe test environments and report what they answer. This is the most useful thing right now.
+- **Build a country.** Please open an issue first so we can agree on the approach (see [Contributing](#contributing)). Keep the same standard as the Spanish module: validate against the official schemas and test vectors, and say plainly in the docs what has and hasn't been verified.
+- **Review the Spanish implementation** if you know the Spanish rules. Corrections to the points listed as unverified are especially welcome.
 
 ### Getting paid
 - **Invoice lifecycle:** Draft → Finalized → Sent → Paid, or Cancelled.
@@ -148,14 +184,14 @@ off self-registration in the Keycloak realm (`registrationAllowed`).
 ```
 src/
   nInvoices.Core/            entities, value objects, interfaces
-  nInvoices.Application/     commands, queries, services (generation, templates, holidays)
+  nInvoices.Application/     commands, queries, services (generation, templates, holidays, e-invoicing rules)
   nInvoices.Infrastructure/  EF Core, PDF export, tax handlers, Gmail
   nInvoices.Api/             ASP.NET Core API
   nInvoices.Web/             Vue 3 app
   nInvoices.AppHost/         .NET Aspire orchestrator (local only)
 tests/                       unit and integration tests
 docker/                      Dockerfiles, compose files, deploy and migration scripts
-Docs/                        template guide, backlog, screenshots
+Docs/                        template guide, Spanish e-invoicing guide, backlog, screenshots
 ```
 
 ```bash
@@ -167,6 +203,8 @@ cd src/nInvoices.Web && npm run build   # type-check and build the frontend
 
 Next on the list (see [`Docs/UI-BACKLOG.md`](Docs/UI-BACKLOG.md)):
 
+- **E-invoicing:** validation against AEAT's and FACe's real test environments, corrective invoices (*rectificativas*), simplified invoices, FACe cancellation requests and Spanish B2B e-invoicing, plus **other countries** (see [help wanted](#help-wanted-more-countries))
+
 - **Autosaved drafts** of an invoice in progress
 - **Week view** for customers with several projects
 - **Command palette** (`Ctrl+K`) and more keyboard shortcuts
@@ -175,7 +213,7 @@ Ideas and bug reports are welcome in [Issues](https://github.com/algiro/nInvoice
 
 ## Contributing
 
-Issues, questions and suggestions are very welcome. For code changes, please **open an issue first** so we can agree on the approach before you invest time. Pull requests are accepted under the project's license (see below).
+Issues, questions and suggestions are very welcome, and so is help with [e-invoicing for your country](#help-wanted-more-countries). For code changes, please **open an issue first** so we can agree on the approach before you invest time. Pull requests are accepted under the project's license (see below).
 
 ## License
 
