@@ -45,9 +45,11 @@ public enum EInvoiceTaxKind
 /// <param name="Rate">Percentage, always positive; <see cref="Kind"/> says whether it is added or withheld.</param>
 /// <param name="TaxableBase">Amount the tax is calculated on.</param>
 /// <param name="Amount">Tax amount, always positive.</param>
+/// <param name="Values">The country-specific values the user set on the tax (e.g. which indirect tax it is); null if none.</param>
 public sealed record EInvoiceTax(
     EInvoiceTaxKind Kind,
     string Description,
     decimal Rate,
     decimal TaxableBase,
-    decimal Amount);
+    decimal Amount,
+    IReadOnlyDictionary<string, string>? Values = null);
