@@ -5,6 +5,22 @@ import type { User } from 'oidc-client-ts';
 
 const isAuthDisabled = import.meta.env.VITE_AUTH_DISABLED === 'true';
 
+/** The realm role the API requires on every endpoint. */
+export const APP_USER_ROLE = 'user';
+
+function realmRolesFromAccessToken(accessToken: string | undefined): string[] {
+  const payload = accessToken?.split('.')[1];
+  if (!payload) return [];
+  try {
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const claims = JSON.parse(atob(base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=')));
+    const roles = claims?.realm_access?.roles;
+    return Array.isArray(roles) ? roles.filter((r: unknown): r is string => typeof r === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
   const isLoading = ref(true);
@@ -28,12 +44,17 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value?.profile.email || '';
   });
 
-  const roles = computed(() => {
+  // Realm roles come from the access token, the same token the API checks
+  // (the ID token / userinfo profile doesn't carry them by default).
+  const roles = computed<string[]>(() => {
     if (isAuthDisabled) return ['user', 'admin'];
-    return (user.value?.profile.realm_access as any)?.roles || [];
+    return realmRolesFromAccessToken(user.value?.access_token);
   });
 
   const isAdmin = computed(() => roles.value.includes('admin'));
+
+  // Signed in but not approved yet: an administrator grants the "user" role in Keycloak.
+  const isApproved = computed(() => roles.value.includes(APP_USER_ROLE));
 
   async function initialize() {
     if (isAuthDisabled) {
@@ -114,6 +135,12 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /** Gets a fresh token from Keycloak, so a role granted meanwhile shows up without signing in again. */
+  async function renewToken() {
+    if (isAuthDisabled) return;
+    user.value = await authService.renewToken();
+  }
+
   function hasRole(role: string): boolean {
     return roles.value.includes(role);
   }
@@ -127,12 +154,14 @@ export const useAuthStore = defineStore('auth', () => {
     email,
     roles,
     isAdmin,
+    isApproved,
     initialize,
     login,
     handleCallback,
     logout,
     getAccessToken,
     refreshUser,
+    renewToken,
     hasRole
   };
 });
