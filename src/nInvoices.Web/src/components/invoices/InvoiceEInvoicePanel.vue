@@ -1,6 +1,6 @@
 <template>
   <BasePanel
-    v-if="formats.length"
+    v-if="formats.length || channels.length"
     title="E-invoice"
     description="The structured, signed version of this invoice that some countries require, for example Facturae for Spanish public administrations."
   >
@@ -35,7 +35,7 @@
         </div>
 
         <p v-if="format.isGenerated && format.generatedAt" class="muted">
-          {{ format.fileName }} · generated {{ formatDate(format.generatedAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }}
+          {{ format.fileName }} · generated {{ formatDate(format.generatedAt, dateTime) }}
         </p>
         <p v-else-if="!canGenerate" class="muted">
           {{ format.isMandatory ? 'Generated automatically when the invoice is finalized.' : 'Available once the invoice is finalized.' }}
@@ -49,18 +49,69 @@
         </div>
       </li>
     </ul>
+
+    <ul v-if="channels.length" class="formats channels">
+      <li v-for="channel in channels" :key="channel.channelId">
+        <div class="line">
+          <div class="what">
+            <strong>{{ channel.displayName }}</strong>
+            <StatusPill :tone="channel.environment === 'Production' ? 'warning' : 'neutral'">{{ channel.environment }}</StatusPill>
+            <StatusPill v-if="channel.submission" tone="success">Sent</StatusPill>
+          </div>
+          <div class="buttons">
+            <BaseButton
+              v-if="channel.submission"
+              variant="ghost"
+              :loading="busy === `refresh:${channel.channelId}`"
+              :disabled="!!busy"
+              @click="refresh(channel)"
+            >
+              Refresh status
+            </BaseButton>
+            <BaseButton
+              v-else
+              variant="primary"
+              :loading="busy === `send:${channel.channelId}`"
+              :disabled="!!busy || !channel.canSend"
+              @click="send(channel)"
+            >
+              Send to {{ channel.displayName }}
+            </BaseButton>
+          </div>
+        </div>
+
+        <template v-if="channel.submission">
+          <p class="muted">
+            Registry code <strong>{{ channel.submission.reference }}</strong>
+            · sent {{ formatDate(channel.submission.submittedAt, dateTime) }}
+          </p>
+          <p class="muted">
+            Status: {{ channel.submission.statusName ?? channel.submission.statusCode ?? 'unknown' }}
+            <template v-if="channel.submission.checkedAt"> (checked {{ formatDate(channel.submission.checkedAt, dateTime) }})</template>
+          </p>
+          <p v-if="channel.submission.cancellationStatus" class="muted">Cancellation: {{ channel.submission.cancellationStatus }}</p>
+          <div v-if="channel.submission.lastError" class="issues" role="alert">
+            The status could not be refreshed: {{ channel.submission.lastError }}
+          </div>
+        </template>
+        <ul v-else-if="channel.problems.length" class="muted problems">
+          <li v-for="problem in channel.problems" :key="problem">{{ problem }}</li>
+        </ul>
+      </li>
+    </ul>
   </BasePanel>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { invoicesApi } from '@/api/invoices'
-import type { ComplianceIssueDto, EInvoiceGenerationDto, InvoiceEInvoiceDto } from '@/types'
+import type { ComplianceIssueDto, EInvoiceChannelDto, EInvoiceGenerationDto, InvoiceEInvoiceDto } from '@/types'
 import BasePanel from '@/components/ui/BasePanel.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import StatusPill from '@/components/ui/StatusPill.vue'
 import { useToast } from '@/composables/useToast'
 import { formatDate } from '@/utils/format'
+import { useConfirm } from '@/composables/useConfirm'
 
 const props = defineProps<{
   invoiceId: number
@@ -69,7 +120,10 @@ const props = defineProps<{
 }>()
 
 const toast = useToast()
+const { confirm } = useConfirm()
+const dateTime = { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' } as const
 const formats = ref<InvoiceEInvoiceDto[]>([])
+const channels = ref<EInvoiceChannelDto[]>([])
 const results = ref<EInvoiceGenerationDto[]>([])
 const busy = ref<string | null>(null)
 
@@ -85,6 +139,47 @@ async function load() {
     formats.value = await invoicesApi.getEInvoices(props.invoiceId)
   } catch {
     formats.value = [] // secondary to the invoice itself: the page works without it
+  }
+  try {
+    channels.value = await invoicesApi.getEInvoiceChannels(props.invoiceId)
+  } catch {
+    channels.value = []
+  }
+}
+
+async function send(channel: EInvoiceChannelDto) {
+  const production = channel.environment === 'Production'
+  const confirmed = await confirm({
+    title: `Send to ${channel.displayName}?`,
+    message: production
+      ? `The signed e-invoice goes to the public administration through ${channel.displayName}. It cannot be taken back, and the file can no longer be regenerated.`
+      : `This is the test environment of ${channel.displayName}: nothing reaches a real administration. The file can no longer be regenerated.`,
+    confirmLabel: 'Send',
+    tone: production ? 'danger' : 'default'
+  })
+  if (!confirmed) return
+
+  busy.value = `send:${channel.channelId}`
+  try {
+    await invoicesApi.sendEInvoice(props.invoiceId, channel.channelId)
+    toast.success(`Sent to ${channel.displayName}`)
+  } catch (err) {
+    toast.failure(`${channel.displayName} did not accept the e-invoice`, err)
+  } finally {
+    busy.value = null
+    await load()
+  }
+}
+
+async function refresh(channel: EInvoiceChannelDto) {
+  busy.value = `refresh:${channel.channelId}`
+  try {
+    await invoicesApi.refreshEInvoice(props.invoiceId, channel.channelId)
+  } catch (err) {
+    toast.failure(`Could not read the status from ${channel.displayName}`, err)
+  } finally {
+    busy.value = null
+    await load()
   }
 }
 
@@ -130,6 +225,16 @@ watch(() => [props.invoiceId, props.status], () => { results.value = []; load() 
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.channels {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.problems {
+  padding-left: 1.1rem;
 }
 
 .line {

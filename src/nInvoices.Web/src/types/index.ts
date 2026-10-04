@@ -534,6 +534,39 @@ export interface InvoiceEInvoiceDto {
   sha256?: string | null;
 }
 
+/** Where the e-invoice of an invoice was delivered (e.g. FACe) and where it stands there */
+export interface EInvoiceSubmissionDto {
+  reference: string;
+  environment: string;
+  submittedAt: string;
+  registeredAt?: string | null;
+  statusCode?: string | null;
+  statusName?: string | null;
+  cancellationStatus?: string | null;
+  checkedAt?: string | null;
+  /** Why the last attempt to read the status failed, if it did */
+  lastError?: string | null;
+}
+
+/** A delivery channel (e.g. FACe) for an invoice: what stands in the way of sending, and the delivery if made */
+export interface EInvoiceChannelDto {
+  channelId: string;
+  displayName: string;
+  countryCode: string;
+  formatId: string;
+  /** "Test" or "Production": where this server delivers to */
+  environment: string;
+  canSend: boolean;
+  problems: string[];
+  submission?: EInvoiceSubmissionDto | null;
+}
+
+export interface EInvoiceDeliveryDto {
+  succeeded: boolean;
+  message?: string | null;
+  submission?: EInvoiceSubmissionDto | null;
+}
+
 export interface EInvoiceGenerationDto {
   formatId: string;
   formatName: string;
