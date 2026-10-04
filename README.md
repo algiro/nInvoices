@@ -95,7 +95,8 @@ Country-specific data is stored with the issuer, customer and tax as simple `COU
 ### Your data
 - **PostgreSQL or SQLite.**
 - **JSON export and import** of customers, templates and invoices, for backups or moving to another server.
-- **Sign-in with Keycloak** (OpenID Connect), with a no-login mode for local use.
+- **Sign-in with Keycloak** (OpenID Connect), optionally **with Google**, with a no-login mode for local use.
+- **New accounts need approval.** Anyone can sign in, but nobody gets in until the server's administrator approves them. See [`Docs/GOOGLE-LOGIN.md`](Docs/GOOGLE-LOGIN.md).
 - **Several users on one server.** Each Keycloak user has their own customers, invoices, templates and invoice numbering, and cannot see anyone else's.
 
 ## Screenshots
@@ -172,8 +173,12 @@ ownerless row to that user; if any are left, it logs a warning with the count. T
 user (`dev-user-001`) is set as the owner in `appsettings.Development.json` and
 `docker-compose.local.yml`.
 
-Anyone who can sign in gets their own empty workspace. To control who has an account, turn
-off self-registration in the Keycloak realm (`registrationAllowed`).
+Signing in is not enough to use the app: the API requires the Keycloak realm role `user`,
+and new accounts (from the registration form or from *Sign in with Google*) don't get it. An
+administrator approves someone by granting them `user` in the Keycloak admin console. Until
+then they see a "waiting for approval" page. An approved user gets their own empty workspace.
+Setting up Google sign-in, and moving an existing server to approval without locking anyone out:
+[`Docs/GOOGLE-LOGIN.md`](Docs/GOOGLE-LOGIN.md).
 
 ## How it's built
 

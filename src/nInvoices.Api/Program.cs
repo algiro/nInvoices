@@ -175,6 +175,9 @@ else
                 },
                 OnTokenValidated = context =>
                 {
+                    if (context.Principal is not null)
+                        nInvoices.Api.Infrastructure.KeycloakRoleClaims.AddRealmRoles(context.Principal);
+
                     var userId = context.Principal?.FindFirst("sub")?.Value;
                     Log.Information("Token validated for user: {UserId}", userId);
                     return Task.CompletedTask;
@@ -185,7 +188,13 @@ else
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("RequireUser", policy => policy.RequireRole("user"));
+    // [Authorize] on its own means "an approved user": signing in (with a password or Google) is not
+    // enough, an administrator has to grant the "user" realm role in Keycloak first.
+    options.DefaultPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .RequireRole(nInvoices.Api.Infrastructure.KeycloakRoleClaims.AppUserRole)
+        .Build();
+    options.AddPolicy("RequireUser", policy => policy.RequireRole(nInvoices.Api.Infrastructure.KeycloakRoleClaims.AppUserRole));
     options.AddPolicy("RequireAdmin", policy => policy.RequireRole("admin"));
 });
 

@@ -16,6 +16,13 @@ const router = createRouter({
       name: 'auth-silent-callback',
       component: () => import('../views/SilentCallback.vue'),
     },
+    {
+      // Signed in, but an administrator hasn't approved the account yet
+      path: '/access-pending',
+      name: 'access-pending',
+      meta: { title: 'Access pending' },
+      component: () => import('../views/AccessPending.vue'),
+    },
     // Main application routes (authentication required)
     {
       path: '/',
@@ -144,6 +151,18 @@ router.beforeEach(async (to) => {
     // Redirect to login
     await authStore.login();
     return;
+  }
+
+  if (to.name === 'access-pending') {
+    if (!authStore.isAuthenticated) {
+      await authStore.login();
+      return;
+    }
+    return authStore.isApproved ? { path: '/' } : true;
+  }
+
+  if (requiresAuth && !authStore.isApproved) {
+    return { name: 'access-pending' };
   }
   
   return true;

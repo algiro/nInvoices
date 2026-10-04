@@ -119,9 +119,6 @@
       }
     ]
   },
-  "defaultRoles": [
-    "user"
-  ],
   "users": [
     {
       "username": "admin",
