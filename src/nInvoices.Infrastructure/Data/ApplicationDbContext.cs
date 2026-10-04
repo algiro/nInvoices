@@ -53,6 +53,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<HolidayRule> HolidayRules => Set<HolidayRule>();
     public DbSet<ComplianceSettings> ComplianceSettings => Set<ComplianceSettings>();
     public DbSet<InvoiceEInvoice> InvoiceEInvoices => Set<InvoiceEInvoice>();
+    public DbSet<EInvoiceSubmission> EInvoiceSubmissions => Set<EInvoiceSubmission>();
     public DbSet<VerifactuRecord> VerifactuRecords => Set<VerifactuRecord>();
     public DbSet<VerifactuSubmission> VerifactuSubmissions => Set<VerifactuSubmission>();
 
