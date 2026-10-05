@@ -11,7 +11,6 @@ using nInvoices.Infrastructure.Face;
 using nInvoices.Infrastructure.Verifactu;
 using nInvoices.Api.Infrastructure;
 using Microsoft.AspNetCore.DataProtection;
-using FluentValidation;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Protocols;
@@ -46,7 +45,11 @@ builder.Host.UseSerilog();
 builder.AddServiceDefaults();
 
 // Add services to the container
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+    {
+        // Requests rejected by the validation pipeline come back as 400 with the failing fields
+        options.Filters.Add<ValidationExceptionFilter>();
+    })
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -97,14 +100,9 @@ builder.Services.AddFace();
 // Telegram messages to the administrator, e.g. a new account waiting for approval (off until configured)
 builder.Services.AddAdminNotifications(builder.Configuration);
 
-// Add MediatR for CQRS
-builder.Services.AddMediatR(cfg =>
-{
-    cfg.RegisterServicesFromAssembly(typeof(nInvoices.Application.ApplicationAssemblyMarker).Assembly);
-});
-
-// Add FluentValidation
-builder.Services.AddValidatorsFromAssembly(typeof(nInvoices.Application.ApplicationAssemblyMarker).Assembly);
+// MediatR handlers and FluentValidation validators: every request is checked by its validators
+// (Features/*/Validators) before the handler runs
+builder.Services.AddApplicationRequests();
 
 // Configure Authentication & Authorization
 var useDevAuth = builder.Configuration.GetValue<bool>("Authentication:UseDevAuth");
