@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
@@ -20,20 +21,23 @@ public sealed class ImportExportController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IComplianceRegistry _compliance;
     private readonly ILogger<ImportExportController> _logger;
 
     public ImportExportController(
         ApplicationDbContext context,
         IUnitOfWork unitOfWork,
+        IComplianceRegistry compliance,
         ILogger<ImportExportController> logger)
     {
         _context = context;
         _unitOfWork = unitOfWork;
+        _compliance = compliance;
         _logger = logger;
     }
 
     /// <summary>
-    /// Export all customers with their rates, taxes, templates, and monthly report templates.
+    /// Export all customers with their rates, taxes, templates, projects, worked days and unbilled expenses.
     /// </summary>
     [HttpGet("customers")]
     [ProducesResponseType(typeof(DataExportDto), StatusCodes.Status200OK)]
@@ -44,8 +48,23 @@ public sealed class ImportExportController : ControllerBase
             .Include(c => c.Taxes)
             .Include(c => c.Templates)
             .Include(c => c.EmailTemplates)
+            .Include(c => c.Projects)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
+
+        var workDaysByCustomer = (await _context.WorkDays
+                .Include(w => w.Projects).ThenInclude(p => p.Project)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken))
+            .GroupBy(w => w.CustomerId)
+            .ToDictionary(g => g.Key, g => g.OrderBy(w => w.Date).ToList());
+
+        var unbilledByCustomer = (await _context.Expenses
+                .Where(e => e.InvoiceId == null)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken))
+            .GroupBy(e => e.CustomerId)
+            .ToDictionary(g => g.Key, g => g.OrderBy(e => e.Date).ToList());
 
         var monthlyTemplates = await _context.MonthlyReportTemplates
             .AsNoTracking()
@@ -71,24 +90,39 @@ public sealed class ImportExportController : ControllerBase
                 .Select(mt => new MonthlyReportTemplateExportDto(mt.InvoiceType, mt.Name, mt.Content, mt.IsActive, mt.CreatedAt)).ToList(),
             sharedEmailTemplates.Select(et => new EmailTemplateExportDto(et.Name, et.Subject, et.Body, et.IsActive, et.CreatedAt)).ToList());
 
-        var exported = customers.Select(c => new CustomerExportDto(
-            c.Name,
-            c.FiscalId,
-            new AddressDto(c.Address.Street, c.Address.HouseNumber, c.Address.City,
-                c.Address.ZipCode, c.Address.Country, c.Address.State),
-            c.CreatedAt,
-            c.Rates.Select(r => new RateExportDto(r.Type, new MoneyDto(r.Price.Amount, r.Price.Currency), r.CreatedAt, r.Name)).ToList(),
-            c.Taxes.Select(t => new TaxExportDto(t.TaxId, t.Description, t.HandlerId, t.Rate,
-                t.ApplicationType, FindTaxIdByPk(c.Taxes, t.AppliedToTaxId), t.Order, t.IsActive, t.CreatedAt)).ToList(),
-            c.Templates.Select(t => new InvoiceTemplateExportDto(t.InvoiceType, t.Name, t.Content, t.IsActive, t.CreatedAt)).ToList(),
-            (templatesByCustomer.GetValueOrDefault(c.Id) ?? [])
-                .Select(mt => new MonthlyReportTemplateExportDto(mt.InvoiceType, mt.Name, mt.Content, mt.IsActive, mt.CreatedAt)).ToList(),
-            c.Email,
-            c.CcEmails,
-            c.EmailTemplates.Select(et => new EmailTemplateExportDto(et.Name, et.Subject, et.Body, et.IsActive, et.CreatedAt)).ToList(),
-            c.HolidayCountry,
-            c.Locale
-        )).ToList();
+        var exported = customers.Select(c =>
+        {
+            // Rates in id order: worked days and invoices refer to them by position
+            var rates = c.Rates.OrderBy(r => r.Id).ToList();
+            return new CustomerExportDto(
+                c.Name,
+                c.FiscalId,
+                new AddressDto(c.Address.Street, c.Address.HouseNumber, c.Address.City,
+                    c.Address.ZipCode, c.Address.Country, c.Address.State),
+                c.CreatedAt,
+                rates.Select(r => new RateExportDto(r.Type, new MoneyDto(r.Price.Amount, r.Price.Currency), r.CreatedAt, r.Name, r.IsActive)).ToList(),
+                c.Taxes.Select(t => new TaxExportDto(t.TaxId, t.Description, t.HandlerId, t.Rate,
+                    t.ApplicationType, FindTaxIdByPk(c.Taxes, t.AppliedToTaxId), t.Order, t.IsActive, t.CreatedAt,
+                    t.ComplianceValues)).ToList(),
+                c.Templates.Select(t => new InvoiceTemplateExportDto(t.InvoiceType, t.Name, t.Content, t.IsActive, t.CreatedAt)).ToList(),
+                (templatesByCustomer.GetValueOrDefault(c.Id) ?? [])
+                    .Select(mt => new MonthlyReportTemplateExportDto(mt.InvoiceType, mt.Name, mt.Content, mt.IsActive, mt.CreatedAt)).ToList(),
+                c.Email,
+                c.CcEmails,
+                c.EmailTemplates.Select(et => new EmailTemplateExportDto(et.Name, et.Subject, et.Body, et.IsActive, et.CreatedAt)).ToList(),
+                c.HolidayCountry,
+                c.Locale,
+                c.Projects.OrderBy(p => p.Name).Select(p => new ProjectExportDto(p.Name, p.IsActive)).ToList(),
+                (workDaysByCustomer.GetValueOrDefault(c.Id) ?? []).Select(w => new WorkDayExportDto(
+                    w.Date,
+                    w.DayType,
+                    w.HoursWorked,
+                    w.Notes,
+                    IndexOf(rates, w.RateId),
+                    w.Projects.Select(p => new WorkDayProjectExportDto(p.Project.Name, p.Hours)).ToList())).ToList(),
+                c.ComplianceValues,
+                (unbilledByCustomer.GetValueOrDefault(c.Id) ?? []).Select(ToExpenseDto).ToList());
+        }).ToList();
 
         _logger.LogInformation("Exported {Count} customers", exported.Count);
 
@@ -122,6 +156,9 @@ public sealed class ImportExportController : ControllerBase
 
         var invoices = await query.ToListAsync(cancellationToken);
 
+        var customerIds = invoices.Select(i => i.CustomerId).Distinct().ToList();
+        var ratesByCustomer = await RatesInIdOrderAsync(customerIds, cancellationToken);
+
         var exported = invoices.Select(i => new InvoiceExportDto(
             i.Customer.FiscalId,
             i.Type,
@@ -139,15 +176,11 @@ public sealed class ImportExportController : ControllerBase
             i.RenderedContent,
             i.Notes,
             i.CreatedAt,
-            i.Expenses.Select(e => new ExpenseDto
-            {
-                Description = e.Description,
-                Amount = e.Amount.Amount,
-                Currency = e.Amount.Currency,
-                Date = e.Date
-            }).ToList(),
+            i.Expenses.Select(ToExpenseDto).ToList(),
             i.TaxLines.Select(tl => new InvoiceTaxLineExportDto(
-                tl.TaxId, tl.Description, tl.Rate, tl.BaseAmount.Amount, tl.TaxAmount.Amount, tl.Order)).ToList()
+                tl.TaxId, tl.Description, tl.Rate, tl.BaseAmount.Amount, tl.TaxAmount.Amount, tl.Order)).ToList(),
+            i.Hours,
+            IndexOf(ratesByCustomer.GetValueOrDefault(i.CustomerId) ?? [], i.RateId)
         )).ToList();
 
         _logger.LogInformation("Exported {Count} invoices", exported.Count);
@@ -202,15 +235,20 @@ public sealed class ImportExportController : ControllerBase
                     : new Customer(customerData.Name, customerData.FiscalId, address, customerData.Locale);
                 customer.SetContact(customerData.Email, customerData.CcEmails);
                 customer.SetHolidayCountry(customerData.HolidayCountry);
+                foreach (var (country, values) in ByCountry(customerData.ComplianceValues))
+                    customer.SetComplianceValues(country, values);
                 await _context.Customers.AddAsync(customer, cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
 
-                // Import rates
+                // Import rates, in the exported order: worked days refer to them by position
+                var rates = new List<Rate>();
                 foreach (var rateData in customerData.Rates)
                 {
                     var rate = new Rate(customer.Id, rateData.Type, new Money(rateData.Price.Amount, rateData.Price.Currency));
                     rate.SetName(rateData.Name);
+                    rate.IsActive = rateData.IsActive;
                     await _context.Rates.AddAsync(rate, cancellationToken);
+                    rates.Add(rate);
                 }
 
                 // Import taxes - need to handle compound tax references
@@ -223,6 +261,8 @@ public sealed class ImportExportController : ControllerBase
                         tax.SetCompoundTax(mappedId);
                     if (!taxData.IsActive)
                         tax.IsActive = false;
+                    foreach (var (country, values) in ByCountry(taxData.ComplianceValues))
+                        tax.SetComplianceValues(country, values);
                     await _context.Taxes.AddAsync(tax, cancellationToken);
                     await _context.SaveChangesAsync(cancellationToken);
                     taxIdMap[taxData.TaxId] = tax.Id;
@@ -253,6 +293,21 @@ public sealed class ImportExportController : ControllerBase
                     if (templateData.IsActive)
                         template.Activate();
                     await _context.EmailTemplates.AddAsync(template, cancellationToken);
+                }
+
+                await _context.SaveChangesAsync(cancellationToken);
+
+                await ImportProjectsAndWorkDaysAsync(customer, customerData, rates, cancellationToken);
+
+                foreach (var expenseData in customerData.UnbilledExpenses ?? [])
+                {
+                    await _context.Expenses.AddAsync(new Expense
+                    {
+                        CustomerId = customer.Id,
+                        Description = expenseData.Description,
+                        Amount = new Money(expenseData.Amount, expenseData.Currency),
+                        Date = expenseData.Date
+                    }, cancellationToken);
                 }
 
                 await _context.SaveChangesAsync(cancellationToken);
@@ -372,6 +427,7 @@ public sealed class ImportExportController : ControllerBase
         var customerCache = await _context.Customers
             .AsNoTracking()
             .ToDictionaryAsync(c => c.FiscalId, c => c.Id, cancellationToken);
+        var ratesByCustomer = await RatesInIdOrderAsync(customerCache.Values.ToList(), cancellationToken);
 
         var imported = 0;
         var skipped = 0;
@@ -415,6 +471,8 @@ public sealed class ImportExportController : ControllerBase
                 invoice.RenderedContent = invoiceData.RenderedContent;
                 invoice.Notes = invoiceData.Notes;
                 invoice.Status = invoiceData.Status;
+                invoice.Hours = invoiceData.Hours;
+                invoice.RateId = RateAt(ratesByCustomer.GetValueOrDefault(customerId) ?? [], invoiceData.RateIndex);
 
                 await _context.Invoices.AddAsync(invoice, cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
@@ -464,6 +522,244 @@ public sealed class ImportExportController : ControllerBase
 
         return Ok(new ImportResultDto(imported, skipped, errors));
     }
+
+    /// <summary>
+    /// Export the user's settings and assets: invoice numbering, images used by templates, the
+    /// holiday calendars they changed and their e-invoicing settings (without the signing certificate).
+    /// </summary>
+    [HttpGet("settings")]
+    [ProducesResponseType(typeof(DataExportDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<DataExportDto>> ExportSettings(CancellationToken cancellationToken)
+    {
+        var sequence = await _context.InvoiceSequences.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+        var images = await _context.ImageAssets.AsNoTracking().OrderBy(i => i.Id).ToListAsync(cancellationToken);
+        var calendars = await _context.HolidayCalendars.Include(c => c.Rules).AsNoTracking()
+            .OrderBy(c => c.CountryCode).ToListAsync(cancellationToken);
+        var compliance = await _context.ComplianceSettings.AsNoTracking()
+            .OrderBy(c => c.CountryCode).ToListAsync(cancellationToken);
+
+        var settings = new UserSettingsExportDto(
+            sequence is null ? null : new InvoiceNumberingExportDto(sequence.CurrentValue, sequence.NumberFormat),
+            images.Select(i => new ImageAssetExportDto(i.Alias, i.FileName, i.ContentType, i.Base64Data, i.FileSize)).ToList(),
+            calendars.Select(c => new HolidayCalendarExportDto(c.CountryCode, c.Rules.OrderBy(r => r.Id).Select(r =>
+                new HolidayRuleExportDto(r.Name, r.Kind, r.Month, r.Day, r.EasterOffset, r.Weekday, r.Occurrence,
+                    r.FromYear, r.ToYear, r.IsActive)).ToList())).ToList(),
+            compliance.Select(c => new ComplianceSettingsExportDto(
+                c.CountryCode,
+                c.IsEnabled,
+                c.LegalName,
+                c.TaxId,
+                c.Address is { } a ? new AddressDto(a.Street, a.HouseNumber, a.City, a.ZipCode, a.Country, a.State) : null,
+                c.Values)).ToList());
+
+        return Ok(new DataExportDto("1.0", DateTime.UtcNow, null, null, Settings: settings));
+    }
+
+    /// <summary>
+    /// Import settings and assets. What the user already has is kept: an image with the same name, a
+    /// calendar for the same country, e-invoicing settings for the same country. The invoice sequence
+    /// only moves forward, so restoring never hands out a number twice.
+    /// </summary>
+    [HttpPost("settings")]
+    [ProducesResponseType(typeof(ImportResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ImportResultDto>> ImportSettings(
+        [FromBody] DataExportDto data,
+        CancellationToken cancellationToken)
+    {
+        if (data.Settings is not { } settings)
+            return BadRequest(new { error = "No settings to import" });
+
+        var imported = 0;
+        var skipped = 0;
+        var errors = new List<string>();
+
+        async Task Try(string what, Func<Task<bool>> import)
+        {
+            try
+            {
+                if (await import())
+                    imported++;
+                else
+                    skipped++;
+            }
+            catch (Exception ex)
+            {
+                // Whatever this item staged is dropped, so the next save doesn't retry it
+                _context.ChangeTracker.Clear();
+                errors.Add($"{what}: {ex.Message}");
+                _logger.LogError(ex, "Failed to import {What}", what);
+            }
+        }
+
+        if (settings.InvoiceNumbering is { } numbering)
+            await Try("Invoice numbering", () => ImportNumberingAsync(numbering, cancellationToken));
+
+        var aliases = (await _context.ImageAssets.AsNoTracking().Select(i => i.Alias).ToListAsync(cancellationToken))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var image in settings.Images ?? [])
+        {
+            await Try($"Image '{image.Alias}'", async () =>
+            {
+                if (!aliases.Add(image.Alias))
+                    return false;
+                await _context.ImageAssets.AddAsync(
+                    new ImageAsset(image.Alias, image.FileName, image.ContentType, image.Base64Data, image.FileSize), cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
+                return true;
+            });
+        }
+
+        var countries = (await _context.HolidayCalendars.AsNoTracking().Select(c => c.CountryCode).ToListAsync(cancellationToken))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var calendarData in settings.HolidayCalendars ?? [])
+        {
+            await Try($"Holiday calendar {calendarData.CountryCode}", async () =>
+            {
+                var calendar = new HolidayCalendar(calendarData.CountryCode);
+                if (!countries.Add(calendar.CountryCode))
+                    return false;
+                foreach (var r in calendarData.Rules)
+                {
+                    var rule = HolidayRule.Create(r.Name, r.Kind, r.Month, r.Day, r.EasterOffset, r.Weekday, r.Occurrence, r.FromYear, r.ToYear);
+                    if (!r.IsActive)
+                        rule.Deactivate();
+                    calendar.Rules.Add(rule);
+                }
+                await _context.HolidayCalendars.AddAsync(calendar, cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
+                return true;
+            });
+        }
+
+        var regimes = (await _context.ComplianceSettings.AsNoTracking().Select(c => c.CountryCode).ToListAsync(cancellationToken))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var complianceData in settings.Compliance ?? [])
+        {
+            await Try($"E-invoicing settings {complianceData.CountryCode}", async () =>
+            {
+                var compliance = new ComplianceSettings(complianceData.CountryCode);
+                if (!regimes.Add(compliance.CountryCode))
+                    return false;
+                var address = complianceData.Address is { } a
+                    ? new Address(a.Street, a.HouseNumber, a.City, a.ZipCode, a.Country, a.State)
+                    : null;
+                // Turned on only where this server offers the country's rules
+                var enabled = complianceData.IsEnabled && _compliance.Find(compliance.CountryCode) is not null;
+                compliance.Update(enabled, complianceData.LegalName, complianceData.TaxId, address, complianceData.Values);
+                await _context.ComplianceSettings.AddAsync(compliance, cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
+                return true;
+            });
+        }
+
+        _logger.LogInformation("Settings import complete: {Imported} imported, {Skipped} skipped, {Errors} errors",
+            imported, skipped, errors.Count);
+
+        return Ok(new ImportResultDto(imported, skipped, errors));
+    }
+
+    private async Task<bool> ImportNumberingAsync(InvoiceNumberingExportDto numbering, CancellationToken cancellationToken)
+    {
+        var sequence = await _context.InvoiceSequences.FirstOrDefaultAsync(cancellationToken);
+        if (sequence is null)
+        {
+            sequence = new InvoiceSequence(Math.Max(1, numbering.NextNumber));
+            sequence.SetNumberFormat(numbering.NumberFormat);
+            await _context.InvoiceSequences.AddAsync(sequence, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+
+        var changed = false;
+        if (sequence.NumberFormat is null && !string.IsNullOrWhiteSpace(numbering.NumberFormat))
+        {
+            sequence.SetNumberFormat(numbering.NumberFormat);
+            changed = true;
+        }
+        if (numbering.NextNumber > sequence.CurrentValue)
+        {
+            sequence.SetValue(numbering.NextNumber);
+            changed = true;
+        }
+        if (changed)
+            await _context.SaveChangesAsync(cancellationToken);
+        return changed;
+    }
+
+    private async Task ImportProjectsAndWorkDaysAsync(
+        Customer customer,
+        CustomerExportDto customerData,
+        IReadOnlyList<Rate> rates,
+        CancellationToken cancellationToken)
+    {
+        var projects = new Dictionary<string, Project>(StringComparer.Ordinal);
+        foreach (var projectData in customerData.Projects ?? [])
+        {
+            var project = new Project(customer.Id, projectData.Name);
+            if (!projectData.IsActive)
+                project.Deactivate();
+            if (projects.TryAdd(project.Name, project))
+                await _context.Projects.AddAsync(project, cancellationToken);
+        }
+        await _context.SaveChangesAsync(cancellationToken);
+
+        foreach (var dayData in customerData.WorkDays ?? [])
+        {
+            var day = new WorkDay(customer.Id, dayData.Date, dayData.DayType, dayData.HoursWorked, dayData.Notes)
+            {
+                RateId = dayData.RateIndex is { } index && index >= 0 && index < rates.Count ? rates[index].Id : null
+            };
+            foreach (var split in dayData.Projects)
+            {
+                if (projects.TryGetValue(split.ProjectName.Trim(), out var project))
+                    day.Projects.Add(new WorkDayProject(project, split.Hours));
+            }
+            await _context.WorkDays.AddAsync(day, cancellationToken);
+        }
+    }
+
+    private async Task<Dictionary<long, List<long>>> RatesInIdOrderAsync(IReadOnlyCollection<long> customerIds, CancellationToken cancellationToken) =>
+        (await _context.Rates.AsNoTracking()
+            .Where(r => customerIds.Contains(r.CustomerId))
+            .Select(r => new { r.Id, r.CustomerId })
+            .ToListAsync(cancellationToken))
+        .GroupBy(r => r.CustomerId)
+        .ToDictionary(g => g.Key, g => g.Select(r => r.Id).Order().ToList());
+
+    private static int? IndexOf(IReadOnlyList<Rate> rates, long? rateId)
+    {
+        if (rateId is not { } id)
+            return null;
+        for (var i = 0; i < rates.Count; i++)
+        {
+            if (rates[i].Id == id)
+                return i;
+        }
+        return null;
+    }
+
+    private static int? IndexOf(List<long> rateIds, long? rateId) =>
+        rateId is { } id && rateIds.IndexOf(id) is var index and >= 0 ? index : null;
+
+    private static long? RateAt(List<long> rateIds, int? index) =>
+        index is { } i && i >= 0 && i < rateIds.Count ? rateIds[i] : null;
+
+    private static ExpenseDto ToExpenseDto(Expense e) => new()
+    {
+        Description = e.Description,
+        Amount = e.Amount.Amount,
+        Currency = e.Amount.Currency,
+        Date = e.Date
+    };
+
+    /// <summary>Splits a "COUNTRY.field" map into one map of fields per country.</summary>
+    private static IEnumerable<(string Country, IReadOnlyDictionary<string, string> Values)> ByCountry(
+        IReadOnlyDictionary<string, string>? values) =>
+        (values ?? new Dictionary<string, string>())
+            .Where(v => v.Key.IndexOf('.') > 0)
+            .GroupBy(v => v.Key[..v.Key.IndexOf('.')])
+            .Select(g => (g.Key, (IReadOnlyDictionary<string, string>)g.ToDictionary(v => v.Key[(g.Key.Length + 1)..], v => v.Value)));
 
     private static string? FindTaxIdByPk(ICollection<Tax> taxes, long? pk) =>
         pk.HasValue ? taxes.FirstOrDefault(t => t.Id == pk.Value)?.TaxId : null;

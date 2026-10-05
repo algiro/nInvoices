@@ -18,14 +18,36 @@ public sealed record CustomerExportDto(
     string? CcEmails = null,
     IReadOnlyList<EmailTemplateExportDto>? EmailTemplates = null,
     string? HolidayCountry = null,
-    // Absent from exports made before it was included: such customers get the default locale
-    string? Locale = null);
+    // The fields below are absent from older exports: they import as empty / default
+    string? Locale = null,
+    IReadOnlyList<ProjectExportDto>? Projects = null,
+    IReadOnlyList<WorkDayExportDto>? WorkDays = null,
+    IReadOnlyDictionary<string, string>? ComplianceValues = null,
+    // Expenses not on an invoice yet (those on one are exported with their invoice)
+    IReadOnlyList<ExpenseDto>? UnbilledExpenses = null);
+
+public sealed record ProjectExportDto(string Name, bool IsActive);
+
+/// <summary>
+/// A day in the customer's calendar. <see cref="RateIndex"/> is the position of the day's rate in
+/// the customer's <see cref="CustomerExportDto.Rates"/> (null: the customer's default rate).
+/// </summary>
+public sealed record WorkDayExportDto(
+    DateOnly Date,
+    DayType DayType,
+    decimal? HoursWorked,
+    string? Notes,
+    int? RateIndex,
+    IReadOnlyList<WorkDayProjectExportDto> Projects);
+
+public sealed record WorkDayProjectExportDto(string ProjectName, decimal Hours);
 
 public sealed record RateExportDto(
     RateType Type,
     MoneyDto Price,
     DateTime CreatedAt,
-    string? Name = null);
+    string? Name = null,
+    bool IsActive = true);
 
 public sealed record TaxExportDto(
     string TaxId,
@@ -36,7 +58,8 @@ public sealed record TaxExportDto(
     string? AppliedToTaxId,
     int Order,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    IReadOnlyDictionary<string, string>? ComplianceValues = null);
 
 public sealed record InvoiceTemplateExportDto(
     InvoiceType InvoiceType,
@@ -80,7 +103,10 @@ public sealed record InvoiceExportDto(
     string? Notes,
     DateTime CreatedAt,
     IReadOnlyList<ExpenseDto> Expenses,
-    IReadOnlyList<InvoiceTaxLineExportDto> TaxLines);
+    IReadOnlyList<InvoiceTaxLineExportDto> TaxLines,
+    // Absent from older exports. RateIndex: position in the customer's exported rates, ordered by id
+    decimal? Hours = null,
+    int? RateIndex = null);
 
 public sealed record InvoiceTaxLineExportDto(
     string TaxId,
@@ -107,4 +133,43 @@ public sealed record DataExportDto(
     DateTime ExportedAt,
     IReadOnlyList<CustomerExportDto>? Customers,
     IReadOnlyList<InvoiceExportDto>? Invoices,
-    SharedTemplatesExportDto? SharedTemplates = null);
+    SharedTemplatesExportDto? SharedTemplates = null,
+    UserSettingsExportDto? Settings = null);
+
+/// <summary>
+/// The user's own settings and assets. Not included: the e-invoicing signing certificate (it is
+/// encrypted with the server's keys, so it has to be uploaded again), and the server-wide settings.
+/// </summary>
+public sealed record UserSettingsExportDto(
+    InvoiceNumberingExportDto? InvoiceNumbering,
+    IReadOnlyList<ImageAssetExportDto> Images,
+    IReadOnlyList<HolidayCalendarExportDto> HolidayCalendars,
+    IReadOnlyList<ComplianceSettingsExportDto> Compliance);
+
+/// <param name="NextNumber">The number the next finalized invoice takes.</param>
+public sealed record InvoiceNumberingExportDto(int NextNumber, string? NumberFormat);
+
+public sealed record ImageAssetExportDto(string Alias, string FileName, string ContentType, string Base64Data, long FileSize);
+
+/// <summary>A calendar the user changed; calendars left as built in are not exported.</summary>
+public sealed record HolidayCalendarExportDto(string CountryCode, IReadOnlyList<HolidayRuleExportDto> Rules);
+
+public sealed record HolidayRuleExportDto(
+    string Name,
+    HolidayRuleKind Kind,
+    int? Month,
+    int? Day,
+    int? EasterOffset,
+    DayOfWeek? Weekday,
+    int? Occurrence,
+    int? FromYear,
+    int? ToYear,
+    bool IsActive);
+
+public sealed record ComplianceSettingsExportDto(
+    string CountryCode,
+    bool IsEnabled,
+    string? LegalName,
+    string? TaxId,
+    AddressDto? Address,
+    IReadOnlyDictionary<string, string> Values);
