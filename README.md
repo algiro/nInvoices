@@ -97,6 +97,7 @@ Country-specific data is stored with the issuer, customer and tax as simple `COU
 - **Backup in one file**, protected by a passphrase and encrypted in your browser, with customers, worked days, invoices, templates, images and settings: restore it on the same server or move to another one. [`tools/decrypt-backup.mjs`](tools/decrypt-backup.mjs) opens it without nInvoices.
 - **Encrypted at rest.** Customer details, amounts, invoice contents, notes and templates are stored encrypted, with one key per user. A copy of the database alone shows nothing readable. See [`Docs/ENCRYPTION.md`](Docs/ENCRYPTION.md), and back up the master key.
 - **Sign-in with Keycloak** (OpenID Connect), optionally **with Google**, with a no-login mode for local use.
+- **Users can delete their account** (Settings): all their data goes, and their encryption key is destroyed so backups can't be read either. See [`Docs/ENCRYPTION.md`](Docs/ENCRYPTION.md#deleting-an-account-crypto-shredding).
 - **New accounts need approval.** Anyone can sign in, but nobody gets in until the server's administrator approves them. See [`Docs/GOOGLE-LOGIN.md`](Docs/GOOGLE-LOGIN.md).
 - **Several users on one server.** Each Keycloak user has their own customers, invoices, templates and invoice numbering, and cannot see anyone else's.
 

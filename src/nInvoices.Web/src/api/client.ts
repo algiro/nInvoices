@@ -92,6 +92,12 @@ class ApiClient {
     return response.data;
   }
 
+  /** DELETE with a JSON body (e.g. a typed confirmation). */
+  async deleteWithBody<T>(url: string, data: unknown): Promise<T> {
+    const response = await this.client.delete<T>(url, { data });
+    return response.data;
+  }
+
   async downloadFile(url: string): Promise<Blob> {
     const response = await this.client.get(url, {
       responseType: 'blob',

@@ -89,6 +89,20 @@ public sealed class FieldEncryptor
         _keyIdByOwner[ownerId] = stored.Id;
     }
 
+    /// <summary>
+    /// Destroys <paramref name="ownerId"/>'s key ("crypto-shredding"): every value encrypted with it,
+    /// in the database or in any backup, becomes unreadable. Used when a user deletes their account.
+    /// </summary>
+    public async Task DeleteKeyAsync(string ownerId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(ownerId);
+        var deleted = await _store.DeleteByOwnerAsync(ownerId, cancellationToken);
+        if (_keyIdByOwner.TryRemove(ownerId, out var cached))
+            _keysById.TryRemove(cached, out _);
+        if (deleted is { } id)
+            _keysById.TryRemove(id, out _);
+    }
+
     /// <summary>Values encrypted until the scope is disposed use <paramref name="ownerId"/>'s key.</summary>
     public static IDisposable BeginWriting(string ownerId)
     {
