@@ -22,6 +22,7 @@ public static class ApplicationServicesExtensions
         services.AddScoped<IDraftInvoiceSynchronizer, DraftInvoiceSynchronizer>();
         services.AddScoped<IMonthlyReportGenerationService, MonthlyReportGenerationService>();
         services.AddScoped<ITemplateRenderer, ScribanTemplateRenderer>();
+        services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddScoped<ITemplatePreviewService, TemplatePreviewService>();
         services.AddScoped<IProjectResolver, ProjectResolver>();
         services.AddScoped<Services.Holidays.IHolidayCalendarService, Services.Holidays.HolidayCalendarService>();

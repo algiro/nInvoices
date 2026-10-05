@@ -105,7 +105,7 @@ docker-compose -f docker-compose.dev.yml up -d
 3. **nInvoices.Infrastructure** - Data Access & External Services
    - Entity Framework Core with ApplicationDbContext
    - Tax handler implementations (Strategy pattern)
-   - Template engine (Scriban/Handlebars)
+   - Template engine (Scriban, `[[ ]]` delimiters)
    - PDF generation (QuestPDF)
    - Database migrations
    - Depends on: nInvoices.Core, nInvoices.Application
@@ -302,6 +302,6 @@ See `docker/KEYCLOAK-DOCKER-GUIDE.md` for complete implementation details.
 ### Modify Templates
 
 Template validation and rendering:
-- Validation: `ValidateTemplateCommand` checks syntax and placeholders
-- Rendering: `HandlebarsTemplateEngine` renders templates
+- Validation: `ScribanTemplateRenderer.ValidateAsync` (editor via `ValidateTemplateCommand`, saving via the template command validators)
+- Rendering: `ScribanTemplateRenderer` renders templates
 - PDF: `QuestPdfInvoiceExporter` converts HTML to PDF

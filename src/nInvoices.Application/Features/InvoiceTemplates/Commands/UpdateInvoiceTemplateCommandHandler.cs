@@ -6,22 +6,19 @@ using nInvoices.Core.Interfaces;
 namespace nInvoices.Application.Features.InvoiceTemplates.Commands;
 
 /// <summary>
-/// Handles invoice template updates.
-/// Validates template syntax before saving.
+/// Handles invoice template updates. The syntax is checked before this runs
+/// (<c>UpdateInvoiceTemplateCommandValidator</c>).
 /// </summary>
 public sealed class UpdateInvoiceTemplateCommandHandler : IRequestHandler<UpdateInvoiceTemplateCommand, InvoiceTemplateDto>
 {
     private readonly IRepository<InvoiceTemplate> _repository;
-    private readonly ITemplateEngine _templateEngine;
     private readonly IUnitOfWork _unitOfWork;
 
     public UpdateInvoiceTemplateCommandHandler(
         IRepository<InvoiceTemplate> repository,
-        ITemplateEngine templateEngine,
         IUnitOfWork unitOfWork)
     {
         _repository = repository;
-        _templateEngine = templateEngine;
         _unitOfWork = unitOfWork;
     }
 
@@ -32,13 +29,6 @@ public sealed class UpdateInvoiceTemplateCommandHandler : IRequestHandler<Update
             throw new KeyNotFoundException($"Template with ID {request.Id} not found");
 
         var dto = request.Template;
-
-        if (!_templateEngine.ValidateTemplate(dto.Content, out var errors))
-        {
-            var errorMessage = string.Join("; ", errors);
-            throw new ArgumentException($"Invalid template syntax: {errorMessage}");
-        }
-
         template.UpdateContent(dto.Name, dto.Content);
 
         if (dto.IsActive && !template.IsActive)
