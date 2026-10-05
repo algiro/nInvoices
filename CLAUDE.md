@@ -94,6 +94,12 @@ against a running API + frontend.
   `IRequest<T>` with a sibling `...Handler`. DTOs in `DTOs/`, FluentValidation validators
   alongside features, template rendering (`ScribanTemplateRenderer`) and invoice/report
   generation services in `Services/`, i18n JSON in `Localization/`.
+  **Validation**: `AddApplicationRequests()` registers MediatR with `Behaviors/ValidationBehavior`,
+  which runs every `IValidator<TRequest>` before the handler and throws `ValidationException`;
+  the API's `ValidationExceptionFilter` returns it as a 400 `ValidationProblemDetails` (`errors`
+  per field plus an `error` string). Rules live in DTO validators; a command carrying a DTO gets
+  a command validator delegating to it (`Features/*/Validators/*CommandValidators.cs`).
+  `CommandValidatorsTests` fails if a request carries a validated DTO without one.
 - **nInvoices.Infrastructure** — `ApplicationDbContext`, EF entity configs
   (`Data/Configurations/`), generic `Repository<T>` + `UnitOfWork`, migrations
   (`Data/Migrations/`), tax handler implementations (`TaxHandlers/`), Scriban template engine
@@ -182,7 +188,7 @@ Code style and testing rules are authoritative in `.github/instructions/`
    `Infrastructure/Data/Configurations/`.
 2. Add `DbSet` to `ApplicationDbContext`, then create a migration (command above).
 3. DTOs in `Application/DTOs/`; commands/queries/validators under
-   `Application/Features/<Entity>/`.
+   `Application/Features/<Entity>/` (a DTO validator plus a command validator wrapping it).
 4. Controller in `Api/Controllers/` dispatching via MediatR.
 5. Frontend: `src/api/<entity>.ts` + store/view as needed.
 

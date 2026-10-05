@@ -32,9 +32,10 @@ public sealed class GenerateInvoiceDtoValidator : AbstractValidator<GenerateInvo
                 .InclusiveBetween(1, 12)
                 .WithMessage("Month must be between 1 and 12");
 
+            // The month's days must be sent, but may be none: a fixed monthly rate bills its price
+            // without them. Rates that need worked days are checked when the invoice is built.
             RuleFor(x => x.WorkDays)
                 .NotNull()
-                .NotEmpty()
                 .WithMessage("Work days are required for monthly invoices");
         });
 

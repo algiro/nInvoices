@@ -1,3 +1,4 @@
+using FluentValidation;
 using MediatR;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Services;
@@ -10,17 +11,29 @@ public sealed class PreviewInvoiceDraftQueryHandler : IRequestHandler<PreviewInv
 {
     private readonly IInvoiceGenerationService _invoiceGenerationService;
     private readonly IMonthlyReportGenerationService _monthlyReportGenerationService;
+    private readonly IValidator<GenerateInvoiceDto> _validator;
 
     public PreviewInvoiceDraftQueryHandler(
         IInvoiceGenerationService invoiceGenerationService,
-        IMonthlyReportGenerationService monthlyReportGenerationService)
+        IMonthlyReportGenerationService monthlyReportGenerationService,
+        IValidator<GenerateInvoiceDto> validator)
     {
         _invoiceGenerationService = invoiceGenerationService;
         _monthlyReportGenerationService = monthlyReportGenerationService;
+        _validator = validator;
     }
 
     public async Task<InvoiceDraftPreviewDto> Handle(PreviewInvoiceDraftQuery request, CancellationToken cancellationToken)
     {
+        // The wizard previews while the user is still filling it in: input that generating would
+        // reject is shown as the preview's problems, not returned as an error
+        var validation = await _validator.ValidateAsync(request.Invoice, cancellationToken);
+        if (!validation.IsValid)
+        {
+            var problems = validation.Errors.Select(e => e.ErrorMessage).Distinct().ToList();
+            return new InvoiceDraftPreviewDto(null, null, problems, null, null, null, null, null, null, []);
+        }
+
         InvoiceDraft draft;
         try
         {

@@ -1,4 +1,6 @@
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using nInvoices.Application.Behaviors;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.Services;
 
@@ -24,6 +26,22 @@ public static class ApplicationServicesExtensions
         services.AddScoped<Services.Holidays.IHolidayCalendarService, Services.Holidays.HolidayCalendarService>();
         services.AddScoped<Services.Email.IInvoiceEmailComposer, Services.Email.InvoiceEmailComposer>();
         services.AddCompliance();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the MediatR handlers and the FluentValidation validators of this assembly, with
+    /// the pipeline that runs a request's validators before its handler.
+    /// </summary>
+    public static IServiceCollection AddApplicationRequests(this IServiceCollection services)
+    {
+        var assembly = typeof(ApplicationAssemblyMarker).Assembly;
+        services.AddMediatR(cfg =>
+        {
+            cfg.RegisterServicesFromAssembly(assembly);
+            cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+        });
+        services.AddValidatorsFromAssembly(assembly);
         return services;
     }
 }

@@ -10,8 +10,8 @@ public sealed class CreateTaxDtoValidator : AbstractValidator<CreateTaxDto>
         RuleFor(x => x.CustomerId)
             .GreaterThan(0).WithMessage("Customer ID must be a positive number");
 
+        // Optional: when blank, the handler derives it from the description
         RuleFor(x => x.TaxId)
-            .NotEmpty().WithMessage("Tax ID is required")
             .MaximumLength(50).WithMessage("Tax ID must not exceed 50 characters");
 
         RuleFor(x => x.Description)
