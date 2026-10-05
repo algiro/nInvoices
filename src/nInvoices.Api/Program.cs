@@ -9,6 +9,7 @@ using nInvoices.Infrastructure.PdfExport;
 using nInvoices.Infrastructure.Gmail;
 using nInvoices.Infrastructure.Face;
 using nInvoices.Infrastructure.Verifactu;
+using nInvoices.Api.Infrastructure;
 using Microsoft.AspNetCore.DataProtection;
 using FluentValidation;
 using System.Text.Json.Serialization;
@@ -92,6 +93,9 @@ builder.Services.AddVerifactuSubmission();
 
 // FACe: the client that delivers invoices to public administrations (used when the user sends one)
 builder.Services.AddFace();
+
+// Telegram messages to the administrator, e.g. a new account waiting for approval (off until configured)
+builder.Services.AddAdminNotifications(builder.Configuration);
 
 // Add MediatR for CQRS
 builder.Services.AddMediatR(cfg =>
@@ -195,6 +199,8 @@ builder.Services.AddAuthorization(options =>
         .RequireAuthenticatedUser()
         .RequireRole(nInvoices.Api.Infrastructure.KeycloakRoleClaims.AppUserRole)
         .Build();
+    // Signed in, approved or not: only for asking the administrator for access
+    options.AddPolicy(nInvoices.Api.Controllers.AccessRequestsController.SignedInPolicy, policy => policy.RequireAuthenticatedUser());
     options.AddPolicy("RequireUser", policy => policy.RequireRole(nInvoices.Api.Infrastructure.KeycloakRoleClaims.AppUserRole));
     options.AddPolicy("RequireAdmin", policy => policy.RequireRole("admin"));
 });

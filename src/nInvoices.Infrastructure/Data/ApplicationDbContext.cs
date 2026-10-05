@@ -74,6 +74,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<EInvoiceSubmission> EInvoiceSubmissions => Set<EInvoiceSubmission>();
     public DbSet<VerifactuRecord> VerifactuRecords => Set<VerifactuRecord>();
     public DbSet<VerifactuSubmission> VerifactuSubmissions => Set<VerifactuSubmission>();
+    public DbSet<AccessRequest> AccessRequests => Set<AccessRequest>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
         optionsBuilder.ReplaceService<IModelCacheKeyFactory, EncryptorModelCacheKeyFactory>();

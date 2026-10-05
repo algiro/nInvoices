@@ -7,7 +7,10 @@
         You're signed in as <strong>{{ authStore.email || authStore.username }}</strong>, but this
         nInvoices server only lets in accounts its administrator has approved.
       </p>
-      <p class="muted">
+      <p v-if="administratorNotified" class="muted" role="status">
+        The administrator has been notified. Once they approve your account, check again.
+      </p>
+      <p v-else class="muted">
         Ask the administrator to approve your account, then check again. Nothing you do here is
         saved until then.
       </p>
@@ -21,15 +24,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import BaseButton from '../components/ui/BaseButton.vue';
+import { accountApi } from '../api/account';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const checking = ref(false);
 const stillPending = ref(false);
+const administratorNotified = ref(false);
+
+// Tells the administrator someone is waiting (once per account; later visits only read the state)
+onMounted(async () => {
+  try {
+    administratorNotified.value = (await accountApi.requestAccess()).administratorNotified;
+  } catch (err) {
+    console.error('[Access pending] Could not request access:', err);
+  }
+});
 
 async function checkAgain() {
   checking.value = true;

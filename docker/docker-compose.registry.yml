@@ -96,6 +96,9 @@ services:
       # Master key of the column encryption: create it once (Docs/ENCRYPTION.md) and back it up
       # away from the database backups. Without it the API does not start.
       Encryption__KeyFile: /run/secrets/ninvoices-master.key
+      # Telegram message when a new account waits for approval (off while empty). Docs/GOOGLE-LOGIN.md
+      Notifications__TelegramBotToken: ${TELEGRAM_TOKEN:-}
+      Notifications__TelegramChatId: ${TELEGRAM_CHAT_ID:-}
     volumes:
       - ./volumes/logs:/app/logs
       - ./volumes/dataprotection:/app/keys

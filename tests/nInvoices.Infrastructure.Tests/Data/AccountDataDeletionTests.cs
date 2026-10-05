@@ -75,7 +75,8 @@ public sealed class AccountDataDeletionTests
             new EmailTemplate(customer.Id, "Email", "Invoice", "Hello"),
             new Expense(customer.Id, new DateOnly(2026, 9, 3), "Train", new Money(40m, "EUR")),
             new InvoiceSequence(5),
-            new ImageAsset("logo", "logo.png", "image/png", "iVBORw0KGgo=", 8));
+            new ImageAsset("logo", "logo.png", "image/png", "iVBORw0KGgo=", 8),
+            new AccessRequest("me@example.com", "Me", DateTime.UtcNow));
         await db.SaveChangesAsync(Token);
         // A compound tax points at another tax of the same table
         var compound = new Tax(customer.Id, "SUR", "Surcharge", "COMPOUND", 1m, TaxApplicationType.OnSubtotal, 1);
