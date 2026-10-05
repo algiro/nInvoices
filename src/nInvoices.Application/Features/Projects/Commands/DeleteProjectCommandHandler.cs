@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
@@ -21,7 +21,7 @@ public sealed class DeleteProjectCommandHandler : IRequestHandler<DeleteProjectC
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<DeleteProjectResultDto> Handle(DeleteProjectCommand request, CancellationToken cancellationToken)
+    public async ValueTask<DeleteProjectResultDto> Handle(DeleteProjectCommand request, CancellationToken cancellationToken)
     {
         var project = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (project == null)

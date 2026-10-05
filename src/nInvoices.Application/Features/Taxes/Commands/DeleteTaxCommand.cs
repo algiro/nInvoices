@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 
 namespace nInvoices.Application.Features.Taxes.Commands;
 

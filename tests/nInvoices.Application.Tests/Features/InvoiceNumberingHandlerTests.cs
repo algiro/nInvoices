@@ -41,11 +41,11 @@ public sealed class InvoiceNumberingHandlerTests
     private static CancellationToken Token => TestContext.CurrentContext.CancellationToken;
 
     private Task<InvoiceNumberingDto> Get() =>
-        new GetInvoiceNumberingQueryHandler(_sequences.Object, _settings).Handle(new GetInvoiceNumberingQuery(), Token);
+        new GetInvoiceNumberingQueryHandler(_sequences.Object, _settings).Handle(new GetInvoiceNumberingQuery(), Token).AsTask();
 
     private Task<InvoiceNumberingDto> Update(int value, string? format) =>
         new UpdateInvoiceNumberingCommandHandler(_sequences.Object, _drafts.Object, _unitOfWork.Object, _settings)
-            .Handle(new UpdateInvoiceNumberingCommand(new UpdateInvoiceNumberingDto(value, format)), Token);
+            .Handle(new UpdateInvoiceNumberingCommand(new UpdateInvoiceNumberingDto(value, format)), Token).AsTask();
 
     [Test]
     public async Task Get_UserWithoutSequence_StartsAtOneWithTheDefaultPattern()

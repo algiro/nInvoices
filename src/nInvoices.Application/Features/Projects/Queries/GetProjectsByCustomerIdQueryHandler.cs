@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
@@ -16,7 +16,7 @@ public sealed class GetProjectsByCustomerIdQueryHandler
         _repository = repository;
     }
 
-    public async Task<IEnumerable<ProjectDto>> Handle(
+    public async ValueTask<IEnumerable<ProjectDto>> Handle(
         GetProjectsByCustomerIdQuery request,
         CancellationToken cancellationToken)
     {

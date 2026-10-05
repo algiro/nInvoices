@@ -1,6 +1,6 @@
 using System.IO.Compression;
 using System.Text;
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.Services.Email;
 using nInvoices.Core.Entities;
@@ -32,7 +32,7 @@ public sealed class GetInvoiceDocumentsZipQueryHandler : IRequestHandler<GetInvo
         _logger = logger;
     }
 
-    public async Task<DownloadFile> Handle(GetInvoiceDocumentsZipQuery request, CancellationToken cancellationToken)
+    public async ValueTask<DownloadFile> Handle(GetInvoiceDocumentsZipQuery request, CancellationToken cancellationToken)
     {
         var ids = request.InvoiceIds.Distinct().ToList();
         if (ids.Count == 0)

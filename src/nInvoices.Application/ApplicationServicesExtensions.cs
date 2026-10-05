@@ -1,4 +1,5 @@
 using FluentValidation;
+using Mediator;
 using Microsoft.Extensions.DependencyInjection;
 using nInvoices.Application.Behaviors;
 using nInvoices.Application.Compliance;
@@ -30,18 +31,20 @@ public static class ApplicationServicesExtensions
     }
 
     /// <summary>
-    /// Registers the MediatR handlers and the FluentValidation validators of this assembly, with
-    /// the pipeline that runs a request's validators before its handler.
+    /// Registers the mediator with this assembly's handlers (wired at compile time by the Mediator
+    /// source generator) and the FluentValidation validators, with the pipeline that runs a
+    /// request's validators before its handler.
     /// </summary>
     public static IServiceCollection AddApplicationRequests(this IServiceCollection services)
     {
-        var assembly = typeof(ApplicationAssemblyMarker).Assembly;
-        services.AddMediatR(cfg =>
+        services.AddMediator((MediatorOptions options) =>
         {
-            cfg.RegisterServicesFromAssembly(assembly);
-            cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+            options.Assemblies = [typeof(ApplicationAssemblyMarker)];
+            // Handlers use the request's DbContext and user: never the generator's default, Singleton
+            options.ServiceLifetime = ServiceLifetime.Scoped;
+            options.PipelineBehaviors = [typeof(ValidationBehavior<,>)];
         });
-        services.AddValidatorsFromAssembly(assembly);
+        services.AddValidatorsFromAssembly(typeof(ApplicationAssemblyMarker).Assembly);
         return services;
     }
 }

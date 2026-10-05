@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
@@ -18,7 +18,7 @@ public sealed class GetComplianceCountriesQueryHandler : IRequestHandler<GetComp
         _settings = settings;
     }
 
-    public async Task<IReadOnlyList<ComplianceCountryDto>> Handle(GetComplianceCountriesQuery request, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<ComplianceCountryDto>> Handle(GetComplianceCountriesQuery request, CancellationToken cancellationToken)
     {
         if (_registry.Offered.Count == 0)
             return [];

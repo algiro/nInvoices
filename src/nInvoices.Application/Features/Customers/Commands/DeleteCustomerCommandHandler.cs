@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 
@@ -15,7 +15,7 @@ public sealed class DeleteCustomerCommandHandler : IRequestHandler<DeleteCustome
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<bool> Handle(DeleteCustomerCommand request, CancellationToken cancellationToken)
+    public async ValueTask<bool> Handle(DeleteCustomerCommand request, CancellationToken cancellationToken)
     {
         var customer = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (customer == null)

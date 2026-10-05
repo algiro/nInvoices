@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
@@ -18,7 +18,7 @@ public sealed class GetInvoiceEmailsQueryHandler : IRequestHandler<GetInvoiceEma
         _repository = repository;
     }
 
-    public async Task<IReadOnlyList<InvoiceEmailDto>> Handle(GetInvoiceEmailsQuery request, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<InvoiceEmailDto>> Handle(GetInvoiceEmailsQuery request, CancellationToken cancellationToken)
     {
         var emails = await _repository.FindAsync(e => e.InvoiceId == request.InvoiceId, cancellationToken);
         return emails

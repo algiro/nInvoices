@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using MediatR;
+using Mediator;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
@@ -44,7 +44,7 @@ public sealed class SetSigningCertificateCommandHandler : IRequestHandler<SetSig
     }
 
     /// <exception cref="ArgumentException">Not a usable certificate: wrong password, no RSA private key, or expired.</exception>
-    public async Task<ComplianceCountryDto?> Handle(SetSigningCertificateCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ComplianceCountryDto?> Handle(SetSigningCertificateCommand request, CancellationToken cancellationToken)
     {
         var module = _registry.Find(request.CountryCode);
         if (module is null)
@@ -120,7 +120,7 @@ public sealed class RemoveSigningCertificateCommandHandler : IRequestHandler<Rem
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<ComplianceCountryDto?> Handle(RemoveSigningCertificateCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ComplianceCountryDto?> Handle(RemoveSigningCertificateCommand request, CancellationToken cancellationToken)
     {
         var module = _registry.Find(request.CountryCode);
         if (module is null)

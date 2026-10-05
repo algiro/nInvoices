@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Options;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
@@ -19,7 +19,7 @@ public sealed class GetInvoiceNumberingQueryHandler : IRequestHandler<GetInvoice
         _settings = settings.Value;
     }
 
-    public async Task<InvoiceNumberingDto> Handle(GetInvoiceNumberingQuery request, CancellationToken cancellationToken)
+    public async ValueTask<InvoiceNumberingDto> Handle(GetInvoiceNumberingQuery request, CancellationToken cancellationToken)
     {
         // The query filter returns only the current user's row
         var sequence = (await _sequences.GetAllAsync(cancellationToken)).FirstOrDefault();

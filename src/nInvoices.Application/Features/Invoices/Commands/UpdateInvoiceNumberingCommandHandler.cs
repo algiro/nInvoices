@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Options;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
@@ -29,7 +29,7 @@ public sealed class UpdateInvoiceNumberingCommandHandler : IRequestHandler<Updat
     }
 
     /// <exception cref="ArgumentException">The value or the pattern is not valid.</exception>
-    public async Task<InvoiceNumberingDto> Handle(UpdateInvoiceNumberingCommand request, CancellationToken cancellationToken)
+    public async ValueTask<InvoiceNumberingDto> Handle(UpdateInvoiceNumberingCommand request, CancellationToken cancellationToken)
     {
         var dto = request.Numbering;
         if (dto.Value < 1)

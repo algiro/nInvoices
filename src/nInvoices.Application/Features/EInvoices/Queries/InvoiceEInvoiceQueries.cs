@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.Compliance.EInvoice;
 using nInvoices.Application.DTOs;
 using nInvoices.Core.Entities;
@@ -24,7 +24,7 @@ public sealed class GetInvoiceEInvoicesQueryHandler : IRequestHandler<GetInvoice
     }
 
     /// <exception cref="KeyNotFoundException">The invoice does not exist.</exception>
-    public async Task<IReadOnlyList<InvoiceEInvoiceDto>> Handle(GetInvoiceEInvoicesQuery request, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<InvoiceEInvoiceDto>> Handle(GetInvoiceEInvoicesQuery request, CancellationToken cancellationToken)
     {
         var statuses = await _eInvoices.GetStatusAsync(request.InvoiceId, cancellationToken);
         if (statuses.Count == 0)
@@ -48,7 +48,7 @@ public sealed class GetInvoiceEInvoiceFileQueryHandler : IRequestHandler<GetInvo
         _invoices = invoices;
     }
 
-    public async Task<EInvoiceFileDto?> Handle(GetInvoiceEInvoiceFileQuery request, CancellationToken cancellationToken)
+    public async ValueTask<EInvoiceFileDto?> Handle(GetInvoiceEInvoiceFileQuery request, CancellationToken cancellationToken)
     {
         var file = (await _stored.FindAsync(e => e.InvoiceId == request.InvoiceId && e.FormatId == request.FormatId, cancellationToken))
             .FirstOrDefault();

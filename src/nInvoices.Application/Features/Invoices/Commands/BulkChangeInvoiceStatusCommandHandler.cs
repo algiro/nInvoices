@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Invoices.Notifications;
 using nInvoices.Application.Services;
@@ -38,7 +38,7 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
         _publisher = publisher;
     }
 
-    public async Task<BulkInvoiceResultDto> Handle(BulkChangeInvoiceStatusCommand request, CancellationToken cancellationToken)
+    public async ValueTask<BulkInvoiceResultDto> Handle(BulkChangeInvoiceStatusCommand request, CancellationToken cancellationToken)
     {
         var ids = request.InvoiceIds.Distinct().ToList();
         if (ids.Count > MaxInvoices)

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Services.Holidays;
 using nInvoices.Core.Entities;
@@ -22,7 +22,7 @@ public sealed class ResetHolidayCalendarCommandHandler : IRequestHandler<ResetHo
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<HolidayCalendarDto?> Handle(ResetHolidayCalendarCommand request, CancellationToken cancellationToken)
+    public async ValueTask<HolidayCalendarDto?> Handle(ResetHolidayCalendarCommand request, CancellationToken cancellationToken)
     {
         var code = HolidayCalendar.NormalizeCountryCode(request.CountryCode);
         if (!BuiltInHolidays.Has(code))

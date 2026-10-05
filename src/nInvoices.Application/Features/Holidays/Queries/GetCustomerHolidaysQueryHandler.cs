@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Services.Holidays;
 using nInvoices.Core.Entities;
@@ -19,7 +19,7 @@ public sealed class GetCustomerHolidaysQueryHandler : IRequestHandler<GetCustome
         _holidayCalendarService = holidayCalendarService;
     }
 
-    public async Task<CustomerHolidaysDto?> Handle(GetCustomerHolidaysQuery request, CancellationToken cancellationToken)
+    public async ValueTask<CustomerHolidaysDto?> Handle(GetCustomerHolidaysQuery request, CancellationToken cancellationToken)
     {
         var customer = await _customerRepository.GetByIdAsync(request.CustomerId, cancellationToken);
         if (customer is null)

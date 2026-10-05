@@ -1,5 +1,5 @@
 using System.Security.Cryptography;
-using MediatR;
+using Mediator;
 using nInvoices.Application.Services.Email;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
@@ -28,7 +28,7 @@ public sealed class DisconnectGmailCommandHandler : IRequestHandler<DisconnectGm
         _userContext = userContext;
     }
 
-    public async Task<bool> Handle(DisconnectGmailCommand request, CancellationToken cancellationToken)
+    public async ValueTask<bool> Handle(DisconnectGmailCommand request, CancellationToken cancellationToken)
     {
         var userId = _userContext.RequireUserId();
         var connection = (await _connectionRepository.FindAsync(c => c.UserId == userId, cancellationToken)).FirstOrDefault();

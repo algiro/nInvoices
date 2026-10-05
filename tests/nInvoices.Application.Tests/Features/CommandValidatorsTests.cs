@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Customers.Commands;
 using nInvoices.Application.Features.Customers.Validators;

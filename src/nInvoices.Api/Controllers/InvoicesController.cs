@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.Entities;
 using Microsoft.AspNetCore.Mvc;

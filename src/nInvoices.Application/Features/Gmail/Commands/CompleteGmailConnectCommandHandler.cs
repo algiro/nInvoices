@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.Services.Email;
 using nInvoices.Core.Entities;
@@ -34,7 +34,7 @@ public sealed class CompleteGmailConnectCommandHandler : IRequestHandler<Complet
         _logger = logger;
     }
 
-    public async Task<GmailConnectOutcome> Handle(CompleteGmailConnectCommand request, CancellationToken cancellationToken)
+    public async ValueTask<GmailConnectOutcome> Handle(CompleteGmailConnectCommand request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.State))
             return GmailConnectOutcome.Failed(GmailConnectOutcome.InvalidState);

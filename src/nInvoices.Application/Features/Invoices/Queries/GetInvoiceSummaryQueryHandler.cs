@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
@@ -14,7 +14,7 @@ public sealed class GetInvoiceSummaryQueryHandler : IRequestHandler<GetInvoiceSu
         _repository = repository;
     }
 
-    public async Task<InvoiceSummaryDto> Handle(GetInvoiceSummaryQuery request, CancellationToken cancellationToken)
+    public async ValueTask<InvoiceSummaryDto> Handle(GetInvoiceSummaryQuery request, CancellationToken cancellationToken)
     {
         var rows = await _repository.GetTotalsAsync(cancellationToken);
 

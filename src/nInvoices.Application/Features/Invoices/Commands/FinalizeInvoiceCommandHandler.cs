@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.Features.Invoices.Notifications;
 using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
@@ -38,7 +38,7 @@ public sealed class FinalizeInvoiceCommandHandler : IRequestHandler<FinalizeInvo
         _publisher = publisher;
     }
 
-    public async Task<Unit> Handle(FinalizeInvoiceCommand request, CancellationToken cancellationToken)
+    public async ValueTask<Unit> Handle(FinalizeInvoiceCommand request, CancellationToken cancellationToken)
     {
         var invoice = await _repository.GetByIdAsync(request.InvoiceId, cancellationToken);
         if (invoice == null)

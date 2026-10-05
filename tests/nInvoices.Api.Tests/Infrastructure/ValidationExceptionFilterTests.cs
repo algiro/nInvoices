@@ -1,6 +1,6 @@
 using FluentValidation;
 using FluentValidation.Results;
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
@@ -8,10 +8,14 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using nInvoices.Api.Infrastructure;
+using Moq;
 using nInvoices.Application;
+using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Taxes.Commands;
+using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
+using nInvoices.Core.Interfaces;
 using Shouldly;
 
 namespace nInvoices.Api.Tests.Infrastructure;
@@ -54,19 +58,32 @@ public sealed class ValidationExceptionFilterTests
     [Test]
     public async Task ApplicationRequests_InvalidCommand_IsRejectedBeforeItsHandler()
     {
-        // Only the request pipeline is registered: the handler's dependencies are missing, so
-        // reaching the handler would fail with a different exception
-        await using var provider = new ServiceCollection()
+        // The handler's dependencies are strict mocks with no setup: if the handler ran, any call
+        // on them would fail with a MockException instead of the validation failure
+        var taxes = new Mock<IRepository<Tax>>(MockBehavior.Strict);
+        var customers = new Mock<IRepository<Customer>>(MockBehavior.Strict);
+        var unitOfWork = new Mock<IUnitOfWork>(MockBehavior.Strict);
+        unitOfWork.Setup(u => u.Dispose()); // by the scope
+        var compliance = new Mock<ITaxCompliance>(MockBehavior.Strict);
+        var services = new ServiceCollection()
             .AddLogging()
             .AddApplicationRequests()
-            .BuildServiceProvider();
-        var mediator = provider.GetRequiredService<IMediator>();
+            .AddScoped(_ => taxes.Object)
+            .AddScoped(_ => customers.Object)
+            .AddScoped(_ => unitOfWork.Object)
+            .AddScoped(_ => compliance.Object);
+        // Handlers are scoped (they use the request's DbContext): resolving them outside a scope must fail
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        await using var scope = provider.CreateAsyncScope();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
         var command = new CreateTaxCommand(new CreateTaxDto(0, "", "", "PERCENTAGE", 21m, TaxApplicationType.OnSubtotal));
 
         var exception = await Should.ThrowAsync<ValidationException>(
-            () => mediator.Send(command, TestContext.CurrentContext.CancellationToken));
+            () => mediator.Send(command, TestContext.CurrentContext.CancellationToken).AsTask());
 
         exception.Errors.Select(e => e.PropertyName).ShouldBe(["Tax.CustomerId", "Tax.Description"], ignoreOrder: true);
+        taxes.VerifyNoOtherCalls();
+        unitOfWork.VerifyNoOtherCalls();
     }
 
     private static ExceptionContext CreateContext(Exception exception)

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.Compliance.EInvoice;
 using nInvoices.Application.DTOs;
 using nInvoices.Core.Entities;
@@ -53,7 +53,7 @@ public sealed class GetInvoiceChannelsQueryHandler : IRequestHandler<GetInvoiceC
     }
 
     /// <exception cref="KeyNotFoundException">The invoice does not exist.</exception>
-    public async Task<IReadOnlyList<EInvoiceChannelDto>> Handle(GetInvoiceChannelsQuery request, CancellationToken cancellationToken) =>
+    public async ValueTask<IReadOnlyList<EInvoiceChannelDto>> Handle(GetInvoiceChannelsQuery request, CancellationToken cancellationToken) =>
         (await _delivery.GetChannelsAsync(request.InvoiceId, cancellationToken))
             .Where(c => c.Applies || c.Submission is not null)
             .Select(EInvoiceDeliveryMapper.ToDto)
@@ -69,7 +69,7 @@ public sealed class SendInvoiceEInvoiceCommandHandler : IRequestHandler<SendInvo
         _delivery = delivery;
     }
 
-    public async Task<EInvoiceDeliveryDto> Handle(SendInvoiceEInvoiceCommand request, CancellationToken cancellationToken) =>
+    public async ValueTask<EInvoiceDeliveryDto> Handle(SendInvoiceEInvoiceCommand request, CancellationToken cancellationToken) =>
         EInvoiceDeliveryMapper.ToDto(await _delivery.SendAsync(request.InvoiceId, request.ChannelId, cancellationToken));
 }
 
@@ -82,6 +82,6 @@ public sealed class RefreshInvoiceEInvoiceCommandHandler : IRequestHandler<Refre
         _delivery = delivery;
     }
 
-    public async Task<EInvoiceDeliveryDto> Handle(RefreshInvoiceEInvoiceCommand request, CancellationToken cancellationToken) =>
+    public async ValueTask<EInvoiceDeliveryDto> Handle(RefreshInvoiceEInvoiceCommand request, CancellationToken cancellationToken) =>
         EInvoiceDeliveryMapper.ToDto(await _delivery.RefreshAsync(request.InvoiceId, request.ChannelId, cancellationToken));
 }

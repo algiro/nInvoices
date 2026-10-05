@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
@@ -14,7 +14,7 @@ public sealed class GetTemplatesByCustomerIdQueryHandler : IRequestHandler<GetTe
         _repository = repository;
     }
 
-    public async Task<IEnumerable<InvoiceTemplateDto>> Handle(GetTemplatesByCustomerIdQuery request, CancellationToken cancellationToken)
+    public async ValueTask<IEnumerable<InvoiceTemplateDto>> Handle(GetTemplatesByCustomerIdQuery request, CancellationToken cancellationToken)
     {
         var templates = await _repository.FindAsync(
             t => t.CustomerId == request.CustomerId, 

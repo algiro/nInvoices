@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Services.Holidays;
 
@@ -13,7 +13,7 @@ public sealed class GetHolidayCalendarQueryHandler : IRequestHandler<GetHolidayC
         _holidayCalendarService = holidayCalendarService;
     }
 
-    public async Task<HolidayCalendarDto?> Handle(GetHolidayCalendarQuery request, CancellationToken cancellationToken)
+    public async ValueTask<HolidayCalendarDto?> Handle(GetHolidayCalendarQuery request, CancellationToken cancellationToken)
     {
         var calendar = await _holidayCalendarService.GetCalendarAsync(request.CountryCode, cancellationToken);
         return calendar is null ? null : HolidayMapper.ToDto(calendar, request.Year);

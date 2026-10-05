@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 
@@ -18,7 +18,7 @@ public sealed class DeactivateInvoiceTemplateCommandHandler : IRequestHandler<De
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<bool> Handle(DeactivateInvoiceTemplateCommand request, CancellationToken cancellationToken)
+    public async ValueTask<bool> Handle(DeactivateInvoiceTemplateCommand request, CancellationToken cancellationToken)
     {
         var template = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (template == null)

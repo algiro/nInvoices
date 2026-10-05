@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Customers.Commands;
 using nInvoices.Application.Features.Customers.Queries;
-using MediatR;
+using Mediator;
 
 namespace nInvoices.Api.Controllers;
 
 /// <summary>
 /// API controller for customer management.
-/// Follows RESTful principles and delegates to MediatR handlers.
+/// Follows RESTful principles and delegates to Mediator handlers.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]

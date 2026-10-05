@@ -96,7 +96,7 @@ docker-compose -f docker-compose.dev.yml up -d
    - No dependencies on other projects
 
 2. **nInvoices.Application** - Business Logic Layer
-   - CQRS Commands/Queries using MediatR
+   - CQRS Commands/Queries using Mediator (source-generated, martinothamar/Mediator)
    - DTOs for data transfer
    - FluentValidation validators
    - Template validation and rendering logic
@@ -126,7 +126,7 @@ docker-compose -f docker-compose.dev.yml up -d
 
 ### Key Design Patterns
 
-- **CQRS**: Commands and Queries separated via MediatR (Application layer)
+- **CQRS**: Commands and Queries separated via Mediator (Application layer)
 - **Strategy Pattern**: ITaxHandler with multiple implementations (PercentageTaxHandler, FixedAmountTaxHandler, CompoundTaxHandler)
 - **Repository Pattern**: Generic IRepository<T> for data access
 - **Unit of Work**: IUnitOfWork for transaction management
@@ -168,7 +168,7 @@ docker-compose -f docker-compose.dev.yml up -d
 
 ### CQRS Pattern
 
-Commands and queries are handled by MediatR:
+Commands and queries are handled by Mediator (martinothamar/Mediator; handlers return `ValueTask`):
 
 ```csharp
 // Command example
@@ -176,7 +176,7 @@ public sealed record CreateCustomerCommand(string Name, string Email) : IRequest
 
 public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustomerCommand, CustomerDto>
 {
-    public async Task<CustomerDto> Handle(CreateCustomerCommand request, CancellationToken cancellationToken)
+    public async ValueTask<CustomerDto> Handle(CreateCustomerCommand request, CancellationToken cancellationToken)
     {
         // Implementation
     }

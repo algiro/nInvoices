@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 
@@ -15,7 +15,7 @@ public sealed class MarkAsSentCommandHandler : IRequestHandler<MarkAsSentCommand
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Unit> Handle(MarkAsSentCommand request, CancellationToken cancellationToken)
+    public async ValueTask<Unit> Handle(MarkAsSentCommand request, CancellationToken cancellationToken)
     {
         var invoice = await _repository.GetByIdAsync(request.InvoiceId, cancellationToken);
         if (invoice == null)

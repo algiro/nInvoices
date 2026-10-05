@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
@@ -15,7 +15,7 @@ public sealed class GetInvoiceByIdQueryHandler : IRequestHandler<GetInvoiceByIdQ
         _repository = repository;
     }
 
-    public async Task<InvoiceDto?> Handle(GetInvoiceByIdQuery request, CancellationToken cancellationToken)
+    public async ValueTask<InvoiceDto?> Handle(GetInvoiceByIdQuery request, CancellationToken cancellationToken)
     {
         var invoice = await _repository.GetByIdAsync(request.InvoiceId, cancellationToken);
 

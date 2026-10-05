@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
@@ -26,7 +26,7 @@ public sealed class UpdateComplianceSettingsCommandHandler : IRequestHandler<Upd
 
     /// <exception cref="ComplianceValidationException">The regime is being turned on and the settings break its rules.</exception>
     /// <exception cref="ArgumentException">The address is incomplete.</exception>
-    public async Task<ComplianceCountryDto?> Handle(UpdateComplianceSettingsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ComplianceCountryDto?> Handle(UpdateComplianceSettingsCommand request, CancellationToken cancellationToken)
     {
         var module = _registry.Find(request.CountryCode);
         if (module is null)

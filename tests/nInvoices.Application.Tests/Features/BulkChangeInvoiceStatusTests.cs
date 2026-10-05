@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Options;
 using Moq;
 using nInvoices.Application.Features.Invoices.Commands;
@@ -175,6 +175,6 @@ public sealed class BulkChangeInvoiceStatusTests
 
         await Should.ThrowAsync<ArgumentException>(() => _handler.Handle(
             new BulkChangeInvoiceStatusCommand(BulkInvoiceStatusAction.MarkAsPaid, ids),
-            TestContext.CurrentContext.CancellationToken));
+            TestContext.CurrentContext.CancellationToken).AsTask());
     }
 }

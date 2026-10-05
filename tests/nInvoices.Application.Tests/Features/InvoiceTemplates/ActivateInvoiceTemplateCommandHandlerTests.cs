@@ -90,7 +90,7 @@ public sealed class ActivateInvoiceTemplateCommandHandlerTests
             .ThrowsAsync(new InvalidOperationException("db down"));
 
         await Should.ThrowAsync<InvalidOperationException>(
-            () => _handler.Handle(new ActivateInvoiceTemplateCommand(4), TestContext.CurrentContext.CancellationToken));
+            () => _handler.Handle(new ActivateInvoiceTemplateCommand(4), TestContext.CurrentContext.CancellationToken).AsTask());
 
         next.IsActive.ShouldBeFalse();
     }

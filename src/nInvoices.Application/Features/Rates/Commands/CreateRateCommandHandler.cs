@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
@@ -23,7 +23,7 @@ public sealed class CreateRateCommandHandler : IRequestHandler<CreateRateCommand
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<RateDto> Handle(CreateRateCommand request, CancellationToken cancellationToken)
+    public async ValueTask<RateDto> Handle(CreateRateCommand request, CancellationToken cancellationToken)
     {
         var dto = request.Rate;
 

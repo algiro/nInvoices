@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 
 namespace nInvoices.Application.Features.Customers.Commands;
