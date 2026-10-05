@@ -65,8 +65,11 @@ So every validation rule in `Features/**/Validators` is dead code. Invalid input
 > `ScribanTemplateRenderer.ValidateAsync`, the same check the editor uses), so errors come back through the
 > validation pipeline as a 400 with line and column. `ITemplateEngine`, `HandlebarsTemplateEngine`,
 > `TemplateEngineExtensions` and their 25 tests are deleted; `LocalizationService` is now registered by
-> `AddApplicationServices`. Still open: monthly-report templates are validated in their controller, and email
-> templates are not syntax-checked on save.
+> `AddApplicationServices`. Monthly-report and email templates turned out not to be checked on save at all (only
+> by the editor's validate endpoint, and email templates not even there): their create/update now go through
+> Mediator commands (`Features/MonthlyReportTemplates`, `Features/EmailTemplates`) whose validators apply the same
+> rule (`Validation/TemplateSyntaxRules`; email subject and body are each named in the error). Their other actions
+> (list, delete, activate) still use repositories in the controllers (§5).
 
 `CreateInvoiceTemplateCommandHandler` and `UpdateInvoiceTemplateCommandHandler` validate content with `ITemplateEngine` → `HandlebarsTemplateEngine` (Core interface, Infrastructure implementation). Rendering, previews, emails and `ValidateTemplateCommand` all use `ITemplateRenderer` → `ScribanTemplateRenderer`.
 

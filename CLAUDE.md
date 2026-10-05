@@ -162,9 +162,9 @@ by `HandlerId`.
 User HTML templates use **Scriban** (Liquid-like) syntax written with `[[ ]]` delimiters (turned into
 Scriban's `{{ }}` before parsing, so they don't clash with Vue), e.g. `[[ customer.name ]]`,
 `[[ for line in lineItems ]]…[[ end ]]`. Scriban is the only template engine: `ScribanTemplateRenderer`
-both renders and validates (`ValidateAsync`). Saving an invoice template is rejected with the syntax
-errors (line/column) by the command validators (`TemplateSyntaxRules.MustBeValidTemplate`), the editor's
-`ValidateTemplateCommand` uses the same check, and the HTML is converted to PDF in `Infrastructure/PdfExport/`.
+both renders and validates (`ValidateAsync`). Saving any template (invoice, monthly report, email subject
+and body) goes through a Mediator command whose validator applies `Validation/TemplateSyntaxRules.MustBeValidTemplate`,
+so a template that doesn't parse is rejected (400) with its line/column; the editors' validate endpoints use the same check, and the HTML is converted to PDF in `Infrastructure/PdfExport/`.
 Sample templates and syntax reference live in `Docs/`.
 
 ### Keycloak in Docker
