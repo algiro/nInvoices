@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
@@ -25,7 +25,7 @@ public sealed class UpdateInvoiceTemplateCommandHandler : IRequestHandler<Update
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<InvoiceTemplateDto> Handle(UpdateInvoiceTemplateCommand request, CancellationToken cancellationToken)
+    public async ValueTask<InvoiceTemplateDto> Handle(UpdateInvoiceTemplateCommand request, CancellationToken cancellationToken)
     {
         var template = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (template == null)

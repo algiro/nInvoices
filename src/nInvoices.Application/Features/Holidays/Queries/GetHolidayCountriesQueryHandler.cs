@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Services.Holidays;
 using nInvoices.Core.Entities;
@@ -15,7 +15,7 @@ public sealed class GetHolidayCountriesQueryHandler : IRequestHandler<GetHoliday
         _calendarRepository = calendarRepository;
     }
 
-    public async Task<IReadOnlyList<HolidayCountryDto>> Handle(GetHolidayCountriesQuery request, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<HolidayCountryDto>> Handle(GetHolidayCountriesQuery request, CancellationToken cancellationToken)
     {
         var stored = (await _calendarRepository.GetAllAsync(cancellationToken)).Select(c => c.CountryCode).ToHashSet();
 

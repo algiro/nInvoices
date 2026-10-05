@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
@@ -21,7 +21,7 @@ public sealed class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustome
         _compliance = compliance;
     }
 
-    public async Task<CustomerDto> Handle(UpdateCustomerCommand request, CancellationToken cancellationToken)
+    public async ValueTask<CustomerDto> Handle(UpdateCustomerCommand request, CancellationToken cancellationToken)
     {
         var customer = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (customer == null)

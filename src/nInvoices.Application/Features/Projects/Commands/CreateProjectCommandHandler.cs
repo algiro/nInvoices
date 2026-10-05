@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
@@ -22,7 +22,7 @@ public sealed class CreateProjectCommandHandler : IRequestHandler<CreateProjectC
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<ProjectDto> Handle(CreateProjectCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ProjectDto> Handle(CreateProjectCommand request, CancellationToken cancellationToken)
     {
         var dto = request.Project;
 

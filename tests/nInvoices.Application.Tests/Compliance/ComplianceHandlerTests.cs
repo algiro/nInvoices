@@ -43,7 +43,7 @@ public sealed class ComplianceHandlerTests
 
     private Task<ComplianceCountryDto?> Update(string country, UpdateComplianceSettingsDto dto, IComplianceRegistry? registry = null) =>
         new UpdateComplianceSettingsCommandHandler(registry ?? Registry(), _settings, _unitOfWork.Object)
-            .Handle(new UpdateComplianceSettingsCommand(country, dto), Token);
+            .Handle(new UpdateComplianceSettingsCommand(country, dto), Token).AsTask();
 
     private static UpdateComplianceSettingsDto ValidSpain(bool enabled = true) =>
         new(enabled, "Ana Pérez", "12345678Z", SpanishAddress, Individual);

@@ -1,5 +1,5 @@
 using System.Security.Cryptography;
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
@@ -47,7 +47,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandler : IRequestHandler<Crea
         _logger = logger;
     }
 
-    public async Task<InvoiceEmailDto> Handle(CreateInvoiceEmailDraftCommand request, CancellationToken cancellationToken)
+    public async ValueTask<InvoiceEmailDto> Handle(CreateInvoiceEmailDraftCommand request, CancellationToken cancellationToken)
     {
         var dto = request.Email;
 

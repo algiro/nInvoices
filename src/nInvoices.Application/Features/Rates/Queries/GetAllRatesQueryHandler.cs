@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
@@ -15,7 +15,7 @@ public sealed class GetAllRatesQueryHandler : IRequestHandler<GetAllRatesQuery, 
         _repository = repository;
     }
 
-    public async Task<IEnumerable<RateDto>> Handle(GetAllRatesQuery request, CancellationToken cancellationToken)
+    public async ValueTask<IEnumerable<RateDto>> Handle(GetAllRatesQuery request, CancellationToken cancellationToken)
     {
         var rates = await _repository.GetAllAsync(cancellationToken);
 

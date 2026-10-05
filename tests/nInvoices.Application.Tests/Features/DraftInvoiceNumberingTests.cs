@@ -1,5 +1,5 @@
 using System.Linq.Expressions;
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -163,7 +163,7 @@ public sealed class DraftInvoiceNumberingTests
         var invoice = await NewDraftAsync(1);
         await _finalize.Handle(new FinalizeInvoiceCommand(1), Token);
 
-        await Should.ThrowAsync<InvalidOperationException>(() => _finalize.Handle(new FinalizeInvoiceCommand(1), Token));
+        await Should.ThrowAsync<InvalidOperationException>(() => _finalize.Handle(new FinalizeInvoiceCommand(1), Token).AsTask());
 
         invoice.Number.ToString().ShouldBe("N-005");
         SequenceValue.ShouldBe(6);
@@ -172,7 +172,7 @@ public sealed class DraftInvoiceNumberingTests
     [Test]
     public async Task Finalize_UnknownInvoice_Throws()
     {
-        await Should.ThrowAsync<InvalidOperationException>(() => _finalize.Handle(new FinalizeInvoiceCommand(99), Token));
+        await Should.ThrowAsync<InvalidOperationException>(() => _finalize.Handle(new FinalizeInvoiceCommand(99), Token).AsTask());
         SequenceValue.ShouldBe(5);
     }
 

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.Compliance.Spain.Verifactu;
 using nInvoices.Application.DTOs;
 using nInvoices.Core.Entities;
@@ -23,7 +23,7 @@ public sealed class GetInvoiceVerifactuQueryHandler : IRequestHandler<GetInvoice
         _submissions = submissions;
     }
 
-    public async Task<InvoiceVerifactuDto> Handle(GetInvoiceVerifactuQuery request, CancellationToken cancellationToken)
+    public async ValueTask<InvoiceVerifactuDto> Handle(GetInvoiceVerifactuQuery request, CancellationToken cancellationToken)
     {
         var records = await _verifactu.GetRecordsAsync(request.InvoiceId, cancellationToken);
         var issued = records.FirstOrDefault(r => r.Kind == VerifactuRecordKind.Issued);
@@ -57,7 +57,7 @@ public sealed class VerifyVerifactuChainQueryHandler : IRequestHandler<VerifyVer
         _verifactu = verifactu;
     }
 
-    public async Task<ChainReportDto> Handle(VerifyVerifactuChainQuery request, CancellationToken cancellationToken)
+    public async ValueTask<ChainReportDto> Handle(VerifyVerifactuChainQuery request, CancellationToken cancellationToken)
     {
         var report = await _verifactu.VerifyChainAsync(cancellationToken);
         return new ChainReportDto(
@@ -82,7 +82,7 @@ public sealed class GetVerifactuStatusQueryHandler : IRequestHandler<GetVerifact
         _submitter = submitter;
     }
 
-    public async Task<VerifactuStatusDto> Handle(GetVerifactuStatusQuery request, CancellationToken cancellationToken)
+    public async ValueTask<VerifactuStatusDto> Handle(GetVerifactuStatusQuery request, CancellationToken cancellationToken)
     {
         var summary = await _submitter.GetSummaryAsync(cancellationToken);
         return new VerifactuStatusDto(summary.Pending, summary.Accepted, summary.AcceptedWithErrors, summary.Rejected, summary.FirstProblem);
@@ -98,7 +98,7 @@ public sealed class SubmitVerifactuRecordsCommandHandler : IRequestHandler<Submi
         _submitter = submitter;
     }
 
-    public async Task<VerifactuSubmissionRunDto> Handle(SubmitVerifactuRecordsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<VerifactuSubmissionRunDto> Handle(SubmitVerifactuRecordsCommand request, CancellationToken cancellationToken)
     {
         var run = await _submitter.SubmitPendingAsync(cancellationToken);
         return new VerifactuSubmissionRunDto(run.Sent, run.Accepted, run.AcceptedWithErrors, run.Rejected, run.Problem);

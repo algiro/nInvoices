@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 namespace nInvoices.Api.Infrastructure;
 
 /// <summary>
-/// Turns the <see cref="ValidationException"/> thrown by the MediatR validation pipeline into a
+/// Turns the <see cref="ValidationException"/> thrown by the Mediator validation pipeline into a
 /// 400 <see cref="ValidationProblemDetails"/>: <c>errors</c> lists the messages per field
 /// (e.g. <c>customer.address.city</c>), and <c>error</c> joins them in one sentence, the shape
 /// every other 400 of the API has, so clients that only read <c>error</c> show the problem.

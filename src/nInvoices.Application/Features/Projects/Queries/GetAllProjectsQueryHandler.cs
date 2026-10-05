@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
@@ -15,7 +15,7 @@ public sealed class GetAllProjectsQueryHandler : IRequestHandler<GetAllProjectsQ
         _repository = repository;
     }
 
-    public async Task<IEnumerable<ProjectDto>> Handle(GetAllProjectsQuery request, CancellationToken cancellationToken)
+    public async ValueTask<IEnumerable<ProjectDto>> Handle(GetAllProjectsQuery request, CancellationToken cancellationToken)
     {
         var projects = await _repository.GetAllAsync(cancellationToken);
         return projects.Select(ProjectMapper.ToDto);

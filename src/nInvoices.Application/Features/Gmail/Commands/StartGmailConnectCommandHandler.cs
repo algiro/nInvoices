@@ -1,6 +1,6 @@
 using System.Buffers.Text;
 using System.Security.Cryptography;
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Services.Email;
 using nInvoices.Core.Entities;
@@ -33,7 +33,7 @@ public sealed class StartGmailConnectCommandHandler : IRequestHandler<StartGmail
         _timeProvider = timeProvider;
     }
 
-    public async Task<GmailConnectUrlDto> Handle(StartGmailConnectCommand request, CancellationToken cancellationToken)
+    public async ValueTask<GmailConnectUrlDto> Handle(StartGmailConnectCommand request, CancellationToken cancellationToken)
     {
         if (!_gmailClient.IsConfigured)
             throw new InvoiceEmailException(InvoiceEmailException.GmailNotConfigured, "Gmail is not configured on the server.");

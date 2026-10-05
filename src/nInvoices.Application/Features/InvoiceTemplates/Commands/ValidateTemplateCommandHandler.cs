@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Services;
 using System.Text.RegularExpressions;
@@ -18,7 +18,7 @@ public sealed class ValidateTemplateCommandHandler : IRequestHandler<ValidateTem
         _templateRenderer = templateRenderer;
     }
 
-    public async Task<TemplateValidationResultDto> Handle(ValidateTemplateCommand request, CancellationToken cancellationToken)
+    public async ValueTask<TemplateValidationResultDto> Handle(ValidateTemplateCommand request, CancellationToken cancellationToken)
     {
         // Validate syntax
         var validationResult = await _templateRenderer.ValidateAsync(request.Content, cancellationToken);

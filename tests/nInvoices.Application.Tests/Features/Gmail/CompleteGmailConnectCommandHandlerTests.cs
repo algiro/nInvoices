@@ -44,7 +44,7 @@ public sealed class CompleteGmailConnectCommandHandlerTests
             .ReturnsAsync(new GmailAuthorization("me@gmail.com", "refresh-1", scopes));
 
     private Task<GmailConnectOutcome> Complete(string? state = State, string? code = "code-1", string? error = null) =>
-        _handler.Handle(new CompleteGmailConnectCommand(code, state, error), TestContext.CurrentContext.CancellationToken);
+        _handler.Handle(new CompleteGmailConnectCommand(code, state, error), TestContext.CurrentContext.CancellationToken).AsTask();
 
     [TestCase(null)]
     [TestCase("")]

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
@@ -17,7 +17,7 @@ public sealed class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectC
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<ProjectDto> Handle(UpdateProjectCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ProjectDto> Handle(UpdateProjectCommand request, CancellationToken cancellationToken)
     {
         var project = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (project == null)

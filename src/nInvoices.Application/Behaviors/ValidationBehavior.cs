@@ -1,6 +1,6 @@
 using FluentValidation;
 using FluentValidation.Results;
-using MediatR;
+using Mediator;
 
 namespace nInvoices.Application.Behaviors;
 
@@ -10,7 +10,7 @@ namespace nInvoices.Application.Behaviors;
 /// never sees invalid input. Requests without a validator pass straight through.
 /// </summary>
 public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : notnull
+    where TRequest : IMessage
 {
     private readonly IReadOnlyList<IValidator<TRequest>> _validators;
 
@@ -19,10 +19,10 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
         _validators = validators.ToList();
     }
 
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    public async ValueTask<TResponse> Handle(TRequest request, MessageHandlerDelegate<TRequest, TResponse> next, CancellationToken cancellationToken)
     {
         if (_validators.Count == 0)
-            return await next(cancellationToken);
+            return await next(request, cancellationToken);
 
         var failures = new List<ValidationFailure>();
         foreach (var validator in _validators)
@@ -35,6 +35,6 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
         if (failures.Count > 0)
             throw new ValidationException(failures);
 
-        return await next(cancellationToken);
+        return await next(request, cancellationToken);
     }
 }

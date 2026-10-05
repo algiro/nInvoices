@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 using nInvoices.Application.Behaviors;
 using Shouldly;
 
@@ -31,7 +31,7 @@ public sealed class ValidationBehaviorTests
     {
         var behavior = new ValidationBehavior<SampleRequest, string>([]);
 
-        var result = await behavior.Handle(new SampleRequest("", 0), _ => Task.FromResult("handled"), Token);
+        var result = await behavior.Handle(new SampleRequest("", 0), (_, _) => ValueTask.FromResult("handled"), Token);
 
         result.ShouldBe("handled");
     }
@@ -41,7 +41,7 @@ public sealed class ValidationBehaviorTests
     {
         var behavior = new ValidationBehavior<SampleRequest, string>([NameRequired(), CountPositive()]);
 
-        var result = await behavior.Handle(new SampleRequest("ok", 1), _ => Task.FromResult("handled"), Token);
+        var result = await behavior.Handle(new SampleRequest("ok", 1), (_, _) => ValueTask.FromResult("handled"), Token);
 
         result.ShouldBe("handled");
     }
@@ -54,12 +54,12 @@ public sealed class ValidationBehaviorTests
 
         var exception = await Should.ThrowAsync<ValidationException>(() => behavior.Handle(
             new SampleRequest("", 0),
-            _ =>
+            (_, _) =>
             {
                 handlerCalled = true;
-                return Task.FromResult("handled");
+                return ValueTask.FromResult("handled");
             },
-            Token));
+            Token).AsTask());
 
         handlerCalled.ShouldBeFalse();
         exception.Errors.Select(e => e.ErrorMessage).ShouldBe(["Name is required", "Count must be positive"], ignoreOrder: true);

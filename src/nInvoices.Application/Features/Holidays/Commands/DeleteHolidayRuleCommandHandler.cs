@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 
@@ -15,7 +15,7 @@ public sealed class DeleteHolidayRuleCommandHandler : IRequestHandler<DeleteHoli
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<bool> Handle(DeleteHolidayRuleCommand request, CancellationToken cancellationToken)
+    public async ValueTask<bool> Handle(DeleteHolidayRuleCommand request, CancellationToken cancellationToken)
     {
         var rule = await _ruleRepository.GetByIdAsync(request.Id, cancellationToken);
         if (rule is null)

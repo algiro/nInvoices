@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
@@ -28,7 +28,7 @@ public sealed class CreateInvoiceTemplateCommandHandler : IRequestHandler<Create
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<InvoiceTemplateDto> Handle(CreateInvoiceTemplateCommand request, CancellationToken cancellationToken)
+    public async ValueTask<InvoiceTemplateDto> Handle(CreateInvoiceTemplateCommand request, CancellationToken cancellationToken)
     {
         var dto = request.Template;
 

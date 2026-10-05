@@ -89,12 +89,16 @@ against a running API + frontend.
   `Money`, `InvoiceNumber`), enums, and interfaces (`IRepository<T>`, `IUnitOfWork`,
   `IUserContext`, `ITaxHandler`). All entities derive from `EntityBase` (`long Id`,
   `CreatedAt`, `UpdatedAt`).
-- **nInvoices.Application** — CQRS via MediatR, organized by feature under
+- **nInvoices.Application** — CQRS via [Mediator](https://github.com/martinothamar/Mediator)
+  (MIT, source-generated; replaced MediatR when it went commercial), organized by feature under
   `Features/<Entity>/{Commands,Queries,Validators}`. Each command/query is a `sealed record`
-  `IRequest<T>` with a sibling `...Handler`. DTOs in `DTOs/`, FluentValidation validators
+  `IRequest<T>` with a sibling `...Handler` whose `Handle` returns `ValueTask<T>`. Handlers are
+  wired at compile time: a request without a handler is a build error. Registered **Scoped**
+  (the generator's default is Singleton, which would capture the DbContext); in tests, wrap a
+  handler call passed to `Should.ThrowAsync` in `.AsTask()`. DTOs in `DTOs/`, FluentValidation validators
   alongside features, template rendering (`ScribanTemplateRenderer`) and invoice/report
   generation services in `Services/`, i18n JSON in `Localization/`.
-  **Validation**: `AddApplicationRequests()` registers MediatR with `Behaviors/ValidationBehavior`,
+  **Validation**: `AddApplicationRequests()` registers Mediator with `Behaviors/ValidationBehavior`,
   which runs every `IValidator<TRequest>` before the handler and throws `ValidationException`;
   the API's `ValidationExceptionFilter` returns it as a 400 `ValidationProblemDetails` (`errors`
   per field plus an `error` string). Rules live in DTO validators; a command carrying a DTO gets
@@ -105,9 +109,9 @@ against a running API + frontend.
   (`Data/Migrations/`), tax handler implementations (`TaxHandlers/`), Scriban template engine
   (`TemplateEngine/`), PDF export (`PdfExport/` — QuestPDF and PuppeteerSharp/HtmlAgilityPack),
   `UserContext` (reads JWT claims).
-- **nInvoices.Api** — thin controllers (`Controllers/`) that dispatch through MediatR.
+- **nInvoices.Api** — thin controllers (`Controllers/`) that dispatch through Mediator (`IMediator.Send`).
   `Program.cs` wires everything via extension methods: `AddServiceDefaults`, `AddDatabase`,
-  `AddTaxHandlers`, `AddTemplateEngine`, `AddPdfExport`, `AddApplicationServices`, `AddMediatR`.
+  `AddTaxHandlers`, `AddTemplateEngine`, `AddPdfExport`, `AddApplicationServices`, `AddApplicationRequests` (Mediator + validators).
   Auth is either `DevAuthenticationHandler` (dev) or Keycloak JWT Bearer. Policies:
   `RequireUser`, `RequireAdmin`.
 - **nInvoices.ServiceDefaults** — Aspire shared project (`AddServiceDefaults()` /
@@ -189,7 +193,7 @@ Code style and testing rules are authoritative in `.github/instructions/`
 2. Add `DbSet` to `ApplicationDbContext`, then create a migration (command above).
 3. DTOs in `Application/DTOs/`; commands/queries/validators under
    `Application/Features/<Entity>/` (a DTO validator plus a command validator wrapping it).
-4. Controller in `Api/Controllers/` dispatching via MediatR.
+4. Controller in `Api/Controllers/` dispatching via Mediator.
 5. Frontend: `src/api/<entity>.ts` + store/view as needed.
 
 ## Notes

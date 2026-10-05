@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
@@ -18,7 +18,7 @@ public sealed class UpdateRateCommandHandler : IRequestHandler<UpdateRateCommand
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<RateDto> Handle(UpdateRateCommand request, CancellationToken cancellationToken)
+    public async ValueTask<RateDto> Handle(UpdateRateCommand request, CancellationToken cancellationToken)
     {
         var rate = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (rate == null)

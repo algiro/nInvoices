@@ -1,5 +1,5 @@
 using System.Security.Cryptography.X509Certificates;
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -272,6 +272,6 @@ public sealed class EInvoiceServiceTests
 
         // A failure (here: the invoice cannot be found) is logged, not raised: the invoice is already final
         _invoices.Setup(r => r.GetByIdAsync(InvoiceId, It.IsAny<CancellationToken>())).ReturnsAsync((Invoice?)null);
-        await Should.NotThrowAsync(() => handler.Handle(new InvoiceFinalizedNotification(InvoiceId), Token));
+        await Should.NotThrowAsync(() => handler.Handle(new InvoiceFinalizedNotification(InvoiceId), Token).AsTask());
     }
 }

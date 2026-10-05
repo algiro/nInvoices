@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
@@ -30,7 +30,7 @@ public sealed class GenerateInvoiceCommandHandler : IRequestHandler<GenerateInvo
         _logger = logger;
     }
 
-    public async Task<InvoiceDto> Handle(GenerateInvoiceCommand request, CancellationToken cancellationToken)
+    public async ValueTask<InvoiceDto> Handle(GenerateInvoiceCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation(
             "Generating invoice for customer {CustomerId}, type {InvoiceType}",

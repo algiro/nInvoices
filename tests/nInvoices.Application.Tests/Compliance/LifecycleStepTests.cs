@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using Moq;
 using nInvoices.Application.Compliance.Spain.Verifactu;
@@ -81,7 +81,7 @@ public sealed class LifecycleStepTests
         _step.Setup(s => s.OnFinalizingAsync(It.IsAny<Invoice>(), It.IsAny<Customer>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new VerifactuException([new nInvoices.Core.Compliance.ComplianceIssue(null, "no VAT line")]));
 
-        await Should.ThrowAsync<VerifactuException>(() => Finalizer().Handle(new FinalizeInvoiceCommand(1), Token));
+        await Should.ThrowAsync<VerifactuException>(() => Finalizer().Handle(new FinalizeInvoiceCommand(1), Token).AsTask());
 
         _calls.ShouldBeEmpty();
     }
@@ -135,7 +135,7 @@ public sealed class LifecycleStepTests
             .ThrowsAsync(new InvalidOperationException("part of the chain"));
 
         await Should.ThrowAsync<InvalidOperationException>(() =>
-            new DeleteInvoiceCommandHandler(_invoices, _unitOfWork.Object, [_step.Object]).Handle(new DeleteInvoiceCommand(1, Force: true), Token));
+            new DeleteInvoiceCommandHandler(_invoices, _unitOfWork.Object, [_step.Object]).Handle(new DeleteInvoiceCommand(1, Force: true), Token).AsTask());
 
         _invoices.Items.ShouldContain(invoice);
         _calls.ShouldBeEmpty();

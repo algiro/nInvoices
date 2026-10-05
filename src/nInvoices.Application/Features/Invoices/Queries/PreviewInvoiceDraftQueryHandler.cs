@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Services;
 using nInvoices.Core.Enums;
@@ -23,7 +23,7 @@ public sealed class PreviewInvoiceDraftQueryHandler : IRequestHandler<PreviewInv
         _validator = validator;
     }
 
-    public async Task<InvoiceDraftPreviewDto> Handle(PreviewInvoiceDraftQuery request, CancellationToken cancellationToken)
+    public async ValueTask<InvoiceDraftPreviewDto> Handle(PreviewInvoiceDraftQuery request, CancellationToken cancellationToken)
     {
         // The wizard previews while the user is still filling it in: input that generating would
         // reject is shown as the preview's problems, not returned as an error

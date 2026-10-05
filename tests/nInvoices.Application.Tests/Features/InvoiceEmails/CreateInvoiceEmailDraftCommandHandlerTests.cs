@@ -73,7 +73,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandlerTests
         new(to, cc, subject, "<p>Please find attached…</p>");
 
     private Task<InvoiceEmailDto> Send(CreateInvoiceEmailDraftDto? email = null) =>
-        _handler.Handle(new CreateInvoiceEmailDraftCommand(42, email ?? Email()), TestContext.CurrentContext.CancellationToken);
+        _handler.Handle(new CreateInvoiceEmailDraftCommand(42, email ?? Email()), TestContext.CurrentContext.CancellationToken).AsTask();
 
     [Test]
     public async Task Handle_CreatesDraftFromConnectedAccountAndRecordsIt()

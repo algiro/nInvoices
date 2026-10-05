@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
@@ -25,7 +25,7 @@ public sealed class SearchInvoicesQueryHandler : IRequestHandler<SearchInvoicesQ
         _logger = logger;
     }
 
-    public async Task<InvoicePageDto> Handle(SearchInvoicesQuery request, CancellationToken cancellationToken)
+    public async ValueTask<InvoicePageDto> Handle(SearchInvoicesQuery request, CancellationToken cancellationToken)
     {
         // Drafts show the next number; make sure the list does, whatever last changed it (or
         // when the drafts were created). Never lets a problem here stop the list from loading.

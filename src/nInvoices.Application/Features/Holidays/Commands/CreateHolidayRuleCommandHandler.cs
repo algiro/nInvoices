@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Services.Holidays;
 using nInvoices.Core.Entities;
@@ -25,7 +25,7 @@ public sealed class CreateHolidayRuleCommandHandler : IRequestHandler<CreateHoli
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<HolidayRuleDto> Handle(CreateHolidayRuleCommand request, CancellationToken cancellationToken)
+    public async ValueTask<HolidayRuleDto> Handle(CreateHolidayRuleCommand request, CancellationToken cancellationToken)
     {
         // Validate the rule before anything is stored
         var rule = new HolidayRule();

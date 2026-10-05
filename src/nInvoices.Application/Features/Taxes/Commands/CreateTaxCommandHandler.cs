@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
@@ -30,7 +30,7 @@ public sealed class CreateTaxCommandHandler : IRequestHandler<CreateTaxCommand, 
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<TaxDto> Handle(CreateTaxCommand request, CancellationToken cancellationToken)
+    public async ValueTask<TaxDto> Handle(CreateTaxCommand request, CancellationToken cancellationToken)
     {
         var dto = request.Tax;
 

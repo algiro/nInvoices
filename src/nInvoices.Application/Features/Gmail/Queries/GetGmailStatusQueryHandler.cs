@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Services.Email;
 using nInvoices.Core.Entities;
@@ -22,7 +22,7 @@ public sealed class GetGmailStatusQueryHandler : IRequestHandler<GetGmailStatusQ
         _userContext = userContext;
     }
 
-    public async Task<GmailStatusDto> Handle(GetGmailStatusQuery request, CancellationToken cancellationToken)
+    public async ValueTask<GmailStatusDto> Handle(GetGmailStatusQuery request, CancellationToken cancellationToken)
     {
         var userId = _userContext.RequireUserId();
         var connection = (await _connectionRepository.FindAsync(c => c.UserId == userId, cancellationToken)).FirstOrDefault();

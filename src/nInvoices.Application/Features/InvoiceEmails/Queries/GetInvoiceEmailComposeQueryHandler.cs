@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Services.Email;
 using nInvoices.Core.Entities;
@@ -35,7 +35,7 @@ public sealed class GetInvoiceEmailComposeQueryHandler : IRequestHandler<GetInvo
         _userContext = userContext;
     }
 
-    public async Task<InvoiceEmailComposeDto?> Handle(GetInvoiceEmailComposeQuery request, CancellationToken cancellationToken)
+    public async ValueTask<InvoiceEmailComposeDto?> Handle(GetInvoiceEmailComposeQuery request, CancellationToken cancellationToken)
     {
         var invoice = await _invoiceRepository.GetByIdWithRelatedAsync(request.InvoiceId, cancellationToken);
         if (invoice is null)

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.Features.Invoices.Notifications;
 
@@ -20,7 +20,7 @@ public sealed class GenerateMandatoryEInvoices : INotificationHandler<InvoiceFin
         _logger = logger;
     }
 
-    public async Task Handle(InvoiceFinalizedNotification notification, CancellationToken cancellationToken)
+    public async ValueTask Handle(InvoiceFinalizedNotification notification, CancellationToken cancellationToken)
     {
         try
         {

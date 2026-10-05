@@ -54,7 +54,7 @@ public sealed class CertificateAndCustomerTests
 
     private Task<ComplianceCountryDto?> Upload(string country, byte[] pfx, string password) =>
         new SetSigningCertificateCommandHandler(_registry, _settings, new MarkingProtector(), _unitOfWork.Object, _time)
-            .Handle(new SetSigningCertificateCommand(country, new UploadCertificateDto(Convert.ToBase64String(pfx), password)), Token);
+            .Handle(new SetSigningCertificateCommand(country, new UploadCertificateDto(Convert.ToBase64String(pfx), password)), Token).AsTask();
 
     private static byte[] Pfx(X509Certificate2 certificate, string password = "pw") =>
         certificate.Export(X509ContentType.Pfx, password);

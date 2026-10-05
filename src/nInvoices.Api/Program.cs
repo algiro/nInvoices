@@ -100,7 +100,7 @@ builder.Services.AddFace();
 // Telegram messages to the administrator, e.g. a new account waiting for approval (off until configured)
 builder.Services.AddAdminNotifications(builder.Configuration);
 
-// MediatR handlers and FluentValidation validators: every request is checked by its validators
+// Mediator handlers and FluentValidation validators: every request is checked by its validators
 // (Features/*/Validators) before the handler runs
 builder.Services.AddApplicationRequests();
 

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
@@ -21,7 +21,7 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
         _compliance = compliance;
     }
 
-    public async Task<CustomerDto> Handle(CreateCustomerCommand request, CancellationToken cancellationToken)
+    public async ValueTask<CustomerDto> Handle(CreateCustomerCommand request, CancellationToken cancellationToken)
     {
         var dto = request.Customer;
         
