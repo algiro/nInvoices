@@ -465,12 +465,14 @@ public sealed class ImportExportController : ControllerBase
                 invoice.WorkedDays = invoiceData.WorkedDays;
                 invoice.Year = invoiceData.Year;
                 invoice.Month = invoiceData.Month;
-                invoice.TotalExpenses = new Money(invoiceData.TotalExpenses.Amount, currency);
-                invoice.TotalTaxes = new Money(invoiceData.TotalTaxes.Amount, currency);
-                invoice.Total = new Money(invoiceData.Total.Amount, currency);
+                // The status and amounts it was exported with, as they were
+                invoice.RestoreImported(
+                    invoiceData.Status,
+                    new Money(invoiceData.TotalExpenses.Amount, currency),
+                    new Money(invoiceData.TotalTaxes.Amount, currency),
+                    new Money(invoiceData.Total.Amount, currency));
                 invoice.RenderedContent = invoiceData.RenderedContent;
                 invoice.Notes = invoiceData.Notes;
-                invoice.Status = invoiceData.Status;
                 invoice.Hours = invoiceData.Hours;
                 invoice.RateId = RateAt(ratesByCustomer.GetValueOrDefault(customerId) ?? [], invoiceData.RateIndex);
 

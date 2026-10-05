@@ -65,7 +65,7 @@ public sealed class DraftInvoiceSynchronizer : IDraftInvoiceSynchronizer
             if (draft.Number == current)
                 continue;
 
-            draft.Number = current;
+            draft.RenumberDraft(current);
             await _invoiceRepository.UpdateAsync(draft, cancellationToken);
             changed.Add(draft.Id);
         }

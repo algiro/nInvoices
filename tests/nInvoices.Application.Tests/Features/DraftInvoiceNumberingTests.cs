@@ -181,7 +181,7 @@ public sealed class DraftInvoiceNumberingTests
     {
         // A draft created before numbers were taken on finalizing holds an old number
         var stale = await NewDraftAsync(1);
-        stale.Number = new InvoiceNumber("N-002");
+        stale.RenumberDraft(new InvoiceNumber("N-002"));
 
         await _finalize.Handle(new FinalizeInvoiceCommand(1), Token);
 
@@ -234,9 +234,8 @@ public sealed class DraftInvoiceNumberingTests
     {
         await NewDraftAsync(1);
         var sent = await NewDraftAsync(2);
-        sent.FinalizeInvoice();
+        sent.Finalize(new InvoiceNumber("N-001"));
         sent.MarkAsSent();
-        sent.Number = new InvoiceNumber("N-001");
 
         _sequences.Items.Single().SetValue(9);
         await _drafts.RefreshDraftsAsync(Token);

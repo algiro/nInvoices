@@ -53,7 +53,7 @@ public sealed class BulkChangeInvoiceStatusTests
             new DateOnly(2026, 1, 31),
             new Money(100m, "EUR"),
             "EUR") { Id = id };
-        if (status != InvoiceStatus.Draft) invoice.FinalizeInvoice();
+        if (status != InvoiceStatus.Draft) invoice.Finalize(invoice.Number);
         if (status is InvoiceStatus.Sent or InvoiceStatus.Paid) invoice.MarkAsSent();
         if (status == InvoiceStatus.Paid) invoice.MarkAsPaid();
         if (status == InvoiceStatus.Cancelled) invoice.Cancel();

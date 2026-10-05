@@ -68,7 +68,7 @@ public sealed class InvoiceRepositorySearchTests
         invoice.SetMonthlyInvoiceDetails(issued.Year, issued.Month, 20);
         // As generation does; it also gives Total its own Money instance, which EF needs to save it
         invoice.AddTaxes(Money.Zero("EUR"));
-        if (status != InvoiceStatus.Draft) invoice.FinalizeInvoice();
+        if (status != InvoiceStatus.Draft) invoice.Finalize(invoice.Number);
         if (status is InvoiceStatus.Sent or InvoiceStatus.Paid) invoice.MarkAsSent();
         if (status == InvoiceStatus.Paid) invoice.MarkAsPaid();
         _context.Invoices.Add(invoice);

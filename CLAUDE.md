@@ -150,6 +150,19 @@ against a running API + frontend.
   connection string key is `ConnectionStrings:Default`. Migrations assembly is
   `nInvoices.Infrastructure` for both providers, so a single migration set must work on both.
 
+### Invoice lifecycle
+
+Draft → Finalized → (Sent) → Paid, and Finalized/Sent → Cancelled; Paid and Cancelled are final. Only a
+draft can be deleted (it was never issued); an issued invoice is cancelled instead and keeps its number
+on record (`DELETE ?force=true` bypasses this, on explicit request). The table lives in one place,
+`Core/Entities/InvoiceLifecycle.cs` (`WhyNot(status, action)`, actions in `InvoiceAction`, `Delete`
+being the one that changes no status); `Invoice` enforces it (`Finalize(number)`, `MarkAsSent`,
+`MarkAsPaid`, `Cancel`, `EnsureAllowed` throw `InvalidOperationException` with the reason), the delete
+handler checks it, and the bulk actions report its reasons.
+`Status`, `Number` and the money totals have private setters: change them only through those methods,
+`RenumberDraft`, `AddExpenses`/`AddTaxes`, or `RestoreImported` (import only). `InvoiceLifecycleTests`
+covers every status × action pair. The frontend menu (`useInvoiceActions.actionsFor`) mirrors the table.
+
 ### Tax calculation (Strategy pattern)
 
 Handlers implement `ITaxHandler` (`HandlerId`, `Description`, `Calculate(...)`). Built-ins:

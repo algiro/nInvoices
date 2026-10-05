@@ -1,5 +1,6 @@
 using Mediator;
 using nInvoices.Core.Entities;
+using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
 
 namespace nInvoices.Application.Features.Invoices.Commands;
@@ -26,9 +27,9 @@ public sealed class DeleteInvoiceCommandHandler : IRequestHandler<DeleteInvoiceC
         if (invoice == null)
             throw new InvalidOperationException($"Invoice with ID {request.InvoiceId} not found");
 
-        // Check status only if not forcing delete
-        if (!request.Force && invoice.Status != Core.Enums.InvoiceStatus.Draft)
-            throw new InvalidOperationException("Only draft invoices can be deleted. Use force=true to delete finalized invoices.");
+        // Only a draft can be deleted (InvoiceLifecycle); a forced delete, asked for explicitly, bypasses it
+        if (!request.Force)
+            invoice.EnsureAllowed(InvoiceAction.Delete);
 
         // A step may refuse: an invoice that is part of a Verifactu chain cannot disappear
         foreach (var step in _steps)

@@ -90,7 +90,7 @@ public sealed class LifecycleStepTests
     public async Task Finalize_StepChangingTheDocument_RerendersIt_EvenWithTheNumberUnchanged()
     {
         var invoice = Draft();
-        invoice.Number = new InvoiceNumber("26-10-001"); // the draft already showed the number it takes
+        invoice.RenumberDraft(new InvoiceNumber("26-10-001")); // the draft already showed the number it takes
         _step.Setup(s => s.OnFinalizingAsync(It.IsAny<Invoice>(), It.IsAny<Customer>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         await Finalizer().Handle(new FinalizeInvoiceCommand(1), Token);
@@ -102,7 +102,7 @@ public sealed class LifecycleStepTests
     public async Task Finalize_NoSteps_BehavesAsBefore()
     {
         var invoice = Draft();
-        invoice.Number = new InvoiceNumber("26-10-001");
+        invoice.RenumberDraft(new InvoiceNumber("26-10-001"));
 
         await new FinalizeInvoiceCommandHandler(_invoices, _customers, _numbering.Object, _drafts.Object, _unitOfWork.Object, Mock.Of<IPublisher>())
             .Handle(new FinalizeInvoiceCommand(1), Token);
@@ -117,7 +117,7 @@ public sealed class LifecycleStepTests
     public async Task Cancel_RunsTheStep_BeforeTheSave()
     {
         var invoice = Draft();
-        invoice.FinalizeInvoice();
+        invoice.Finalize(invoice.Number);
         _step.Setup(s => s.OnCancellingAsync(It.IsAny<Invoice>(), It.IsAny<CancellationToken>())).Callback(() => _calls.Add("step")).Returns(Task.CompletedTask);
 
         await new CancelInvoiceCommandHandler(_invoices, _unitOfWork.Object, [_step.Object]).Handle(new CancelInvoiceCommand(1), Token);
@@ -130,7 +130,7 @@ public sealed class LifecycleStepTests
     public async Task Delete_StepThatRefuses_KeepsTheInvoice()
     {
         var invoice = Draft();
-        invoice.FinalizeInvoice();
+        invoice.Finalize(invoice.Number);
         _step.Setup(s => s.OnDeletingAsync(It.IsAny<Invoice>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("part of the chain"));
 
@@ -147,6 +147,23 @@ public sealed class LifecycleStepTests
         Draft();
 
         await new DeleteInvoiceCommandHandler(_invoices, _unitOfWork.Object, [_step.Object]).Handle(new DeleteInvoiceCommand(1), Token);
+
+        _invoices.Items.ShouldBeEmpty();
+    }
+
+    [Test]
+    public async Task Delete_IssuedInvoice_IsRefusedUnlessForced()
+    {
+        var invoice = Draft();
+        invoice.Finalize(invoice.Number);
+        var handler = new DeleteInvoiceCommandHandler(_invoices, _unitOfWork.Object, [_step.Object]);
+
+        var error = await Should.ThrowAsync<InvalidOperationException>(() => handler.Handle(new DeleteInvoiceCommand(1), Token).AsTask());
+        error.Message.ShouldContain("cancel it instead");
+        _invoices.Items.ShouldContain(invoice);
+        _step.Verify(s => s.OnDeletingAsync(It.IsAny<Invoice>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        await handler.Handle(new DeleteInvoiceCommand(1, Force: true), Token);
 
         _invoices.Items.ShouldBeEmpty();
     }

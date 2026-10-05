@@ -11,9 +11,13 @@ namespace nInvoices.Core.Entities;
 public sealed class Invoice : OwnedEntityBase
 {
     public long CustomerId { get; set; }
-    public InvoiceNumber Number { get; set; } = null!;
+
+    /// <summary>Changed only through <see cref="Finalize"/>, <see cref="RenumberDraft"/> or <see cref="RestoreImported"/>.</summary>
+    public InvoiceNumber Number { get; private set; } = null!;
     public InvoiceType Type { get; set; }
-    public InvoiceStatus Status { get; set; }
+
+    /// <summary>Changed only through the lifecycle methods, as <see cref="InvoiceLifecycle"/> allows.</summary>
+    public InvoiceStatus Status { get; private set; }
     public DateOnly IssueDate { get; set; }
     public DateOnly? DueDate { get; set; }
     
@@ -28,10 +32,12 @@ public sealed class Invoice : OwnedEntityBase
     /// <summary>Hours billed on a one-time invoice with an hourly rate; null otherwise.</summary>
     public decimal? Hours { get; set; }
 
-    public Money Subtotal { get; set; } = null!;
-    public Money TotalExpenses { get; set; } = null!;
-    public Money TotalTaxes { get; set; } = null!;
-    public Money Total { get; set; } = null!;
+    // Total is always Subtotal + TotalExpenses + TotalTaxes (except for an imported invoice, which keeps
+    // the amounts it was exported with)
+    public Money Subtotal { get; private set; } = null!;
+    public Money TotalExpenses { get; private set; } = null!;
+    public Money TotalTaxes { get; private set; } = null!;
+    public Money Total { get; private set; } = null!;
 
     public string? RenderedContent { get; set; }
     public string? Notes { get; set; }
@@ -83,7 +89,6 @@ public sealed class Invoice : OwnedEntityBase
         Year = year;
         Month = month;
         WorkedDays = workedDays;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void AddExpenses(Money expensesTotal)
@@ -106,49 +111,83 @@ public sealed class Invoice : OwnedEntityBase
     {
         ArgumentNullException.ThrowIfNull(content);
         RenderedContent = content;
-        UpdatedAt = DateTime.UtcNow;
     }
 
-    public void FinalizeInvoice()
+    /// <summary>
+    /// Throws unless <paramref name="action"/> is allowed in the current status. Lets a caller check
+    /// before doing work the action depends on, e.g. taking a number from the sequence.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The action is not allowed.</exception>
+    public void EnsureAllowed(InvoiceAction action)
     {
+        var reason = InvoiceLifecycle.WhyNot(Status, action);
+        if (reason is not null)
+            throw new InvalidOperationException($"Invoice {Number} cannot be {Describe(action)}: {char.ToLowerInvariant(reason[0])}{reason[1..]}.");
+    }
+
+    /// <summary>Issues the draft with <paramref name="number"/>, the one it keeps for good.</summary>
+    public void Finalize(InvoiceNumber number)
+    {
+        ArgumentNullException.ThrowIfNull(number);
+        Apply(InvoiceAction.Finalize);
+        Number = number;
+    }
+
+    /// <summary>A draft shows the next number of the sequence, which changes as other invoices are finalized.</summary>
+    public void RenumberDraft(InvoiceNumber number)
+    {
+        ArgumentNullException.ThrowIfNull(number);
         if (Status != InvoiceStatus.Draft)
-            throw new InvalidOperationException("Only draft invoices can be finalized");
+            throw new InvalidOperationException($"Invoice {Number} is {Status}: only a draft can be renumbered.");
 
-        Status = InvoiceStatus.Finalized;
-        UpdatedAt = DateTime.UtcNow;
+        Number = number;
     }
 
-    public void MarkAsSent()
+    public void MarkAsSent() => Apply(InvoiceAction.MarkAsSent);
+
+    public void MarkAsPaid() => Apply(InvoiceAction.MarkAsPaid);
+
+    public void Cancel() => Apply(InvoiceAction.Cancel);
+
+    /// <summary>
+    /// For import only: gives an invoice exported from nInvoices back its status and amounts as they
+    /// were, without replaying its history. The amounts must be in the invoice's currency.
+    /// </summary>
+    public void RestoreImported(InvoiceStatus status, Money totalExpenses, Money totalTaxes, Money total)
     {
-        if (Status != InvoiceStatus.Finalized)
-            throw new InvalidOperationException("Only finalized invoices can be marked as sent");
+        ArgumentNullException.ThrowIfNull(totalExpenses);
+        ArgumentNullException.ThrowIfNull(totalTaxes);
+        ArgumentNullException.ThrowIfNull(total);
+        if (!Enum.IsDefined(status))
+            throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown invoice status");
+        if (new[] { totalExpenses, totalTaxes, total }.Any(m => m.Currency != Subtotal.Currency))
+            throw new ArgumentException($"The amounts must be in the invoice currency, {Subtotal.Currency}");
 
-        Status = InvoiceStatus.Sent;
-        UpdatedAt = DateTime.UtcNow;
+        Status = status;
+        TotalExpenses = totalExpenses;
+        TotalTaxes = totalTaxes;
+        Total = total;
     }
 
-    public void MarkAsPaid()
+    private void Apply(InvoiceAction action)
     {
-        if (Status == InvoiceStatus.Cancelled)
-            throw new InvalidOperationException("Cancelled invoices cannot be marked as paid");
-
-        Status = InvoiceStatus.Paid;
-        UpdatedAt = DateTime.UtcNow;
+        EnsureAllowed(action);
+        Status = InvoiceLifecycle.Target(action);
     }
 
-    public void Cancel()
+    private static string Describe(InvoiceAction action) => action switch
     {
-        if (Status == InvoiceStatus.Paid)
-            throw new InvalidOperationException("Paid invoices cannot be cancelled");
-
-        Status = InvoiceStatus.Cancelled;
-        UpdatedAt = DateTime.UtcNow;
-    }
+        InvoiceAction.Finalize => "finalized",
+        InvoiceAction.MarkAsSent => "marked as sent",
+        InvoiceAction.MarkAsPaid => "marked as paid",
+        InvoiceAction.Cancel => "cancelled",
+        InvoiceAction.Delete => "deleted",
+        _ => action.ToString()
+    };
 
     private void RecalculateTotal()
     {
         Total = Subtotal + TotalExpenses + TotalTaxes;
-        UpdatedAt = DateTime.UtcNow;
     }
 }
 
