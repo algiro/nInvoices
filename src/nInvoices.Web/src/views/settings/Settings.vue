@@ -85,7 +85,7 @@
 
       <BasePanel
         title="Backup and transfer"
-        description="One file with your customers (with their rates, taxes and templates), shared templates and invoices: keep it as a backup, or restore it on another nInvoices server."
+        description="One file with your customers (rates, taxes, projects, worked days, templates), invoices, images, holiday calendars and settings: keep it as a backup, or restore it on another nInvoices server."
       >
         <div class="transfer">
           <section aria-labelledby="backup-export-title">
@@ -317,13 +317,18 @@ async function handleExport() {
   exporting.value = true
   importExportMessage.value = null
   try {
-    const [customers, invoices] = await Promise.all([importExportApi.exportCustomers(), importExportApi.exportInvoices()])
+    const [customers, invoices, settings] = await Promise.all([
+      importExportApi.exportCustomers(),
+      importExportApi.exportInvoices(),
+      importExportApi.exportSettings(),
+    ])
     const backup: DataExport = {
       exportVersion: customers.exportVersion,
       exportedAt: new Date().toISOString(),
       customers: customers.customers ?? [],
       sharedTemplates: customers.sharedTemplates,
       invoices: invoices.invoices ?? [],
+      settings: settings.settings,
     }
     const json = JSON.stringify(backup, null, 2)
     const date = new Date().toISOString().slice(0, 10)
@@ -397,7 +402,8 @@ async function handleImport() {
     const customerCount = data.customers?.length ?? 0
     const invoiceCount = data.invoices?.length ?? 0
     const shared = hasSharedTemplates(data)
-    if (customerCount === 0 && invoiceCount === 0 && !shared) {
+    const settings = data.settings ?? null
+    if (customerCount === 0 && invoiceCount === 0 && !shared && !settings) {
       showResult('There is nothing to restore in this file.', true)
       return
     }
@@ -405,15 +411,21 @@ async function handleImport() {
     const ok = await confirm({
       title: 'Restore this backup?',
       message: `It holds ${customerCount} customer(s) and ${invoiceCount} invoice(s)` +
-        (shared ? ', plus shared templates' : '') +
-        '. They are added to your data; what already exists is skipped.',
+        (shared ? ', shared templates' : '') +
+        (settings ? ', your images, holiday calendars and settings' : '') +
+        '. They are added to your data; what already exists is kept as it is.',
       confirmLabel: 'Restore',
     })
     if (!ok) return
 
-    // Customers first: invoices are matched to them by VAT number
+    // Settings first, then customers: invoices are matched to customers by VAT number
     const parts: string[] = []
     const errors: string[] = []
+    if (settings) {
+      const result = await importExportApi.importSettings(data)
+      parts.push(`settings and images: ${result.imported} added, ${result.skipped} kept as they were`)
+      errors.push(...(result.errors ?? []))
+    }
     if (customerCount > 0 || shared) {
       const result = await importExportApi.importCustomers(data)
       parts.push(`customers: ${result.imported} added, ${result.skipped} already there`)

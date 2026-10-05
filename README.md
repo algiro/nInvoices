@@ -94,7 +94,7 @@ Country-specific data is stored with the issuer, customer and tax as simple `COU
 
 ### Your data
 - **PostgreSQL or SQLite.**
-- **Backup in one file**, protected by a passphrase and encrypted in your browser, with customers, templates and invoices: restore it on the same server or move to another one. [`tools/decrypt-backup.mjs`](tools/decrypt-backup.mjs) opens it without nInvoices.
+- **Backup in one file**, protected by a passphrase and encrypted in your browser, with customers, worked days, invoices, templates, images and settings: restore it on the same server or move to another one. [`tools/decrypt-backup.mjs`](tools/decrypt-backup.mjs) opens it without nInvoices.
 - **Encrypted at rest.** Customer details, amounts, invoice contents, notes and templates are stored encrypted, with one key per user. A copy of the database alone shows nothing readable. See [`Docs/ENCRYPTION.md`](Docs/ENCRYPTION.md), and back up the master key.
 - **Sign-in with Keycloak** (OpenID Connect), optionally **with Google**, with a no-login mode for local use.
 - **New accounts need approval.** Anyone can sign in, but nobody gets in until the server's administrator approves them. See [`Docs/GOOGLE-LOGIN.md`](Docs/GOOGLE-LOGIN.md).
@@ -211,7 +211,6 @@ Next on the list (see [`Docs/UI-BACKLOG.md`](Docs/UI-BACKLOG.md)):
 
 - **E-invoicing:** validation against AEAT's and FACe's real test environments, corrective invoices (*rectificativas*), simplified invoices, FACe cancellation requests and Spanish B2B e-invoicing, plus **other countries** (see [help wanted](#help-wanted-more-countries))
 
-- **Complete backups**: worked days, projects, holiday calendars, template images and settings in the backup file too
 - **Autosaved drafts** of an invoice in progress
 - **Week view** for customers with several projects
 - **Command palette** (`Ctrl+K`) and more keyboard shortcuts

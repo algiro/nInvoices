@@ -95,13 +95,21 @@ the API won't start.
 ## Backups for users
 
 Users don't hold any key: while their account exists, the server can always read their data. A
-user's backup is *Settings → Backup and transfer → Download a backup*: one file with their
-customers (with rates, taxes and templates), shared templates and invoices. Restoring it
-re-encrypts everything with the keys of whichever server it lands on, so the same file moves data
-to another nInvoices server. Records that already exist are skipped.
+user's backup is *Settings → Backup and transfer → Download a backup*: one file with
 
-Not in the backup yet: worked days and projects, holiday calendars, images used by templates,
-invoice-numbering and compliance settings, sent-email history, e-invoice files and Verifactu records.
+- customers, with their rates, taxes, templates, projects, worked days (and how they were split
+  across projects) and expenses not on an invoice yet;
+- invoices, with their tax lines and expenses;
+- shared templates, the images they use, the holiday calendars the user changed, invoice numbering
+  and the e-invoicing settings per country.
+
+Restoring it re-encrypts everything with the keys of whichever server it lands on, so the same file
+moves data to another nInvoices server. What already exists is kept as it is (same VAT number, same
+invoice number, same image name, same country), and the invoice sequence only ever moves forward.
+
+Not in the backup: the e-invoicing signing certificate (it is encrypted with the server's own keys:
+upload it again), sent-email history, generated e-invoice files and Verifactu records (a
+tamper-evident log that belongs to the server that produced it), and the server-wide settings.
 
 ### Passphrase-protected backups
 
