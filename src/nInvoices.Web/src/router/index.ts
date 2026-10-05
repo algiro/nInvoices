@@ -23,6 +23,13 @@ const router = createRouter({
       meta: { title: 'Access pending' },
       component: () => import('../views/AccessPending.vue'),
     },
+    {
+      // After Settings > Delete account (no sign-in needed: the account may be gone)
+      path: '/account-deleted',
+      name: 'account-deleted',
+      meta: { title: 'Account deleted' },
+      component: () => import('../views/AccountDeleted.vue'),
+    },
     // Main application routes (authentication required)
     {
       path: '/',

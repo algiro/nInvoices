@@ -11,12 +11,29 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import authService from '../services/auth.service';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const message = ref('Completing authentication...');
 
 onMounted(async () => {
+  // Back from Keycloak's "Delete account" page: the sign-in account is gone, unless the user cancelled
+  if (authService.takeDeletingAccountFlag()) {
+    const cancelled = new URLSearchParams(window.location.search).get('kc_action_status') === 'cancelled';
+    if (cancelled) {
+      try {
+        await authStore.handleCallback();
+      } catch (error) {
+        console.error('Callback after cancelled account deletion:', error);
+      }
+    } else {
+      await authService.forgetUser();
+    }
+    await router.replace({ name: 'account-deleted', query: cancelled ? { signin: 'kept' } : {} });
+    return;
+  }
+
   try {
     await authStore.handleCallback();
     message.value = 'Authentication successful! Redirecting...';

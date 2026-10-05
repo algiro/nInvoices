@@ -25,6 +25,8 @@ const keycloakConfig: UserManagerSettings = {
   }
 };
 
+const DELETING_ACCOUNT_KEY = 'ninvoices.deletingAccount';
+
 class AuthService {
   private userManager: UserManager;
 
@@ -70,6 +72,29 @@ class AuthService {
   async handleCallback(): Promise<User> {
     const user = await this.userManager.signinRedirectCallback();
     return user;
+  }
+
+  /**
+   * Sends the user to Keycloak's "Delete account" page (an application-initiated action). Keycloak
+   * asks them to confirm, deletes the sign-in account, and comes back to the callback page.
+   */
+  async deleteSignInAccount(): Promise<void> {
+    sessionStorage.setItem(DELETING_ACCOUNT_KEY, '1');
+    // The account is about to go: this browser stops using its tokens whatever happens next
+    await this.userManager.removeUser();
+    await this.userManager.signinRedirect({ extraQueryParams: { kc_action: 'delete_account' } });
+  }
+
+  /** Whether the callback is the return from {@link deleteSignInAccount}; reading it clears it. */
+  takeDeletingAccountFlag(): boolean {
+    const deleting = sessionStorage.getItem(DELETING_ACCOUNT_KEY) === '1';
+    sessionStorage.removeItem(DELETING_ACCOUNT_KEY);
+    return deleting;
+  }
+
+  /** Forgets the signed-in user in this browser without contacting Keycloak. */
+  async forgetUser(): Promise<void> {
+    await this.userManager.removeUser();
   }
 
   /**

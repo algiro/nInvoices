@@ -20,6 +20,9 @@ public interface IUserKeyStore
     Task<IReadOnlyList<UserKey>> GetAllAsync(CancellationToken cancellationToken);
 
     Task UpdateWrappingAsync(Guid id, string masterKeyId, byte[] wrappedKey, CancellationToken cancellationToken);
+
+    /// <returns>The id of the deleted key, or null when the owner had none.</returns>
+    Task<Guid?> DeleteByOwnerAsync(string ownerId, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -82,6 +85,17 @@ public sealed class EfUserKeyStore(DbContextOptions<KeyStoreDbContext> options) 
         key.WrappedKey = wrappedKey;
         await db.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<Guid?> DeleteByOwnerAsync(string ownerId, CancellationToken cancellationToken)
+    {
+        await using var db = new KeyStoreDbContext(options);
+        var key = await db.UserKeys.FirstOrDefaultAsync(k => k.OwnerId == ownerId, cancellationToken);
+        if (key is null)
+            return null;
+        db.UserKeys.Remove(key);
+        await db.SaveChangesAsync(cancellationToken);
+        return key.Id;
+    }
 }
 
 /// <summary>Keeps keys in memory only: for tests and tools, never for real data.</summary>
@@ -115,5 +129,17 @@ public sealed class InMemoryUserKeyStore : IUserKeyStore
         key.MasterKeyId = masterKeyId;
         key.WrappedKey = wrappedKey;
         return Task.CompletedTask;
+    }
+
+    public Task<Guid?> DeleteByOwnerAsync(string ownerId, CancellationToken cancellationToken)
+    {
+        lock (_keys)
+        {
+            var key = _keys.Values.FirstOrDefault(k => k.OwnerId == ownerId);
+            if (key is null)
+                return Task.FromResult<Guid?>(null);
+            _keys.TryRemove(key.Id, out _);
+            return Task.FromResult<Guid?>(key.Id);
+        }
     }
 }

@@ -128,9 +128,34 @@ It can be opened without nInvoices, with Node 18 or later and no packages:
 node tools/decrypt-backup.mjs ninvoices-backup-2026-10-05.encrypted.json > backup.json
 ```
 
-## Deleting a user's data (crypto-shredding)
+## Deleting an account (crypto-shredding)
 
-Deleting a user's row from `UserKeys` makes everything encrypted with it unreadable, including in
-older backups once those still holding the key expire (14 days with the default backup rotation).
-There is no button for it yet. Note that invoices and Verifactu records usually have to be kept for
-years: export first.
+Users delete their own account in *Settings → Delete your account*. They tick that they have a
+backup, type `DELETE`, and confirm. Then:
+
+1. **nInvoices deletes all their data** (`DELETE /api/account`, `AccountDataDeletion`): every row of
+   every user-data table, in one transaction. The order is worked out from the foreign keys of the
+   model, so a new table can't be forgotten. Verifactu records, otherwise append-only, go too. The
+   Gmail access is revoked first.
+2. **Their data key is destroyed**, so copies of their rows left in database backups can no longer
+   be read. The backups still hold a copy of the key itself until they expire (14 days with the
+   default rotation): only then is the deletion complete everywhere.
+3. **Keycloak deletes the sign-in account.** The web app sends the user to Keycloak's own
+   *Delete account* page, which asks them to confirm. If they cancel, the data is gone but the
+   account stays, and signing in again gives an empty workspace.
+
+Step 3 needs Keycloak's *Delete Account* action enabled once per server:
+
+```bash
+./docker/keycloak/enable-account-deletion.sh
+```
+
+Without it, the data is still deleted and the user is told the sign-in account was kept; the
+administrator can then remove it in the Keycloak admin console (*Users → (user) → Delete*).
+
+Deleting a user in the Keycloak admin console does **not** delete their nInvoices data: their rows
+stay, readable by nobody, since nobody can sign in as them. To remove the data too, ask them to
+delete their account from Settings first.
+
+Invoices, and Verifactu records with them, usually have to be kept for years (four in Spain): the
+page tells users to download a backup first.
