@@ -61,12 +61,40 @@ already start without `user` as a default role. Only step 3 is needed there.
 
 ## 3. Approve people
 
-1. They sign in with Google and land on *"Your account is waiting for approval"*.
-2. In the Keycloak admin console, go to realm **ninvoices > Users** and open the user.
+1. They sign in with Google and land on *"Your account is waiting for approval"*. If notifications
+   are set up (below), you get a Telegram message with their name, email and a link to their page
+   in the Keycloak admin console.
+2. In the Keycloak admin console, go to realm **ninvoices > Users** and open the user (or follow
+   the link).
 3. Go to *Role mapping > Assign role*, filter by realm roles, pick **`user`** and click *Assign*.
 4. They click *Check again* (or reload) and they're in, with their own empty workspace.
 
 Running the script again (step 4 of its output) lists who is still waiting.
+
+### Getting a Telegram message for each new account
+
+The waiting page tells the API, which messages you once per account. You can use any Telegram
+bot, including one that already does something else: sending messages doesn't interfere with it.
+
+1. Create a bot with [@BotFather](https://t.me/BotFather) (or reuse yours) and copy its token.
+2. Find your chat id: write to the bot, then open
+   `https://api.telegram.org/bot<token>/getUpdates` and read `message.chat.id`.
+3. Set them for the API, in `docker/.env`:
+
+   ```bash
+   TELEGRAM_TOKEN=123456:ABC...
+   TELEGRAM_CHAT_ID=123456789
+   ```
+
+   and restart it (`docker compose up -d api`). Both empty: no messages, and the waiting page
+   simply asks the user to contact you.
+
+The link in the message is built from `Keycloak:ExternalAuthority`. If your admin console lives
+elsewhere, set `Notifications__KeycloakUserUrl`, e.g.
+`https://sso.example.com/admin/master/console/#/ninvoices/users/{userId}/role-mapping`.
+
+If Telegram can't be reached, nothing is lost: the request is recorded, and the next time the
+person opens the waiting page the message is sent again.
 
 ## Accounts that already exist
 
