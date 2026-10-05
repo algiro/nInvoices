@@ -82,7 +82,7 @@ public sealed class EInvoiceServiceTests
         var invoice = new Invoice(
             1, InvoiceNumber.Generate("{YEAR:yy}-{MONTH:00}-{NUMBER:000}", 1, new DateTime(2026, 10, 3), null),
             InvoiceType.Monthly, new DateOnly(2026, 10, 3), new Money(8100.55m, "EUR"), "EUR") { Id = InvoiceId };
-        if (status != InvoiceStatus.Draft) invoice.FinalizeInvoice();
+        if (status != InvoiceStatus.Draft) invoice.Finalize(invoice.Number);
         if (status == InvoiceStatus.Cancelled) invoice.Cancel();
         return invoice;
     }

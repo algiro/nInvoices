@@ -94,7 +94,7 @@ public sealed class VerifactuServiceTests
         var tax = Math.Round(8100.55m * vatRate / 100m, 2);
         invoice.TaxLines.Add(new InvoiceTaxLine("VAT", $"VAT {vatRate}%", vatRate, new Money(8100.55m, "EUR"), new Money(tax, "EUR"), 0));
         invoice.AddTaxes(new Money(tax, "EUR"));
-        invoice.FinalizeInvoice();
+        invoice.Finalize(invoice.Number);
         return invoice;
     }
 

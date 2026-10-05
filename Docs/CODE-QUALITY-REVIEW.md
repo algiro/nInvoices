@@ -12,7 +12,7 @@ The problems sit at the edges of that architecture. Several rules the design imp
 |---|------|----------|--------|
 | 1 | FluentValidation validators are never executed | **High** | S — ✅ done |
 | 2 | Templates validated with Handlebars but rendered with Scriban | **High** | S — ✅ done |
-| 3 | Invoice state machine has gaps; entity setters bypass it | **High** | M |
+| 3 | Invoice state machine has gaps; entity setters bypass it | **High** | M — ✅ done (Invoice) |
 | 4 | No global error handling; exceptions used as an untyped protocol | **High** | M |
 | 5 | Controllers bypass the Application layer (DbContext, service locator) | Medium | M |
 | 6 | Two schema-evolution mechanisms (EF/SQLite vs hand-written PG SQL) | Medium | M |
@@ -77,7 +77,17 @@ The two engines have different grammars. A valid Scriban template (`{{ for x in 
 
 **Recommendation**: use `ITemplateRenderer.ValidateAsync` in both handlers. Then delete `ITemplateEngine`, `HandlebarsTemplateEngine`, `TemplateEngineExtensions` and their tests. One template language, one validator.
 
-## 3. Invoice lifecycle is not enforced by the aggregate — High
+## 3. Invoice lifecycle is not enforced by the aggregate — High — ✅ Done for `Invoice` (2026-10-05)
+
+> **Resolution.** The rules existed three times and disagreed: the bulk handler's `WhyNot` and the UI menu
+> refused to pay or cancel a draft, the entity (used by the single-invoice endpoints) allowed it, and
+> Paid → Paid / Cancelled → Cancelled. Now `Core/Entities/InvoiceLifecycle.cs` is the only table; `Invoice`
+> enforces it and the bulk handler delegates to it. `Status`, `Number`, `Subtotal`, `TotalExpenses`,
+> `TotalTaxes` and `Total` have private setters, changed through `Finalize(number)`, `RenumberDraft`,
+> `AddExpenses`/`AddTaxes` and `RestoreImported` (import only). The entity no longer stamps `UpdatedAt`
+> (the DbContext does on save). `InvoiceLifecycleTests` (52 cases) covers every status × action pair; the
+> entity had no tests before. Still open: the plain fields of `Invoice` (`DueDate`, `Notes`, `Year`/`Month`,
+> `RateId`, `Hours`…) keep public setters, and `Customer`/`Tax` were not changed.
 
 `Core/Entities/Invoice.cs` defines transition methods, but:
 

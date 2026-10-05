@@ -2,6 +2,7 @@ using Mediator;
 using nInvoices.Application.Features.Invoices.Notifications;
 using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
+using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
 
 namespace nInvoices.Application.Features.Invoices.Commands;
@@ -48,12 +49,12 @@ public sealed class FinalizeInvoiceCommandHandler : IRequestHandler<FinalizeInvo
             ?? throw new InvalidOperationException($"Customer {invoice.CustomerId} not found");
 
         // Throws unless the invoice is a draft, before a number is taken
-        invoice.FinalizeInvoice();
+        invoice.EnsureAllowed(InvoiceAction.Finalize);
 
         // The invoice and the sequence are saved together: a number is never used up without an invoice holding it
         var number = await _numbering.TakeAsync(customer, invoice.IssueDate, cancellationToken);
         var numberChanged = invoice.Number != number;
-        invoice.Number = number;
+        invoice.Finalize(number);
 
         // What country rules require of an issued invoice is stored in the same save
         var documentChanged = false;

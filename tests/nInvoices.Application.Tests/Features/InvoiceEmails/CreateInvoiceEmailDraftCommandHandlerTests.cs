@@ -32,7 +32,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandlerTests
     {
         var customer = new Customer("ACME S.p.A.", "IT01234567890", new Address("Via Roma", "10", "Milano", "20121", "Italy")) { Id = 3 };
         _invoice = new Invoice(3, new InvoiceNumber("26-09-001"), InvoiceType.Monthly, new DateOnly(2026, 9, 30), new Money(1000m, "EUR"), "EUR") { Id = 42 };
-        _invoice.FinalizeInvoice();
+        _invoice.Finalize(_invoice.Number);
 
         _invoices = new Mock<IInvoiceRepository>();
         _invoices.Setup(r => r.GetByIdWithRelatedAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(() => _invoice);

@@ -95,7 +95,9 @@ public sealed class AccountDataDeletionTests
         db.ComplianceSettings.Add(compliance);
 
         var invoice = new Invoice(customer.Id, new InvoiceNumber($"INV-{userId}"), InvoiceType.Monthly, new DateOnly(2026, 9, 30),
-            new Money(640m, "EUR"), "EUR") { RateId = rate.Id, Status = InvoiceStatus.Finalized, Total = new Money(780.8m, "EUR") };
+            new Money(640m, "EUR"), "EUR") { RateId = rate.Id };
+        invoice.AddTaxes(new Money(140.8m, "EUR")); // total 780.80
+        invoice.Finalize(invoice.Number);
         db.Invoices.Add(invoice);
         await db.SaveChangesAsync(Token);
 

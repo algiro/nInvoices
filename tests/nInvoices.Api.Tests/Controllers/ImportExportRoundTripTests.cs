@@ -130,12 +130,11 @@ public sealed class ImportExportRoundTripTests
 
         var invoice = new Invoice(customer.Id, new InvoiceNumber("26-09-001"), InvoiceType.Monthly, new DateOnly(2026, 9, 30), new Money(640m, "EUR"), "EUR")
         {
-            Status = InvoiceStatus.Finalized,
             Hours = 8m,
-            RateId = senior.Id,
-            Total = new Money(774.40m, "EUR"),
-            TotalTaxes = new Money(134.40m, "EUR")
+            RateId = senior.Id
         };
+        invoice.AddTaxes(new Money(134.40m, "EUR")); // total 774.40
+        invoice.Finalize(invoice.Number);
         db.Invoices.Add(invoice);
         await db.SaveChangesAsync(Token);
         db.InvoiceTaxLines.Add(new InvoiceTaxLine

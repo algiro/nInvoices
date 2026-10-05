@@ -79,11 +79,10 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
                     continue;
                 }
 
-                invoice.FinalizeInvoice();
                 var number = await _numbering.TakeAsync(customer, invoice.IssueDate, cancellationToken);
                 if (invoice.Number != number)
                     renumbered.Add(invoice.Id);
-                invoice.Number = number;
+                invoice.Finalize(number);
 
                 foreach (var step in _steps)
                 {
@@ -117,27 +116,18 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
     }
 
     /// <summary>
-    /// Why the action doesn't apply to an invoice in this status; null when it does. Follows the
-    /// lifecycle the invoice screens offer (Draft → Finalized → Sent → Paid), so a draft is not
-    /// marked as paid even though the entity would allow it.
+    /// Why the action doesn't apply to an invoice in this status; null when it does. The rules are
+    /// the invoice's own (<see cref="InvoiceLifecycle"/>), so a bulk change allows exactly what a
+    /// single one does.
     /// </summary>
-    public static string? WhyNot(BulkInvoiceStatusAction action, InvoiceStatus status) => (action, status) switch
-    {
-        (BulkInvoiceStatusAction.Finalize, InvoiceStatus.Draft) => null,
-        (BulkInvoiceStatusAction.Finalize, _) => "Already finalized",
-
-        (BulkInvoiceStatusAction.MarkAsSent, InvoiceStatus.Finalized) => null,
-        (BulkInvoiceStatusAction.MarkAsSent, InvoiceStatus.Draft) => "Not finalized yet",
-        (BulkInvoiceStatusAction.MarkAsSent, InvoiceStatus.Cancelled) => "Cancelled",
-        (BulkInvoiceStatusAction.MarkAsSent, _) => "Already sent",
-
-        (BulkInvoiceStatusAction.MarkAsPaid, InvoiceStatus.Finalized or InvoiceStatus.Sent) => null,
-        (BulkInvoiceStatusAction.MarkAsPaid, InvoiceStatus.Draft) => "Not finalized yet",
-        (BulkInvoiceStatusAction.MarkAsPaid, InvoiceStatus.Paid) => "Already paid",
-        (BulkInvoiceStatusAction.MarkAsPaid, _) => "Cancelled",
-
-        _ => "Not supported"
-    };
+    public static string? WhyNot(BulkInvoiceStatusAction action, InvoiceStatus status) =>
+        InvoiceLifecycle.WhyNot(status, action switch
+        {
+            BulkInvoiceStatusAction.Finalize => InvoiceAction.Finalize,
+            BulkInvoiceStatusAction.MarkAsSent => InvoiceAction.MarkAsSent,
+            BulkInvoiceStatusAction.MarkAsPaid => InvoiceAction.MarkAsPaid,
+            _ => throw new ArgumentOutOfRangeException(nameof(action), action, null)
+        });
 
     private static void Apply(BulkInvoiceStatusAction action, Invoice invoice)
     {
