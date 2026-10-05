@@ -86,7 +86,8 @@ public sealed class ImportExportController : ControllerBase
             c.Email,
             c.CcEmails,
             c.EmailTemplates.Select(et => new EmailTemplateExportDto(et.Name, et.Subject, et.Body, et.IsActive, et.CreatedAt)).ToList(),
-            c.HolidayCountry
+            c.HolidayCountry,
+            c.Locale
         )).ToList();
 
         _logger.LogInformation("Exported {Count} customers", exported.Count);
@@ -196,7 +197,9 @@ public sealed class ImportExportController : ControllerBase
                     customerData.Address.Country,
                     customerData.Address.State);
 
-                var customer = new Customer(customerData.Name, customerData.FiscalId, address);
+                var customer = string.IsNullOrWhiteSpace(customerData.Locale)
+                    ? new Customer(customerData.Name, customerData.FiscalId, address)
+                    : new Customer(customerData.Name, customerData.FiscalId, address, customerData.Locale);
                 customer.SetContact(customerData.Email, customerData.CcEmails);
                 customer.SetHolidayCountry(customerData.HolidayCountry);
                 await _context.Customers.AddAsync(customer, cancellationToken);

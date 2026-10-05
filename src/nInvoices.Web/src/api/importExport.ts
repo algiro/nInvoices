@@ -5,6 +5,8 @@ export interface DataExport {
   exportedAt: string;
   customers?: any[];
   invoices?: any[];
+  /** Templates shared by all customers; absent from exports made before they existed. */
+  sharedTemplates?: unknown;
 }
 
 export interface ImportResult {

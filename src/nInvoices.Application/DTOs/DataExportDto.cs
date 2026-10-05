@@ -17,7 +17,9 @@ public sealed record CustomerExportDto(
     string? Email = null,
     string? CcEmails = null,
     IReadOnlyList<EmailTemplateExportDto>? EmailTemplates = null,
-    string? HolidayCountry = null);
+    string? HolidayCountry = null,
+    // Absent from exports made before it was included: such customers get the default locale
+    string? Locale = null);
 
 public sealed record RateExportDto(
     RateType Type,

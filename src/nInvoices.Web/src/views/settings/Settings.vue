@@ -83,31 +83,53 @@
 
       <ComplianceSettingsPanel />
 
-      <BasePanel title="Backup and transfer" description="Export customers or invoices as JSON, for backups or to move them to another installation.">
+      <BasePanel
+        title="Backup and transfer"
+        description="One file with your customers (with their rates, taxes and templates), shared templates and invoices: keep it as a backup, or restore it on another nInvoices server."
+      >
         <div class="transfer">
-          <section>
-            <h3>Export</h3>
+          <section aria-labelledby="backup-export-title">
+            <h3 id="backup-export-title">Download a backup</h3>
+            <template v-if="!plainExport">
+              <BaseField label="Passphrase" for="backupPassphrase" :help="passphraseHelp">
+                <input id="backupPassphrase" v-model="exportPassphrase" type="password" class="control" autocomplete="new-password" />
+              </BaseField>
+              <BaseField label="Repeat the passphrase" for="backupPassphraseRepeat" :error="exportPassphraseError">
+                <input id="backupPassphraseRepeat" v-model="exportPassphraseRepeat" type="password" class="control" autocomplete="new-password" />
+              </BaseField>
+              <p class="note warning">Keep the passphrase safe: without it nobody can open the backup, and it can't be recovered.</p>
+            </template>
+            <p v-else class="note warning">Anyone who gets this file can read your customers and invoices.</p>
+            <label class="toggle" for="backupPlain">
+              <input id="backupPlain" v-model="plainExport" type="checkbox" />
+              <span>Download without a passphrase (not recommended)</span>
+            </label>
             <div class="buttons">
-              <BaseButton icon="download" :loading="exporting === 'customers'" :disabled="!!exporting" @click="handleExportCustomers">Customers</BaseButton>
-              <BaseButton icon="download" :loading="exporting === 'invoices'" :disabled="!!exporting" @click="handleExportInvoices">Invoices</BaseButton>
+              <BaseButton icon="download" variant="primary" :loading="exporting" :disabled="!canExport || importing" @click="handleExport">
+                Download backup
+              </BaseButton>
             </div>
           </section>
 
-          <section>
-            <h3>Import</h3>
-            <p class="note">Records that already exist (same VAT number, or same invoice number) are skipped.</p>
+          <section aria-labelledby="backup-import-title">
+            <h3 id="backup-import-title">Restore a backup</h3>
+            <p class="note">Records that already exist (same VAT number, or same invoice number) are skipped, so restoring twice is harmless.</p>
             <input
               id="importFile"
               ref="importFileInput"
               type="file"
-              accept=".json"
+              accept=".json,application/json"
               class="control file"
-              aria-label="Exported JSON file"
+              aria-label="Backup file"
               @change="handleFileSelected"
             />
+            <BaseField v-if="importEncrypted" label="Passphrase of this backup" for="importPassphrase" :error="importPassphraseError">
+              <input id="importPassphrase" v-model="importPassphrase" type="password" class="control" autocomplete="off" @keydown.enter="handleImport" />
+            </BaseField>
             <div v-if="importFile" class="buttons">
-              <BaseButton variant="primary" :loading="importing === 'customers'" :disabled="!!importing" @click="handleImport('customers')">Import customers</BaseButton>
-              <BaseButton variant="primary" :loading="importing === 'invoices'" :disabled="!!importing" @click="handleImport('invoices')">Import invoices</BaseButton>
+              <BaseButton variant="primary" :loading="importing" :disabled="exporting || (importEncrypted && !importPassphrase)" @click="handleImport">
+                Restore
+              </BaseButton>
             </div>
           </section>
         </div>
@@ -128,6 +150,7 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { importExportApi, imageAssetsApi } from '@/api'
 import type { ImageAssetDto } from '@/api/imageAssets'
 import type { DataExport } from '@/api/importExport'
+import { decryptBackup, encryptBackup, isEncryptedBackup, MIN_PASSPHRASE_LENGTH, WrongPassphraseError } from '@/utils/backupCrypto'
 import { useSettingsStore } from '@/stores/settings'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
@@ -246,17 +269,35 @@ async function handleDeleteImage(asset: ImageAssetDto) {
   }
 }
 
-// Import/Export state
-const exporting = ref<string | false>(false)
-const importing = ref<string | false>(false)
+// Backup and transfer: one file with customers, shared templates and invoices, optionally
+// encrypted in the browser with a passphrase (utils/backupCrypto.ts)
+const exporting = ref(false)
+const importing = ref(false)
+const plainExport = ref(false)
+const exportPassphrase = ref('')
+const exportPassphraseRepeat = ref('')
 const importFile = ref<File | null>(null)
 const importFileInput = ref<HTMLInputElement | null>(null)
+const importEncrypted = ref(false)
+const importPassphrase = ref('')
+const importPassphraseError = ref<string | null>(null)
 const importExportMessage = ref<string | null>(null)
 const importExportError = ref(false)
 const importErrors = ref<string[]>([])
 
-function downloadJson(data: DataExport, filename: string) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+const passphraseHelp = `At least ${MIN_PASSPHRASE_LENGTH} characters. The backup is encrypted in this browser: the passphrase never leaves it.`
+
+const exportPassphraseError = computed(() =>
+  exportPassphraseRepeat.value && exportPassphrase.value !== exportPassphraseRepeat.value
+    ? 'The two passphrases differ.'
+    : null)
+
+const canExport = computed(() =>
+  plainExport.value ||
+  (exportPassphrase.value.length >= MIN_PASSPHRASE_LENGTH && exportPassphrase.value === exportPassphraseRepeat.value))
+
+function downloadFile(content: string, filename: string) {
+  const blob = new Blob([content], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -265,69 +306,129 @@ function downloadJson(data: DataExport, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-async function handleExportCustomers() {
-  exporting.value = 'customers'
+function showResult(message: string, isError: boolean, errors: string[] = []) {
+  importExportMessage.value = message
+  importExportError.value = isError
+  importErrors.value = errors
+}
+
+async function handleExport() {
+  if (!canExport.value) return
+  exporting.value = true
   importExportMessage.value = null
   try {
-    const data = await importExportApi.exportCustomers()
+    const [customers, invoices] = await Promise.all([importExportApi.exportCustomers(), importExportApi.exportInvoices()])
+    const backup: DataExport = {
+      exportVersion: customers.exportVersion,
+      exportedAt: new Date().toISOString(),
+      customers: customers.customers ?? [],
+      sharedTemplates: customers.sharedTemplates,
+      invoices: invoices.invoices ?? [],
+    }
+    const json = JSON.stringify(backup, null, 2)
     const date = new Date().toISOString().slice(0, 10)
-    downloadJson(data, `ninvoices-customers-${date}.json`)
-    importExportMessage.value = `Exported ${data.customers?.length ?? 0} customer(s)`
-    importExportError.value = false
+    const encrypted = !plainExport.value
+    if (encrypted) {
+      downloadFile(JSON.stringify(await encryptBackup(json, exportPassphrase.value)), `ninvoices-backup-${date}.encrypted.json`)
+      exportPassphrase.value = ''
+      exportPassphraseRepeat.value = ''
+    } else {
+      downloadFile(json, `ninvoices-backup-${date}.json`)
+    }
+    showResult(
+      `Backup downloaded: ${backup.customers?.length ?? 0} customer(s) and ${backup.invoices?.length ?? 0} invoice(s), ` +
+        (encrypted ? 'encrypted with your passphrase.' : 'not encrypted.'),
+      false)
   } catch (error: any) {
-    importExportMessage.value = error.message || 'Export failed'
-    importExportError.value = true
+    showResult(error.message || 'The backup could not be created.', true)
   } finally {
     exporting.value = false
   }
 }
 
-async function handleExportInvoices() {
-  exporting.value = 'invoices'
-  importExportMessage.value = null
-  try {
-    const data = await importExportApi.exportInvoices()
-    const date = new Date().toISOString().slice(0, 10)
-    downloadJson(data, `ninvoices-invoices-${date}.json`)
-    importExportMessage.value = `Exported ${data.invoices?.length ?? 0} invoice(s)`
-    importExportError.value = false
-  } catch (error: any) {
-    importExportMessage.value = error.message || 'Export failed'
-    importExportError.value = true
-  } finally {
-    exporting.value = false
-  }
-}
-
-function handleFileSelected(event: Event) {
+async function handleFileSelected(event: Event) {
   const input = event.target as HTMLInputElement
   importFile.value = input.files?.[0] ?? null
   importExportMessage.value = null
   importErrors.value = []
+  importPassphrase.value = ''
+  importPassphraseError.value = null
+  importEncrypted.value = false
+  if (!importFile.value) return
+  try {
+    importEncrypted.value = isEncryptedBackup(JSON.parse(await importFile.value.text()))
+  } catch {
+    showResult('This file is not an nInvoices backup.', true)
+  }
 }
 
-async function handleImport(type: 'customers' | 'invoices') {
-  if (!importFile.value) return
-  importing.value = type
+function resetImport() {
+  importFile.value = null
+  importEncrypted.value = false
+  importPassphrase.value = ''
+  if (importFileInput.value) importFileInput.value.value = ''
+}
+
+function hasSharedTemplates(data: DataExport): boolean {
+  const shared = data.sharedTemplates as Record<string, unknown[] | null | undefined> | null | undefined
+  return !!shared && Object.values(shared).some(list => (list?.length ?? 0) > 0)
+}
+
+async function handleImport() {
+  if (!importFile.value || importing.value) return
+  importing.value = true
   importExportMessage.value = null
-  importErrors.value = []
+  importPassphraseError.value = null
 
   try {
-    const text = await importFile.value.text()
-    const data = JSON.parse(text) as DataExport
+    let content: unknown = JSON.parse(await importFile.value.text())
+    if (isEncryptedBackup(content)) {
+      try {
+        content = JSON.parse(await decryptBackup(content, importPassphrase.value))
+      } catch (error) {
+        if (!(error instanceof WrongPassphraseError)) throw error
+        importPassphraseError.value = error.message
+        return
+      }
+    }
 
-    const result = type === 'customers'
-      ? await importExportApi.importCustomers(data)
-      : await importExportApi.importInvoices(data)
+    // Files from the separate customer and invoice exports work too: each holds one of the two
+    const data = content as DataExport
+    const customerCount = data.customers?.length ?? 0
+    const invoiceCount = data.invoices?.length ?? 0
+    const shared = hasSharedTemplates(data)
+    if (customerCount === 0 && invoiceCount === 0 && !shared) {
+      showResult('There is nothing to restore in this file.', true)
+      return
+    }
 
-    importExportMessage.value = `Import complete: ${result.imported} imported, ${result.skipped} skipped`
-    importErrors.value = result.errors ?? []
-    importExportError.value = importErrors.value.length > 0
-    importFile.value = null
-    if (importFileInput.value) importFileInput.value.value = ''
+    const ok = await confirm({
+      title: 'Restore this backup?',
+      message: `It holds ${customerCount} customer(s) and ${invoiceCount} invoice(s)` +
+        (shared ? ', plus shared templates' : '') +
+        '. They are added to your data; what already exists is skipped.',
+      confirmLabel: 'Restore',
+    })
+    if (!ok) return
+
+    // Customers first: invoices are matched to them by VAT number
+    const parts: string[] = []
+    const errors: string[] = []
+    if (customerCount > 0 || shared) {
+      const result = await importExportApi.importCustomers(data)
+      parts.push(`customers: ${result.imported} added, ${result.skipped} already there`)
+      errors.push(...(result.errors ?? []))
+    }
+    if (invoiceCount > 0) {
+      const result = await importExportApi.importInvoices(data)
+      parts.push(`invoices: ${result.imported} added, ${result.skipped} already there`)
+      errors.push(...(result.errors ?? []))
+    }
+
+    showResult(`Restore complete. ${parts.join('; ')}.`, errors.length > 0, errors)
+    resetImport()
   } catch (error: any) {
-    importExportMessage.value = error.message || 'Import failed'
-    importExportError.value = true
+    showResult(error instanceof SyntaxError ? 'This file is not an nInvoices backup.' : error.message || 'Restore failed', true)
   } finally {
     importing.value = false
   }
@@ -513,6 +614,19 @@ code {
 
 .transfer .note {
   margin: 0;
+}
+
+.transfer .note.warning {
+  color: var(--color-warning);
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--text-md);
+  color: var(--color-text-secondary);
+  cursor: pointer;
 }
 
 .buttons {
