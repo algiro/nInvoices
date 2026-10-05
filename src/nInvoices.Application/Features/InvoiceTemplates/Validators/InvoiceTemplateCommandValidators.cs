@@ -1,6 +1,7 @@
 using FluentValidation;
 using nInvoices.Application.Features.InvoiceTemplates.Commands;
 using nInvoices.Application.Services;
+using nInvoices.Application.Validation;
 
 namespace nInvoices.Application.Features.InvoiceTemplates.Validators;
 

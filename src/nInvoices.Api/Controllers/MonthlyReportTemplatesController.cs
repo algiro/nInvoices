@@ -1,6 +1,9 @@
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Features.MonthlyReportTemplates.Commands;
+using nInvoices.Application.Mappings;
 using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
@@ -21,6 +24,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITemplateRenderer _templateRenderer;
     private readonly ITemplatePreviewService _previewService;
+    private readonly IMediator _mediator;
     private readonly ILogger<MonthlyReportTemplatesController> _logger;
 
     public MonthlyReportTemplatesController(
@@ -28,12 +32,14 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
         IUnitOfWork unitOfWork,
         ITemplateRenderer templateRenderer,
         ITemplatePreviewService previewService,
+        IMediator mediator,
         ILogger<MonthlyReportTemplatesController> logger)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _templateRenderer = templateRenderer;
         _previewService = previewService;
+        _mediator = mediator;
         _logger = logger;
     }
 
@@ -46,8 +52,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
     {
         var templates = await _repository.FindAsync(t => t.CustomerId == null, cancellationToken);
 
-        return Ok(templates.Select(t => new MonthlyReportTemplateDto(
-            t.Id, t.CustomerId, t.InvoiceType, t.Name, t.Content, t.IsActive, t.CreatedAt, t.UpdatedAt)));
+        return Ok(templates.Select(MonthlyReportTemplateMapper.ToDto));
     }
 
     /// <summary>
@@ -61,17 +66,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
             t => t.CustomerId == customerId,
             cancellationToken);
 
-        var dtos = templates.Select(t => new MonthlyReportTemplateDto(
-            t.Id,
-            t.CustomerId,
-            t.InvoiceType,
-            t.Name,
-            t.Content,
-            t.IsActive,
-            t.CreatedAt,
-            t.UpdatedAt));
-
-        return Ok(dtos);
+        return Ok(templates.Select(MonthlyReportTemplateMapper.ToDto));
     }
 
     /// <summary>
@@ -86,21 +81,12 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
         if (template == null)
             return NotFound();
 
-        var dto = new MonthlyReportTemplateDto(
-            template.Id,
-            template.CustomerId,
-            template.InvoiceType,
-            template.Name,
-            template.Content,
-            template.IsActive,
-            template.CreatedAt,
-            template.UpdatedAt);
-
-        return Ok(dto);
+        return Ok(MonthlyReportTemplateMapper.ToDto(template));
     }
 
     /// <summary>
-    /// Creates a new monthly report template.
+    /// Creates a new monthly report template. Content that doesn't parse is rejected with its syntax
+    /// errors (400, by the validation pipeline).
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(MonthlyReportTemplateDto), StatusCodes.Status201Created)]
@@ -111,34 +97,8 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
     {
         try
         {
-            var template = new MonthlyReportTemplate(
-                dto.CustomerId,
-                dto.Name,
-                dto.Content,
-                dto.InvoiceType);
-
-            await _repository.AddAsync(template, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-            _logger.LogInformation(
-                "Monthly report template {TemplateId} created for customer {CustomerId}",
-                template.Id,
-                template.CustomerId?.ToString() ?? "(shared)");
-
-            var resultDto = new MonthlyReportTemplateDto(
-                template.Id,
-                template.CustomerId,
-                template.InvoiceType,
-                template.Name,
-                template.Content,
-                template.IsActive,
-                template.CreatedAt,
-                template.UpdatedAt);
-
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = template.Id },
-                resultDto);
+            var template = await _mediator.Send(new CreateMonthlyReportTemplateCommand(dto), cancellationToken);
+            return CreatedAtAction(nameof(GetById), new { id = template.Id }, template);
         }
         catch (ArgumentException ex)
         {
@@ -147,7 +107,8 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
     }
 
     /// <summary>
-    /// Updates an existing monthly report template.
+    /// Updates an existing monthly report template. Content that doesn't parse is rejected with its
+    /// syntax errors (400, by the validation pipeline).
     /// </summary>
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(MonthlyReportTemplateDto), StatusCodes.Status200OK)]
@@ -158,31 +119,10 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
         [FromBody] UpdateMonthlyReportTemplateDto dto,
         CancellationToken cancellationToken)
     {
-        var template = await _repository.GetByIdAsync(id, cancellationToken);
-        if (template == null)
-            return NotFound();
-
         try
         {
-            template.Update(dto.Name, dto.Content);
-            await _repository.UpdateAsync(template, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-            _logger.LogInformation(
-                "Monthly report template {TemplateId} updated",
-                template.Id);
-
-            var resultDto = new MonthlyReportTemplateDto(
-                template.Id,
-                template.CustomerId,
-                template.InvoiceType,
-                template.Name,
-                template.Content,
-                template.IsActive,
-                template.CreatedAt,
-                template.UpdatedAt);
-
-            return Ok(resultDto);
+            var template = await _mediator.Send(new UpdateMonthlyReportTemplateCommand(id, dto), cancellationToken);
+            return template is null ? NotFound() : Ok(template);
         }
         catch (ArgumentException ex)
         {

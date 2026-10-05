@@ -1,6 +1,9 @@
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Features.EmailTemplates.Commands;
+using nInvoices.Application.Mappings;
 using nInvoices.Application.Services.Email;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
@@ -19,17 +22,20 @@ public sealed class EmailTemplatesController : ControllerBase
     private readonly IRepository<EmailTemplate> _repository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IInvoiceEmailComposer _composer;
+    private readonly IMediator _mediator;
     private readonly ILogger<EmailTemplatesController> _logger;
 
     public EmailTemplatesController(
         IRepository<EmailTemplate> repository,
         IUnitOfWork unitOfWork,
         IInvoiceEmailComposer composer,
+        IMediator mediator,
         ILogger<EmailTemplatesController> logger)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _composer = composer;
+        _mediator = mediator;
         _logger = logger;
     }
 
@@ -39,7 +45,7 @@ public sealed class EmailTemplatesController : ControllerBase
     public async Task<ActionResult<IEnumerable<EmailTemplateDto>>> GetShared(CancellationToken cancellationToken)
     {
         var templates = await _repository.FindAsync(t => t.CustomerId == null, cancellationToken);
-        return Ok(templates.Select(ToDto));
+        return Ok(templates.Select(EmailTemplateMapper.ToDto));
     }
 
     [HttpGet("customer/{customerId}")]
@@ -47,7 +53,7 @@ public sealed class EmailTemplatesController : ControllerBase
     public async Task<ActionResult<IEnumerable<EmailTemplateDto>>> GetByCustomer(long customerId, CancellationToken cancellationToken)
     {
         var templates = await _repository.FindAsync(t => t.CustomerId == customerId, cancellationToken);
-        return Ok(templates.Select(ToDto));
+        return Ok(templates.Select(EmailTemplateMapper.ToDto));
     }
 
     [HttpGet("{id}")]
@@ -56,7 +62,7 @@ public sealed class EmailTemplatesController : ControllerBase
     public async Task<ActionResult<EmailTemplateDto>> GetById(long id, CancellationToken cancellationToken)
     {
         var template = await _repository.GetByIdAsync(id, cancellationToken);
-        return template is null ? NotFound() : Ok(ToDto(template));
+        return template is null ? NotFound() : Ok(EmailTemplateMapper.ToDto(template));
     }
 
     /// <summary>The built-in subject and body, as a starting point for a new template.</summary>
@@ -76,16 +82,8 @@ public sealed class EmailTemplatesController : ControllerBase
     {
         try
         {
-            var template = new EmailTemplate(dto.CustomerId, dto.Name, dto.Subject, dto.Body);
-            var existing = await _repository.FindAsync(t => t.CustomerId == dto.CustomerId, cancellationToken);
-            if (!existing.Any())
-                template.Activate();
-
-            await _repository.AddAsync(template, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-            _logger.LogInformation("Email template {TemplateId} created for customer {CustomerId}", template.Id, template.CustomerId?.ToString() ?? "(shared)");
-            return CreatedAtAction(nameof(GetById), new { id = template.Id }, ToDto(template));
+            var template = await _mediator.Send(new CreateEmailTemplateCommand(dto), cancellationToken);
+            return CreatedAtAction(nameof(GetById), new { id = template.Id }, template);
         }
         catch (ArgumentException ex)
         {
@@ -99,15 +97,10 @@ public sealed class EmailTemplatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<EmailTemplateDto>> Update(long id, [FromBody] UpdateEmailTemplateDto dto, CancellationToken cancellationToken)
     {
-        var template = await _repository.GetByIdAsync(id, cancellationToken);
-        if (template is null)
-            return NotFound();
-
         try
         {
-            template.Update(dto.Name, dto.Subject, dto.Body);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-            return Ok(ToDto(template));
+            var template = await _mediator.Send(new UpdateEmailTemplateCommand(id, dto), cancellationToken);
+            return template is null ? NotFound() : Ok(template);
         }
         catch (ArgumentException ex)
         {
@@ -173,7 +166,4 @@ public sealed class EmailTemplatesController : ControllerBase
         var result = await _composer.PreviewAsync(dto.Subject ?? string.Empty, dto.Body ?? string.Empty, dto.CustomerId, cancellationToken);
         return Ok(new EmailTemplatePreviewDto(result.Subject, result.Html, result.Errors));
     }
-
-    private static EmailTemplateDto ToDto(EmailTemplate t) =>
-        new(t.Id, t.CustomerId, t.Name, t.Subject, t.Body, t.IsActive, t.CreatedAt, t.UpdatedAt);
 }
