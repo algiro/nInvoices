@@ -95,12 +95,30 @@ the API won't start.
 ## Backups for users
 
 Users don't hold any key: while their account exists, the server can always read their data. A
-user's backup is the **JSON export** (`GET /api/importexport/customers` and `/api/importexport/invoices`;
-there is no button in the web app yet). Export decrypts, import re-encrypts with the keys of
-whichever server it lands on, so the same file moves data to another nInvoices server.
+user's backup is *Settings → Backup and transfer → Download a backup*: one file with their
+customers (with rates, taxes and templates), shared templates and invoices. Restoring it
+re-encrypts everything with the keys of whichever server it lands on, so the same file moves data
+to another nInvoices server. Records that already exist are skipped.
 
-Not built yet: protecting the exported file itself with a passphrase, so a downloaded backup is
-safe on a laptop or in cloud storage.
+Not in the backup yet: worked days and projects, holiday calendars, images used by templates,
+invoice-numbering and compliance settings, sent-email history, e-invoice files and Verifactu records.
+
+### Passphrase-protected backups
+
+By default the backup is encrypted **in the browser** with a passphrase the user types (at least
+12 characters); the passphrase never reaches the server, and nobody can recover it. Downloading
+without a passphrase needs an explicit tick.
+
+The file is a JSON envelope (`format: "ninvoices-encrypted-backup"`): the key is
+PBKDF2-SHA-256 of the passphrase (600,000 iterations, random 16-byte salt), the cipher AES-256-GCM
+(random 12-byte IV), with `ninvoices-encrypted-backup/1` as additional data. The details are in
+`src/nInvoices.Web/src/utils/backupCrypto.ts`.
+
+It can be opened without nInvoices, with Node 18 or later and no packages:
+
+```bash
+node tools/decrypt-backup.mjs ninvoices-backup-2026-10-05.encrypted.json > backup.json
+```
 
 ## Deleting a user's data (crypto-shredding)
 
