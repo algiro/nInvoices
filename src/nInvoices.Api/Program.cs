@@ -4,7 +4,6 @@ using nInvoices.Application;
 using nInvoices.Core.Configuration;
 using nInvoices.Infrastructure.Data;
 using nInvoices.Infrastructure.TaxHandlers;
-using nInvoices.Infrastructure.TemplateEngine;
 using nInvoices.Infrastructure.PdfExport;
 using nInvoices.Infrastructure.Gmail;
 using nInvoices.Infrastructure.Face;
@@ -73,8 +72,6 @@ builder.Services.AddFieldEncryption(builder.Configuration, builder.Environment.C
 // Add Tax Handlers
 builder.Services.AddTaxHandlers();
 
-// Add Template Engine
-builder.Services.AddTemplateEngine();
 builder.Services.AddPdfExport();
 
 // Data Protection encrypts the Gmail refresh tokens stored in the database. Keys must survive

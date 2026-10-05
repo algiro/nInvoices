@@ -106,12 +106,11 @@ against a running API + frontend.
   `CommandValidatorsTests` fails if a request carries a validated DTO without one.
 - **nInvoices.Infrastructure** — `ApplicationDbContext`, EF entity configs
   (`Data/Configurations/`), generic `Repository<T>` + `UnitOfWork`, migrations
-  (`Data/Migrations/`), tax handler implementations (`TaxHandlers/`), Scriban template engine
-  (`TemplateEngine/`), PDF export (`PdfExport/` — QuestPDF and PuppeteerSharp/HtmlAgilityPack),
+  (`Data/Migrations/`), tax handler implementations (`TaxHandlers/`), PDF export (`PdfExport/` — QuestPDF and PuppeteerSharp/HtmlAgilityPack),
   `UserContext` (reads JWT claims).
 - **nInvoices.Api** — thin controllers (`Controllers/`) that dispatch through Mediator (`IMediator.Send`).
   `Program.cs` wires everything via extension methods: `AddServiceDefaults`, `AddDatabase`,
-  `AddTaxHandlers`, `AddTemplateEngine`, `AddPdfExport`, `AddApplicationServices`, `AddApplicationRequests` (Mediator + validators).
+  `AddTaxHandlers`, `AddPdfExport`, `AddApplicationServices`, `AddApplicationRequests` (Mediator + validators).
   Auth is either `DevAuthenticationHandler` (dev) or Keycloak JWT Bearer. Policies:
   `RequireUser`, `RequireAdmin`.
 - **nInvoices.ServiceDefaults** — Aspire shared project (`AddServiceDefaults()` /
@@ -160,9 +159,12 @@ by `HandlerId`.
 
 ### Templates & PDF
 
-User HTML templates use **Scriban** (Liquid-like) syntax with placeholders such as
-`{{ customer.name }}`, `{{ invoice.total }}`. Validated by `ValidateTemplateCommand`,
-rendered by `ScribanTemplateRenderer`, converted to PDF in `Infrastructure/PdfExport/`.
+User HTML templates use **Scriban** (Liquid-like) syntax written with `[[ ]]` delimiters (turned into
+Scriban's `{{ }}` before parsing, so they don't clash with Vue), e.g. `[[ customer.name ]]`,
+`[[ for line in lineItems ]]…[[ end ]]`. Scriban is the only template engine: `ScribanTemplateRenderer`
+both renders and validates (`ValidateAsync`). Saving an invoice template is rejected with the syntax
+errors (line/column) by the command validators (`TemplateSyntaxRules.MustBeValidTemplate`), the editor's
+`ValidateTemplateCommand` uses the same check, and the HTML is converted to PDF in `Infrastructure/PdfExport/`.
 Sample templates and syntax reference live in `Docs/`.
 
 ### Keycloak in Docker

@@ -11,7 +11,7 @@ The problems sit at the edges of that architecture. Several rules the design imp
 | # | Area | Severity | Effort |
 |---|------|----------|--------|
 | 1 | FluentValidation validators are never executed | **High** | S — ✅ done |
-| 2 | Templates validated with Handlebars but rendered with Scriban | **High** | S |
+| 2 | Templates validated with Handlebars but rendered with Scriban | **High** | S — ✅ done |
 | 3 | Invoice state machine has gaps; entity setters bypass it | **High** | M |
 | 4 | No global error handling; exceptions used as an untyped protocol | **High** | M |
 | 5 | Controllers bypass the Application layer (DbContext, service locator) | Medium | M |
@@ -55,7 +55,18 @@ So every validation rule in `Features/**/Validators` is dead code. Invalid input
 - Write one test per validator and one test proving the behavior is wired into the pipeline, so this can't silently regress.
 - After that, remove the ad-hoc argument checks from handlers that the validators now cover.
 
-## 2. Templates validated with one engine, rendered with another — High
+## 2. Templates validated with one engine, rendered with another — High — ✅ Done (2026-10-05)
+
+> **Resolution.** The save-time check was worse than a grammar mismatch. Templates are written with `[[ ]]`, which
+> the Handlebars check never looked at (it counted raw `{{`/`}}`), so it validated **nothing** in real templates: the
+> two default templates contain 52 `[[ ]]` expressions and no `{{`. A broken `[[ for ]]` saved and only failed when an
+> invoice was generated, while valid CSS such as `@media print{.a{b:c}}` was rejected for unbalanced braces.
+> Invoice templates are now checked by the command validators (`TemplateSyntaxRules.MustBeValidTemplate`, which calls
+> `ScribanTemplateRenderer.ValidateAsync`, the same check the editor uses), so errors come back through the
+> validation pipeline as a 400 with line and column. `ITemplateEngine`, `HandlebarsTemplateEngine`,
+> `TemplateEngineExtensions` and their 25 tests are deleted; `LocalizationService` is now registered by
+> `AddApplicationServices`. Still open: monthly-report templates are validated in their controller, and email
+> templates are not syntax-checked on save.
 
 `CreateInvoiceTemplateCommandHandler` and `UpdateInvoiceTemplateCommandHandler` validate content with `ITemplateEngine` → `HandlebarsTemplateEngine` (Core interface, Infrastructure implementation). Rendering, previews, emails and `ValidateTemplateCommand` all use `ITemplateRenderer` → `ScribanTemplateRenderer`.
 
@@ -127,7 +138,7 @@ The project documents controllers as _"thin controllers that dispatch through Me
 | Item | Evidence | Action |
 |------|----------|--------|
 | `QuestPdfHtmlConverter` (548 lines, HTML → QuestPDF via HtmlAgilityPack) | Not referenced anywhere; `AddPdfExport` registers `PuppeteerPdfConverter` | Delete; drop HtmlAgilityPack if unused elsewhere |
-| `ITemplateEngine` / `HandlebarsTemplateEngine` + tests | Superseded by Scriban (§2) | Delete after §2 |
+| `ITemplateEngine` / `HandlebarsTemplateEngine` + tests | Superseded by Scriban (§2) | ✅ Deleted |
 | 18 FluentValidation validators | Never run (§1) | ✅ Wired up |
 | `src/nInvoices.Web/src/counter.ts`, `typescript.svg` | Vite scaffold leftovers | Delete |
 | Finalization logic | Duplicated between `FinalizeInvoiceCommandHandler` and `BulkChangeInvoiceStatusCommandHandler` (fetch customer, `FinalizeInvoice()`, `TakeAsync`, assign number, run lifecycle steps) | Extract one `IInvoiceFinalizer` used by both, so a new step or rule cannot be added to one path only |

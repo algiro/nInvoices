@@ -6,25 +6,22 @@ using nInvoices.Core.Interfaces;
 namespace nInvoices.Application.Features.InvoiceTemplates.Commands;
 
 /// <summary>
-/// Handles invoice template creation.
-/// Validates customer exists and template syntax is correct.
+/// Handles invoice template creation. Validates the customer exists; the syntax is checked before
+/// this runs (<c>CreateInvoiceTemplateCommandValidator</c>).
 /// </summary>
 public sealed class CreateInvoiceTemplateCommandHandler : IRequestHandler<CreateInvoiceTemplateCommand, InvoiceTemplateDto>
 {
     private readonly IRepository<InvoiceTemplate> _templateRepository;
     private readonly IRepository<Customer> _customerRepository;
-    private readonly ITemplateEngine _templateEngine;
     private readonly IUnitOfWork _unitOfWork;
 
     public CreateInvoiceTemplateCommandHandler(
         IRepository<InvoiceTemplate> templateRepository,
         IRepository<Customer> customerRepository,
-        ITemplateEngine templateEngine,
         IUnitOfWork unitOfWork)
     {
         _templateRepository = templateRepository;
         _customerRepository = customerRepository;
-        _templateEngine = templateEngine;
         _unitOfWork = unitOfWork;
     }
 
@@ -37,12 +34,6 @@ public sealed class CreateInvoiceTemplateCommandHandler : IRequestHandler<Create
             var customer = await _customerRepository.GetByIdAsync(dto.CustomerId.Value, cancellationToken);
             if (customer == null)
                 throw new KeyNotFoundException($"Customer with ID {dto.CustomerId} not found");
-        }
-
-        if (!_templateEngine.ValidateTemplate(dto.Content, out var errors))
-        {
-            var errorMessage = string.Join("; ", errors);
-            throw new ArgumentException($"Invalid template syntax: {errorMessage}");
         }
 
         var template = new InvoiceTemplate(dto.CustomerId, dto.InvoiceType, dto.Name, dto.Content);
