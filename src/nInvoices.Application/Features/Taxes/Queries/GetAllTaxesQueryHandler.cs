@@ -19,8 +19,6 @@ public sealed class GetAllTaxesQueryHandler : IRequestHandler<GetAllTaxesQuery, 
     {
         var taxes = await _repository.GetAllAsync(cancellationToken);
 
-        return taxes.Select(MapToDto);
+        return taxes.Select(TaxMapper.ToDto);
     }
-
-    private static TaxDto MapToDto(Tax tax) => TaxMapper.ToDto(tax);
 }

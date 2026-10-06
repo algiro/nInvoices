@@ -20,6 +20,7 @@ public static class ApplicationServicesExtensions
         services.AddScoped<IInvoiceGenerationService, InvoiceGenerationService>();
         services.AddScoped<IInvoiceNumbering, InvoiceNumbering>();
         services.AddScoped<IDraftInvoiceSynchronizer, DraftInvoiceSynchronizer>();
+        services.AddScoped<IInvoiceFinalizer, InvoiceFinalizer>();
         services.AddScoped<IMonthlyReportGenerationService, MonthlyReportGenerationService>();
         services.AddScoped<ITemplateRenderer, ScribanTemplateRenderer>();
         services.AddSingleton<ILocalizationService, LocalizationService>();

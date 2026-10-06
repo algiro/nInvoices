@@ -1,4 +1,5 @@
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Mappings;
 using nInvoices.Application.Models;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
@@ -60,16 +61,7 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
         var workDays = await _workDayRepository.GetByCustomerAndMonthAsync(
             customer.Id, invoice.Year!.Value, invoice.Month!.Value, cancellationToken);
 
-        var dayDtos = workDays
-            .Select(wd => new WorkDayDto(
-                wd.Date,
-                wd.DayType,
-                wd.HoursWorked,
-                wd.Notes,
-                wd.Projects
-                    .Select(p => new WorkDayProjectDto(p.Project.Name, p.Hours, p.ProjectId))
-                    .ToList()))
-            .ToList();
+        var dayDtos = workDays.Select(WorkDayMapper.ToDto).ToList();
 
         var model = BuildMonthlyReportModel(invoice, customer, dayDtos);
         return await _templateRenderer.RenderAsync(template.Content, model, cancellationToken);

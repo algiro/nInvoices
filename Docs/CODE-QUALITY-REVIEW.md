@@ -17,7 +17,7 @@ The problems sit at the edges of that architecture. Several rules the design imp
 | 5 | Controllers bypass the Application layer (DbContext, service locator) | Medium | M — ✅ done |
 | 6 | Two schema-evolution mechanisms (EF/SQLite vs hand-written PG SQL) | Medium | M — ✅ done |
 | 7 | Sync-over-async in the PDF path | Medium | S — ✅ done |
-| 8 | Dead and duplicated code | Medium | S |
+| 8 | Dead and duplicated code | Medium | S — ✅ done |
 | 9 | Oversized classes and components | Medium | M–L |
 | 10 | No CI, no shared build settings, no analyzers | Medium | S |
 | 11 | Frontend: no type-checking of `.vue` files, no lint, no tests | Medium | M |
@@ -205,17 +205,26 @@ The project documents controllers as _"thin controllers that dispatch through Me
 
 **Recommendation**: make `IPdfExportService` async (`Task<byte[]> GenerateInvoicePdfAsync(Invoice, CancellationToken)`). Move it from Core to Application next to `IHtmlToPdfConverter`: PDF output is an application concern, not domain.
 
-## 8. Dead and duplicated code — Medium
+## 8. Dead and duplicated code — Medium — ✅ Done (2026-10-06)
+
+> **Resolution.** Dead code deleted: `QuestPdfHtmlConverter` (and the HtmlAgilityPack package, used only there),
+> the Vite scaffold files, and `public/test.html`, a debugging page that was shipped in the production build.
+> Finalizing is one `IInvoiceFinalizer` in two halves around the caller's save (`FinalizeAsync`: number +
+> lifecycle steps; `CompleteAsync`: re-render, move drafts on, publish), used by the single and the bulk
+> command; a new test proves the bulk path runs the steps too (it had no such test). Mapping: the six
+> `InvoiceTemplateDto` copies became `InvoiceTemplateMapper`, the five Tax `MapToDto` wrappers call `TaxMapper`
+> directly, and the `WorkDay → WorkDayDto` mapping repeated in the invoice and monthly-report services is
+> `WorkDayMapper`. `vite.svg` stays: it is the favicon in use.
 
 | Item | Evidence | Action |
 |------|----------|--------|
-| `QuestPdfHtmlConverter` (548 lines, HTML → QuestPDF via HtmlAgilityPack) | Not referenced anywhere; `AddPdfExport` registers `PuppeteerPdfConverter` | Delete; drop HtmlAgilityPack if unused elsewhere |
+| `QuestPdfHtmlConverter` (548 lines, HTML → QuestPDF via HtmlAgilityPack) | Not referenced anywhere; `AddPdfExport` registers `PuppeteerPdfConverter` | ✅ Deleted, with HtmlAgilityPack |
 | `ITemplateEngine` / `HandlebarsTemplateEngine` + tests | Superseded by Scriban (§2) | ✅ Deleted |
 | 18 FluentValidation validators | Never run (§1) | ✅ Wired up |
-| `src/nInvoices.Web/src/counter.ts`, `typescript.svg` | Vite scaffold leftovers | Delete |
-| Finalization logic | Duplicated between `FinalizeInvoiceCommandHandler` and `BulkChangeInvoiceStatusCommandHandler` (fetch customer, `FinalizeInvoice()`, `TakeAsync`, assign number, run lifecycle steps) | Extract one `IInvoiceFinalizer` used by both, so a new step or rule cannot be added to one path only |
-| Status-transition endpoints | `Finalize`/`MarkAsSent`/`MarkAsPaid`/`Cancel` are four copies of the same 15 lines | Collapses once §4 is done |
-| DTO mapping | `Mappings/` has 8 mappers, yet 11 handlers keep a private `MapToDto` (e.g. `InvoiceTemplateDto` built in 3 places) | Move all mapping into `Mappings/` |
+| `src/nInvoices.Web/src/counter.ts`, `typescript.svg` | Vite scaffold leftovers | ✅ Deleted (plus `public/test.html`) |
+| Finalization logic | Duplicated between `FinalizeInvoiceCommandHandler` and `BulkChangeInvoiceStatusCommandHandler` (fetch customer, `FinalizeInvoice()`, `TakeAsync`, assign number, run lifecycle steps) | ✅ `IInvoiceFinalizer` used by both |
+| Status-transition endpoints | `Finalize`/`MarkAsSent`/`MarkAsPaid`/`Cancel` are four copies of the same 15 lines | ✅ Collapsed with §4 |
+| DTO mapping | `Mappings/` has 8 mappers, yet 11 handlers keep a private `MapToDto` (e.g. `InvoiceTemplateDto` built in 3 places) | ✅ `InvoiceTemplateMapper`, `WorkDayMapper`; no `MapToDto` left |
 
 ## 9. Oversized classes and components — Medium
 

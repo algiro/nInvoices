@@ -54,7 +54,7 @@ public sealed class LifecycleStepTests
     }
 
     private FinalizeInvoiceCommandHandler Finalizer() =>
-        new(_invoices, _customers, _numbering.Object, _drafts.Object, _unitOfWork.Object, Mock.Of<IPublisher>(), [_step.Object]);
+        new(_invoices, _customers, new InvoiceFinalizer(_numbering.Object, _drafts.Object, Mock.Of<IPublisher>(), [_step.Object]), _unitOfWork.Object);
 
     // --- Finalizing -----------------------------------------------------------------------------
 
@@ -104,11 +104,29 @@ public sealed class LifecycleStepTests
         var invoice = Draft();
         invoice.RenumberDraft(new InvoiceNumber("26-10-001"));
 
-        await new FinalizeInvoiceCommandHandler(_invoices, _customers, _numbering.Object, _drafts.Object, _unitOfWork.Object, Mock.Of<IPublisher>())
+        await new FinalizeInvoiceCommandHandler(_invoices, _customers, new InvoiceFinalizer(_numbering.Object, _drafts.Object, Mock.Of<IPublisher>()), _unitOfWork.Object)
             .Handle(new FinalizeInvoiceCommand(1), Token);
 
         _drafts.Verify(d => d.RerenderAsync(It.IsAny<IEnumerable<long>>(), It.IsAny<CancellationToken>()), Times.Never);
         invoice.Status.ShouldBe(InvoiceStatus.Finalized);
+    }
+
+    [Test]
+    public async Task BulkFinalize_RunsTheSameSteps_BeforeTheSave_AndRerendersWhatTheyChanged()
+    {
+        var invoice = Draft();
+        invoice.RenumberDraft(new InvoiceNumber("26-10-001"));
+        _step.Setup(s => s.OnFinalizingAsync(It.IsAny<Invoice>(), It.IsAny<Customer>(), It.IsAny<CancellationToken>()))
+            .Callback(() => _calls.Add("step")).ReturnsAsync(true);
+        var repository = new Mock<IInvoiceRepository>();
+        repository.Setup(r => r.GetByIdsAsync(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<CancellationToken>())).ReturnsAsync([invoice]);
+        var finalizer = new InvoiceFinalizer(_numbering.Object, _drafts.Object, Mock.Of<IPublisher>(), [_step.Object]);
+
+        await new BulkChangeInvoiceStatusCommandHandler(repository.Object, _customers, finalizer, _unitOfWork.Object)
+            .Handle(new BulkChangeInvoiceStatusCommand(BulkInvoiceStatusAction.Finalize, [1]), Token);
+
+        _calls.ShouldBe(["step", "save"]);
+        _drafts.Verify(d => d.RerenderAsync(It.Is<IEnumerable<long>>(ids => ids.SequenceEqual(new[] { 1L })), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // --- Cancelling and deleting ---------------------------------------------------------------------

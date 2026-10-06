@@ -1,4 +1,5 @@
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Mappings;
 using nInvoices.Application.Models;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
@@ -268,17 +269,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         {
             var savedWorkDays = await _workDayRepository.GetByCustomerAndMonthAsync(
                 invoice.CustomerId, invoice.Year.Value, invoice.Month.Value, cancellationToken);
-            workDayDtos = savedWorkDays
-                .Select(wd => new WorkDayDto(
-                    wd.Date,
-                    wd.DayType,
-                    wd.HoursWorked,
-                    wd.Notes,
-                    wd.Projects
-                        .Select(p => new WorkDayProjectDto(p.Project.Name, p.Hours, p.ProjectId))
-                        .ToList(),
-                    wd.RateId))
-                .ToList();
+            workDayDtos = savedWorkDays.Select(WorkDayMapper.ToDto).ToList();
         }
 
         // Rebuild the template model from the existing invoice data

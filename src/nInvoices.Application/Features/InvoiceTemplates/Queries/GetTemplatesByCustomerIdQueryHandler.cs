@@ -1,5 +1,6 @@
 using Mediator;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 
@@ -20,16 +21,6 @@ public sealed class GetTemplatesByCustomerIdQueryHandler : IRequestHandler<GetTe
             t => t.CustomerId == request.CustomerId, 
             cancellationToken);
 
-        return templates.Select(MapToDto);
+        return templates.Select(InvoiceTemplateMapper.ToDto);
     }
-
-    private static InvoiceTemplateDto MapToDto(InvoiceTemplate template) => new(
-        template.Id,
-        template.CustomerId,
-        template.InvoiceType,
-        template.Name,
-        template.Content,
-        template.IsActive,
-        template.CreatedAt,
-        template.UpdatedAt ?? template.CreatedAt);
 }
