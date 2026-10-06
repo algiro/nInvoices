@@ -107,7 +107,9 @@ against a running API + frontend.
   `CommandValidatorsTests` fails if a request carries a validated DTO without one.
 - **nInvoices.Infrastructure** — `ApplicationDbContext`, EF entity configs
   (`Data/Configurations/`), generic `Repository<T>` + `UnitOfWork`, migrations
-  (`Data/Migrations/`), tax handler implementations (`TaxHandlers/`), PDF export (`PdfExport/` — QuestPDF and PuppeteerSharp/HtmlAgilityPack),
+  (`Data/Migrations/`), tax handler implementations (`TaxHandlers/`), PDF export (`PdfExport/`: `PdfExportService`
+  implements Application's `IPdfExportService` — rendered templates through headless Chrome (PuppeteerSharp,
+  async), built-in layouts through QuestPDF),
   `UserContext` (reads JWT claims), and the implementations of Application/Core ports that need EF Core
   directly: `DataPortability/DataPortabilityService` (`IDataPortability`: JSON import/export),
   `AccessRequestRepository` (concurrent-insert race), `AccountDataEraser` (account deletion).

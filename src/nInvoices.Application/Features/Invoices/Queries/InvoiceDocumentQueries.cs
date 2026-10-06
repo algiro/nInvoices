@@ -70,7 +70,7 @@ public sealed class InvoiceDocumentHandlers :
     public async ValueTask<DownloadFile> Handle(GetInvoicePdfQuery request, CancellationToken cancellationToken)
     {
         var invoice = await InvoiceAsync(request.InvoiceId, cancellationToken);
-        return new DownloadFile($"Invoice-{invoice.Number}.pdf", _pdfExport.GenerateInvoicePdf(invoice));
+        return new DownloadFile($"Invoice-{invoice.Number}.pdf", await _pdfExport.GenerateInvoicePdfAsync(invoice, cancellationToken));
     }
 
     public async ValueTask<DownloadFile> Handle(GetWorkedDaysCalendarPdfQuery request, CancellationToken cancellationToken)

@@ -34,7 +34,6 @@ public sealed class InvoiceGenerationServiceProjectTests
     private Mock<IRepository<InvoiceSequence>> _sequenceRepository = null!;
     private Mock<IProjectResolver> _projectResolver = null!;
     private Mock<ITemplateRenderer> _templateRenderer = null!;
-    private Mock<IHtmlToPdfConverter> _htmlToPdfConverter = null!;
     private Mock<ITaxCalculationService> _taxCalculationService = null!;
     private Mock<IUnitOfWork> _unitOfWork = null!;
 
@@ -65,7 +64,6 @@ public sealed class InvoiceGenerationServiceProjectTests
         _sequenceRepository = new Mock<IRepository<InvoiceSequence>>();
         _projectResolver = new Mock<IProjectResolver>();
         _templateRenderer = new Mock<ITemplateRenderer>();
-        _htmlToPdfConverter = new Mock<IHtmlToPdfConverter>();
         _taxCalculationService = new Mock<ITaxCalculationService>();
         _unitOfWork = new Mock<IUnitOfWork>();
 
@@ -142,7 +140,6 @@ public sealed class InvoiceGenerationServiceProjectTests
             _workDayRepository.Object,
             _projectResolver.Object,
             _templateRenderer.Object,
-            _htmlToPdfConverter.Object,
             _taxCalculationService.Object,
             new InvoiceNumbering(_sequenceRepository.Object, settings),
             _unitOfWork.Object);

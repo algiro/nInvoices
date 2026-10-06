@@ -183,10 +183,8 @@ public sealed class InvoiceEmailComposer : IInvoiceEmailComposer
 
         try
         {
-            // Same output as GET /api/invoices/{id}/pdf: the stored rendered template, else the built-in layout
-            var invoicePdf = string.IsNullOrWhiteSpace(invoice.RenderedContent)
-                ? _pdfExportService.GenerateInvoicePdf(invoice)
-                : await _htmlToPdfConverter.ConvertAsync(invoice.RenderedContent, cancellationToken);
+            // The same file as GET /api/invoices/{id}/pdf
+            var invoicePdf = await _pdfExportService.GenerateInvoicePdfAsync(invoice, cancellationToken);
             attachments.Add(new EmailAttachment(InvoicePdfFileName(invoice), PdfContentType, invoicePdf));
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
