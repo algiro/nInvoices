@@ -1,6 +1,4 @@
 using Mediator;
-using nInvoices.Core.Interfaces;
-using nInvoices.Core.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using nInvoices.Application.DTOs;
@@ -12,7 +10,6 @@ using nInvoices.Application.Features.EInvoices.Commands;
 using nInvoices.Application.Features.EInvoices.Queries;
 using nInvoices.Application.Features.InvoiceEmails.Commands;
 using nInvoices.Application.Features.InvoiceEmails.Queries;
-using nInvoices.Application.Services.Email;
 
 namespace nInvoices.Api.Controllers;
 
@@ -27,16 +24,13 @@ public sealed class InvoicesController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly ILogger<InvoicesController> _logger;
-    private readonly IPdfExportService _pdfExportService;
 
     public InvoicesController(
         IMediator mediator, 
-        ILogger<InvoicesController> logger,
-        IPdfExportService pdfExportService)
+        ILogger<InvoicesController> logger)
     {
         _mediator = mediator;
         _logger = logger;
-        _pdfExportService = pdfExportService;
     }
 
     /// <summary>
@@ -106,7 +100,7 @@ public sealed class InvoicesController : ControllerBase
     {
         var zip = await _mediator.Send(
             new GetInvoiceDocumentsZipQuery(dto.Ids ?? [], dto.IncludeMonthlyReports), cancellationToken);
-        return File(zip.Content, "application/zip", zip.FileName);
+        return Download(zip);
     }
 
     /// <summary>
@@ -359,115 +353,48 @@ public sealed class InvoicesController : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(new { error = result.Message, submission = result.Submission });
     }
 
-    /// <summary>
-    /// Exports an invoice as PDF.
-    /// Returns PDF file for download.
-    /// </summary>
+    /// <summary>The invoice as a PDF, for download.</summary>
     [HttpGet("{id}/pdf")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> ExportPdf(long id, CancellationToken cancellationToken)
-    {
-        var query = new GetInvoiceByIdQuery(id);
-        var invoiceDto = await _mediator.Send(query, cancellationToken);
+    public async Task<ActionResult> ExportPdf(long id, CancellationToken cancellationToken) =>
+        Download(await _mediator.Send(new GetInvoicePdfQuery(id), cancellationToken));
 
-        if (invoiceDto == null)
-            return NotFound();
-
-        var repository = HttpContext.RequestServices.GetRequiredService<IRepository<Core.Entities.Invoice>>();
-        var invoice = await repository.GetByIdAsync(id, cancellationToken);
-
-        if (invoice == null)
-            return NotFound();
-
-        var pdfBytes = _pdfExportService.GenerateInvoicePdf(invoice);
-        var fileName = $"Invoice-{invoice.Number}.pdf";
-
-        return File(pdfBytes, "application/pdf", fileName);
-    }
-
-    /// <summary>
-    /// Exports worked days calendar as PDF for a monthly invoice.
-    /// Useful for timesheet documentation.
-    /// </summary>
+    /// <summary>The calendar of worked days of a monthly invoice as a PDF, for timesheet documentation.</summary>
     [HttpGet("{id}/calendar/pdf")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> ExportCalendarPdf(long id, CancellationToken cancellationToken)
-    {
-        var repository = HttpContext.RequestServices.GetRequiredService<IRepository<Core.Entities.Invoice>>();
-        var invoice = await repository.GetByIdAsync(id, cancellationToken);
-
-        if (invoice == null)
-            return NotFound();
-
-        if (invoice.Type != Core.Enums.InvoiceType.Monthly)
-            return BadRequest(new { error = "Calendar export is only available for monthly invoices" });
-
-        var pdfBytes = _pdfExportService.GenerateWorkedDaysCalendarPdf(invoice);
-        var fileName = $"Calendar-{invoice.Year}-{invoice.Month:00}-{invoice.Customer?.Name}.pdf";
-
-        return File(pdfBytes, "application/pdf", fileName);
-    }
+    public async Task<ActionResult> ExportCalendarPdf(long id, CancellationToken cancellationToken) =>
+        Download(await _mediator.Send(new GetWorkedDaysCalendarPdfQuery(id), cancellationToken));
 
     /// <summary>
-    /// Exports monthly report as PDF using custom template.
-    /// Shows worked days, holidays, and unpaid leave for the month.
+    /// The monthly report of a monthly invoice as a PDF, rendered with its template: worked days,
+    /// holidays and unpaid leave of the month.
     /// </summary>
     [HttpGet("{id}/monthlyreport/pdf")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> ExportMonthlyReportPdf(long id, CancellationToken cancellationToken)
-    {
-        var repository = HttpContext.RequestServices.GetRequiredService<IRepository<Core.Entities.Invoice>>();
-        var customerRepository = HttpContext.RequestServices.GetRequiredService<IRepository<Core.Entities.Customer>>();
-        var monthlyReportService = HttpContext.RequestServices.GetRequiredService<Application.Services.IMonthlyReportGenerationService>();
-        var htmlToPdfConverter = HttpContext.RequestServices.GetRequiredService<Application.Services.IHtmlToPdfConverter>();
-
-        var invoice = await repository.GetByIdAsync(id, cancellationToken);
-        if (invoice == null)
-            return NotFound();
-
-        if (invoice.Type != Core.Enums.InvoiceType.Monthly)
-            return BadRequest(new { error = "Monthly reports are only available for monthly invoices" });
-
-        var customer = await customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken);
-        if (customer == null)
-            return NotFound(new { error = "Customer not found" });
-
-        // Generate HTML from template
-        var html = await monthlyReportService.GenerateReportHtmlAsync(invoice, customer, cancellationToken);
-
-        // Convert to PDF
-        var pdfBytes = await htmlToPdfConverter.ConvertAsync(html, cancellationToken);
-        var fileName = $"MonthlyReport-{invoice.Year}-{invoice.Month:00}-{customer.Name}.pdf";
-
-        return File(pdfBytes, "application/pdf", fileName);
-    }
+    public async Task<ActionResult> ExportMonthlyReportPdf(long id, CancellationToken cancellationToken) =>
+        Download(await _mediator.Send(new GetMonthlyReportPdfQuery(id), cancellationToken));
 
     /// <summary>
-    /// Regenerates the invoice PDF using the current active template.
-    /// Useful when templates are updated and need to re-render existing invoices.
+    /// Renders the invoice again with the customer's current active template, e.g. after the
+    /// template was changed. The amounts don't change.
     /// </summary>
     [HttpPost("{id}/regenerate")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> RegenerateInvoicePdf(long id, CancellationToken cancellationToken)
     {
-        var invoiceGenerationService = HttpContext.RequestServices.GetRequiredService<Application.Services.IInvoiceGenerationService>();
-        
-        // Re-render the HTML with the current active template
-        await invoiceGenerationService.RegenerateInvoiceHtmlAsync(id, cancellationToken);
-        
-        _logger.LogInformation("Invoice {InvoiceId} HTML re-rendered successfully with current template", id);
+        await _mediator.Send(new RegenerateInvoiceHtmlCommand(id), cancellationToken);
         return Ok(new { message = "Invoice PDF regenerated successfully. Download the invoice to see the updated version." });
     }
 
     /// <summary>
-    /// Regenerates the monthly report PDF using the current active template.
-    /// Useful when monthly report templates are updated.
+    /// Checks that the monthly report renders with the current template. Reports are rendered on
+    /// each download, so there is nothing stored to regenerate.
     /// </summary>
     [HttpPost("{id}/monthlyreport/regenerate")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -475,28 +402,7 @@ public sealed class InvoicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> RegenerateMonthlyReportPdf(long id, CancellationToken cancellationToken)
     {
-        var repository = HttpContext.RequestServices.GetRequiredService<IRepository<Core.Entities.Invoice>>();
-        var invoice = await repository.GetByIdAsync(id, cancellationToken);
-        
-        if (invoice == null)
-            return NotFound();
-
-        if (invoice.Type != Core.Enums.InvoiceType.Monthly)
-            return BadRequest(new { error = "Monthly reports are only available for monthly invoices" });
-
-        // Monthly reports don't store rendered content - they're generated on-demand
-        // So "regeneration" is just verification that it can be generated
-        var customerRepository = HttpContext.RequestServices.GetRequiredService<IRepository<Core.Entities.Customer>>();
-        var monthlyReportService = HttpContext.RequestServices.GetRequiredService<Application.Services.IMonthlyReportGenerationService>();
-        
-        var customer = await customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken);
-        if (customer == null)
-            return NotFound(new { error = "Customer not found" });
-
-        // Test generation with current template
-        _ = await monthlyReportService.GenerateReportHtmlAsync(invoice, customer, cancellationToken);
-
-        _logger.LogInformation("Monthly report for invoice {InvoiceId} verified successfully", id);
+        await _mediator.Send(new VerifyMonthlyReportQuery(id), cancellationToken);
         return Ok(new { message = "Monthly report is ready to be generated with current template" });
     }
 
@@ -566,4 +472,6 @@ public sealed class InvoicesController : ControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<InvoiceEmailDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<InvoiceEmailDto>>> GetEmails(long id, CancellationToken cancellationToken) =>
         Ok(await _mediator.Send(new GetInvoiceEmailsQuery(id), cancellationToken));
+
+    private FileContentResult Download(DownloadFile file) => File(file.Content, file.ContentType, file.FileName);
 }

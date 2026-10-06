@@ -14,7 +14,7 @@ The problems sit at the edges of that architecture. Several rules the design imp
 | 2 | Templates validated with Handlebars but rendered with Scriban | **High** | S — ✅ done |
 | 3 | Invoice state machine has gaps; entity setters bypass it | **High** | M — ✅ done (Invoice) |
 | 4 | No global error handling; exceptions used as an untyped protocol | **High** | M — ✅ done |
-| 5 | Controllers bypass the Application layer (DbContext, service locator) | Medium | M |
+| 5 | Controllers bypass the Application layer (DbContext, service locator) | Medium | M — ✅ done |
 | 6 | Two schema-evolution mechanisms (EF/SQLite vs hand-written PG SQL) | Medium | M |
 | 7 | Sync-over-async in the PDF path | Medium | S |
 | 8 | Dead and duplicated code | Medium | S |
@@ -133,7 +133,22 @@ The two engines have different grammars. A valid Scriban template (`{{ for x in 
 - Remove the per-action `try/catch` blocks. Controllers shrink to one line per action.
 - Have the frontend `client.ts` interceptor normalise ProblemDetails into one typed `ApiError`.
 
-## 5. Controllers bypass the Application layer — Medium
+## 5. Controllers bypass the Application layer — Medium — ✅ Done (2026-10-06)
+
+> **Resolution.** No controller reaches data any more; every one of them only takes `IMediator` (plus
+> data-free Application services for template/email previews). `ArchitectureTests` fails the build when a
+> controller takes a repository, `IUnitOfWork` or an Infrastructure type, or when a layer references an outer
+> one. Per controller: `InvoicesController` lost the service locator and the PDF/report orchestration
+> (`InvoiceDocumentQueries`: invoice/calendar/monthly-report PDFs as `DownloadFile`, regenerate, verify; the
+> double load of `ExportPdf` is gone); the template controllers' list/get/delete/activate became queries and
+> commands; image assets moved to `Features/ImageAssets` (size/type rules in a validator, alias uniqueness a
+> `DomainException`; the controller only reads the upload); access requests and account deletion became
+> commands over two small ports (`IAccessRequestRepository.TryAddAsync` owns the concurrent-insert race,
+> `IAccountDataEraser`); the Keycloak console link is derived once at startup. `ImportExportController` (770
+> lines) is now 90: its EF-heavy bulk transfer moved verbatim behind `IDataPortability` into
+> `Infrastructure/DataPortability`, with its "nothing to import" checks as validators. Along the way: every
+> automatic model-binding 400 now carries the field messages in `error` (it had only the generic title), and
+> `CS0108` (`AccessRequestsController.Request`) is gone.
 
 The project documents controllers as _"thin controllers that dispatch through MediatR"_. That holds for some controllers only:
 

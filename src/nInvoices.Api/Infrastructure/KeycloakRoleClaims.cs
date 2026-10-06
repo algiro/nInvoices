@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using nInvoices.Core.Configuration;
 
 namespace nInvoices.Api.Infrastructure;
 
@@ -15,7 +16,7 @@ public static class KeycloakRoleClaims
     /// The role a user needs to use the app. New users (password or Google sign-up) don't get it:
     /// an administrator grants it in Keycloak, which is how an account is approved.
     /// </summary>
-    public const string AppUserRole = "user";
+    public const string AppUserRole = AppRoles.User;
 
     public static void AddRealmRoles(ClaimsPrincipal principal)
     {

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.EmailTemplates.Commands;
+using nInvoices.Application.Features.EmailTemplates.Queries;
 using nInvoices.Application.Mappings;
 using nInvoices.Application.Services.Email;
 using nInvoices.Core.Entities;
@@ -19,19 +20,13 @@ namespace nInvoices.Api.Controllers;
 [Authorize]
 public sealed class EmailTemplatesController : ControllerBase
 {
-    private readonly IRepository<EmailTemplate> _repository;
-    private readonly IUnitOfWork _unitOfWork;
     private readonly IInvoiceEmailComposer _composer;
     private readonly IMediator _mediator;
 
     public EmailTemplatesController(
-        IRepository<EmailTemplate> repository,
-        IUnitOfWork unitOfWork,
         IInvoiceEmailComposer composer,
         IMediator mediator)
     {
-        _repository = repository;
-        _unitOfWork = unitOfWork;
         _composer = composer;
         _mediator = mediator;
     }
@@ -41,16 +36,14 @@ public sealed class EmailTemplatesController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<EmailTemplateDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<EmailTemplateDto>>> GetShared(CancellationToken cancellationToken)
     {
-        var templates = await _repository.FindAsync(t => t.CustomerId == null, cancellationToken);
-        return Ok(templates.Select(EmailTemplateMapper.ToDto));
+        return Ok(await _mediator.Send(new GetEmailTemplatesQuery(null), cancellationToken));
     }
 
     [HttpGet("customer/{customerId}")]
     [ProducesResponseType(typeof(IEnumerable<EmailTemplateDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<EmailTemplateDto>>> GetByCustomer(long customerId, CancellationToken cancellationToken)
     {
-        var templates = await _repository.FindAsync(t => t.CustomerId == customerId, cancellationToken);
-        return Ok(templates.Select(EmailTemplateMapper.ToDto));
+        return Ok(await _mediator.Send(new GetEmailTemplatesQuery(customerId), cancellationToken));
     }
 
     [HttpGet("{id}")]
@@ -58,8 +51,8 @@ public sealed class EmailTemplatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<EmailTemplateDto>> GetById(long id, CancellationToken cancellationToken)
     {
-        var template = await _repository.GetByIdAsync(id, cancellationToken);
-        return template is null ? NotFound() : Ok(EmailTemplateMapper.ToDto(template));
+        var template = await _mediator.Send(new GetEmailTemplateByIdQuery(id), cancellationToken);
+        return template is null ? NotFound() : Ok(template);
     }
 
     /// <summary>The built-in subject and body, as a starting point for a new template.</summary>
@@ -96,13 +89,7 @@ public sealed class EmailTemplatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
     {
-        var template = await _repository.GetByIdAsync(id, cancellationToken);
-        if (template is null)
-            return NotFound();
-
-        await _repository.DeleteAsync(template, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return NoContent();
+        return await _mediator.Send(new DeleteEmailTemplateCommand(id), cancellationToken) ? NoContent() : NotFound();
     }
 
     /// <summary>Makes this the customer's active email template, deactivating the others.</summary>
@@ -111,17 +98,7 @@ public sealed class EmailTemplatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Activate(long id, CancellationToken cancellationToken)
     {
-        var template = await _repository.GetByIdAsync(id, cancellationToken);
-        if (template is null)
-            return NotFound();
-
-        var others = await _repository.FindAsync(t => t.CustomerId == template.CustomerId && t.IsActive && t.Id != id, cancellationToken);
-        foreach (var other in others)
-            other.Deactivate();
-        template.Activate();
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return NoContent();
+        return await _mediator.Send(new ActivateEmailTemplateCommand(id), cancellationToken) ? NoContent() : NotFound();
     }
 
     [HttpPost("{id}/deactivate")]
@@ -129,13 +106,7 @@ public sealed class EmailTemplatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Deactivate(long id, CancellationToken cancellationToken)
     {
-        var template = await _repository.GetByIdAsync(id, cancellationToken);
-        if (template is null)
-            return NotFound();
-
-        template.Deactivate();
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return NoContent();
+        return await _mediator.Send(new DeactivateEmailTemplateCommand(id), cancellationToken) ? NoContent() : NotFound();
     }
 
     /// <summary>

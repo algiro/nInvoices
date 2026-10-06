@@ -85,7 +85,7 @@ public sealed class GetInvoiceDocumentsZipQueryHandler : IRequestHandler<GetInvo
             }
         }
 
-        return new DownloadFile($"Invoices-{DateTime.Now:yyyy-MM-dd-HHmm}.zip", buffer.ToArray());
+        return new DownloadFile($"Invoices-{DateTime.Now:yyyy-MM-dd-HHmm}.zip", buffer.ToArray(), DownloadFile.Zip);
     }
 
     private static async Task AddAsync(ZipArchive zip, string name, byte[] content, CancellationToken cancellationToken)

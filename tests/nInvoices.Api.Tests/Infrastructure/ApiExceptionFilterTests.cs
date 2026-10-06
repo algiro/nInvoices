@@ -123,6 +123,26 @@ public sealed class ApiExceptionFilterTests
     }
 
     [Test]
+    public void MessageOf_ABodyThatDoesNotBind_JoinsTheFieldMessages()
+    {
+        // The automatic 400 of [ApiController] gets "error" from the AddProblemDetails hook
+        var problem = new ValidationProblemDetails(new Dictionary<string, string[]>
+        {
+            ["exportVersion"] = ["The ExportVersion field is required."],
+            ["exportDate"] = ["The ExportDate field is required"]
+        }) { Title = "One or more validation errors occurred." };
+
+        ApiExceptionFilter.MessageOf(problem).ShouldBe("The ExportVersion field is required. The ExportDate field is required.");
+    }
+
+    [Test]
+    public void MessageOf_OtherProblems_IsTheDetailOrTheTitle()
+    {
+        ApiExceptionFilter.MessageOf(new ProblemDetails { Title = "Not Found", Detail = "Invoice 9 not found" }).ShouldBe("Invoice 9 not found");
+        ApiExceptionFilter.MessageOf(new ProblemDetails { Title = "Not Found" }).ShouldBe("Not Found");
+    }
+
+    [Test]
     public void CancelledRequest_IsLeftAlone()
     {
         using var aborted = new CancellationTokenSource();

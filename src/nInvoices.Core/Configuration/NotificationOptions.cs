@@ -18,7 +18,7 @@ public sealed class NotificationOptions
     /// Link to a user in the Keycloak admin console, with <c>{userId}</c> where the user's id goes.
     /// Unset: derived from <c>Keycloak:ExternalAuthority</c> (or <c>Keycloak:Authority</c>).
     /// </summary>
-    public string? KeycloakUserUrl { get; init; }
+    public string? KeycloakUserUrl { get; set; }
 
     public bool TelegramEnabled => !string.IsNullOrWhiteSpace(TelegramBotToken) && !string.IsNullOrWhiteSpace(TelegramChatId);
 }

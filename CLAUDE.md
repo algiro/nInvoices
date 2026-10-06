@@ -107,8 +107,15 @@ against a running API + frontend.
 - **nInvoices.Infrastructure** — `ApplicationDbContext`, EF entity configs
   (`Data/Configurations/`), generic `Repository<T>` + `UnitOfWork`, migrations
   (`Data/Migrations/`), tax handler implementations (`TaxHandlers/`), PDF export (`PdfExport/` — QuestPDF and PuppeteerSharp/HtmlAgilityPack),
-  `UserContext` (reads JWT claims).
-- **nInvoices.Api** — thin controllers (`Controllers/`) that dispatch through Mediator (`IMediator.Send`).
+  `UserContext` (reads JWT claims), and the implementations of Application/Core ports that need EF Core
+  directly: `DataPortability/DataPortabilityService` (`IDataPortability`: JSON import/export),
+  `AccessRequestRepository` (concurrent-insert race), `AccountDataEraser` (account deletion).
+- **nInvoices.Api** — thin controllers (`Controllers/`) that only translate HTTP: they dispatch through Mediator
+  (`IMediator.Send`) and never take a repository, `IUnitOfWork`, the DbContext or any Infrastructure type, nor
+  resolve services from `HttpContext.RequestServices` (`ArchitectureTests` enforces the constructor rule and
+  the layer direction). Application services that don't touch data (template preview/validation, email
+  preview) may be injected. HTTP-only work stays in the controller: reading an uploaded file, claims,
+  turning a `DownloadFile` into a file response.
   `Program.cs` wires everything via extension methods: `AddServiceDefaults`, `AddDatabase`,
   `AddTaxHandlers`, `AddPdfExport`, `AddApplicationServices`, `AddApplicationRequests` (Mediator + validators).
   Auth is either `DevAuthenticationHandler` (dev) or Keycloak JWT Bearer. Policies:
@@ -227,7 +234,7 @@ Code style and testing rules are authoritative in `.github/instructions/`
 2. Add `DbSet` to `ApplicationDbContext`, then create a migration (command above).
 3. DTOs in `Application/DTOs/`; commands/queries/validators under
    `Application/Features/<Entity>/` (a DTO validator plus a command validator wrapping it).
-4. Controller in `Api/Controllers/` dispatching via Mediator.
+4. Controller in `Api/Controllers/` dispatching via Mediator (no repositories: `ArchitectureTests` fails otherwise).
 5. Frontend: `src/api/<entity>.ts` + store/view as needed.
 
 ## Notes

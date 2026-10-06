@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.MonthlyReportTemplates.Commands;
+using nInvoices.Application.Features.MonthlyReportTemplates.Queries;
 using nInvoices.Application.Mappings;
 using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
@@ -20,27 +21,18 @@ namespace nInvoices.Api.Controllers;
 [Authorize]
 public sealed class MonthlyReportTemplatesController : ControllerBase
 {
-    private readonly IRepository<MonthlyReportTemplate> _repository;
-    private readonly IUnitOfWork _unitOfWork;
     private readonly ITemplateRenderer _templateRenderer;
     private readonly ITemplatePreviewService _previewService;
     private readonly IMediator _mediator;
-    private readonly ILogger<MonthlyReportTemplatesController> _logger;
 
     public MonthlyReportTemplatesController(
-        IRepository<MonthlyReportTemplate> repository,
-        IUnitOfWork unitOfWork,
         ITemplateRenderer templateRenderer,
         ITemplatePreviewService previewService,
-        IMediator mediator,
-        ILogger<MonthlyReportTemplatesController> logger)
+        IMediator mediator)
     {
-        _repository = repository;
-        _unitOfWork = unitOfWork;
         _templateRenderer = templateRenderer;
         _previewService = previewService;
         _mediator = mediator;
-        _logger = logger;
     }
 
     /// <summary>
@@ -50,9 +42,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<MonthlyReportTemplateDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetShared(CancellationToken cancellationToken)
     {
-        var templates = await _repository.FindAsync(t => t.CustomerId == null, cancellationToken);
-
-        return Ok(templates.Select(MonthlyReportTemplateMapper.ToDto));
+        return Ok(await _mediator.Send(new GetMonthlyReportTemplatesQuery(null), cancellationToken));
     }
 
     /// <summary>
@@ -62,11 +52,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<MonthlyReportTemplateDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByCustomer(long customerId, CancellationToken cancellationToken)
     {
-        var templates = await _repository.FindAsync(
-            t => t.CustomerId == customerId,
-            cancellationToken);
-
-        return Ok(templates.Select(MonthlyReportTemplateMapper.ToDto));
+        return Ok(await _mediator.Send(new GetMonthlyReportTemplatesQuery(customerId), cancellationToken));
     }
 
     /// <summary>
@@ -77,11 +63,8 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(long id, CancellationToken cancellationToken)
     {
-        var template = await _repository.GetByIdAsync(id, cancellationToken);
-        if (template == null)
-            return NotFound();
-
-        return Ok(MonthlyReportTemplateMapper.ToDto(template));
+        var template = await _mediator.Send(new GetMonthlyReportTemplateByIdQuery(id), cancellationToken);
+        return template is null ? NotFound() : Ok(template);
     }
 
     /// <summary>
@@ -124,18 +107,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
     {
-        var template = await _repository.GetByIdAsync(id, cancellationToken);
-        if (template == null)
-            return NotFound();
-
-        await _repository.DeleteAsync(template, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        _logger.LogInformation(
-            "Monthly report template {TemplateId} deleted",
-            id);
-
-        return NoContent();
+        return await _mediator.Send(new DeleteMonthlyReportTemplateCommand(id), cancellationToken) ? NoContent() : NotFound();
     }
 
     /// <summary>
@@ -180,27 +152,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Activate(long id, CancellationToken cancellationToken)
     {
-        var template = await _repository.GetByIdAsync(id, cancellationToken);
-        if (template == null)
-            return NotFound();
-
-        // One active template per customer and type: the previous one is switched off
-        var previouslyActive = await _repository.FindAsync(
-            t => t.CustomerId == template.CustomerId && t.InvoiceType == template.InvoiceType && t.IsActive && t.Id != id,
-            cancellationToken);
-        foreach (var other in previouslyActive)
-        {
-            other.Deactivate();
-            await _repository.UpdateAsync(other, cancellationToken);
-        }
-
-        template.Activate();
-        await _repository.UpdateAsync(template, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        _logger.LogInformation("Monthly report template {TemplateId} activated", id);
-
-        return Ok();
+        return await _mediator.Send(new ActivateMonthlyReportTemplateCommand(id), cancellationToken) ? Ok() : NotFound();
     }
 
     /// <summary>
@@ -211,16 +163,6 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Deactivate(long id, CancellationToken cancellationToken)
     {
-        var template = await _repository.GetByIdAsync(id, cancellationToken);
-        if (template == null)
-            return NotFound();
-
-        template.Deactivate();
-        await _repository.UpdateAsync(template, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        _logger.LogInformation("Monthly report template {TemplateId} deactivated", id);
-
-        return Ok();
+        return await _mediator.Send(new DeactivateMonthlyReportTemplateCommand(id), cancellationToken) ? Ok() : NotFound();
     }
 }

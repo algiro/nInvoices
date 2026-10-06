@@ -91,11 +91,22 @@ public sealed class ApiExceptionFilter : IExceptionFilter
             modelState.AddModelError(ToJsonPath(failure.PropertyName), failure.ErrorMessage);
 
         var problem = factory.CreateValidationProblemDetails(httpContext, modelState, StatusCodes.Status400BadRequest);
-        problem.Extensions["error"] = string.Join(" ", exception.Errors
-            .Select(f => f.ErrorMessage.TrimEnd('.') + ".")
-            .Distinct());
+        // In the order the rules failed (the per-field dictionary doesn't keep it)
+        problem.Extensions["error"] = Sentences(exception.Errors.Select(f => f.ErrorMessage));
         return problem;
     }
+
+    /// <summary>
+    /// The sentence for <c>error</c> of a ProblemDetails the filter didn't write: the field messages of
+    /// a validation problem (e.g. a body that doesn't bind), otherwise its detail or title.
+    /// </summary>
+    public static string? MessageOf(ProblemDetails problem) =>
+        problem is HttpValidationProblemDetails { Errors.Count: > 0 } validation
+            ? Sentences(validation.Errors.SelectMany(e => e.Value))
+            : problem.Detail ?? problem.Title;
+
+    private static string Sentences(IEnumerable<string> messages) =>
+        string.Join(" ", messages.Select(m => m.TrimEnd('.') + ".").Distinct());
 
     // "Customer.Address.City" / "Invoice.WorkDays[0].Date" → the camelCase names of the JSON body
     private static string ToJsonPath(string propertyName) =>
