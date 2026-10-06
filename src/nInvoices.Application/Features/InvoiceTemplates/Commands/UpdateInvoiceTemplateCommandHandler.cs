@@ -2,6 +2,7 @@ using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.InvoiceTemplates.Commands;
 
@@ -26,7 +27,7 @@ public sealed class UpdateInvoiceTemplateCommandHandler : IRequestHandler<Update
     {
         var template = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (template == null)
-            throw new KeyNotFoundException($"Template with ID {request.Id} not found");
+            throw new NotFoundException($"Template with ID {request.Id} not found");
 
         var dto = request.Template;
         template.UpdateContent(dto.Name, dto.Content);

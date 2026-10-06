@@ -2,6 +2,7 @@ using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.InvoiceTemplates.Commands;
 
@@ -33,7 +34,7 @@ public sealed class CreateInvoiceTemplateCommandHandler : IRequestHandler<Create
         {
             var customer = await _customerRepository.GetByIdAsync(dto.CustomerId.Value, cancellationToken);
             if (customer == null)
-                throw new KeyNotFoundException($"Customer with ID {dto.CustomerId} not found");
+                throw new NotFoundException($"Customer with ID {dto.CustomerId} not found");
         }
 
         var template = new InvoiceTemplate(dto.CustomerId, dto.InvoiceType, dto.Name, dto.Content);

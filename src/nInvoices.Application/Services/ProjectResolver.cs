@@ -1,5 +1,6 @@
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Services;
 
@@ -56,7 +57,7 @@ public sealed class ProjectResolver : IProjectResolver
         if (projectId is > 0)
         {
             var byId = projects.FirstOrDefault(p => p.Id == projectId.Value)
-                ?? throw new InvalidOperationException(
+                ?? throw new DomainException(
                     $"Project {projectId.Value} does not belong to customer {customerId}");
 
             if (!byId.IsActive)

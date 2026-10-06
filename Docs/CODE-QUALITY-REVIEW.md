@@ -13,7 +13,7 @@ The problems sit at the edges of that architecture. Several rules the design imp
 | 1 | FluentValidation validators are never executed | **High** | S — ✅ done |
 | 2 | Templates validated with Handlebars but rendered with Scriban | **High** | S — ✅ done |
 | 3 | Invoice state machine has gaps; entity setters bypass it | **High** | M — ✅ done (Invoice) |
-| 4 | No global error handling; exceptions used as an untyped protocol | **High** | M |
+| 4 | No global error handling; exceptions used as an untyped protocol | **High** | M — ✅ done |
 | 5 | Controllers bypass the Application layer (DbContext, service locator) | Medium | M |
 | 6 | Two schema-evolution mechanisms (EF/SQLite vs hand-written PG SQL) | Medium | M |
 | 7 | Sync-over-async in the PDF path | Medium | S |
@@ -105,7 +105,22 @@ The two engines have different grammars. A valid Scriban template (`{{ for x in 
 - Remove the `UpdatedAt` stamping from entities and let the DbContext own it.
 - Apply the same treatment to `Customer` (12 public setters) and `Tax` (11).
 
-## 4. No global error handling; exceptions as an untyped protocol — High
+## 4. No global error handling; exceptions as an untyped protocol — High — ✅ Done (2026-10-05)
+
+> **Resolution.** Two exception types carry the meaning: `Core/Exceptions/DomainException` (a business rule
+> refused; optional `Code` and `Issues`; derives from `InvalidOperationException`) and
+> `Application/Exceptions/NotFoundException` (derives from `KeyNotFoundException`). 31 not-found throws and 39
+> business-rule throws were converted; `ComplianceValidationException`, `VerifactuException` and
+> `InvoiceEmailException` are now `DomainException`s. One MVC filter, `Api/Infrastructure/ApiExceptionFilter`
+> (it replaces point 1's `ValidationExceptionFilter`), maps them to ProblemDetails: 404 / 400 / 409 (Gmail
+> setup) / 400 for entity `ArgumentException`s and validation, and 500 with a generic message for anything
+> else (the exception only in Development; nothing internal leaks). `AddProblemDetails` adds `error` to every
+> ProblemDetails, so the web app's `errorMessage()` works for all responses. 40 translating `try/catch` blocks
+> were removed from 11 controllers (−370 lines); the deliberate ones remain (import per item, best-effort Gmail
+> revoke, concurrent access request). Fixed along the way: "invoice not found" was a 400, and Holidays,
+> InvoiceTemplates, Projects, Rates and Taxes answered `{ message }`, which the web app didn't read (users saw
+> "Request failed with status code 400"). An MVC filter rather than `IExceptionHandler` was chosen: all
+> endpoints are controllers, and middleware-level errors keep the framework's behaviour.
 
 - There is no `IExceptionHandler`, `UseExceptionHandler` or `AddProblemDetails`. Every controller action has its own `try/catch` that converts exceptions to `BadRequest(new { error = ... })`. `InvoicesController` alone has 15 such blocks.
 - Meaning depends on built-in exception types. `InvalidOperationException` means "not found" in one place (`FinalizeInvoiceCommandHandler`: _"Invoice with ID … not found"_ → **400**, should be 404), "illegal state" in another, and "template missing" in a third. `KeyNotFoundException` means 404 in some handlers and not others.

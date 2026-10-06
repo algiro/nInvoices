@@ -2,6 +2,7 @@ using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Infrastructure.TaxHandlers;
 
@@ -79,7 +80,7 @@ public sealed class TaxCalculationService : ITaxCalculationService
             h.HandlerId.Equals(handlerId, StringComparison.OrdinalIgnoreCase));
 
         if (handler is null)
-            throw new InvalidOperationException($"Tax handler '{handlerId}' not found");
+            throw new DomainException($"Tax handler '{handlerId}' not found");
 
         return handler;
     }
@@ -95,9 +96,9 @@ public sealed class TaxCalculationService : ITaxCalculationService
             TaxApplicationType.OnTax when tax.AppliedToTaxId.HasValue =>
                 calculatedTaxes.TryGetValue(tax.AppliedToTaxId.Value, out var baseTax)
                     ? baseTax
-                    : throw new InvalidOperationException(
+                    : throw new DomainException(
                         $"Tax '{tax.TaxId}' references non-existent or not-yet-calculated tax ID {tax.AppliedToTaxId}"),
-            _ => throw new InvalidOperationException($"Invalid tax application type for tax '{tax.TaxId}'")
+            _ => throw new DomainException($"Invalid tax application type for tax '{tax.TaxId}'")
         };
     }
 

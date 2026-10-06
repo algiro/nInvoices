@@ -2,6 +2,7 @@ using Mediator;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.Invoices.Commands;
 
@@ -25,7 +26,7 @@ public sealed class DeleteInvoiceCommandHandler : IRequestHandler<DeleteInvoiceC
     {
         var invoice = await _repository.GetByIdAsync(request.InvoiceId, cancellationToken);
         if (invoice == null)
-            throw new InvalidOperationException($"Invoice with ID {request.InvoiceId} not found");
+            throw new NotFoundException($"Invoice with ID {request.InvoiceId} not found");
 
         // Only a draft can be deleted (InvoiceLifecycle); a forced delete, asked for explicitly, bypasses it
         if (!request.Force)

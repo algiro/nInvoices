@@ -4,6 +4,7 @@ using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.Invoices.Commands;
 
@@ -43,10 +44,10 @@ public sealed class FinalizeInvoiceCommandHandler : IRequestHandler<FinalizeInvo
     {
         var invoice = await _repository.GetByIdAsync(request.InvoiceId, cancellationToken);
         if (invoice == null)
-            throw new InvalidOperationException($"Invoice with ID {request.InvoiceId} not found");
+            throw new NotFoundException($"Invoice with ID {request.InvoiceId} not found");
 
         var customer = await _customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken)
-            ?? throw new InvalidOperationException($"Customer {invoice.CustomerId} not found");
+            ?? throw new NotFoundException($"Customer {invoice.CustomerId} not found");
 
         // Throws unless the invoice is a draft, before a number is taken
         invoice.EnsureAllowed(InvoiceAction.Finalize);

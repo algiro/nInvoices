@@ -3,6 +3,8 @@ using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Exceptions;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Features.Projects.Commands;
 
@@ -21,7 +23,7 @@ public sealed class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectC
     {
         var project = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (project == null)
-            throw new KeyNotFoundException($"Project with ID {request.Id} not found");
+            throw new NotFoundException($"Project with ID {request.Id} not found");
 
         var dto = request.Project;
         var name = dto.Name?.Trim() ?? string.Empty;
@@ -36,7 +38,7 @@ public sealed class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectC
                 string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
 
             if (clash is not null)
-                throw new InvalidOperationException(
+                throw new DomainException(
                     $"A project named '{name}' already exists for this customer");
         }
 

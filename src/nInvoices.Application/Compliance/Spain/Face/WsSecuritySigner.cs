@@ -4,6 +4,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using System.Xml;
 using System.Xml.Linq;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Compliance.Spain.Face;
 
@@ -38,7 +39,7 @@ public static class WsSecuritySigner
     public static string SignedEnvelope(XElement body, X509Certificate2 certificate, bool sha1, DateTime nowUtc)
     {
         using var rsa = certificate.GetRSAPrivateKey()
-            ?? throw new InvalidOperationException("The signing certificate has no RSA private key");
+            ?? throw new DomainException("The signing certificate has no RSA private key");
 
         var id = Guid.NewGuid().ToString("N")[..16];
         var bodyId = $"id-{id}";

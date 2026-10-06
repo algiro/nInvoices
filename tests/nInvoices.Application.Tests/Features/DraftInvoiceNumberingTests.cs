@@ -3,6 +3,7 @@ using Mediator;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
+using nInvoices.Application.Exceptions;
 using nInvoices.Application.Features.Invoices.Commands;
 using nInvoices.Application.Services;
 using nInvoices.Application.Tests.TestDoubles;
@@ -170,9 +171,9 @@ public sealed class DraftInvoiceNumberingTests
     }
 
     [Test]
-    public async Task Finalize_UnknownInvoice_Throws()
+    public async Task Finalize_UnknownInvoice_ThrowsNotFound()
     {
-        await Should.ThrowAsync<InvalidOperationException>(() => _finalize.Handle(new FinalizeInvoiceCommand(99), Token).AsTask());
+        await Should.ThrowAsync<NotFoundException>(() => _finalize.Handle(new FinalizeInvoiceCommand(99), Token).AsTask());
         SequenceValue.ShouldBe(5);
     }
 

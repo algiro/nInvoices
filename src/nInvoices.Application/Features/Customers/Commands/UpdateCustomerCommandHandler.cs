@@ -5,6 +5,7 @@ using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
+using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.Customers.Commands;
 
@@ -25,7 +26,7 @@ public sealed class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustome
     {
         var customer = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (customer == null)
-            throw new KeyNotFoundException($"Customer with ID {request.Id} not found");
+            throw new NotFoundException($"Customer with ID {request.Id} not found");
 
         var dto = request.Customer;
         

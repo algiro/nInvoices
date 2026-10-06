@@ -4,6 +4,7 @@ using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.Taxes.Commands;
 
@@ -36,7 +37,7 @@ public sealed class CreateTaxCommandHandler : IRequestHandler<CreateTaxCommand, 
 
         var customer = await _customerRepository.GetByIdAsync(dto.CustomerId, cancellationToken);
         if (customer == null)
-            throw new KeyNotFoundException($"Customer with ID {dto.CustomerId} not found");
+            throw new NotFoundException($"Customer with ID {dto.CustomerId} not found");
 
         var taxId = string.IsNullOrWhiteSpace(dto.TaxId)
             ? dto.Description.ToUpperInvariant().Replace(" ", "_")

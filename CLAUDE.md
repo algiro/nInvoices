@@ -187,6 +187,25 @@ rewrites the external host to the internal `keycloak:8080` for OIDC discovery/JW
 `Program.cs` accepts multiple `ValidIssuers` so tokens minted against either URL validate. See
 `docker/KEYCLOAK-DOCKER-GUIDE.md`.
 
+## Errors
+
+Throw, don't catch-and-translate in controllers: `Api/Infrastructure/ApiExceptionFilter` turns every
+exception into a ProblemDetails response that also carries `error` (the message the web app shows), plus
+`code` / `issues` when the exception has them.
+
+| Throw | When | Response |
+|---|---|---|
+| `NotFoundException` (Application) | the resource of the request, or its customer, doesn't exist | 404 |
+| `DomainException` (Core; optional `Code`, `Issues`) | a business rule refuses (message is for the user) | 400 |
+| `InvoiceEmailException` (a `DomainException`) | email can't be drafted; Gmail setup codes | 409, else 400 |
+| `ArgumentException` from an entity | invalid input to a constructor/method | 400 |
+| FluentValidation `ValidationException` | the validation pipeline | 400 + `errors` per field |
+| anything else | a bug | 500, logged, generic message |
+
+`DomainException` derives from `InvalidOperationException` and `NotFoundException` from
+`KeyNotFoundException`, so internal `catch`es of those still work. Keep `catch` in controllers only for
+deliberate local handling (per-item import errors, best-effort cleanup).
+
 ## Conventions
 
 Code style and testing rules are authoritative in `.github/instructions/`

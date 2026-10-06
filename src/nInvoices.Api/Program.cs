@@ -46,14 +46,18 @@ builder.AddServiceDefaults();
 // Add services to the container
 builder.Services.AddControllers(options =>
     {
-        // Requests rejected by the validation pipeline come back as 400 with the failing fields
-        options.Filters.Add<ValidationExceptionFilter>();
+        // Exceptions become ProblemDetails responses in one place (404, 400, 409, 500): actions do not catch to translate
+        options.Filters.Add<ApiExceptionFilter>();
     })
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 builder.Services.AddEndpointsApiExplorer();
+// Every ProblemDetails (ApiExceptionFilter's, a plain NotFound()...) also carries "error", the
+// message the web app shows
+builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
+    context.ProblemDetails.Extensions.TryAdd("error", context.ProblemDetails.Detail ?? context.ProblemDetails.Title));
 builder.Services.AddOpenApi();
 
 // Add Configuration

@@ -4,6 +4,7 @@ using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
+using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.Rates.Commands;
 
@@ -22,7 +23,7 @@ public sealed class UpdateRateCommandHandler : IRequestHandler<UpdateRateCommand
     {
         var rate = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (rate == null)
-            throw new KeyNotFoundException($"Rate with ID {request.Id} not found");
+            throw new NotFoundException($"Rate with ID {request.Id} not found");
 
         var dto = request.Rate;
         var price = new Money(dto.Price.Amount, dto.Price.Currency);

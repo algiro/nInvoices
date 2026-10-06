@@ -1,6 +1,7 @@
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Core.Entities;
 
@@ -122,7 +123,7 @@ public sealed class Invoice : OwnedEntityBase
     {
         var reason = InvoiceLifecycle.WhyNot(Status, action);
         if (reason is not null)
-            throw new InvalidOperationException($"Invoice {Number} cannot be {Describe(action)}: {char.ToLowerInvariant(reason[0])}{reason[1..]}.");
+            throw new DomainException($"Invoice {Number} cannot be {Describe(action)}: {char.ToLowerInvariant(reason[0])}{reason[1..]}.");
     }
 
     /// <summary>Issues the draft with <paramref name="number"/>, the one it keeps for good.</summary>
@@ -138,7 +139,7 @@ public sealed class Invoice : OwnedEntityBase
     {
         ArgumentNullException.ThrowIfNull(number);
         if (Status != InvoiceStatus.Draft)
-            throw new InvalidOperationException($"Invoice {Number} is {Status}: only a draft can be renumbered.");
+            throw new DomainException($"Invoice {Number} is {Status}: only a draft can be renumbered.");
 
         Number = number;
     }

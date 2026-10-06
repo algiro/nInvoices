@@ -4,6 +4,7 @@ using System.Xml;
 using nInvoices.Application.Services.Holidays;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Compliance.EInvoice;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Compliance.Spain.Facturae;
 
@@ -65,9 +66,9 @@ public sealed class FacturaeFormat : IEInvoiceFormat
     {
         var issues = Validate(invoice);
         if (issues.Count > 0)
-            throw new InvalidOperationException("The invoice is not valid Facturae: " + string.Join("; ", issues.Select(i => i.Message)));
+            throw new DomainException("The invoice is not valid Facturae: " + string.Join("; ", issues.Select(i => i.Message)));
         if (signingCertificate is null)
-            throw new InvalidOperationException("Facturae invoices must be signed: upload a signing certificate in the Spanish compliance settings");
+            throw new DomainException("Facturae invoices must be signed: upload a signing certificate in the Spanish compliance settings");
 
         var xml = FacturaeXmlBuilder.Build(invoice);
 

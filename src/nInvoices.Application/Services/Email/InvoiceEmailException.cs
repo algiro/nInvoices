@@ -1,10 +1,12 @@
+using nInvoices.Core.Exceptions;
+
 namespace nInvoices.Application.Services.Email;
 
 /// <summary>
 /// An invoice email could not be prepared or drafted for a reason the user can fix.
 /// <see cref="Code"/> lets the UI react (e.g. offer "Reconnect Gmail").
 /// </summary>
-public sealed class InvoiceEmailException : Exception
+public sealed class InvoiceEmailException : DomainException
 {
     public const string GmailNotConfigured = "gmail_not_configured";
     public const string GmailNotConnected = "gmail_not_connected";
@@ -14,7 +16,8 @@ public sealed class InvoiceEmailException : Exception
     public const string InvalidTemplate = "invalid_template";
     public const string AttachmentFailed = "attachment_failed";
 
-    public string Code { get; }
+    /// <summary>The Gmail connection has to be set up or renewed before an email can be drafted.</summary>
+    public bool IsGmailSetupProblem => Code is GmailNotConfigured or GmailNotConnected or GmailReconnectRequired;
 
     public InvoiceEmailException(string code, string message, Exception? innerException = null)
         : base(message, innerException)

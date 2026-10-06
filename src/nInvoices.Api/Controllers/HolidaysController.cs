@@ -55,16 +55,9 @@ public sealed class HolidaysController : ControllerBase
         [FromQuery] int? year,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var calendar = await _mediator.Send(
-                new GetHolidayCalendarQuery(countryCode, year ?? DateTime.Today.Year), cancellationToken);
-            return calendar is null ? NotFound() : Ok(calendar);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var calendar = await _mediator.Send(
+            new GetHolidayCalendarQuery(countryCode, year ?? DateTime.Today.Year), cancellationToken);
+        return calendar is null ? NotFound() : Ok(calendar);
     }
 
     /// <summary>Adds a rule to a country's calendar (creating the calendar if needed).</summary>
@@ -76,16 +69,9 @@ public sealed class HolidaysController : ControllerBase
         [FromBody] SaveHolidayRuleDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var rule = await _mediator.Send(new CreateHolidayRuleCommand(countryCode, dto), cancellationToken);
-            _logger.LogInformation("Added holiday rule {RuleId} to {CountryCode}", rule.Id, countryCode);
-            return Ok(rule);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var rule = await _mediator.Send(new CreateHolidayRuleCommand(countryCode, dto), cancellationToken);
+        _logger.LogInformation("Added holiday rule {RuleId} to {CountryCode}", rule.Id, countryCode);
+        return Ok(rule);
     }
 
     /// <summary>Changes a holiday rule.</summary>
@@ -98,15 +84,8 @@ public sealed class HolidaysController : ControllerBase
         [FromBody] SaveHolidayRuleDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var rule = await _mediator.Send(new UpdateHolidayRuleCommand(id, dto), cancellationToken);
-            return rule is null ? NotFound() : Ok(rule);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var rule = await _mediator.Send(new UpdateHolidayRuleCommand(id, dto), cancellationToken);
+        return rule is null ? NotFound() : Ok(rule);
     }
 
     /// <summary>Removes a holiday rule.</summary>
@@ -126,19 +105,12 @@ public sealed class HolidaysController : ControllerBase
         [FromQuery] int? year,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var calendar = await _mediator.Send(
-                new ResetHolidayCalendarCommand(countryCode, year ?? DateTime.Today.Year), cancellationToken);
-            if (calendar is null)
-                return NotFound(new { message = $"There are no built-in holidays for {countryCode.ToUpperInvariant()}" });
+        var calendar = await _mediator.Send(
+            new ResetHolidayCalendarCommand(countryCode, year ?? DateTime.Today.Year), cancellationToken);
+        if (calendar is null)
+            return NotFound(new { message = $"There are no built-in holidays for {countryCode.ToUpperInvariant()}" });
 
-            _logger.LogInformation("Holiday calendar {CountryCode} reset to the built-in rules", calendar.CountryCode);
-            return Ok(calendar);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        _logger.LogInformation("Holiday calendar {CountryCode} reset to the built-in rules", calendar.CountryCode);
+        return Ok(calendar);
     }
 }

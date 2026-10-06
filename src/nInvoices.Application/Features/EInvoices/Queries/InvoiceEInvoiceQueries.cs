@@ -3,6 +3,7 @@ using nInvoices.Application.Compliance.EInvoice;
 using nInvoices.Application.DTOs;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.EInvoices.Queries;
 
@@ -31,7 +32,7 @@ public sealed class GetInvoiceEInvoicesQueryHandler : IRequestHandler<GetInvoice
             return [];
 
         var invoice = await _invoices.GetByIdAsync(request.InvoiceId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Invoice {request.InvoiceId} not found");
+            ?? throw new NotFoundException($"Invoice {request.InvoiceId} not found");
 
         return statuses.Select(s => EInvoiceMapper.ToDto(s, invoice.Number.ToString())).ToList();
     }

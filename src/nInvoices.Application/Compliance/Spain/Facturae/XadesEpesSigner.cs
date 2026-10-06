@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using System.Xml;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Compliance.Spain.Facturae;
 
@@ -36,7 +37,7 @@ internal static class XadesEpesSigner
     public static void Sign(XmlDocument document, X509Certificate2 certificate, DateTime signingTimeUtc)
     {
         using var rsa = certificate.GetRSAPrivateKey()
-            ?? throw new InvalidOperationException("The signing certificate has no RSA private key");
+            ?? throw new DomainException("The signing certificate has no RSA private key");
 
         var id = Guid.NewGuid().ToString("N")[..16];
         var signatureId = $"Signature-{id}";

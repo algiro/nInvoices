@@ -6,14 +6,13 @@ using nInvoices.Core.Configuration;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 using Microsoft.Extensions.Options;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Compliance.Spain.Verifactu;
 
 /// <summary>An invoice cannot be recorded because it does not meet Verifactu rules; <see cref="Issues"/> says why.</summary>
-public sealed class VerifactuException : InvalidOperationException
+public sealed class VerifactuException : DomainException
 {
-    public IReadOnlyList<ComplianceIssue> Issues { get; }
-
     public VerifactuException(IReadOnlyList<ComplianceIssue> issues)
         : base("Verifactu cannot record this invoice: " + string.Join("; ", issues.Select(i => i.Message)))
     {
@@ -160,7 +159,7 @@ public sealed class VerifactuService : IVerifactuService
     public async Task EnsureCanDeleteAsync(Invoice invoice, CancellationToken cancellationToken = default)
     {
         if ((await _records.GetByInvoiceAsync(invoice.Id, cancellationToken)).Count > 0)
-            throw new InvalidOperationException(
+            throw new DomainException(
                 $"Invoice {invoice.Number} was recorded for Verifactu and cannot be deleted: cancel it instead, which records the cancellation.");
     }
 

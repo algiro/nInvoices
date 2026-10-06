@@ -88,18 +88,11 @@ public sealed class InvoicesController : ControllerBase
             _ => BulkInvoiceStatusAction.MarkAsPaid
         };
 
-        try
-        {
-            var result = await _mediator.Send(new BulkChangeInvoiceStatusCommand(bulkAction, dto.Ids ?? []), cancellationToken);
-            _logger.LogInformation(
-                "Bulk {Action}: {Succeeded} changed, {Skipped} skipped",
-                bulkAction, result.Succeeded.Count, result.Skipped.Count);
-            return Ok(result);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        var result = await _mediator.Send(new BulkChangeInvoiceStatusCommand(bulkAction, dto.Ids ?? []), cancellationToken);
+        _logger.LogInformation(
+            "Bulk {Action}: {Succeeded} changed, {Skipped} skipped",
+            bulkAction, result.Succeeded.Count, result.Skipped.Count);
+        return Ok(result);
     }
 
     /// <summary>
@@ -111,16 +104,9 @@ public sealed class InvoicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> BulkDownload([FromBody] BulkInvoiceDownloadDto dto, CancellationToken cancellationToken)
     {
-        try
-        {
-            var zip = await _mediator.Send(
-                new GetInvoiceDocumentsZipQuery(dto.Ids ?? [], dto.IncludeMonthlyReports), cancellationToken);
-            return File(zip.Content, "application/zip", zip.FileName);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        var zip = await _mediator.Send(
+            new GetInvoiceDocumentsZipQuery(dto.Ids ?? [], dto.IncludeMonthlyReports), cancellationToken);
+        return File(zip.Content, "application/zip", zip.FileName);
     }
 
     /// <summary>
@@ -181,21 +167,13 @@ public sealed class InvoicesController : ControllerBase
         [FromBody] GenerateInvoiceDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var command = new GenerateInvoiceCommand(dto);
-            var invoice = await _mediator.Send(command, cancellationToken);
+        var command = new GenerateInvoiceCommand(dto);
+        var invoice = await _mediator.Send(command, cancellationToken);
 
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = invoice.Id },
-                invoice);
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Failed to generate invoice");
-            return BadRequest(new { error = ex.Message });
-        }
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = invoice.Id },
+            invoice);
     }
 
     /// <summary>
@@ -222,17 +200,9 @@ public sealed class InvoicesController : ControllerBase
         [FromBody] UpdateInvoiceDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var command = new UpdateInvoiceCommand(id, dto);
-            await _mediator.Send(command, cancellationToken);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Failed to update invoice {InvoiceId}", id);
-            return BadRequest(new { error = ex.Message });
-        }
+        var command = new UpdateInvoiceCommand(id, dto);
+        await _mediator.Send(command, cancellationToken);
+        return NoContent();
     }
 
     /// <summary>
@@ -245,17 +215,9 @@ public sealed class InvoicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Finalize(long id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var command = new FinalizeInvoiceCommand(id);
-            await _mediator.Send(command, cancellationToken);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Failed to finalize invoice {InvoiceId}", id);
-            return BadRequest(new { error = ex.Message });
-        }
+        var command = new FinalizeInvoiceCommand(id);
+        await _mediator.Send(command, cancellationToken);
+        return NoContent();
     }
 
     /// <summary>
@@ -268,17 +230,9 @@ public sealed class InvoicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> MarkAsSent(long id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var command = new MarkAsSentCommand(id);
-            await _mediator.Send(command, cancellationToken);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Failed to mark invoice as sent {InvoiceId}", id);
-            return BadRequest(new { error = ex.Message });
-        }
+        var command = new MarkAsSentCommand(id);
+        await _mediator.Send(command, cancellationToken);
+        return NoContent();
     }
 
     /// <summary>
@@ -291,17 +245,9 @@ public sealed class InvoicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> MarkAsPaid(long id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var command = new MarkAsPaidCommand(id);
-            await _mediator.Send(command, cancellationToken);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Failed to mark invoice as paid {InvoiceId}", id);
-            return BadRequest(new { error = ex.Message });
-        }
+        var command = new MarkAsPaidCommand(id);
+        await _mediator.Send(command, cancellationToken);
+        return NoContent();
     }
 
     /// <summary>
@@ -314,17 +260,9 @@ public sealed class InvoicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Cancel(long id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var command = new CancelInvoiceCommand(id);
-            await _mediator.Send(command, cancellationToken);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Failed to cancel invoice {InvoiceId}", id);
-            return BadRequest(new { error = ex.Message });
-        }
+        var command = new CancelInvoiceCommand(id);
+        await _mediator.Send(command, cancellationToken);
+        return NoContent();
     }
 
     /// <summary>
@@ -341,21 +279,13 @@ public sealed class InvoicesController : ControllerBase
         [FromQuery] bool force = false,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var command = new DeleteInvoiceCommand(id, force);
-            await _mediator.Send(command, cancellationToken);
-            
-            if (force)
-                _logger.LogWarning("Invoice {InvoiceId} was force deleted", id);
-            
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Failed to delete invoice {InvoiceId}", id);
-            return BadRequest(new { error = ex.Message });
-        }
+        var command = new DeleteInvoiceCommand(id, force);
+        await _mediator.Send(command, cancellationToken);
+        
+        if (force)
+            _logger.LogWarning("Invoice {InvoiceId} was force deleted", id);
+        
+        return NoContent();
     }
     /// <summary>
     /// The structured e-invoice formats (Facturae...) that apply to the invoice, with the generated file
@@ -366,14 +296,7 @@ public sealed class InvoicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IReadOnlyList<InvoiceEInvoiceDto>>> GetEInvoices(long id, CancellationToken cancellationToken)
     {
-        try
-        {
-            return Ok(await _mediator.Send(new GetInvoiceEInvoicesQuery(id), cancellationToken));
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
+        return Ok(await _mediator.Send(new GetInvoiceEInvoicesQuery(id), cancellationToken));
     }
 
     /// <summary>
@@ -386,18 +309,7 @@ public sealed class InvoicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IReadOnlyList<EInvoiceGenerationDto>>> GenerateEInvoices(long id, CancellationToken cancellationToken)
     {
-        try
-        {
-            return Ok(await _mediator.Send(new GenerateInvoiceEInvoicesCommand(id), cancellationToken));
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        return Ok(await _mediator.Send(new GenerateInvoiceEInvoicesCommand(id), cancellationToken));
     }
 
     /// <summary>Downloads the generated e-invoice file (e.g. the signed Facturae XML) of an invoice.</summary>
@@ -419,14 +331,7 @@ public sealed class InvoicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IReadOnlyList<EInvoiceChannelDto>>> GetEInvoiceChannels(long id, CancellationToken cancellationToken)
     {
-        try
-        {
-            return Ok(await _mediator.Send(new GetInvoiceChannelsQuery(id), cancellationToken));
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
+        return Ok(await _mediator.Send(new GetInvoiceChannelsQuery(id), cancellationToken));
     }
 
     /// <summary>
@@ -475,18 +380,10 @@ public sealed class InvoicesController : ControllerBase
         if (invoice == null)
             return NotFound();
 
-        try
-        {
-            var pdfBytes = _pdfExportService.GenerateInvoicePdf(invoice);
-            var fileName = $"Invoice-{invoice.Number}.pdf";
+        var pdfBytes = _pdfExportService.GenerateInvoicePdf(invoice);
+        var fileName = $"Invoice-{invoice.Number}.pdf";
 
-            return File(pdfBytes, "application/pdf", fileName);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to generate PDF for invoice {InvoiceId}", id);
-            return StatusCode(500, new { error = "Failed to generate PDF" });
-        }
+        return File(pdfBytes, "application/pdf", fileName);
     }
 
     /// <summary>
@@ -508,18 +405,10 @@ public sealed class InvoicesController : ControllerBase
         if (invoice.Type != Core.Enums.InvoiceType.Monthly)
             return BadRequest(new { error = "Calendar export is only available for monthly invoices" });
 
-        try
-        {
-            var pdfBytes = _pdfExportService.GenerateWorkedDaysCalendarPdf(invoice);
-            var fileName = $"Calendar-{invoice.Year}-{invoice.Month:00}-{invoice.Customer?.Name}.pdf";
+        var pdfBytes = _pdfExportService.GenerateWorkedDaysCalendarPdf(invoice);
+        var fileName = $"Calendar-{invoice.Year}-{invoice.Month:00}-{invoice.Customer?.Name}.pdf";
 
-            return File(pdfBytes, "application/pdf", fileName);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to generate calendar PDF for invoice {InvoiceId}", id);
-            return StatusCode(500, new { error = "Failed to generate calendar PDF" });
-        }
+        return File(pdfBytes, "application/pdf", fileName);
     }
 
     /// <summary>
@@ -544,31 +433,18 @@ public sealed class InvoicesController : ControllerBase
         if (invoice.Type != Core.Enums.InvoiceType.Monthly)
             return BadRequest(new { error = "Monthly reports are only available for monthly invoices" });
 
-        try
-        {
-            var customer = await customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken);
-            if (customer == null)
-                return NotFound(new { error = "Customer not found" });
+        var customer = await customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken);
+        if (customer == null)
+            return NotFound(new { error = "Customer not found" });
 
-            // Generate HTML from template
-            var html = await monthlyReportService.GenerateReportHtmlAsync(invoice, customer, cancellationToken);
+        // Generate HTML from template
+        var html = await monthlyReportService.GenerateReportHtmlAsync(invoice, customer, cancellationToken);
 
-            // Convert to PDF
-            var pdfBytes = await htmlToPdfConverter.ConvertAsync(html, cancellationToken);
-            var fileName = $"MonthlyReport-{invoice.Year}-{invoice.Month:00}-{customer.Name}.pdf";
+        // Convert to PDF
+        var pdfBytes = await htmlToPdfConverter.ConvertAsync(html, cancellationToken);
+        var fileName = $"MonthlyReport-{invoice.Year}-{invoice.Month:00}-{customer.Name}.pdf";
 
-            return File(pdfBytes, "application/pdf", fileName);
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Monthly report template not found for invoice {InvoiceId}", id);
-            return BadRequest(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to generate monthly report PDF for invoice {InvoiceId}", id);
-            return StatusCode(500, new { error = "Failed to generate monthly report PDF" });
-        }
+        return File(pdfBytes, "application/pdf", fileName);
     }
 
     /// <summary>
@@ -582,23 +458,11 @@ public sealed class InvoicesController : ControllerBase
     {
         var invoiceGenerationService = HttpContext.RequestServices.GetRequiredService<Application.Services.IInvoiceGenerationService>();
         
-        try
-        {
-            // Re-render the HTML with the current active template
-            await invoiceGenerationService.RegenerateInvoiceHtmlAsync(id, cancellationToken);
-            
-            _logger.LogInformation("Invoice {InvoiceId} HTML re-rendered successfully with current template", id);
-            return Ok(new { message = "Invoice PDF regenerated successfully. Download the invoice to see the updated version." });
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to regenerate invoice PDF for {InvoiceId}", id);
-            return StatusCode(500, new { error = "Failed to regenerate invoice PDF" });
-        }
+        // Re-render the HTML with the current active template
+        await invoiceGenerationService.RegenerateInvoiceHtmlAsync(id, cancellationToken);
+        
+        _logger.LogInformation("Invoice {InvoiceId} HTML re-rendered successfully with current template", id);
+        return Ok(new { message = "Invoice PDF regenerated successfully. Download the invoice to see the updated version." });
     }
 
     /// <summary>
@@ -620,33 +484,20 @@ public sealed class InvoicesController : ControllerBase
         if (invoice.Type != Core.Enums.InvoiceType.Monthly)
             return BadRequest(new { error = "Monthly reports are only available for monthly invoices" });
 
-        try
-        {
-            // Monthly reports don't store rendered content - they're generated on-demand
-            // So "regeneration" is just verification that it can be generated
-            var customerRepository = HttpContext.RequestServices.GetRequiredService<IRepository<Core.Entities.Customer>>();
-            var monthlyReportService = HttpContext.RequestServices.GetRequiredService<Application.Services.IMonthlyReportGenerationService>();
-            
-            var customer = await customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken);
-            if (customer == null)
-                return NotFound(new { error = "Customer not found" });
+        // Monthly reports don't store rendered content - they're generated on-demand
+        // So "regeneration" is just verification that it can be generated
+        var customerRepository = HttpContext.RequestServices.GetRequiredService<IRepository<Core.Entities.Customer>>();
+        var monthlyReportService = HttpContext.RequestServices.GetRequiredService<Application.Services.IMonthlyReportGenerationService>();
+        
+        var customer = await customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken);
+        if (customer == null)
+            return NotFound(new { error = "Customer not found" });
 
-            // Test generation with current template
-            _ = await monthlyReportService.GenerateReportHtmlAsync(invoice, customer, cancellationToken);
+        // Test generation with current template
+        _ = await monthlyReportService.GenerateReportHtmlAsync(invoice, customer, cancellationToken);
 
-            _logger.LogInformation("Monthly report for invoice {InvoiceId} verified successfully", id);
-            return Ok(new { message = "Monthly report is ready to be generated with current template" });
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Monthly report template not found for invoice {InvoiceId}", id);
-            return BadRequest(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to verify monthly report for invoice {InvoiceId}", id);
-            return StatusCode(500, new { error = "Failed to verify monthly report" });
-        }
+        _logger.LogInformation("Monthly report for invoice {InvoiceId} verified successfully", id);
+        return Ok(new { message = "Monthly report is ready to be generated with current template" });
     }
 
     /// <summary>
@@ -670,17 +521,10 @@ public sealed class InvoicesController : ControllerBase
         [FromBody] UpdateInvoiceNumberingDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var numbering = await _mediator.Send(new UpdateInvoiceNumberingCommand(dto), cancellationToken);
+        var numbering = await _mediator.Send(new UpdateInvoiceNumberingCommand(dto), cancellationToken);
 
-            _logger.LogInformation("Updated invoice numbering: next value {Value}", numbering.CurrentValue);
-            return Ok(numbering);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        _logger.LogInformation("Updated invoice numbering: next value {Value}", numbering.CurrentValue);
+        return Ok(numbering);
     }
 
     /// <summary>
@@ -713,25 +557,8 @@ public sealed class InvoicesController : ControllerBase
         [FromBody] CreateInvoiceEmailDraftDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var email = await _mediator.Send(new CreateInvoiceEmailDraftCommand(id, dto), cancellationToken);
-            return StatusCode(StatusCodes.Status201Created, email);
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (InvoiceEmailException ex)
-        {
-            _logger.LogWarning(ex, "Gmail draft for invoice {InvoiceId} not created: {Code}", id, ex.Code);
-            var body = new { error = ex.Message, code = ex.Code };
-            return ex.Code is InvoiceEmailException.GmailNotConfigured
-                or InvoiceEmailException.GmailNotConnected
-                or InvoiceEmailException.GmailReconnectRequired
-                ? Conflict(body)
-                : BadRequest(body);
-        }
+        var email = await _mediator.Send(new CreateInvoiceEmailDraftCommand(id, dto), cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, email);
     }
 
     /// <summary>The Gmail drafts created for an invoice, newest first.</summary>

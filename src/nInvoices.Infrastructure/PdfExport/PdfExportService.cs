@@ -4,6 +4,7 @@ using QuestPDF.Infrastructure;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 using nInvoices.Application.Services;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Infrastructure.PdfExport;
 
@@ -38,7 +39,7 @@ public sealed class PdfExportService : IPdfExportService
     public byte[] GenerateWorkedDaysCalendarPdf(Invoice invoice)
     {
         if (invoice.Type != Core.Enums.InvoiceType.Monthly)
-            throw new InvalidOperationException("Calendar export is only available for monthly invoices");
+            throw new DomainException("Calendar export is only available for monthly invoices");
 
         var document = new WorkedDaysCalendarDocument(invoice);
         return document.GeneratePdf();

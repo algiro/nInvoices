@@ -95,15 +95,8 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
         [FromBody] CreateMonthlyReportTemplateDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var template = await _mediator.Send(new CreateMonthlyReportTemplateCommand(dto), cancellationToken);
-            return CreatedAtAction(nameof(GetById), new { id = template.Id }, template);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        var template = await _mediator.Send(new CreateMonthlyReportTemplateCommand(dto), cancellationToken);
+        return CreatedAtAction(nameof(GetById), new { id = template.Id }, template);
     }
 
     /// <summary>
@@ -119,15 +112,8 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
         [FromBody] UpdateMonthlyReportTemplateDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var template = await _mediator.Send(new UpdateMonthlyReportTemplateCommand(id, dto), cancellationToken);
-            return template is null ? NotFound() : Ok(template);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        var template = await _mediator.Send(new UpdateMonthlyReportTemplateCommand(id, dto), cancellationToken);
+        return template is null ? NotFound() : Ok(template);
     }
 
     /// <summary>

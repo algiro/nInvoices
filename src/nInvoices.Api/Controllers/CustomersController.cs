@@ -67,22 +67,11 @@ public sealed class CustomersController : ControllerBase
         [FromBody] CreateCustomerDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var command = new CreateCustomerCommand(dto);
-            var customer = await _mediator.Send(command, cancellationToken);
+        var command = new CreateCustomerCommand(dto);
+        var customer = await _mediator.Send(command, cancellationToken);
 
-            _logger.LogInformation("Created customer with ID {CustomerId}", customer.Id);
-            return CreatedAtAction(nameof(GetById), new { id = customer.Id }, customer);
-        }
-        catch (nInvoices.Application.Features.Compliance.Commands.ComplianceValidationException ex)
-        {
-            return BadRequest(new { error = ex.Message, issues = ex.Issues });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        _logger.LogInformation("Created customer with ID {CustomerId}", customer.Id);
+        return CreatedAtAction(nameof(GetById), new { id = customer.Id }, customer);
     }
 
     /// <summary>
@@ -97,27 +86,11 @@ public sealed class CustomersController : ControllerBase
         [FromBody] UpdateCustomerDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var command = new UpdateCustomerCommand(id, dto);
-            var customer = await _mediator.Send(command, cancellationToken);
+        var command = new UpdateCustomerCommand(id, dto);
+        var customer = await _mediator.Send(command, cancellationToken);
 
-            _logger.LogInformation("Updated customer with ID {CustomerId}", id);
-            return Ok(customer);
-        }
-        catch (KeyNotFoundException)
-        {
-            _logger.LogWarning("Customer with ID {CustomerId} not found for update", id);
-            return NotFound();
-        }
-        catch (nInvoices.Application.Features.Compliance.Commands.ComplianceValidationException ex)
-        {
-            return BadRequest(new { error = ex.Message, issues = ex.Issues });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        _logger.LogInformation("Updated customer with ID {CustomerId}", id);
+        return Ok(customer);
     }
 
     /// <summary>

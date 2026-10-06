@@ -1,3 +1,5 @@
+using nInvoices.Core.Exceptions;
+
 namespace nInvoices.Core.ValueObjects;
 
 /// <summary>
@@ -28,7 +30,7 @@ public sealed record Money
     public static Money operator +(Money left, Money right)
     {
         if (left.Currency != right.Currency)
-            throw new InvalidOperationException(
+            throw new DomainException(
                 $"Cannot add different currencies: {left.Currency} and {right.Currency}");
 
         return new Money(left.Amount + right.Amount, left.Currency);
@@ -37,7 +39,7 @@ public sealed record Money
     public static Money operator -(Money left, Money right)
     {
         if (left.Currency != right.Currency)
-            throw new InvalidOperationException(
+            throw new DomainException(
                 $"Cannot subtract different currencies: {left.Currency} and {right.Currency}");
 
         return new Money(left.Amount - right.Amount, left.Currency);

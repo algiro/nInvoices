@@ -83,25 +83,13 @@ public sealed class TaxesController : ControllerBase
         [FromBody] CreateTaxDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var command = new CreateTaxCommand(dto);
-            var tax = await _mediator.Send(command, cancellationToken);
+        var command = new CreateTaxCommand(dto);
+        var tax = await _mediator.Send(command, cancellationToken);
 
-            _logger.LogInformation(
-                "Created tax configuration {TaxId} for customer {CustomerId} with handler {HandlerId}", 
-                tax.TaxId, tax.CustomerId, tax.HandlerId);
-            return CreatedAtAction(nameof(GetById), new { id = tax.Id }, tax);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            _logger.LogWarning(ex, "Customer not found when creating tax");
-            return NotFound(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        _logger.LogInformation(
+            "Created tax configuration {TaxId} for customer {CustomerId} with handler {HandlerId}", 
+            tax.TaxId, tax.CustomerId, tax.HandlerId);
+        return CreatedAtAction(nameof(GetById), new { id = tax.Id }, tax);
     }
 
     /// <summary>
@@ -116,23 +104,11 @@ public sealed class TaxesController : ControllerBase
         [FromBody] UpdateTaxDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var command = new UpdateTaxCommand(id, dto);
-            var tax = await _mediator.Send(command, cancellationToken);
+        var command = new UpdateTaxCommand(id, dto);
+        var tax = await _mediator.Send(command, cancellationToken);
 
-            _logger.LogInformation("Updated tax configuration with ID {TaxId}", id);
-            return Ok(tax);
-        }
-        catch (KeyNotFoundException)
-        {
-            _logger.LogWarning("Tax with ID {TaxId} not found for update", id);
-            return NotFound();
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        _logger.LogInformation("Updated tax configuration with ID {TaxId}", id);
+        return Ok(tax);
     }
 
     /// <summary>
