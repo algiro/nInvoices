@@ -30,10 +30,6 @@ public interface IInvoiceGenerationService
         GenerateInvoiceDto dto,
         CancellationToken cancellationToken = default);
 
-    Task<byte[]> GenerateInvoicePdfAsync(
-        long invoiceId,
-        CancellationToken cancellationToken = default);
-    
     Task RegenerateInvoiceHtmlAsync(
         long invoiceId,
         CancellationToken cancellationToken = default);
@@ -63,7 +59,6 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     private readonly IWorkDayRepository _workDayRepository;
     private readonly IProjectResolver _projectResolver;
     private readonly ITemplateRenderer _templateRenderer;
-    private readonly IHtmlToPdfConverter _htmlToPdfConverter;
     private readonly ITaxCalculationService _taxCalculationService;
     private readonly IInvoiceNumbering _numbering;
     private readonly IUnitOfWork _unitOfWork;
@@ -79,7 +74,6 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         IWorkDayRepository workDayRepository,
         IProjectResolver projectResolver,
         ITemplateRenderer templateRenderer,
-        IHtmlToPdfConverter htmlToPdfConverter,
         ITaxCalculationService taxCalculationService,
         IInvoiceNumbering numbering,
         IUnitOfWork unitOfWork,
@@ -94,7 +88,6 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         _workDayRepository = workDayRepository;
         _projectResolver = projectResolver;
         _templateRenderer = templateRenderer;
-        _htmlToPdfConverter = htmlToPdfConverter;
         _taxCalculationService = taxCalculationService;
         _numbering = numbering;
         _unitOfWork = unitOfWork;
@@ -231,24 +224,6 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         invoice.SetRenderedContent(renderedHtml);
 
         return new InvoiceDraft(invoice, customer, workDays?.ToList() ?? []);
-    }
-
-    public async Task<byte[]> GenerateInvoicePdfAsync(
-        long invoiceId,
-        CancellationToken cancellationToken = default)
-    {
-        var invoice = await _invoiceRepository.GetByIdAsync(invoiceId, cancellationToken)
-            ?? throw new NotFoundException($"Invoice {invoiceId} not found");
-
-        if (string.IsNullOrEmpty(invoice.RenderedContent))
-        {
-            throw new DomainException($"Invoice {invoiceId} has no rendered content. Generate invoice first.");
-        }
-
-        // NEW: Convert HTML to PDF using QuestPDF
-        var pdfBytes = await _htmlToPdfConverter.ConvertAsync(invoice.RenderedContent, cancellationToken);
-        
-        return pdfBytes;
     }
 
     public async Task RegenerateInvoiceHtmlAsync(

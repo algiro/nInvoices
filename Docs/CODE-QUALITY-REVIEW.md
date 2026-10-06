@@ -16,7 +16,7 @@ The problems sit at the edges of that architecture. Several rules the design imp
 | 4 | No global error handling; exceptions used as an untyped protocol | **High** | M — ✅ done |
 | 5 | Controllers bypass the Application layer (DbContext, service locator) | Medium | M — ✅ done |
 | 6 | Two schema-evolution mechanisms (EF/SQLite vs hand-written PG SQL) | Medium | M — ✅ done |
-| 7 | Sync-over-async in the PDF path | Medium | S |
+| 7 | Sync-over-async in the PDF path | Medium | S — ✅ done |
 | 8 | Dead and duplicated code | Medium | S |
 | 9 | Oversized classes and components | Medium | M–L |
 | 10 | No CI, no shared build settings, no analyzers | Medium | S |
@@ -191,7 +191,15 @@ The project documents controllers as _"thin controllers that dispatch through Me
 - At minimum, add a CI test with Testcontainers PostgreSQL that applies all `.sql` scripts to an empty DB and compares the result with `EnsureCreated` output, or runs the integration tests on it.
 - Decide whether SQLite is still a supported production target. If it's only for development, consider using PG everywhere (Aspire already provides it) and drop one provider.
 
-## 7. Sync-over-async in the PDF path — Medium
+## 7. Sync-over-async in the PDF path — Medium — ✅ Done (2026-10-06)
+
+> **Resolution.** `IPdfExportService` moved from Core to `Application/Services` (next to `IHtmlToPdfConverter`) and
+> `GenerateInvoicePdfAsync(invoice, cancellationToken)` awaits the headless-browser conversion instead of
+> blocking a thread on it. It is now the only place that decides "rendered template or built-in layout": the
+> email composer, which repeated that choice, calls it, and the unused third copy
+> (`IInvoiceGenerationService.GenerateInvoicePdfAsync`) is deleted. The calendar stays synchronous (QuestPDF draws
+> it in memory). The QuestPDF licence is set once in `AddPdfExport` (§13). `PdfExportServiceTests` proves the
+> call returns an unfinished task while the browser renders (a blocking version fails it in 2 s, checked).
 
 `PdfExportService.GenerateInvoicePdf` calls `_htmlToPdfConverter.ConvertAsync(...).GetAwaiter().GetResult()` (`PdfExportService.cs:30`). This contradicts the project's own rule ("never `.Result` / `.Wait()`"). It blocks a thread-pool thread for the full headless-Chrome render on every PDF download and every email-draft attachment. `IPdfExportService` (sync, in **Core**) also takes no `CancellationToken`.
 
@@ -261,7 +269,7 @@ Size is a symptom, not the problem. These files mix several responsibilities, th
 - `Microsoft.AspNetCore.Http.Abstractions` **2.3.11** (Infrastructure): a legacy ASP.NET Core 2.x package on a net10 project. Use `<FrameworkReference Include="Microsoft.AspNetCore.App" />` instead.
 - `Microsoft.Extensions.Options` **9.0.1** (Application), while everything else is 10.0.x.
 - `Aspire.Hosting.Keycloak` is a preview build (acceptable since AppHost is dev-only, but pin and track it).
-- `QuestPDF.Settings.License` is set inside the `PdfExportService` constructor on every scope. Move it to startup.
+- ~~`QuestPDF.Settings.License` is set inside the `PdfExportService` constructor on every scope. Move it to startup.~~ ✅ Set once in `AddPdfExport` (§7).
 
 ## 14. Repository hygiene — Low
 

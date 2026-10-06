@@ -1,17 +1,14 @@
 using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
-using nInvoices.Core.Entities;
-using nInvoices.Core.Interfaces;
 using nInvoices.Application.Services;
+using nInvoices.Core.Entities;
+using nInvoices.Core.Enums;
 using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Infrastructure.PdfExport;
 
 /// <summary>
-/// PDF export service implementation using QuestPDF.
-/// Implements professional invoice and calendar PDF generation.
-/// Follows Open/Closed Principle - extensible through inheritance or composition.
+/// The PDF documents of an invoice: its rendered template through <see cref="IHtmlToPdfConverter"/>,
+/// or the built-in QuestPDF layouts.
 /// </summary>
 public sealed class PdfExportService : IPdfExportService
 {
@@ -19,29 +16,26 @@ public sealed class PdfExportService : IPdfExportService
 
     public PdfExportService(IHtmlToPdfConverter htmlToPdfConverter)
     {
-        QuestPDF.Settings.License = LicenseType.Community;
         _htmlToPdfConverter = htmlToPdfConverter;
     }
 
-    public byte[] GenerateInvoicePdf(Invoice invoice)
+    public async Task<byte[]> GenerateInvoicePdfAsync(Invoice invoice, CancellationToken cancellationToken = default)
     {
-        // Use custom HTML template if rendered content is available
-        if (!string.IsNullOrWhiteSpace(invoice.RenderedContent))
-        {
-            return _htmlToPdfConverter.ConvertAsync(invoice.RenderedContent).GetAwaiter().GetResult();
-        }
+        ArgumentNullException.ThrowIfNull(invoice);
 
-        // Fallback to default invoice layout
-        var document = new InvoicePdfDocument(invoice);
-        return document.GeneratePdf();
+        // The invoice as the user's template rendered it; the built-in layout only when there is none
+        if (!string.IsNullOrWhiteSpace(invoice.RenderedContent))
+            return await _htmlToPdfConverter.ConvertAsync(invoice.RenderedContent, cancellationToken);
+
+        return new InvoicePdfDocument(invoice).GeneratePdf();
     }
 
     public byte[] GenerateWorkedDaysCalendarPdf(Invoice invoice)
     {
-        if (invoice.Type != Core.Enums.InvoiceType.Monthly)
+        ArgumentNullException.ThrowIfNull(invoice);
+        if (invoice.Type != InvoiceType.Monthly)
             throw new DomainException("Calendar export is only available for monthly invoices");
 
-        var document = new WorkedDaysCalendarDocument(invoice);
-        return document.GeneratePdf();
+        return new WorkedDaysCalendarDocument(invoice).GeneratePdf();
     }
 }
