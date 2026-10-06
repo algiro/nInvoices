@@ -17,6 +17,7 @@
     <PackageReference Include="NUnit.Analyzers" Version="4.7.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="5.0.0" />
     <PackageReference Include="Shouldly" Version="4.3.0" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.15.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\nInvoices.Infrastructure\nInvoices.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\nInvoices.Infrastructure.Migrations.PostgreSql\nInvoices.Infrastructure.Migrations.PostgreSql.csproj" />
   </ItemGroup>
 
 </Project>

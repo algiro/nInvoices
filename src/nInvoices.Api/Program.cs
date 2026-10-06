@@ -240,16 +240,28 @@ var complianceRegistry = app.Services.GetRequiredService<nInvoices.Application.C
 Log.Information("Compliance regimes offered: {Countries}",
     complianceRegistry.Offered.Count == 0 ? "none" : string.Join(", ", complianceRegistry.Offered.Select(m => m.CountryCode)));
 
-// Database:EnsureCreated builds the schema from the current EF model on an EMPTY database
-// (fresh Docker installs, the Aspire AppHost); on a database that already has tables it does
-// nothing. EF migrations are SQLite-scaffolded and cannot run under Npgsql, so later schema
-// changes to an existing PostgreSQL database go through docker/migrations-postgres/*.sql.
-if (app.Configuration.GetValue<bool>("Database:EnsureCreated"))
+// PostgreSQL (production, Docker, the Aspire AppHost): the schema is the EF migrations of
+// nInvoices.Infrastructure.Migrations.PostgreSql, applied here before anything touches the database:
+// all of them on an empty database, the pending ones on an existing one.
+// SQLite (local development) keeps its own migrations (dotnet ef database update); Database:EnsureCreated
+// builds its schema from the model on an empty database instead.
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.EnsureCreated();
-    Log.Information("Database:EnsureCreated — schema ensured from the EF model");
+    var database = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database;
+    if (database.IsNpgsql())
+    {
+        var pending = (await database.GetPendingMigrationsAsync()).ToList();
+        if (pending.Count > 0)
+        {
+            Log.Information("Applying {Count} database migrations: {Migrations}", pending.Count, string.Join(", ", pending));
+            await database.MigrateAsync();
+        }
+    }
+    else if (app.Configuration.GetValue<bool>("Database:EnsureCreated"))
+    {
+        await database.EnsureCreatedAsync();
+        Log.Information("Database:EnsureCreated — schema ensured from the EF model");
+    }
 }
 
 // Data is scoped per user. Rows created before that have no owner and stay invisible until

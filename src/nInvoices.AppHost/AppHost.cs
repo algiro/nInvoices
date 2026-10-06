@@ -1,7 +1,7 @@
 // nInvoices dev orchestrator (.NET Aspire).
 //
 // `aspire run` (or `dotnet run --project src/nInvoices.AppHost`) starts, as one graph:
-//   - PostgreSQL          (throwaway; schema built from the EF model via EnsureCreated)
+//   - PostgreSQL          (throwaway; schema from the EF migrations, applied by the API at startup)
 //   - Keycloak            (realm "ninvoices" imported from ./keycloak, host port 8088)
 //   - nInvoices.Api       (PostgreSQL + real Keycloak auth — NOT DevAuth)
 //   - nInvoices.Web       (Vite dev server; /api proxied to the api resource)
@@ -45,7 +45,6 @@ var api = builder.AddProject<Projects.nInvoices_Api>("api")
     // Use PostgreSQL and build the schema from the current EF model on startup
     // (EF migrations are SQLite-scaffolded and cannot run under Npgsql).
     .WithEnvironment("Database__Type", "PostgreSQL")
-    .WithEnvironment("Database__EnsureCreated", "true")
     .WithEnvironment("ConnectionStrings__Default", db.Resource.ConnectionStringExpression)
     // Real Keycloak auth instead of the dev bypass. No ExternalAuthority: the API
     // runs on the host in `aspire run` and reaches Keycloak directly at KeycloakUrl.

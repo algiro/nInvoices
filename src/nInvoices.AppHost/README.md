@@ -194,7 +194,6 @@ var api = builder.AddProject<Projects.nInvoices_Api>("api")
     .WaitFor(db)
     .WaitFor(keycloak)
     .WithEnvironment("Database__Type", "PostgreSQL")
-    .WithEnvironment("Database__EnsureCreated", "true")
     .WithEnvironment("ConnectionStrings__Default", db.Resource.ConnectionStringExpression)
     .WithEnvironment("Authentication__UseDevAuth", "false")
     .WithEnvironment("Keycloak__RequireHttpsMetadata", "false")
@@ -211,14 +210,13 @@ api.WithEndpointProxySupport(false);
 | How is config passed? | `WithEnvironment("A__B", value)` sets the OS env var `A__B`. .NET configuration maps `A__B` → `A:B`, and **environment variables beat `appsettings*.json`**. So the table below shows each override. |
 | `db.Resource.ConnectionStringExpression` | A reference expression → resolved at launch to the full Npgsql connection string for the `ninvoices` database. |
 | `WaitFor(db)` / `WaitFor(keycloak)` | Start ordering: the API is not launched until those resources report **healthy** (Aspire has a built-in health check for each integration). |
-| `Database__EnsureCreated` | Read in `Program.cs`: when `true`, the API calls `dbContext.Database.EnsureCreated()` on startup, which builds the PostgreSQL schema **from the current EF model** (the EF *migrations* are SQLite-only and cannot run under Npgsql). Off in the fast SQLite loop and in production. |
+| Schema | On PostgreSQL the API applies the EF migrations of `nInvoices.Infrastructure.Migrations.PostgreSql` at startup (`Program.cs`): the whole schema on this empty database. |
 
 **Config the AppHost overrides on the API:**
 
 | Env var (AppHost) | .NET key | Overrides `appsettings*.json` value | Effect |
 |---|---|---|---|
 | `Database__Type` | `Database:Type` | `SQLite` | Use the PostgreSQL provider |
-| `Database__EnsureCreated` | `Database:EnsureCreated` | *(unset)* | Build schema from the model on boot |
 | `ConnectionStrings__Default` | `ConnectionStrings:Default` | `Data Source=nInvoices.db` | Point at the Aspire Postgres |
 | `Authentication__UseDevAuth` | `Authentication:UseDevAuth` | `true` (in `appsettings.Development.json`) | Use real Keycloak JWT auth, not the dev bypass |
 | `Keycloak__RequireHttpsMetadata` | `Keycloak:RequireHttpsMetadata` | *(unset)* | Allow the `http://` Keycloak metadata URL |
@@ -343,7 +341,7 @@ that would break a `.WaitFor` / `.WithEnvironment` placed after it.
 | | `aspire run` (this project) | Production |
 |---|---|---|
 | Orchestrator | `nInvoices.AppHost` | `docker/deploy.sh` + hand-written compose on the server |
-| Database | throwaway Postgres container, schema via `EnsureCreated` | shared PostgreSQL, schema via `docker/migrations-postgres/*.sql` |
+| Database | throwaway Postgres container | shared PostgreSQL; in both, the API applies the EF migrations at startup |
 | Auth | Keycloak container, realm from JSON | your Keycloak, e.g. `https://your-domain.com/realms/ninvoices` |
 | Frontend | Vite dev server | pre-built image behind nginx at `/nInvoices` |
 | Aspire involved? | yes | **no** |
@@ -369,8 +367,8 @@ it is used here to check the wiring, never to deploy.
 
 ## 9. Common operations
 
-**Reset the database.** No data volume → just restart `aspire run`; `EnsureCreated`
-rebuilds an empty schema. If you added `.WithDataVolume("name")`, wipe it:
+**Reset the database.** No data volume → just restart `aspire run`; the migrations
+rebuild an empty schema. If you added `.WithDataVolume("name")`, wipe it:
 `podman volume rm name`.
 
 **Change an image / tag.** `.WithImageTag("…")`, `.WithImage("…")`, or
@@ -401,7 +399,7 @@ terminals — `cd src/nInvoices.Api && dotnet run` and
 | Symptom | Cause | Fix |
 |---|---|---|
 | Standalone `dotnet run` → `InvalidOperationException: MetadataAddress or Authority must use HTTPS` | `launchSettings.json` is git-ignored; without it `dotnet run` starts in **Production**, ignoring `appsettings.Development.json` (`UseDevAuth=true`) | Keep `src/nInvoices.Api/Properties/launchSettings.json` (already restored) with `ASPNETCORE_ENVIRONMENT=Development` + `applicationUrl=http://localhost:5297` |
-| `api` resource "Finished", `Npgsql … 42601: syntax error at or near "["` during `EnsureCreated` | A partial-index filter was hard-coded in SQLite dialect (`HasFilter("[IsActive] = 1")`) | Now provider-switched in `ApplicationDbContext.OnModelCreating` (`Database.IsNpgsql() ? "\"IsActive\"" : "[IsActive] = 1"`); zero change for the SQLite path |
+| `api` resource "Finished", `Npgsql … 42601: syntax error at or near "["` while building the schema | A partial-index filter was hard-coded in SQLite dialect (`HasFilter("[IsActive] = 1")`) | Now provider-switched in `ApplicationDbContext.OnModelCreating` (`Database.IsNpgsql() ? "\"IsActive\"" : "[IsActive] = 1"`); zero change for the SQLite path |
 | `web` / dashboard URL → `ERR_EMPTY_RESPONSE` even though Vite logs "ready" | Aspire's DCP reverse proxy is broken on this host | `WithEndpointProxySupport(false)` on every resource |
 | Keycloak URL → `ERR_EMPTY_RESPONSE`, `podman ps` shows `8088->8443/tcp` | Preview `Aspire.Hosting.Keycloak` maps `AddKeycloak(port:)` to the **HTTPS** port and never publishes HTTP | Drop `port:`; add explicit `WithEndpoint(port: 8088, targetPort: 8080, scheme: "http", name: "http-public", isProxied: false)` |
 | Realm edits not applied / port already in use | A killed `aspire run` left containers behind | `podman rm -f` the leftover `keycloak-*` / `postgres-*` containers, then re-run |
@@ -417,7 +415,7 @@ terminals — `cd src/nInvoices.Api && dotnet run` and
 | `src/nInvoices.AppHost/nInvoices.AppHost.csproj` | Aspire SDK, hosting packages, the API project reference |
 | `src/nInvoices.AppHost/keycloak/ninvoices-realm.json` | Keycloak realm: clients, roles, `testuser` |
 | `src/nInvoices.ServiceDefaults/Extensions.cs` | `AddServiceDefaults()` / `MapDefaultEndpoints()` |
-| `src/nInvoices.Api/Program.cs` | `builder.AddServiceDefaults()`, `app.MapDefaultEndpoints()`, the `Database:EnsureCreated` block |
+| `src/nInvoices.Api/Program.cs` | `builder.AddServiceDefaults()`, `app.MapDefaultEndpoints()`, the startup block that applies the PostgreSQL EF migrations |
 | `src/nInvoices.Infrastructure/Data/DatabaseExtensions.cs` | provider selection, `AddDbContextCheck` |
 | `src/nInvoices.Api/Properties/launchSettings.json` | `Development` env + `:5297` for standalone runs |
 | `src/nInvoices.Web/vite.config.ts` | consumes `PORT` / `VITE_PROXY_TARGET` |

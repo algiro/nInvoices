@@ -15,7 +15,7 @@ The problems sit at the edges of that architecture. Several rules the design imp
 | 3 | Invoice state machine has gaps; entity setters bypass it | **High** | M — ✅ done (Invoice) |
 | 4 | No global error handling; exceptions used as an untyped protocol | **High** | M — ✅ done |
 | 5 | Controllers bypass the Application layer (DbContext, service locator) | Medium | M — ✅ done |
-| 6 | Two schema-evolution mechanisms (EF/SQLite vs hand-written PG SQL) | Medium | M |
+| 6 | Two schema-evolution mechanisms (EF/SQLite vs hand-written PG SQL) | Medium | M — ✅ done |
 | 7 | Sync-over-async in the PDF path | Medium | S |
 | 8 | Dead and duplicated code | Medium | S |
 | 9 | Oversized classes and components | Medium | M–L |
@@ -161,7 +161,28 @@ The project documents controllers as _"thin controllers that dispatch through Me
 - Extract `ImportExportController` into `Application/Features/ImportExport` (an exporter and an importer service plus commands). Keep the controller to HTTP concerns only.
 - Add an architecture test (NetArchTest or ArchUnitNET) asserting `nInvoices.Api.Controllers` does not depend on `nInvoices.Infrastructure` or on `IRepository<>`.
 
-## 6. Two schema-evolution mechanisms — Medium
+## 6. Two schema-evolution mechanisms — Medium — ✅ Done (2026-10-06)
+
+> **Progress (2026-10-06).** `PostgreSqlMigrationScriptsTests` (Testcontainers, PostgreSQL 17 as in production)
+> runs every script with `psql` like `deploy.sh`: on a model-built schema they must change nothing and be
+> idempotent, and production's schema (`pg_dump --schema-only` fixture) plus the scripts must equal the model.
+> That found: `deploy.sh --migrate` failed on every fresh install (`__EFMigrationsHistory` missing, fixed by
+> `00000000-0000_ef-migrations-history.sql`), and production had drifted from the model — a **global** unique
+> index on image aliases (a second user couldn't have a "logo"), no unique "one active template" index,
+> `InvoiceNumber varchar(50)`, `int`/serial ids, an obsolete empty `InvoiceLines` table, other names and
+> defaults. The model now has a per-user alias index, and `20261006-0753_align-with-ef-model.sql` brings
+> production to exactly the model (tested, including data: rows kept, ids continue). **Applied to production
+> on 2026-10-06** after a full backup (`~/backups/ninvoices/ninvoices-backup-2026-10-06-08-04-44.sql.gz`); a fresh
+> schema dump of production now passes the model-equality test (it is the committed fixture; the pre-alignment
+> dump is kept to test the script).
+>
+> **EF migrations for PostgreSQL.** `src/nInvoices.Infrastructure.Migrations.PostgreSql` holds the PostgreSQL
+> migration set (one assembly per provider, as EF documents); its baseline `20261006081011_PostgreSqlBaseline`
+> builds exactly the model (tested) and is recorded as applied in production. The API applies pending migrations
+> at startup on PostgreSQL (fresh installs get the whole schema; `EnsureCreated` is SQLite-only now), so deploys
+> need no SQL step. `MigrationsUpToDateTests` fails when the model changes without a migration for each
+> provider. The hand-written scripts are frozen (only to bring a database restored from an older backup up to
+> the baseline).
 
 `Program.cs` documents it: EF migrations are SQLite-scaffolded and do not run on PostgreSQL. Production schema changes are applied by hand-written scripts in `docker/migrations-postgres/*.sql` (16 so far). Meanwhile `Database:EnsureCreated` builds fresh PG databases from the **current model**. So the same schema is defined three ways (EF model, EF SQLite migrations, PG SQL scripts) and nothing checks that they agree. The test suite runs on SQLite only, so PG-specific behaviour (case sensitivity, `text` vs `numeric`, index names) is never exercised.
 

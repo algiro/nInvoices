@@ -1,4 +1,11 @@
-# PostgreSQL migrations (hand-written)
+# PostgreSQL migrations (hand-written) — FROZEN
+
+> **Since 2026-10-06 PostgreSQL has real EF Core migrations** in
+> `src/nInvoices.Infrastructure.Migrations.PostgreSql`, applied by the API at startup. Their baseline
+> (`20261006081011_PostgreSqlBaseline`) is the schema these scripts lead to, and
+> `20261006-0810_record-postgresql-baseline.sql` records it as applied. **Don't add scripts here**: a schema
+> change is an EF migration for each provider (see CLAUDE.md). These files stay only to bring a database
+> restored from a backup older than 2026-10-06 up to the baseline: `deploy.sh --migrate`, then start the API.
 
 **Why this exists:** the EF Core migrations under
 `src/nInvoices.Infrastructure/Data/Migrations` were scaffolded for **SQLite**
@@ -25,6 +32,10 @@ for f in migrations-postgres/*.sql; do
 done
 ```
 
+`00000000-0000_ef-migrations-history.sql` runs first and creates `__EFMigrationsHistory` when it's
+missing: a database built from the EF model (fresh Docker install, Aspire) doesn't have it, and without it
+every other script stopped at its history insert.
+
 Every file must be **idempotent** (`CREATE TABLE IF NOT EXISTS`,
 `CREATE INDEX IF NOT EXISTS`, `... ON CONFLICT DO NOTHING`) so re-running a deploy
 is safe. Each file also inserts its EF `MigrationId` into `__EFMigrationsHistory`
@@ -39,3 +50,20 @@ Files run in **filename order**, so the time matters: with the date alone, files
 day sort by slug, and a file can run before the one that creates the tables it needs
 (`add-einvoice-submissions` before `add-einvoicing`). Older files with the date alone
 (`<yyyyMMdd>_<slug>.sql`) are already applied everywhere and keep their names.
+
+## Tested
+
+`tests/nInvoices.Infrastructure.Tests/PostgreSql` runs every script with `psql` on a real PostgreSQL
+(Testcontainers, so Docker is needed; the tests are skipped without it) on a schema built from the EF
+model: they must all succeed, change nothing, and stay idempotent when run twice. A script that adds
+something the model doesn't have, or contradicts it, fails the build.
+
+The same tests restore `production-schema.sql` (a `pg_dump --schema-only` of production, no data), run the
+scripts on it as `deploy.sh --migrate` does, and require **exactly** the schema EF builds from the model.
+`20261006-0753_align-with-ef-model.sql` is what makes that true: production's original base schema had
+drifted (global image-alias index, missing partial unique index, `int` ids, other names). After a deploy that
+changes the schema, refresh the fixture with a new dump.
+
+```bash
+dotnet test tests/nInvoices.Infrastructure.Tests --filter Category=PostgreSql
+```

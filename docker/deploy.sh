@@ -9,7 +9,8 @@
 # Requirements on the machine you run this from:
 #   - docker (with buildx) and a Docker Hub login (docker login)
 #   - ssh access to the production host (SSH_HOST: an alias from ~/.ssh/config, or user@host)
-#   - --migrate applies docker/migrations-postgres/*.sql to the prod DB over SSH
+#   - --migrate applies the frozen docker/migrations-postgres/*.sql (only for a database restored
+#     from a backup older than 2026-10-06; the API applies its EF migrations itself)
 #     (no local .NET needed; see migrations-postgres/README.md)
 #
 # Expected production topology (APP_URL, e.g. https://your-domain.com/nInvoices):
@@ -26,7 +27,7 @@
 #   ./deploy.sh --api-only      # rebuild/deploy the API only
 #   ./deploy.sh --web-only      # rebuild/deploy the web frontend only
 #   ./deploy.sh --no-push       # build locally but do not push (dry run-ish)
-#   ./deploy.sh --migrate       # also apply pending DB migrations (idempotent)
+#   ./deploy.sh --migrate       # also run the frozen legacy SQL scripts (old backups only; idempotent)
 #
 # Image tags: images are tagged with the short commit hash (plus "-dirty-<timestamp>" when
 # the working tree has uncommitted changes) and also as :latest, and the server runs that
@@ -178,10 +179,10 @@ else
 fi
 
 # ---- 2: apply DB migrations (optional) -----------------------------------------------------------------
-# NOTE: the EF Core migrations in this repo are SQLite-scaffolded and cannot be
-# applied to PostgreSQL with `dotnet ef` (it throws on the AddInvoiceSequence
-# InsertData). Instead we apply the hand-written idempotent files in
-# migrations-postgres/  (see migrations-postgres/README.md).
+# NOTE: since 2026-10-06 the API applies its PostgreSQL EF migrations itself at startup
+# (nInvoices.Infrastructure.Migrations.PostgreSql), so a normal deploy needs no --migrate.
+# The frozen scripts in migrations-postgres/ only bring a database restored from a backup
+# older than that up to the migrations' baseline (see migrations-postgres/README.md).
 if [[ $MIGRATE -eq 1 ]]; then
   step "2/4" "Applying PostgreSQL migrations from migrations-postgres/ ..."
   shopt -s nullglob
@@ -195,7 +196,7 @@ if [[ $MIGRATE -eq 1 ]]; then
   done
   ok "PostgreSQL migrations applied."
 else
-  info "Skipping migrations (pass --migrate to apply migrations-postgres/*.sql)."
+  info "Skipping legacy SQL scripts (the API applies its EF migrations at startup)."
 fi
 
 # ---- 3: pull & restart on the server -----------------------------------------------------------------
