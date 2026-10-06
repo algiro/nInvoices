@@ -173,3 +173,6 @@ public sealed record ComplianceSettingsExportDto(
     string? TaxId,
     AddressDto? Address,
     IReadOnlyDictionary<string, string> Values);
+
+/// <summary>What an import did: items imported, items skipped (already there) and the problems, one line per item.</summary>
+public sealed record ImportResultDto(int Imported, int Skipped, IReadOnlyList<string> Errors);

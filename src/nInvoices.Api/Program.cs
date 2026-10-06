@@ -54,10 +54,10 @@ builder.Services.AddControllers(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 builder.Services.AddEndpointsApiExplorer();
-// Every ProblemDetails (ApiExceptionFilter's, a plain NotFound()...) also carries "error", the
-// message the web app shows
+// Every ProblemDetails (ApiExceptionFilter's, a plain NotFound(), a body that fails model binding...)
+// also carries "error", the message the web app shows
 builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
-    context.ProblemDetails.Extensions.TryAdd("error", context.ProblemDetails.Detail ?? context.ProblemDetails.Title));
+    context.ProblemDetails.Extensions.TryAdd("error", ApiExceptionFilter.MessageOf(context.ProblemDetails)));
 builder.Services.AddOpenApi();
 
 // Add Configuration

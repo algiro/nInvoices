@@ -6,6 +6,8 @@ using nInvoices.Core.Interfaces;
 using nInvoices.Infrastructure.Data.Repositories;
 using nInvoices.Infrastructure.Encryption;
 using nInvoices.Infrastructure.Services;
+using nInvoices.Application.Features.ImportExport;
+using nInvoices.Infrastructure.DataPortability;
 
 namespace nInvoices.Infrastructure.Data;
 
@@ -52,6 +54,9 @@ public static class DatabaseExtensions
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<IWorkDayRepository, WorkDayRepository>();
         services.AddScoped<IVerifactuRecordRepository, VerifactuRecordRepository>();
+        services.AddScoped<IAccessRequestRepository, AccessRequestRepository>();
+        services.AddScoped<IAccountDataEraser, AccountDataEraser>();
+        services.AddScoped<IDataPortability, DataPortabilityService>();
 
         // Register User Context
         services.AddScoped<OwnerOverride>();

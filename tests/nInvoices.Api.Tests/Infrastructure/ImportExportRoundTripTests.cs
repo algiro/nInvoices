@@ -1,11 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using nInvoices.Api.Controllers;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
 using nInvoices.Core.Compliance;
@@ -14,10 +12,11 @@ using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
 using nInvoices.Infrastructure.Data;
+using nInvoices.Infrastructure.DataPortability;
 using nInvoices.Infrastructure.Encryption;
 using Shouldly;
 
-namespace nInvoices.Api.Tests.Controllers;
+namespace nInvoices.Api.Tests.Infrastructure;
 
 /// <summary>
 /// A backup made on one server and restored on another (two in-memory SQLite databases) brings
@@ -82,15 +81,14 @@ public sealed class ImportExportRoundTripTests
         return context;
     }
 
-    private static ImportExportController Controller(ApplicationDbContext context)
+    private static DataPortabilityService Controller(ApplicationDbContext context)
     {
         var registry = new Mock<IComplianceRegistry>();
         registry.Setup(r => r.Find("ES")).Returns(Mock.Of<ICountryComplianceModule>());
-        return new ImportExportController(context, Mock.Of<IUnitOfWork>(), registry.Object, NullLogger<ImportExportController>.Instance);
+        return new DataPortabilityService(context, registry.Object, NullLogger<DataPortabilityService>.Instance);
     }
 
-    private static T Ok<T>(ActionResult<T> result) =>
-        result.Result.ShouldBeOfType<OkObjectResult>().Value.ShouldBeOfType<T>();
+    private static T Ok<T>(T result) => result;
 
     /// <summary>Through JSON and back, as the downloaded file is.</summary>
     private static DataExportDto ViaFile(DataExportDto data) =>
@@ -164,9 +162,9 @@ public sealed class ImportExportRoundTripTests
     private async Task<DataExportDto> BackupAsync()
     {
         var controller = Controller(Context(_source));
-        var settings = Ok(await controller.ExportSettings(Token));
-        var customers = Ok(await controller.ExportCustomers(Token));
-        var invoices = Ok(await controller.ExportInvoices(null, null, null, Token));
+        var settings = Ok(await controller.ExportSettingsAsync(Token));
+        var customers = Ok(await controller.ExportCustomersAsync(Token));
+        var invoices = Ok(await controller.ExportInvoicesAsync(null, null, null, Token));
         return ViaFile(new DataExportDto("1.0", DateTime.UtcNow, customers.Customers, invoices.Invoices,
             customers.SharedTemplates, settings.Settings));
     }
@@ -174,9 +172,9 @@ public sealed class ImportExportRoundTripTests
     private async Task RestoreAsync(DataExportDto backup)
     {
         var controller = Controller(Context(_target));
-        Ok(await controller.ImportSettings(backup, Token)).Errors.ShouldBeEmpty();
-        Ok(await controller.ImportCustomers(backup, Token)).Errors.ShouldBeEmpty();
-        Ok(await controller.ImportInvoices(backup, Token)).Errors.ShouldBeEmpty();
+        Ok(await controller.ImportSettingsAsync(backup, Token)).Errors.ShouldBeEmpty();
+        Ok(await controller.ImportCustomersAsync(backup, Token)).Errors.ShouldBeEmpty();
+        Ok(await controller.ImportInvoicesAsync(backup, Token)).Errors.ShouldBeEmpty();
     }
 
     [Test]
@@ -259,9 +257,9 @@ public sealed class ImportExportRoundTripTests
         await RestoreAsync(backup);
 
         var controller = Controller(Context(_target));
-        var settings = Ok(await controller.ImportSettings(backup, Token));
-        var customers = Ok(await controller.ImportCustomers(backup, Token));
-        var invoices = Ok(await controller.ImportInvoices(backup, Token));
+        var settings = Ok(await controller.ImportSettingsAsync(backup, Token));
+        var customers = Ok(await controller.ImportCustomersAsync(backup, Token));
+        var invoices = Ok(await controller.ImportInvoicesAsync(backup, Token));
 
         (settings.Imported, customers.Imported, invoices.Imported).ShouldBe((0, 0, 0));
         var db = Context(_target);
@@ -278,7 +276,7 @@ public sealed class ImportExportRoundTripTests
         target.InvoiceSequences.Add(new InvoiceSequence(20));
         await target.SaveChangesAsync(Token);
 
-        Ok(await Controller(Context(_target)).ImportSettings(backup, Token));
+        Ok(await Controller(Context(_target)).ImportSettingsAsync(backup, Token));
 
         var sequence = await Context(_target).InvoiceSequences.SingleAsync(Token);
         sequence.CurrentValue.ShouldBe(20);
@@ -291,7 +289,7 @@ public sealed class ImportExportRoundTripTests
         var backup = ViaFile(new DataExportDto("1.0", DateTime.UtcNow, null, null, Settings: new UserSettingsExportDto(
             null, [], [], [new ComplianceSettingsExportDto("PT", true, "Nome", "123", null, new Dictionary<string, string>())])));
 
-        Ok(await Controller(Context(_target)).ImportSettings(backup, Token)).Imported.ShouldBe(1);
+        Ok(await Controller(Context(_target)).ImportSettingsAsync(backup, Token)).Imported.ShouldBe(1);
 
         (await Context(_target).ComplianceSettings.SingleAsync(Token)).IsEnabled.ShouldBeFalse();
     }
@@ -308,7 +306,7 @@ public sealed class ImportExportRoundTripTests
             """;
         var data = JsonSerializer.Deserialize<DataExportDto>(oldFile, Json)!;
 
-        Ok(await Controller(Context(_target)).ImportCustomers(data, Token)).Imported.ShouldBe(1);
+        Ok(await Controller(Context(_target)).ImportCustomersAsync(data, Token)).Imported.ShouldBe(1);
 
         var customer = await Context(_target).Customers.Include(c => c.Rates).SingleAsync(Token);
         customer.Locale.ShouldBe("en-US");
