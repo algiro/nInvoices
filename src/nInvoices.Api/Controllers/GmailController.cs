@@ -42,14 +42,7 @@ public sealed class GmailController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<GmailConnectUrlDto>> Connect(CancellationToken cancellationToken)
     {
-        try
-        {
-            return Ok(await _mediator.Send(new StartGmailConnectCommand(), cancellationToken));
-        }
-        catch (InvoiceEmailException ex)
-        {
-            return Conflict(new { error = ex.Message, code = ex.Code });
-        }
+        return Ok(await _mediator.Send(new StartGmailConnectCommand(), cancellationToken));
     }
 
     /// <summary>

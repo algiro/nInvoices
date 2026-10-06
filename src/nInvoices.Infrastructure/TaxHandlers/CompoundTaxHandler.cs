@@ -1,4 +1,5 @@
 using nInvoices.Core.Interfaces;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Infrastructure.TaxHandlers;
 
@@ -21,7 +22,7 @@ public sealed class CompoundTaxHandler : ITaxHandler
 
         // baseAmount represents the tax we're applying this compound tax to
         if (!context.TryGetValue("BaseTaxAmount", out var baseTaxAmount))
-            throw new InvalidOperationException(
+            throw new DomainException(
                 "CompoundTaxHandler requires 'BaseTaxAmount' in context");
 
         if (baseTaxAmount < 0)

@@ -1,6 +1,7 @@
 using nInvoices.Application.Features.Invoices;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Compliance.EInvoice;
 
@@ -28,7 +29,7 @@ public sealed class EInvoiceDeliveryLifecycleStep : IInvoiceLifecycleStep
 
         var delivered = (await _submissions.FindAsync(s => ids.Contains(s.InvoiceEInvoiceId), cancellationToken)).FirstOrDefault();
         if (delivered is not null)
-            throw new InvalidOperationException(
+            throw new DomainException(
                 $"Invoice {invoice.Number} was sent through {delivered.ChannelId.ToUpperInvariant()} ({delivered.Reference}) and cannot be deleted.");
     }
 }

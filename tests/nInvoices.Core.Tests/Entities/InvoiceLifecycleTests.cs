@@ -73,7 +73,7 @@ public sealed class InvoiceLifecycleTests
     public void CancelAndDelete_PointToEachOther(InvoiceStatus status, InvoiceAction action, string hint)
     {
         // A draft was never issued, so it goes away; an issued invoice keeps its number on record
-        InvoiceLifecycle.WhyNot(status, action).ShouldContain(hint);
+        InvoiceLifecycle.WhyNot(status, action).ShouldNotBeNull().ShouldContain(hint);
     }
 
     [Test]

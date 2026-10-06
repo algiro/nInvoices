@@ -2,6 +2,7 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using nInvoices.Core.Entities;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Infrastructure.PdfExport;
 
@@ -19,7 +20,7 @@ public sealed class WorkedDaysCalendarDocument : IDocument
         _invoice = invoice ?? throw new ArgumentNullException(nameof(invoice));
 
         if (_invoice.Type != Core.Enums.InvoiceType.Monthly)
-            throw new InvalidOperationException("Calendar is only available for monthly invoices");
+            throw new DomainException("Calendar is only available for monthly invoices");
 
         _workedDates = new List<DateOnly>();
     }

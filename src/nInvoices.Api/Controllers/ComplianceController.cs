@@ -49,19 +49,12 @@ public sealed class ComplianceController : ControllerBase
         [FromBody] UploadCertificateDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var country = await _mediator.Send(new SetSigningCertificateCommand(countryCode, dto), cancellationToken);
-            if (country is null)
-                return NotFound();
+        var country = await _mediator.Send(new SetSigningCertificateCommand(countryCode, dto), cancellationToken);
+        if (country is null)
+            return NotFound();
 
-            _logger.LogInformation("Stored the {Country} signing certificate", country.CountryCode);
-            return Ok(country);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        _logger.LogInformation("Stored the {Country} signing certificate", country.CountryCode);
+        return Ok(country);
     }
 
     /// <summary>Removes the stored signing certificate of a country.</summary>
@@ -86,22 +79,11 @@ public sealed class ComplianceController : ControllerBase
         [FromBody] UpdateComplianceSettingsDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var country = await _mediator.Send(new UpdateComplianceSettingsCommand(countryCode, dto), cancellationToken);
-            if (country is null)
-                return NotFound();
+        var country = await _mediator.Send(new UpdateComplianceSettingsCommand(countryCode, dto), cancellationToken);
+        if (country is null)
+            return NotFound();
 
-            _logger.LogInformation("Saved {Country} compliance settings (enabled: {Enabled})", country.CountryCode, country.Settings.IsEnabled);
-            return Ok(country);
-        }
-        catch (ComplianceValidationException ex)
-        {
-            return BadRequest(new { error = ex.Message, issues = ex.Issues });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        _logger.LogInformation("Saved {Country} compliance settings (enabled: {Enabled})", country.CountryCode, country.Settings.IsEnabled);
+        return Ok(country);
     }
 }

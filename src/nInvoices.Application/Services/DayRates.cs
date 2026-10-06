@@ -2,6 +2,7 @@ using System.Globalization;
 using nInvoices.Application.DTOs;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Services;
 
@@ -43,7 +44,7 @@ internal sealed class DayRates
 
         return _byId.TryGetValue(id, out var rate)
             ? rate
-            : throw new InvalidOperationException($"Rate {id} not found for this customer ({day.Date:yyyy-MM-dd}).");
+            : throw new DomainException($"Rate {id} not found for this customer ({day.Date:yyyy-MM-dd}).");
     }
 
     /// <summary>
@@ -58,7 +59,7 @@ internal sealed class DayRates
         if (IsFixedMonthly)
         {
             if (worked.Any(d => d.RateId.HasValue && d.RateId != Default.Id))
-                throw new InvalidOperationException("Days can't have their own rate when the invoice uses a fixed monthly rate.");
+                throw new DomainException("Days can't have their own rate when the invoice uses a fixed monthly rate.");
             return;
         }
 
@@ -66,9 +67,9 @@ internal sealed class DayRates
         {
             var rate = For(day);
             if (rate.Type == RateType.Monthly)
-                throw new InvalidOperationException($"A fixed monthly rate can't be used for a single day ({day.Date:yyyy-MM-dd}).");
+                throw new DomainException($"A fixed monthly rate can't be used for a single day ({day.Date:yyyy-MM-dd}).");
             if (!string.Equals(rate.Price.Currency, Default.Price.Currency, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException(
+                throw new DomainException(
                     $"An invoice is billed in one currency: {rate.Price.Currency} on {day.Date:yyyy-MM-dd} differs from {Default.Price.Currency}.");
         }
     }

@@ -1,6 +1,7 @@
 using Mediator;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.Invoices.Commands;
 
@@ -22,7 +23,7 @@ public sealed class CancelInvoiceCommandHandler : IRequestHandler<CancelInvoiceC
     {
         var invoice = await _repository.GetByIdAsync(request.InvoiceId, cancellationToken);
         if (invoice == null)
-            throw new InvalidOperationException($"Invoice with ID {request.InvoiceId} not found");
+            throw new NotFoundException($"Invoice with ID {request.InvoiceId} not found");
 
         invoice.Cancel();
 

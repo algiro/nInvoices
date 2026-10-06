@@ -4,6 +4,7 @@ using nInvoices.Application.Services.Email;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.InvoiceEmails.Queries;
 
@@ -42,7 +43,7 @@ public sealed class GetInvoiceEmailComposeQueryHandler : IRequestHandler<GetInvo
             return null;
 
         var customer = await _customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Customer {invoice.CustomerId} not found");
+            ?? throw new NotFoundException($"Customer {invoice.CustomerId} not found");
 
         var userId = _userContext.RequireUserId();
         var connection = (await _connectionRepository.FindAsync(c => c.UserId == userId, cancellationToken)).FirstOrDefault();

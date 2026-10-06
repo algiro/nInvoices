@@ -4,6 +4,8 @@ using nInvoices.Core.Compliance.EInvoice;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Exceptions;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Compliance.EInvoice;
 
@@ -78,9 +80,9 @@ public sealed class EInvoiceService : IEInvoiceService
             return [];
 
         var invoice = await _invoices.GetByIdAsync(invoiceId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Invoice {invoiceId} not found");
+            ?? throw new NotFoundException($"Invoice {invoiceId} not found");
         var customer = await _customers.GetByIdAsync(invoice.CustomerId, cancellationToken)
-            ?? throw new InvalidOperationException($"Customer {invoice.CustomerId} not found");
+            ?? throw new NotFoundException($"Customer {invoice.CustomerId} not found");
         var stored = (await _stored.FindAsync(e => e.InvoiceId == invoiceId, cancellationToken)).ToList();
 
         return applicable
@@ -103,9 +105,9 @@ public sealed class EInvoiceService : IEInvoiceService
             return [];
 
         var invoice = await _invoices.GetByIdAsync(invoiceId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Invoice {invoiceId} not found");
+            ?? throw new NotFoundException($"Invoice {invoiceId} not found");
         if (invoice.Status is InvoiceStatus.Draft or InvoiceStatus.Cancelled)
-            throw new InvalidOperationException(invoice.Status == InvoiceStatus.Draft
+            throw new DomainException(invoice.Status == InvoiceStatus.Draft
                 ? "Finalize the invoice before generating its e-invoice"
                 : "A cancelled invoice has no e-invoice");
 

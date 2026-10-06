@@ -82,20 +82,12 @@ public sealed class RatesController : ControllerBase
         [FromBody] CreateRateDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var command = new CreateRateCommand(dto);
-            var rate = await _mediator.Send(command, cancellationToken);
+        var command = new CreateRateCommand(dto);
+        var rate = await _mediator.Send(command, cancellationToken);
 
-            _logger.LogInformation("Created rate with ID {RateId} for customer {CustomerId}", 
-                rate.Id, rate.CustomerId);
-            return CreatedAtAction(nameof(GetById), new { id = rate.Id }, rate);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            _logger.LogWarning(ex, "Customer not found when creating rate");
-            return NotFound(new { message = ex.Message });
-        }
+        _logger.LogInformation("Created rate with ID {RateId} for customer {CustomerId}", 
+            rate.Id, rate.CustomerId);
+        return CreatedAtAction(nameof(GetById), new { id = rate.Id }, rate);
     }
 
     /// <summary>
@@ -110,19 +102,11 @@ public sealed class RatesController : ControllerBase
         [FromBody] UpdateRateDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var command = new UpdateRateCommand(id, dto);
-            var rate = await _mediator.Send(command, cancellationToken);
+        var command = new UpdateRateCommand(id, dto);
+        var rate = await _mediator.Send(command, cancellationToken);
 
-            _logger.LogInformation("Updated rate with ID {RateId}", id);
-            return Ok(rate);
-        }
-        catch (KeyNotFoundException)
-        {
-            _logger.LogWarning("Rate with ID {RateId} not found for update", id);
-            return NotFound();
-        }
+        _logger.LogInformation("Updated rate with ID {RateId}", id);
+        return Ok(rate);
     }
 
     /// <summary>

@@ -3,6 +3,7 @@ using nInvoices.Core.Compliance.EInvoice;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Compliance.EInvoice;
 
@@ -83,9 +84,9 @@ public sealed class EInvoiceDeliveryService : IEInvoiceDeliveryService
             return [];
 
         var invoice = await _invoices.GetByIdAsync(invoiceId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Invoice {invoiceId} not found");
+            ?? throw new NotFoundException($"Invoice {invoiceId} not found");
         var customer = await _customers.GetByIdAsync(invoice.CustomerId, cancellationToken)
-            ?? throw new InvalidOperationException($"Customer {invoice.CustomerId} not found");
+            ?? throw new NotFoundException($"Customer {invoice.CustomerId} not found");
         var files = (await _files.FindAsync(f => f.InvoiceId == invoiceId, cancellationToken)).ToList();
         var submissions = (await _submissions.GetAllAsync(cancellationToken)).ToList();
 

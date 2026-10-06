@@ -7,6 +7,7 @@ using nInvoices.Application.Services.Email;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.InvoiceEmails.Commands;
 
@@ -52,7 +53,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandler : IRequestHandler<Crea
         var dto = request.Email;
 
         var invoice = await _invoiceRepository.GetByIdWithRelatedAsync(request.InvoiceId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Invoice {request.InvoiceId} not found");
+            ?? throw new NotFoundException($"Invoice {request.InvoiceId} not found");
 
         // A draft invoice can still change and a cancelled one must not be sent
         if (invoice.Status is InvoiceStatus.Draft or InvoiceStatus.Cancelled)
@@ -63,7 +64,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandler : IRequestHandler<Crea
                     : "A cancelled invoice cannot be emailed.");
 
         var customer = await _customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Customer {invoice.CustomerId} not found");
+            ?? throw new NotFoundException($"Customer {invoice.CustomerId} not found");
 
         var to = EmailAddresses.Split(dto.To);
         var cc = EmailAddresses.Split(dto.Cc);

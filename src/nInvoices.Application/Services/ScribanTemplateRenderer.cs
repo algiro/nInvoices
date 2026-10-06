@@ -4,6 +4,7 @@ using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 using Scriban;
 using Scriban.Runtime;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Services;
 
@@ -48,7 +49,7 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
             if (template.HasErrors)
             {
                 var errors = string.Join(", ", template.Messages.Select(m => m.Message));
-                throw new InvalidOperationException($"Template syntax errors: {errors}");
+                throw new DomainException($"Template syntax errors: {errors}");
             }
 
             // Preload image assets for the Image function
@@ -85,7 +86,7 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to render template");
-            throw new InvalidOperationException("Template rendering failed. Check template syntax and model data.", ex);
+            throw new DomainException("Template rendering failed. Check template syntax and model data.", ex);
         }
     }
 

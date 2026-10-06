@@ -82,22 +82,10 @@ public sealed class ProjectsController : ControllerBase
         [FromBody] CreateProjectDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var project = await _mediator.Send(new CreateProjectCommand(dto), cancellationToken);
-            _logger.LogInformation("Created project {ProjectId} for customer {CustomerId}",
-                project.Id, project.CustomerId);
-            return CreatedAtAction(nameof(GetById), new { id = project.Id }, project);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            _logger.LogWarning(ex, "Customer not found when creating project");
-            return NotFound(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var project = await _mediator.Send(new CreateProjectCommand(dto), cancellationToken);
+        _logger.LogInformation("Created project {ProjectId} for customer {CustomerId}",
+            project.Id, project.CustomerId);
+        return CreatedAtAction(nameof(GetById), new { id = project.Id }, project);
     }
 
     /// <summary>
@@ -112,21 +100,9 @@ public sealed class ProjectsController : ControllerBase
         [FromBody] UpdateProjectDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var project = await _mediator.Send(new UpdateProjectCommand(id, dto), cancellationToken);
-            _logger.LogInformation("Updated project {ProjectId}", id);
-            return Ok(project);
-        }
-        catch (KeyNotFoundException)
-        {
-            _logger.LogWarning("Project with ID {ProjectId} not found for update", id);
-            return NotFound();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var project = await _mediator.Send(new UpdateProjectCommand(id, dto), cancellationToken);
+        _logger.LogInformation("Updated project {ProjectId}", id);
+        return Ok(project);
     }
 
     /// <summary>

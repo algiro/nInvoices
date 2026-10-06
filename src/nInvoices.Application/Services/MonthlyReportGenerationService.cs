@@ -3,6 +3,7 @@ using nInvoices.Application.Models;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Services;
 
@@ -94,10 +95,10 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
     private static void EnsureMonthly(Invoice invoice)
     {
         if (invoice.Type != InvoiceType.Monthly)
-            throw new InvalidOperationException("Monthly reports can only be generated for monthly invoices");
+            throw new DomainException("Monthly reports can only be generated for monthly invoices");
 
         if (!invoice.Month.HasValue || !invoice.Year.HasValue)
-            throw new InvalidOperationException("Invoice must have month and year set");
+            throw new DomainException("Invoice must have month and year set");
     }
 
     /// <summary>The template chosen on the invoice, otherwise the customer's active one, else the shared one.</summary>
@@ -109,7 +110,7 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
         if (invoice.MonthlyReportTemplateId.HasValue)
         {
             return await _templateRepository.GetByIdAsync(invoice.MonthlyReportTemplateId.Value, cancellationToken)
-                ?? throw new InvalidOperationException($"Monthly report template {invoice.MonthlyReportTemplateId.Value} not found");
+                ?? throw new DomainException($"Monthly report template {invoice.MonthlyReportTemplateId.Value} not found");
         }
 
         var templates = await _templateRepository.FindAsync(
@@ -117,7 +118,7 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
             cancellationToken);
 
         return ScopedTemplates.PickEffective(templates, customer.Id)
-            ?? throw new InvalidOperationException($"No active monthly report template found for customer {customer.Id}");
+            ?? throw new DomainException($"No active monthly report template found for customer {customer.Id}");
     }
 
     private MonthlyReportTemplateModel BuildMonthlyReportModel(Invoice invoice, Customer customer, IReadOnlyList<WorkDayDto> workDays)

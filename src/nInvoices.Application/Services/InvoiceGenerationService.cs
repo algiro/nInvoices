@@ -4,6 +4,8 @@ using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
+using nInvoices.Application.Exceptions;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Services;
 
@@ -138,7 +140,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         if (dto.InvoiceType == InvoiceType.Monthly)
         {
             if (rate.Type == RateType.Hourly && (dto.WorkDays == null || !dto.WorkDays.Any()))
-                throw new InvalidOperationException("Work days are required for hourly rate invoices.");
+                throw new DomainException("Work days are required for hourly rate invoices.");
 
             rates.Validate(dto.WorkDays ?? []);
 
@@ -148,18 +150,18 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
                 .ToList();
 
             if (workedDaysWithoutHours.Any())
-                throw new InvalidOperationException(
+                throw new DomainException(
                     $"Hours must be specified for all worked days when using hourly rates " +
                     $"(via a project allocation or the day's hours). Missing hours for {workedDaysWithoutHours.Count} day(s).");
         }
 
         if (rate.Type == RateType.Hourly && dto.InvoiceType == InvoiceType.OneTime && dto.Hours is not > 0)
-            throw new InvalidOperationException("Hours are required for a one-time invoice with an hourly rate.");
+            throw new DomainException("Hours are required for a one-time invoice with an hourly rate.");
 
         var subtotal = CalculateSubtotal(dto, rates);
         var expensesTotal = CalculateExpensesTotal(dto.Expenses, rate.Price.Currency);
         var customer = await _customerRepository.GetByIdAsync(dto.CustomerId, cancellationToken)
-            ?? throw new InvalidOperationException($"Customer {dto.CustomerId} not found");
+            ?? throw new NotFoundException($"Customer {dto.CustomerId} not found");
         // A draft does not use up a number: it shows the next one, which is only taken when the
         // invoice is finalized
         var invoiceNumber = await _numbering.PeekAsync(customer, dto.IssueDate, cancellationToken);
@@ -236,11 +238,11 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         CancellationToken cancellationToken = default)
     {
         var invoice = await _invoiceRepository.GetByIdAsync(invoiceId, cancellationToken)
-            ?? throw new InvalidOperationException($"Invoice {invoiceId} not found");
+            ?? throw new NotFoundException($"Invoice {invoiceId} not found");
 
         if (string.IsNullOrEmpty(invoice.RenderedContent))
         {
-            throw new InvalidOperationException($"Invoice {invoiceId} has no rendered content. Generate invoice first.");
+            throw new DomainException($"Invoice {invoiceId} has no rendered content. Generate invoice first.");
         }
 
         // NEW: Convert HTML to PDF using QuestPDF
@@ -278,10 +280,10 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     {
         // Use the specialized repository method to eagerly load related entities
         var invoice = await _invoiceRepository.GetByIdWithRelatedAsync(invoiceId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Invoice {invoiceId} not found");
+            ?? throw new NotFoundException($"Invoice {invoiceId} not found");
 
         var customer = await _customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken)
-            ?? throw new InvalidOperationException($"Customer {invoice.CustomerId} not found");
+            ?? throw new NotFoundException($"Customer {invoice.CustomerId} not found");
 
         var rate = await GetRateAsync(invoice.CustomerId, invoice.Type, invoice.RateId, cancellationToken);
 
@@ -343,7 +345,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
         var template = ScopedTemplates.PickEffective(templates, customerId);
         if (template == null)
-            throw new InvalidOperationException($"No active template found for customer {customerId} and type {invoiceType}");
+            throw new DomainException($"No active template found for customer {customerId} and type {invoiceType}");
 
         return template;
     }
@@ -365,7 +367,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
                 cancellationToken)).FirstOrDefault();
 
             return chosen
-                ?? throw new InvalidOperationException($"Rate {rateId.Value} not found for customer {customerId}.");
+                ?? throw new DomainException($"Rate {rateId.Value} not found for customer {customerId}.");
         }
 
         // Otherwise prefer the Daily rate (daily rate × worked days), then the Monthly rate
@@ -394,7 +396,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         }
 
         if (rate == null)
-            throw new InvalidOperationException($"No active rate found for customer {customerId}. Please add a Daily, Monthly, or Hourly rate.");
+            throw new DomainException($"No active rate found for customer {customerId}. Please add a Daily, Monthly, or Hourly rate.");
 
         return rate;
     }
@@ -429,7 +431,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
         var missing = ids.Except(found.Select(r => r.Id)).ToList();
         if (missing.Count > 0)
-            throw new InvalidOperationException($"Rate {missing[0]} not found for customer {customerId}.");
+            throw new DomainException($"Rate {missing[0]} not found for customer {customerId}.");
 
         return new DayRates(defaultRate, found);
     }

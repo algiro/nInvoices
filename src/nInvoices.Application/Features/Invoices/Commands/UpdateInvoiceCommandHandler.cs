@@ -2,6 +2,8 @@ using Mediator;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
+using nInvoices.Application.Exceptions;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Features.Invoices.Commands;
 
@@ -22,10 +24,10 @@ public sealed class UpdateInvoiceCommandHandler : IRequestHandler<UpdateInvoiceC
     {
         var invoice = await _repository.GetByIdAsync(request.InvoiceId, cancellationToken);
         if (invoice == null)
-            throw new InvalidOperationException($"Invoice with ID {request.InvoiceId} not found");
+            throw new NotFoundException($"Invoice with ID {request.InvoiceId} not found");
 
         if (invoice.Status != Core.Enums.InvoiceStatus.Draft)
-            throw new InvalidOperationException("Only draft invoices can be updated");
+            throw new DomainException("Only draft invoices can be updated");
 
         if (request.Dto.DueDate.HasValue)
         {

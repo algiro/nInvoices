@@ -157,26 +157,13 @@ public sealed class InvoiceTemplatesController : ControllerBase
         [FromBody] CreateInvoiceTemplateDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var command = new CreateInvoiceTemplateCommand(dto);
-            var template = await _mediator.Send(command, cancellationToken);
+        var command = new CreateInvoiceTemplateCommand(dto);
+        var template = await _mediator.Send(command, cancellationToken);
 
-            _logger.LogInformation(
-                "Created template with ID {TemplateId} for customer {CustomerId} and type {InvoiceType}", 
-                template.Id, template.CustomerId, template.InvoiceType);
-            return CreatedAtAction(nameof(GetById), new { id = template.Id }, template);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            _logger.LogWarning(ex, "Customer not found when creating template");
-            return NotFound(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogWarning(ex, "Invalid template syntax");
-            return BadRequest(new { message = ex.Message });
-        }
+        _logger.LogInformation(
+            "Created template with ID {TemplateId} for customer {CustomerId} and type {InvoiceType}", 
+            template.Id, template.CustomerId, template.InvoiceType);
+        return CreatedAtAction(nameof(GetById), new { id = template.Id }, template);
     }
 
     /// <summary>
@@ -191,24 +178,11 @@ public sealed class InvoiceTemplatesController : ControllerBase
         [FromBody] UpdateInvoiceTemplateDto dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var command = new UpdateInvoiceTemplateCommand(id, dto);
-            var template = await _mediator.Send(command, cancellationToken);
+        var command = new UpdateInvoiceTemplateCommand(id, dto);
+        var template = await _mediator.Send(command, cancellationToken);
 
-            _logger.LogInformation("Updated template with ID {TemplateId}", id);
-            return Ok(template);
-        }
-        catch (KeyNotFoundException)
-        {
-            _logger.LogWarning("Template with ID {TemplateId} not found for update", id);
-            return NotFound();
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogWarning(ex, "Invalid template syntax");
-            return BadRequest(new { message = ex.Message });
-        }
+        _logger.LogInformation("Updated template with ID {TemplateId}", id);
+        return Ok(template);
     }
 
     /// <summary>

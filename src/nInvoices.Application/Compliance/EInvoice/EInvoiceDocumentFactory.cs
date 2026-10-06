@@ -2,6 +2,7 @@ using nInvoices.Application.Services;
 using nInvoices.Core.Compliance.EInvoice;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Compliance.EInvoice;
 
@@ -35,9 +36,9 @@ public sealed class EInvoiceDocumentFactory : IEInvoiceDocumentFactory
     public async Task<EInvoiceDocument> CreateAsync(long invoiceId, ComplianceSettings settings, CancellationToken cancellationToken = default)
     {
         var invoice = await _invoices.GetByIdWithRelatedAsync(invoiceId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Invoice {invoiceId} not found");
+            ?? throw new NotFoundException($"Invoice {invoiceId} not found");
         var customer = await _customers.GetByIdAsync(invoice.CustomerId, cancellationToken)
-            ?? throw new InvalidOperationException($"Customer {invoice.CustomerId} not found");
+            ?? throw new NotFoundException($"Customer {invoice.CustomerId} not found");
 
         // The lines are the ones printed on the invoice, so the two documents always agree
         var model = await _generation.BuildTemplateModelAsync(invoiceId, cancellationToken);

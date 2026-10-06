@@ -23,20 +23,17 @@ public sealed class EmailTemplatesController : ControllerBase
     private readonly IUnitOfWork _unitOfWork;
     private readonly IInvoiceEmailComposer _composer;
     private readonly IMediator _mediator;
-    private readonly ILogger<EmailTemplatesController> _logger;
 
     public EmailTemplatesController(
         IRepository<EmailTemplate> repository,
         IUnitOfWork unitOfWork,
         IInvoiceEmailComposer composer,
-        IMediator mediator,
-        ILogger<EmailTemplatesController> logger)
+        IMediator mediator)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _composer = composer;
         _mediator = mediator;
-        _logger = logger;
     }
 
     /// <summary>The templates shared by all of the user's customers.</summary>
@@ -80,15 +77,8 @@ public sealed class EmailTemplatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<EmailTemplateDto>> Create([FromBody] CreateEmailTemplateDto dto, CancellationToken cancellationToken)
     {
-        try
-        {
-            var template = await _mediator.Send(new CreateEmailTemplateCommand(dto), cancellationToken);
-            return CreatedAtAction(nameof(GetById), new { id = template.Id }, template);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        var template = await _mediator.Send(new CreateEmailTemplateCommand(dto), cancellationToken);
+        return CreatedAtAction(nameof(GetById), new { id = template.Id }, template);
     }
 
     [HttpPut("{id}")]
@@ -97,15 +87,8 @@ public sealed class EmailTemplatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<EmailTemplateDto>> Update(long id, [FromBody] UpdateEmailTemplateDto dto, CancellationToken cancellationToken)
     {
-        try
-        {
-            var template = await _mediator.Send(new UpdateEmailTemplateCommand(id, dto), cancellationToken);
-            return template is null ? NotFound() : Ok(template);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        var template = await _mediator.Send(new UpdateEmailTemplateCommand(id, dto), cancellationToken);
+        return template is null ? NotFound() : Ok(template);
     }
 
     [HttpDelete("{id}")]

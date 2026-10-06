@@ -4,6 +4,7 @@ using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
+using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.Taxes.Commands;
 
@@ -24,7 +25,7 @@ public sealed class UpdateTaxCommandHandler : IRequestHandler<UpdateTaxCommand, 
     {
         var tax = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (tax == null)
-            throw new KeyNotFoundException($"Tax with ID {request.Id} not found");
+            throw new NotFoundException($"Tax with ID {request.Id} not found");
 
         var dto = request.Tax;
 
