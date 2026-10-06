@@ -1,5 +1,6 @@
 using Mediator;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 using nInvoices.Application.Exceptions;
@@ -42,16 +43,6 @@ public sealed class CreateInvoiceTemplateCommandHandler : IRequestHandler<Create
         await _templateRepository.AddAsync(template, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return MapToDto(template);
+        return InvoiceTemplateMapper.ToDto(template);
     }
-
-    private static InvoiceTemplateDto MapToDto(InvoiceTemplate template) => new(
-        template.Id,
-        template.CustomerId,
-        template.InvoiceType,
-        template.Name,
-        template.Content,
-        template.IsActive,
-        template.CreatedAt,
-        template.UpdatedAt ?? template.CreatedAt);
 }

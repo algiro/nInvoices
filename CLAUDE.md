@@ -180,6 +180,9 @@ handler checks it, and the bulk actions report its reasons.
 `Status`, `Number` and the money totals have private setters: change them only through those methods,
 `RenumberDraft`, `AddExpenses`/`AddTaxes`, or `RestoreImported` (import only). `InvoiceLifecycleTests`
 covers every status × action pair. The frontend menu (`useInvoiceActions.actionsFor`) mirrors the table.
+Finalizing (one invoice or in bulk) goes through `IInvoiceFinalizer`: `FinalizeAsync` before the save
+(takes the number, runs the `IInvoiceLifecycleStep`s), `CompleteAsync` after it (re-renders, moves the
+other drafts on, publishes `InvoiceFinalizedNotification`). Change finalization there, never in a handler.
 
 ### Tax calculation (Strategy pattern)
 
@@ -243,7 +246,8 @@ Code style and testing rules are authoritative in `.github/instructions/`
 1. Entity in `Core/Entities/` (derive `EntityBase`); EF config in
    `Infrastructure/Data/Configurations/`.
 2. Add `DbSet` to `ApplicationDbContext`, then create a migration (command above).
-3. DTOs in `Application/DTOs/`; commands/queries/validators under
+3. DTOs in `Application/DTOs/`, entity → DTO mapping in one `Application/Mappings/<Entity>Mapper`
+   (handlers call it, never a private `MapToDto` copy); commands/queries/validators under
    `Application/Features/<Entity>/` (a DTO validator plus a command validator wrapping it).
 4. Controller in `Api/Controllers/` dispatching via Mediator (no repositories: `ArchitectureTests` fails otherwise).
 5. Frontend: `src/api/<entity>.ts` + store/view as needed.

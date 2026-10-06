@@ -42,8 +42,6 @@ public sealed class UpdateTaxCommandHandler : IRequestHandler<UpdateTaxCommand, 
         await _repository.UpdateAsync(tax, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return MapToDto(tax);
+        return TaxMapper.ToDto(tax);
     }
-
-    private static TaxDto MapToDto(Tax tax) => TaxMapper.ToDto(tax);
 }

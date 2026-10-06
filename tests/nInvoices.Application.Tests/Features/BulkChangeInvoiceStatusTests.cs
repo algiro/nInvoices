@@ -41,7 +41,8 @@ public sealed class BulkChangeInvoiceStatusTests
 
         _publisher = new Mock<IPublisher>();
         _handler = new BulkChangeInvoiceStatusCommandHandler(
-            _repository.Object, new InMemoryRepository<Customer>(customer), numbering, _drafts.Object, _unitOfWork.Object, _publisher.Object);
+            _repository.Object, new InMemoryRepository<Customer>(customer),
+            new InvoiceFinalizer(numbering, _drafts.Object, _publisher.Object), _unitOfWork.Object);
     }
 
     private Invoice Given(long id, InvoiceStatus status)

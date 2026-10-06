@@ -22,8 +22,6 @@ public sealed class GetTaxByIdQueryHandler : IRequestHandler<GetTaxByIdQuery, Ta
         if (tax == null)
             return null;
 
-        return MapToDto(tax);
+        return TaxMapper.ToDto(tax);
     }
-
-    private static TaxDto MapToDto(Tax tax) => TaxMapper.ToDto(tax);
 }

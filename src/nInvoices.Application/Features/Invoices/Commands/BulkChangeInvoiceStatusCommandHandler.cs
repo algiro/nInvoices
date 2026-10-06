@@ -1,6 +1,5 @@
 using Mediator;
 using nInvoices.Application.DTOs;
-using nInvoices.Application.Features.Invoices.Notifications;
 using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
@@ -14,28 +13,19 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
 
     private readonly IInvoiceRepository _repository;
     private readonly IRepository<Customer> _customerRepository;
-    private readonly IInvoiceNumbering _numbering;
-    private readonly IDraftInvoiceSynchronizer _drafts;
+    private readonly IInvoiceFinalizer _finalizer;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IPublisher _publisher;
-    private readonly IReadOnlyList<IInvoiceLifecycleStep> _steps;
 
     public BulkChangeInvoiceStatusCommandHandler(
         IInvoiceRepository repository,
         IRepository<Customer> customerRepository,
-        IInvoiceNumbering numbering,
-        IDraftInvoiceSynchronizer drafts,
-        IUnitOfWork unitOfWork,
-        IPublisher publisher,
-        IEnumerable<IInvoiceLifecycleStep>? steps = null)
+        IInvoiceFinalizer finalizer,
+        IUnitOfWork unitOfWork)
     {
-        _steps = steps?.ToList() ?? [];
         _repository = repository;
         _customerRepository = customerRepository;
-        _numbering = numbering;
-        _drafts = drafts;
+        _finalizer = finalizer;
         _unitOfWork = unitOfWork;
-        _publisher = publisher;
     }
 
     public async ValueTask<BulkInvoiceResultDto> Handle(BulkChangeInvoiceStatusCommand request, CancellationToken cancellationToken)
@@ -66,7 +56,7 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
             eligible.Add(invoice);
         }
 
-        var renumbered = new List<long>();
+        var outdated = new List<long>();
         if (request.Action == BulkInvoiceStatusAction.Finalize)
         {
             // Numbers follow the invoice dates: the earliest issue date gets the lowest number
@@ -79,16 +69,8 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
                     continue;
                 }
 
-                var number = await _numbering.TakeAsync(customer, invoice.IssueDate, cancellationToken);
-                if (invoice.Number != number)
-                    renumbered.Add(invoice.Id);
-                invoice.Finalize(number);
-
-                foreach (var step in _steps)
-                {
-                    if (await step.OnFinalizingAsync(invoice, customer, cancellationToken))
-                        renumbered.Add(invoice.Id);
-                }
+                if (await _finalizer.FinalizeAsync(invoice, customer, cancellationToken))
+                    outdated.Add(invoice.Id);
             }
         }
         else
@@ -103,14 +85,8 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
         if (succeeded.Count > 0)
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        if (request.Action == BulkInvoiceStatusAction.Finalize && succeeded.Count > 0)
-        {
-            await _drafts.RerenderAsync(renumbered.Distinct().ToList(), cancellationToken);
-            await _drafts.RefreshDraftsAsync(cancellationToken);
-
-            foreach (var id in succeeded)
-                await _publisher.Publish(new InvoiceFinalizedNotification(id), cancellationToken);
-        }
+        if (request.Action == BulkInvoiceStatusAction.Finalize)
+            await _finalizer.CompleteAsync(succeeded, outdated, cancellationToken);
 
         return new BulkInvoiceResultDto(succeeded, skipped);
     }

@@ -21,8 +21,6 @@ public sealed class GetTaxesByCustomerIdQueryHandler : IRequestHandler<GetTaxesB
             t => t.CustomerId == request.CustomerId, 
             cancellationToken);
 
-        return taxes.Select(MapToDto);
+        return taxes.Select(TaxMapper.ToDto);
     }
-
-    private static TaxDto MapToDto(Tax tax) => TaxMapper.ToDto(tax);
 }
