@@ -24,6 +24,7 @@
     <ProjectReference Include="..\nInvoices.Application\nInvoices.Application.csproj" />
     <ProjectReference Include="..\nInvoices.Infrastructure\nInvoices.Infrastructure.csproj" />
     <ProjectReference Include="..\nInvoices.ServiceDefaults\nInvoices.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\nInvoices.Infrastructure.Migrations.PostgreSql\nInvoices.Infrastructure.Migrations.PostgreSql.csproj" />
   </ItemGroup>
 
 </Project>

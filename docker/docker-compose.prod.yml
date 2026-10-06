@@ -64,8 +64,7 @@ services:
       - ASPNETCORE_HTTP_PORTS=8080
       - ConnectionStrings__Default=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};SSL Mode=Prefer
       - Database__Type=PostgreSQL
-      # Creates the schema from the app's model on an empty database; no-op once tables exist
-      - Database__EnsureCreated=true
+      # The API applies its EF migrations at startup: the whole schema on an empty database
       # Rows created before multi-user support belong to nobody until this names their owner
       # (the Keycloak user id, "sub"); the API assigns them at startup. See README "Multiple users".
       - MultiUser__LegacyOwnerId=${LEGACY_OWNER_ID:-}

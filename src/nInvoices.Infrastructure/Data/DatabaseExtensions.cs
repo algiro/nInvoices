@@ -17,6 +17,9 @@ namespace nInvoices.Infrastructure.Data;
 /// </summary>
 public static class DatabaseExtensions
 {
+    /// <summary>The project holding the PostgreSQL migrations (it references this one, so it's named, not typed).</summary>
+    public const string PostgreSqlMigrationsAssembly = "nInvoices.Infrastructure.Migrations.PostgreSql";
+
     public static IServiceCollection AddDatabase(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -119,7 +122,8 @@ public static class DatabaseExtensions
             case "POSTGRESQL":
                 options.UseNpgsql(connectionString, npgsqlOptions =>
                 {
-                    npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                    // PostgreSQL has its own migrations (the SQLite ones in this assembly can't run on it)
+                    npgsqlOptions.MigrationsAssembly(PostgreSqlMigrationsAssembly);
                     npgsqlOptions.EnableRetryOnFailure(
                         maxRetryCount: 5,
                         maxRetryDelay: TimeSpan.FromSeconds(30),

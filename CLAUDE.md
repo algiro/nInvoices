@@ -21,9 +21,10 @@ dotnet test --filter "FullyQualifiedName~CreateCustomer"   # run a single test /
 dotnet test --filter "DisplayName~Scenario"
 dotnet test /p:CollectCoverage=true /p:CoverageReportsFormat=opencover
 
-# EF Core migrations — DbContext lives in Infrastructure, startup project is the API
-dotnet ef migrations add <Name> -p src/nInvoices.Infrastructure -s src/nInvoices.Api
-dotnet ef database update -s src/nInvoices.Api      # or run from src/nInvoices.Api
+# EF Core migrations: one set per provider. A model change needs BOTH (MigrationsUpToDateTests fails otherwise)
+dotnet ef migrations add <Name> -p src/nInvoices.Infrastructure -s src/nInvoices.Api --context ApplicationDbContext   # SQLite
+dotnet ef migrations add <Name> -p src/nInvoices.Infrastructure.Migrations.PostgreSql -s src/nInvoices.Infrastructure.Migrations.PostgreSql --context ApplicationDbContext   # PostgreSQL
+dotnet ef database update -s src/nInvoices.Api --context ApplicationDbContext      # local SQLite database
 ```
 
 ### Frontend (`src/nInvoices.Web`)
@@ -61,8 +62,8 @@ aspire run --project src/nInvoices.AppHost      # or: dotnet run --project src/n
 ```
 
 Brings up PostgreSQL + Keycloak (realm imported from `src/nInvoices.AppHost/keycloak/`, port
-8088, test user `testuser` / `Test123!`) + the API (real Keycloak auth, `Database:EnsureCreated`
-builds the PG schema from the EF model) + the Vite dev server, with the Aspire dashboard. No data
+8088, test user `testuser` / `Test123!`) + the API (real Keycloak auth; it applies the PostgreSQL EF
+migrations at startup) + the Vite dev server, with the Aspire dashboard. No data
 volumes — every run starts clean. Never deployed.
 
 ### Run full stack (Docker + Keycloak + PostgreSQL)
@@ -153,9 +154,17 @@ against a running API + frontend.
   (see `InvoiceRepository`). Comparing one in a query throws. Never rename a purpose string, and
   don't touch encrypted columns with `ExecuteUpdate` or raw SQL. `ApplicationDbContext` takes a
   `FieldEncryptor`; tests use `TestEncryption.Encryptor`.
+- **Schema changes are EF migrations, one per provider**: SQLite in `Infrastructure/Data/Migrations`, PostgreSQL in
+  `nInvoices.Infrastructure.Migrations.PostgreSql` (commands above). On PostgreSQL the API applies pending
+  migrations at startup (`Program.cs`), so a deploy needs nothing else. `MigrationsUpToDateTests` fails when the
+  model changed without a migration for each provider. `dotnet test --filter Category=PostgreSql` (needs Docker)
+  checks on a real PostgreSQL 17 that the migrations build exactly the model and that production's schema
+  (`tests/.../PostgreSql/production-schema.sql`, a pg_dump) has nothing pending. `docker/migrations-postgres` is
+  frozen (only for databases restored from backups older than 2026-10-06).
 - Database provider is chosen by `Database:Type` config (`SQLite` | `PostgreSQL`); the
-  connection string key is `ConnectionStrings:Default`. Migrations assembly is
-  `nInvoices.Infrastructure` for both providers, so a single migration set must work on both.
+  connection string key is `ConnectionStrings:Default`. Each provider has its own migrations assembly:
+  `nInvoices.Infrastructure` for SQLite, `nInvoices.Infrastructure.Migrations.PostgreSql` for PostgreSQL
+  (`DatabaseExtensions.PostgreSqlMigrationsAssembly`).
 
 ### Invoice lifecycle
 
