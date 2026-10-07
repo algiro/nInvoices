@@ -7,6 +7,7 @@
     <div class="qr-block">
       <p class="heading">{{ info.qrHeading }}</p>
       <!-- Drawn by the server from the invoice data; not user input -->
+      <!-- eslint-disable-next-line vue/no-v-html -->
       <div class="qr" role="img" :aria-label="`${info.qrHeading} ${info.qrUrl}`" v-html="info.qrSvg"></div>
       <p class="legend">{{ info.legend }}</p>
     </div>

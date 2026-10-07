@@ -3,8 +3,8 @@ import { apiClient } from './client';
 export interface DataExport {
   exportVersion: string;
   exportedAt: string;
-  customers?: any[];
-  invoices?: any[];
+  customers?: unknown[];
+  invoices?: unknown[];
   /** Templates shared by all customers; absent from exports made before they existed. */
   sharedTemplates?: unknown;
   /** Invoice numbering, template images, holiday calendars, e-invoicing settings. */

@@ -143,7 +143,7 @@ async function handleDelete(customer: CustomerDto) {
   try {
     await store.remove(customer.id)
     toast.success('Customer deleted')
-  } catch (error: any) {
+  } catch (error) {
     toast.failure('Failed to delete customer', error)
   }
 }

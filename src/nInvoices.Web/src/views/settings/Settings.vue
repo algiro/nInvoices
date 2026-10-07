@@ -186,7 +186,7 @@ import type { ImageAssetDto } from '@/api/imageAssets'
 import type { DataExport } from '@/api/importExport'
 import { decryptBackup, encryptBackup, isEncryptedBackup, MIN_PASSPHRASE_LENGTH, WrongPassphraseError } from '@/utils/backupCrypto'
 import { useSettingsStore } from '@/stores/settings'
-import { useToast } from '@/composables/useToast'
+import { useToast, errorMessage } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import BasePanel from '@/components/ui/BasePanel.vue'
@@ -248,7 +248,7 @@ async function loadImageAssets() {
     for (const asset of imageAssets.value) {
       loadImageData(asset.id)
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Failed to load image assets:', error)
   } finally {
     imageAssetsLoading.value = false
@@ -260,7 +260,7 @@ async function loadImageData(id: number) {
   try {
     const data = await imageAssetsApi.getById(id)
     imageDataCache[id] = data.base64Data
-  } catch (error: any) {
+  } catch (error) {
     console.error('Failed to load image data:', error)
   }
 }
@@ -275,8 +275,8 @@ async function handleUploadImage() {
     imageFile.value = null
     if (imageFileInput.value) imageFileInput.value.value = ''
     await loadImageAssets()
-  } catch (error: any) {
-    imageUploadError.value = error.response?.data?.error || error.message || 'Upload failed'
+  } catch (error) {
+    imageUploadError.value = errorMessage(error, 'Upload failed')
   } finally {
     imageUploading.value = false
   }
@@ -298,7 +298,7 @@ async function handleDeleteImage(asset: ImageAssetDto) {
     await imageAssetsApi.delete(asset.id)
     delete imageDataCache[asset.id]
     await loadImageAssets()
-  } catch (error: any) {
+  } catch (error) {
     toast.failure('Failed to delete image', error)
   }
 }
@@ -378,8 +378,8 @@ async function handleExport() {
       `Backup downloaded: ${backup.customers?.length ?? 0} customer(s) and ${backup.invoices?.length ?? 0} invoice(s), ` +
         (encrypted ? 'encrypted with your passphrase.' : 'not encrypted.'),
       false)
-  } catch (error: any) {
-    showResult(error.message || 'The backup could not be created.', true)
+  } catch (error) {
+    showResult(errorMessage(error, 'The backup could not be created.'), true)
   } finally {
     exporting.value = false
   }
@@ -473,8 +473,8 @@ async function handleImport() {
 
     showResult(`Restore complete. ${parts.join('; ')}.`, errors.length > 0, errors)
     resetImport()
-  } catch (error: any) {
-    showResult(error instanceof SyntaxError ? 'This file is not an nInvoices backup.' : error.message || 'Restore failed', true)
+  } catch (error) {
+    showResult(error instanceof SyntaxError ? 'This file is not an nInvoices backup.' : errorMessage(error, 'Restore failed'), true)
   } finally {
     importing.value = false
   }
@@ -510,8 +510,8 @@ async function handleDeleteAccount() {
     } else {
       await authService.deleteSignInAccount()
     }
-  } catch (error: any) {
-    deleteError.value = error.message || 'The account could not be deleted.'
+  } catch (error) {
+    deleteError.value = errorMessage(error, 'The account could not be deleted.')
   } finally {
     deleting.value = false
   }

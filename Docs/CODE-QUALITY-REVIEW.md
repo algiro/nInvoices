@@ -20,7 +20,7 @@ The problems sit at the edges of that architecture. Several rules the design imp
 | 8 | Dead and duplicated code | Medium | S — ✅ done |
 | 9 | Oversized classes and components | Medium | M–L — ◐ backend done |
 | 10 | No CI, no shared build settings, no analyzers | Medium | S |
-| 11 | Frontend: no type-checking of `.vue` files, no lint, no tests | Medium | M |
+| 11 | Frontend: no type-checking of `.vue` files, no lint, no tests | Medium | M — ✅ done |
 | 12 | Inconsistent time source (`DateTime.*` vs `TimeProvider`) | Low | S |
 | 13 | Package hygiene | Low | S |
 | 14 | Repository hygiene (root clutter, stale docs) | Low | S |
@@ -278,7 +278,21 @@ Size is a symptom, not the problem. These files mix several responsibilities, th
 3. `Directory.Packages.props` for versions.
 4. A GitHub Actions workflow: `dotnet build` + `dotnet test` (with coverage) + `npm ci && npm run build && npm run lint && npm test`. Add a PG Testcontainers job once §6 exists.
 
-## 11. Frontend quality gates — Medium
+## 11. Frontend quality gates — Medium — ✅ Done (2026-10-07)
+
+> **Resolution.** `npm run build` type-checks with `vue-tsc` (checked: a type error planted in a `.vue` file passes
+> `tsc` and fails `vue-tsc`); it found one real mismatch (`AddressDto.state` can be `null`). ESLint
+> (`eslint.config.js`: typescript-eslint + eslint-plugin-vue recommended, layout rules off) runs clean.
+> Vitest runs 21 tests on the logic that mirrors backend rules: the time-entry model (`useWorkMonth`), day
+> amounts per rate, the actions each invoice status offers, the error helpers (a planted change fails 4).
+> `npm run check` runs all three. All 78 `catch (e: any)` are now `unknown`, read through `errorMessage`,
+> `apiStatus`, `apiErrorData`; stores now show the API's explanation instead of axios's "Request failed with
+> status code 400". No `any` is left. `alert()`/`confirm()` were already gone. Data access follows one rule,
+> now written in CLAUDE.md (stores for shared/cached state, `api/` for one-off calls); the one store nothing
+> used (`stores/templates.ts`, plus the unused `stores/index.ts`) is deleted. The `v-html` site renders a
+> server-drawn QR SVG, and user templates are already in sandboxed iframes without scripts; lint warns on
+> any new `v-html`. Prettier was not added: reformatting every file would bury real changes, and lint covers
+> what matters. Not covered: `npm audit` reports 4 high advisories in `axios` and `source-map-js` (§13).
 
 - `"build": "tsc && vite build"`: plain `tsc` does **not** type-check `.vue` single-file components, so most of the UI code is never type-checked. Use `vue-tsc --noEmit`.
 - No ESLint (`eslint-plugin-vue`, `@typescript-eslint`) or Prettier.

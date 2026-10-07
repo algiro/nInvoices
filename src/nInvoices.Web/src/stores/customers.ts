@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { customersApi } from '../api';
 import type { CustomerDto, CreateCustomerDto, UpdateCustomerDto } from '../types';
+import { errorMessage } from '@/composables/useToast';
 
 /**
  * Customers Store
@@ -28,8 +29,8 @@ export const useCustomersStore = defineStore('customers', () => {
     error.value = null;
     try {
       customers.value = await customersApi.getAll();
-    } catch (e: any) {
-      error.value = e.message || 'Failed to fetch customers';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to fetch customers');
       throw e;
     } finally {
       loading.value = false;
@@ -42,8 +43,8 @@ export const useCustomersStore = defineStore('customers', () => {
     try {
       selectedCustomer.value = await customersApi.getById(id);
       return selectedCustomer.value;
-    } catch (e: any) {
-      error.value = e.message || 'Failed to fetch customer';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to fetch customer');
       throw e;
     } finally {
       loading.value = false;
@@ -57,8 +58,8 @@ export const useCustomersStore = defineStore('customers', () => {
       const newCustomer = await customersApi.create(data);
       customers.value.push(newCustomer);
       return newCustomer;
-    } catch (e: any) {
-      error.value = e.message || 'Failed to create customer';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to create customer');
       throw e;
     } finally {
       loading.value = false;
@@ -74,8 +75,8 @@ export const useCustomersStore = defineStore('customers', () => {
       if (index !== -1) {
         await fetchById(id); // Refresh the customer data
       }
-    } catch (e: any) {
-      error.value = e.message || 'Failed to update customer';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to update customer');
       throw e;
     } finally {
       loading.value = false;
@@ -91,8 +92,8 @@ export const useCustomersStore = defineStore('customers', () => {
       if (selectedCustomer.value?.id === id) {
         selectedCustomer.value = null;
       }
-    } catch (e: any) {
-      error.value = e.message || 'Failed to delete customer';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to delete customer');
       throw e;
     } finally {
       loading.value = false;

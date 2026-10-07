@@ -140,7 +140,7 @@ async function handleDelete(project: ProjectDto) {
     } else {
       toast.success('Project deleted')
     }
-  } catch (error: any) {
+  } catch (error) {
     toast.failure('Failed to delete project', error)
   }
 }

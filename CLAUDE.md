@@ -32,8 +32,12 @@ dotnet ef database update -s src/nInvoices.Api --context ApplicationDbContext   
 ```bash
 npm install
 npm run dev       # Vite dev server on http://localhost:5173
-npm run build     # tsc type-check + vite build
+npm run build     # vue-tsc type-check (incl. .vue files) + vite build
 npm run preview
+npm run check     # what to run before committing: typecheck + lint + test
+npm run typecheck # vue-tsc --noEmit (plain tsc does not see inside .vue files)
+npm run lint      # ESLint (eslint.config.js: typescript-eslint + eslint-plugin-vue; layout rules off)
+npm run test      # Vitest, src/**/*.test.ts next to the code (Node; `// @vitest-environment jsdom` per file if needed)
 ```
 
 ### Run locally — fast loop (SQLite + DevAuth, no Docker/Keycloak)
@@ -143,6 +147,13 @@ against a running API + frontend.
 - **nInvoices.Web** — Vue 3 Composition API. `src/api/` wraps a shared axios `client.ts` with
   one module per resource; `src/stores/` Pinia; `src/services/auth.service.ts` uses
   `oidc-client-ts` for Keycloak. Views in `src/views/`, routing in `src/router/`.
+  **Data access**: a Pinia store holds state that several views share or cache (customers, projects,
+  rates, taxes, settings, auth); a one-off read or action of a single view or panel calls `src/api/`
+  directly. **Errors**: `catch (error)` stays `unknown`; read it through `errorMessage(error, fallback)`,
+  `apiStatus`, `apiErrorCode`, `apiErrorData` (`composables/useToast.ts`) or `toast.failure(title, error)`,
+  never `error: any`. No `alert()`/`confirm()`: use `useToast` / `useConfirm`. `v-html` only for
+  server-generated markup (lint warns); user-authored HTML goes in a sandboxed `<iframe srcdoc>` without
+  `allow-scripts`.
 
 ### Persistence conventions
 
@@ -257,7 +268,8 @@ Code style and testing rules are authoritative in `.github/instructions/`
    (handlers call it, never a private `MapToDto` copy); commands/queries/validators under
    `Application/Features/<Entity>/` (a DTO validator plus a command validator wrapping it).
 4. Controller in `Api/Controllers/` dispatching via Mediator (no repositories: `ArchitectureTests` fails otherwise).
-5. Frontend: `src/api/<entity>.ts` + store/view as needed.
+5. Frontend: `src/api/<entity>.ts` + store (only if shared, see Data access) / view as needed;
+   `npm run check` must pass.
 
 ## Notes
 

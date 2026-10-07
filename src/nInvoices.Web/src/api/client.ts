@@ -72,22 +72,22 @@ class ApiClient {
     );
   }
 
-  async get<T>(url: string, params?: any): Promise<T> {
+  async get<T>(url: string, params?: unknown): Promise<T> {
     const response = await this.client.get<T>(url, { params });
     return response.data;
   }
 
-  async post<T>(url: string, data?: any): Promise<T> {
+  async post<T>(url: string, data?: unknown): Promise<T> {
     const response = await this.client.post<T>(url, data);
     return response.data;
   }
 
-  async put<T>(url: string, data?: any): Promise<T> {
+  async put<T>(url: string, data?: unknown): Promise<T> {
     const response = await this.client.put<T>(url, data);
     return response.data;
   }
 
-  async delete<T>(url: string, params?: any): Promise<T> {
+  async delete<T>(url: string, params?: unknown): Promise<T> {
     const response = await this.client.delete<T>(url, { params });
     return response.data;
   }
@@ -115,7 +115,7 @@ class ApiClient {
   }
 
   /** POSTs `data` and returns the response as a file, with the name the server suggests. */
-  async postForFile(url: string, data?: any): Promise<{ blob: Blob; fileName: string | null }> {
+  async postForFile(url: string, data?: unknown): Promise<{ blob: Blob; fileName: string | null }> {
     const response = await this.client.post(url, data, { responseType: 'blob' });
     const disposition = String(response.headers['content-disposition'] ?? '');
     const match = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i.exec(disposition);

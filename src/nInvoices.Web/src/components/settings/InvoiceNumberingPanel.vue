@@ -67,7 +67,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { invoicesApi } from '@/api'
 import type { InvoiceNumberingDto } from '@/types'
-import { useToast } from '@/composables/useToast'
+import { useToast, errorMessage, apiStatus } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import BasePanel from '@/components/ui/BasePanel.vue'
 import BaseField from '@/components/ui/BaseField.vue'
@@ -124,8 +124,8 @@ async function load() {
   error.value = null
   try {
     apply(await invoicesApi.getNumbering())
-  } catch (err: any) {
-    error.value = err.message || 'Failed to load the numbering'
+  } catch (err) {
+    error.value = errorMessage(err, 'Failed to load the numbering')
   } finally {
     loading.value = false
   }
@@ -141,10 +141,10 @@ async function save(nextValue: number, successTitle: string) {
     })
     apply(result)
     toast.success(successTitle, { message: `Next invoice number: ${result.nextNumber}` })
-  } catch (err: any) {
+  } catch (err) {
     // A bad pattern is the user's to fix in the field; anything else is a failure
-    const message = err.response?.data?.error || err.message || 'Failed to update the numbering'
-    if (err.response?.status === 400) patternError.value = message
+    const message = errorMessage(err, 'Failed to update the numbering')
+    if (apiStatus(err) === 400) patternError.value = message
     else toast.failure('Failed to update the numbering', err)
   } finally {
     saving.value = false

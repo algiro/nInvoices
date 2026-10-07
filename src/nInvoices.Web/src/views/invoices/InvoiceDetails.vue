@@ -155,6 +155,7 @@ import { invoicesApi } from '@/api/invoices'
 import { useInvoiceActions, actionsFor, isMonthly, type InvoiceActionId } from '@/composables/useInvoiceActions'
 import { setPageTitle } from '@/composables/usePageTitle'
 import { formatMoney, formatDate, formatPeriod, invoiceStatus, invoiceTypeLabel } from '@/utils/format'
+import { errorMessage } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
@@ -230,8 +231,8 @@ async function loadData() {
       invoicesStore.fetchById(invoiceId.value),
       customersStore.customers.length ? Promise.resolve() : customersStore.fetchAll()
     ])
-  } catch (err: any) {
-    error.value = err.message || 'Failed to load invoice'
+  } catch (err) {
+    error.value = errorMessage(err, 'Failed to load invoice')
   } finally {
     loading.value = false
   }

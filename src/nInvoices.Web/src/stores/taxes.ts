@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { taxesApi } from '@/api/taxes'
 import type { TaxDto, CreateTaxDto, UpdateTaxDto } from '@/types'
+import { errorMessage } from '@/composables/useToast'
 
 export const useTaxesStore = defineStore('taxes', () => {
   const taxes = ref<TaxDto[]>([])
@@ -22,8 +23,8 @@ export const useTaxesStore = defineStore('taxes', () => {
       loading.value = true
       error.value = null
       taxes.value = await taxesApi.getAll()
-    } catch (err: any) {
-      error.value = err.message || 'Failed to fetch taxes'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to fetch taxes')
       throw err
     } finally {
       loading.value = false
@@ -36,8 +37,8 @@ export const useTaxesStore = defineStore('taxes', () => {
       error.value = null
       selectedTax.value = await taxesApi.getById(id)
       return selectedTax.value
-    } catch (err: any) {
-      error.value = err.message || 'Failed to fetch tax'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to fetch tax')
       throw err
     } finally {
       loading.value = false
@@ -56,8 +57,8 @@ export const useTaxesStore = defineStore('taxes', () => {
       ]
       
       return customerTaxes
-    } catch (err: any) {
-      error.value = err.message || 'Failed to fetch customer taxes'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to fetch customer taxes')
       throw err
     } finally {
       loading.value = false
@@ -71,8 +72,8 @@ export const useTaxesStore = defineStore('taxes', () => {
       const newTax = await taxesApi.create(data)
       taxes.value.push(newTax)
       return newTax
-    } catch (err: any) {
-      error.value = err.message || 'Failed to create tax'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to create tax')
       throw err
     } finally {
       loading.value = false
@@ -89,8 +90,8 @@ export const useTaxesStore = defineStore('taxes', () => {
       if (index !== -1) {
         taxes.value[index] = { ...taxes.value[index], ...data }
       }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to update tax'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to update tax')
       throw err
     } finally {
       loading.value = false
@@ -103,8 +104,8 @@ export const useTaxesStore = defineStore('taxes', () => {
       error.value = null
       await taxesApi.delete(id)
       taxes.value = taxes.value.filter(t => t.id !== id)
-    } catch (err: any) {
-      error.value = err.message || 'Failed to delete tax'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to delete tax')
       throw err
     } finally {
       loading.value = false

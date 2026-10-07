@@ -141,8 +141,7 @@ class AuthService {
     const user = await this.getUser();
     if (!user) return false;
     
-    const roles = (user.profile as any).realm_access?.roles || [];
-    return roles.includes(role);
+    return realmRoles(user.profile).includes(role);
   }
 
   /**
@@ -163,10 +162,16 @@ class AuthService {
       email: user.profile.email,
       name: user.profile.name,
       preferred_username: user.profile.preferred_username,
-      roles: (user.profile as any).realm_access?.roles || []
+      roles: realmRoles(user.profile)
     };
   }
 }
 
 export const authService = new AuthService();
 export default authService;
+
+/** Keycloak puts the realm roles in its own claim, outside the standard OIDC profile. */
+function realmRoles(profile: object): string[] {
+  const roles = (profile as { realm_access?: { roles?: unknown } }).realm_access?.roles;
+  return Array.isArray(roles) ? roles.filter((r): r is string => typeof r === 'string') : [];
+}

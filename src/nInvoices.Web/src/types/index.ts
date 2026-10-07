@@ -72,7 +72,7 @@ export interface AddressDto {
   city: string;
   zipCode: string;
   country: string;
-  state?: string;
+  state?: string | null;
 }
 
 export interface CustomerDto {

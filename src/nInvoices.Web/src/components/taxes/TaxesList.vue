@@ -155,7 +155,7 @@ async function handleDelete(tax: TaxDto) {
   try {
     await taxesStore.remove(tax.id)
     toast.success('Tax deleted')
-  } catch (error: any) {
+  } catch (error) {
     toast.failure('Failed to delete tax', error)
   }
 }

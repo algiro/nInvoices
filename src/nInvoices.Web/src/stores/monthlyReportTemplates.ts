@@ -7,6 +7,7 @@ import type {
   UpdateMonthlyReportTemplateDto,
   TemplateValidationResultDto
 } from '@/types';
+import { errorMessage } from '@/composables/useToast';
 
 export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplates', () => {
   const templates = ref<MonthlyReportTemplateDto[]>([]);
@@ -24,8 +25,8 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
         monthlyReportTemplatesApi.getShared()
       ]);
       templates.value = [...own, ...shared];
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Failed to fetch templates';
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to fetch templates');
       throw err;
     } finally {
       loading.value = false;
@@ -38,8 +39,8 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
     try {
       currentTemplate.value = await monthlyReportTemplatesApi.getById(id);
       return currentTemplate.value;
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Failed to fetch template';
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to fetch template');
       throw err;
     } finally {
       loading.value = false;
@@ -53,8 +54,8 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
       const created = await monthlyReportTemplatesApi.create(dto);
       templates.value.push(created);
       return created;
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Failed to create template';
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to create template');
       throw err;
     } finally {
       loading.value = false;
@@ -74,8 +75,8 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
         currentTemplate.value = updated;
       }
       return updated;
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Failed to update template';
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to update template');
       throw err;
     } finally {
       loading.value = false;
@@ -91,8 +92,8 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
       if (currentTemplate.value?.id === id) {
         currentTemplate.value = null;
       }
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Failed to delete template';
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to delete template');
       throw err;
     } finally {
       loading.value = false;
@@ -114,8 +115,8 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
                     t.id === id : t.isActive
         }));
       }
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Failed to activate template';
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to activate template');
       throw err;
     } finally {
       loading.value = false;
@@ -131,8 +132,8 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
       if (template) {
         template.isActive = false;
       }
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Failed to deactivate template';
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to deactivate template');
       throw err;
     } finally {
       loading.value = false;
@@ -144,8 +145,8 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
     error.value = null;
     try {
       return await monthlyReportTemplatesApi.validate(content);
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Failed to validate template';
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to validate template');
       throw err;
     } finally {
       loading.value = false;

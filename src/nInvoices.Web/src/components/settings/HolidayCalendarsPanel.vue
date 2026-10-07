@@ -157,7 +157,7 @@ import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { holidaysApi } from '@/api/holidays'
 import { HolidayRuleKind } from '@/types'
 import type { HolidayCalendarDto, HolidayCountryDto, HolidayRuleDto, SaveHolidayRuleDto, Weekday } from '@/types'
-import { useToast } from '@/composables/useToast'
+import { useToast, apiStatus } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import BasePanel from '@/components/ui/BasePanel.vue'
 import BaseField from '@/components/ui/BaseField.vue'
@@ -215,9 +215,9 @@ async function load() {
   loading.value = true
   try {
     calendar.value = await holidaysApi.getCalendar(code, year.value)
-  } catch (error: any) {
+  } catch (error) {
     // 404: a country with no built-in holidays and none added yet
-    if (error?.response?.status !== 404) toast.failure('Could not load the holidays', error)
+    if (apiStatus(error) !== 404) toast.failure('Could not load the holidays', error)
   } finally {
     loading.value = false
   }

@@ -62,6 +62,7 @@ import StatusPill from '@/components/ui/StatusPill.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import { formatMoney, formatDate, formatPeriod, invoiceStatus, invoiceTypeLabel } from '@/utils/format'
+import { errorMessage } from '@/composables/useToast'
 
 const props = defineProps<{ customerId: number }>()
 
@@ -76,8 +77,8 @@ async function load() {
   try {
     const list = await invoicesApi.getByCustomer(props.customerId)
     invoices.value = [...list].sort((a, b) => b.issueDate.localeCompare(a.issueDate) || b.id - a.id)
-  } catch (error: any) {
-    loadError.value = error?.message ?? 'Unknown error'
+  } catch (error) {
+    loadError.value = errorMessage(error, 'Unknown error')
   } finally {
     loading.value = false
   }

@@ -277,7 +277,7 @@ import LoadingState from '@/components/ui/LoadingState.vue'
 import ActionMenu, { type ActionMenuItem } from '@/components/ui/ActionMenu.vue'
 import { useInvoiceActions, actionsFor, type InvoiceActionId } from '@/composables/useInvoiceActions'
 import { useSavedViews } from '@/composables/useSavedViews'
-import { useToast } from '@/composables/useToast'
+import { useToast, errorMessage } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import { formatMoney, formatDate, formatPeriod, invoiceStatus, invoiceTypeLabel } from '@/utils/format'
 
@@ -386,8 +386,8 @@ async function loadPage() {
     loadError.value = null
     // The server moves a page past the end back to the last one; keep the URL in step
     if (result.page !== params.value.page) setQuery({ page: result.page === 1 ? undefined : result.page })
-  } catch (error: any) {
-    if (id === requestId) loadError.value = error?.message ?? 'Unknown error'
+  } catch (error) {
+    if (id === requestId) loadError.value = errorMessage(error, 'Unknown error')
   } finally {
     if (id === requestId) loading.value = false
   }

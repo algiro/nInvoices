@@ -51,13 +51,27 @@ export function apiErrorCode(error: unknown): string | null {
   return typeof code === 'string' ? code : null
 }
 
-/** Turns an unknown thrown value into a readable message, preferring the API's own explanation. */
-export function errorMessage(error: unknown): string {
+/** HTTP status of a failed API call; null when the thrown value is not an HTTP error. */
+export function apiStatus(error: unknown): number | null {
+  const status = (error as { response?: { status?: unknown } } | null)?.response?.status
+  return typeof status === 'number' ? status : null
+}
+
+/** Body of a failed API call, e.g. a 400's validation errors; null when there is none. */
+export function apiErrorData(error: unknown): Record<string, unknown> | null {
+  return apiErrorBody(error) as Record<string, unknown> | null
+}
+
+/**
+ * Turns an unknown thrown value into a readable message, preferring the API's own explanation;
+ * `fallback` when the value carries none.
+ */
+export function errorMessage(error: unknown, fallback = 'Something went wrong. Please try again.'): string {
   const apiMessage = apiErrorBody(error)?.error
   if (typeof apiMessage === 'string' && apiMessage) return apiMessage
   if (error instanceof Error && error.message) return error.message
-  if (typeof error === 'string') return error
-  return 'Something went wrong. Please try again.'
+  if (typeof error === 'string' && error) return error
+  return fallback
 }
 
 export function useToast() {

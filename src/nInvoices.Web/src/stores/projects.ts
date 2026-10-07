@@ -7,6 +7,7 @@ import type {
   UpdateProjectDto,
   DeleteProjectResultDto
 } from '@/types'
+import { errorMessage } from '@/composables/useToast'
 
 export const useProjectsStore = defineStore('projects', () => {
   const projects = ref<ProjectDto[]>([])
@@ -36,8 +37,8 @@ export const useProjectsStore = defineStore('projects', () => {
       const list = await projectsApi.getByCustomerId(customerId, includeInactive)
       upsert(list, customerId)
       return list
-    } catch (err: any) {
-      error.value = err.message || 'Failed to fetch projects'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to fetch projects')
       throw err
     } finally {
       loading.value = false
@@ -51,8 +52,8 @@ export const useProjectsStore = defineStore('projects', () => {
       const created = await projectsApi.create(data)
       projects.value.push(created)
       return created
-    } catch (err: any) {
-      error.value = err.message || 'Failed to create project'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to create project')
       throw err
     } finally {
       loading.value = false
@@ -69,8 +70,8 @@ export const useProjectsStore = defineStore('projects', () => {
         projects.value[index] = updated
       }
       return updated
-    } catch (err: any) {
-      error.value = err.message || 'Failed to update project'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to update project')
       throw err
     } finally {
       loading.value = false
@@ -91,8 +92,8 @@ export const useProjectsStore = defineStore('projects', () => {
         }
       }
       return result
-    } catch (err: any) {
-      error.value = err.message || 'Failed to delete project'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to delete project')
       throw err
     } finally {
       loading.value = false

@@ -1,6 +1,6 @@
 <template>
   <div class="field" :class="{ 'has-error': !!error }">
-    <label v-if="label" :for="for" class="label">
+    <label v-if="label" :for="props.for" class="label">
       {{ label }}
       <span v-if="required" class="required" aria-hidden="true">*</span>
       <span v-else-if="optional" class="optional">optional</span>
@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   label?: string
   /** id of the control the label points to */
   for?: string

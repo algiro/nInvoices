@@ -149,7 +149,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { complianceApi, verifactuApi } from '@/api'
 import type { ComplianceCountryDto, ChainReportDto, VerifactuStatusDto } from '@/types'
-import { useToast } from '@/composables/useToast'
+import { useToast, errorMessage, apiStatus, apiErrorData } from '@/composables/useToast'
 import BasePanel from '@/components/ui/BasePanel.vue'
 import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -244,8 +244,8 @@ async function uploadCertificate(country: ComplianceCountryDto) {
     certFiles[code] = null
     certPasswords[code] = ''
     toast.success('Certificate stored', { message: result.settings.certificate?.subject })
-  } catch (err: any) {
-    if (err.response?.status === 400) errors[code] = { ...errors[code], certificate: err.response.data?.error || 'The certificate was not accepted' }
+  } catch (err) {
+    if (apiStatus(err) === 400) errors[code] = { ...errors[code], certificate: errorMessage(err, 'The certificate was not accepted') }
     else toast.failure('Failed to store the certificate', err)
   } finally {
     certBusy.value = null
@@ -258,7 +258,7 @@ async function removeCertificate(country: ComplianceCountryDto) {
   try {
     replaceKeepingForm(await complianceApi.removeCertificate(code))
     toast.success('Certificate removed')
-  } catch (err: any) {
+  } catch (err) {
     toast.failure('Failed to remove the certificate', err)
   } finally {
     certBusy.value = null
@@ -303,8 +303,8 @@ async function load() {
     const result = await complianceApi.getCountries()
     countries.value = []
     result.forEach(apply)
-  } catch (err: any) {
-    loadError.value = err.message || 'Failed to load the country rules'
+  } catch (err) {
+    loadError.value = errorMessage(err, 'Failed to load the country rules')
   }
 }
 
@@ -323,15 +323,15 @@ async function save(country: ComplianceCountryDto) {
     })
     apply(result)
     toast.success(`${country.name} rules ${result.settings.isEnabled ? 'turned on' : 'saved (off)'}`)
-  } catch (err: any) {
-    const data = err.response?.data
-    if (err.response?.status === 400) {
+  } catch (err) {
+    const data = apiErrorData(err)
+    if (apiStatus(err) === 400) {
       const byField: Record<string, string> = {}
       for (const issue of (data?.issues ?? []) as { field?: string | null; message: string }[]) {
         const key = issue.field ?? 'general'
         byField[key] = byField[key] ? `${byField[key]} ${issue.message}` : issue.message
       }
-      if (Object.keys(byField).length === 0) byField.address = data?.error || 'The settings are not valid'
+      if (Object.keys(byField).length === 0) byField.address = errorMessage(err, 'The settings are not valid')
       errors[code] = byField
     } else {
       toast.failure('Failed to save the country rules', err)

@@ -107,7 +107,7 @@ import AppIcon from '@/components/ui/AppIcon.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import { useConfirm } from '@/composables/useConfirm'
-import { useToast } from '@/composables/useToast'
+import { useToast, errorMessage } from '@/composables/useToast'
 import { setPageTitle } from '@/composables/usePageTitle'
 import { formatDate, localeLabel } from '@/utils/format'
 
@@ -160,8 +160,8 @@ async function loadData() {
     loading.value = true
     error.value = null
     await customersStore.fetchById(customerId.value)
-  } catch (err: any) {
-    error.value = err.message || 'Failed to load customer'
+  } catch (err) {
+    error.value = errorMessage(err, 'Failed to load customer')
   } finally {
     loading.value = false
   }
@@ -176,7 +176,7 @@ async function handleDelete() {
     await customersStore.remove(customerId.value)
     toast.success('Customer deleted')
     router.push('/customers')
-  } catch (err: any) {
+  } catch (err) {
     toast.failure('Could not delete the customer', err)
   }
 }

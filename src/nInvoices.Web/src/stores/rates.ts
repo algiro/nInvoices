@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { ratesApi } from '@/api/rates'
 import type { RateDto, CreateRateDto, UpdateRateDto } from '@/types'
+import { errorMessage } from '@/composables/useToast'
 
 export const useRatesStore = defineStore('rates', () => {
   const rates = ref<RateDto[]>([])
@@ -22,8 +23,8 @@ export const useRatesStore = defineStore('rates', () => {
       loading.value = true
       error.value = null
       rates.value = await ratesApi.getAll()
-    } catch (err: any) {
-      error.value = err.message || 'Failed to fetch rates'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to fetch rates')
       throw err
     } finally {
       loading.value = false
@@ -36,8 +37,8 @@ export const useRatesStore = defineStore('rates', () => {
       error.value = null
       selectedRate.value = await ratesApi.getById(id)
       return selectedRate.value
-    } catch (err: any) {
-      error.value = err.message || 'Failed to fetch rate'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to fetch rate')
       throw err
     } finally {
       loading.value = false
@@ -56,8 +57,8 @@ export const useRatesStore = defineStore('rates', () => {
       ]
       
       return customerRates
-    } catch (err: any) {
-      error.value = err.message || 'Failed to fetch customer rates'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to fetch customer rates')
       throw err
     } finally {
       loading.value = false
@@ -71,8 +72,8 @@ export const useRatesStore = defineStore('rates', () => {
       const newRate = await ratesApi.create(data)
       rates.value.push(newRate)
       return newRate
-    } catch (err: any) {
-      error.value = err.message || 'Failed to create rate'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to create rate')
       throw err
     } finally {
       loading.value = false
@@ -89,8 +90,8 @@ export const useRatesStore = defineStore('rates', () => {
       if (index !== -1) {
         rates.value[index] = updatedRate
       }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to update rate'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to update rate')
       throw err
     } finally {
       loading.value = false
@@ -103,8 +104,8 @@ export const useRatesStore = defineStore('rates', () => {
       error.value = null
       await ratesApi.delete(id)
       rates.value = rates.value.filter(r => r.id !== id)
-    } catch (err: any) {
-      error.value = err.message || 'Failed to delete rate'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to delete rate')
       throw err
     } finally {
       loading.value = false

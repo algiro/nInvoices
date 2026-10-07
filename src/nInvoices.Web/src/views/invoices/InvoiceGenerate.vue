@@ -141,7 +141,7 @@ async function handleGenerate() {
     loading.value = true
     const invoice = await invoicesStore.generate(buildPayload())
     router.push(`/invoices/${invoice.id}`)
-  } catch (error: any) {
+  } catch (error) {
     toast.failure('Failed to generate invoice', error)
   } finally {
     loading.value = false

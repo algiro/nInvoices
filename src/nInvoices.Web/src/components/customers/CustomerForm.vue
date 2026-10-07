@@ -125,7 +125,7 @@ import BasePanel from '@/components/ui/BasePanel.vue'
 import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
-import { useToast } from '@/composables/useToast'
+import { useToast, apiErrorData, apiStatus } from '@/composables/useToast'
 import { setPageTitle } from '@/composables/usePageTitle'
 import { localeLabel } from '@/utils/format'
 
@@ -294,10 +294,10 @@ async function handleSubmit() {
       toast.success('Customer created', { message: 'Next, add a rate so you can invoice them.' })
       router.push(created?.id ? { path: `/customers/${created.id}`, query: { tab: 'rates' } } : '/customers')
     }
-  } catch (error: any) {
-    const issues = error?.response?.data?.issues as { field?: string | null; message: string }[] | undefined
+  } catch (error) {
+    const issues = apiErrorData(error)?.issues as { field?: string | null; message: string }[] | undefined
     Object.keys(complianceErrors).forEach(key => delete complianceErrors[key])
-    if (error?.response?.status === 400 && issues?.length) {
+    if (apiStatus(error) === 400 && issues?.length) {
       for (const issue of issues) complianceErrors[issue.field ?? 'general'] = issue.message
       toast.failure('Some invoicing details are missing', error)
     } else {

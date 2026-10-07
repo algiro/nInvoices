@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { invoicesApi } from '../api';
 import type { InvoiceDto, GenerateInvoiceDto, UpdateInvoiceDto } from '../types';
+import { errorMessage } from '@/composables/useToast';
 
 /**
  * Invoices Store
@@ -20,8 +21,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
     error.value = null;
     try {
       invoices.value = await invoicesApi.getAll();
-    } catch (e: any) {
-      error.value = e.message || 'Failed to fetch invoices';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to fetch invoices');
       throw e;
     } finally {
       loading.value = false;
@@ -34,8 +35,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
     try {
       selectedInvoice.value = await invoicesApi.getById(id);
       return selectedInvoice.value;
-    } catch (e: any) {
-      error.value = e.message || 'Failed to fetch invoice';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to fetch invoice');
       throw e;
     } finally {
       loading.value = false;
@@ -47,8 +48,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
     error.value = null;
     try {
       invoices.value = await invoicesApi.getByCustomer(customerId);
-    } catch (e: any) {
-      error.value = e.message || 'Failed to fetch customer invoices';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to fetch customer invoices');
       throw e;
     } finally {
       loading.value = false;
@@ -71,8 +72,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
       const newInvoice = await invoicesApi.generate(data);
       invoices.value.push(newInvoice);
       return newInvoice;
-    } catch (e: any) {
-      error.value = e.message || 'Failed to generate invoice';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to generate invoice');
       throw e;
     } finally {
       loading.value = false;
@@ -85,8 +86,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
     try {
       await invoicesApi.update(id, data);
       await reload(id);
-    } catch (e: any) {
-      error.value = e.message || 'Failed to update invoice';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to update invoice');
       throw e;
     } finally {
       loading.value = false;
@@ -99,8 +100,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
     try {
       await invoicesApi.finalize(id);
       await reload(id);
-    } catch (e: any) {
-      error.value = e.message || 'Failed to finalize invoice';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to finalize invoice');
       throw e;
     } finally {
       loading.value = false;
@@ -113,8 +114,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
     try {
       await invoicesApi.markAsSent(id);
       await reload(id);
-    } catch (e: any) {
-      error.value = e.message || 'Failed to mark invoice as sent';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to mark invoice as sent');
       throw e;
     } finally {
       loading.value = false;
@@ -127,8 +128,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
     try {
       await invoicesApi.markAsPaid(id);
       await reload(id);
-    } catch (e: any) {
-      error.value = e.message || 'Failed to mark invoice as paid';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to mark invoice as paid');
       throw e;
     } finally {
       loading.value = false;
@@ -141,8 +142,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
     try {
       await invoicesApi.cancel(id);
       await reload(id);
-    } catch (e: any) {
-      error.value = e.message || 'Failed to cancel invoice';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to cancel invoice');
       throw e;
     } finally {
       loading.value = false;
@@ -158,8 +159,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
       if (selectedInvoice.value?.id === id) {
         selectedInvoice.value = null;
       }
-    } catch (e: any) {
-      error.value = e.message || 'Failed to delete invoice';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to delete invoice');
       throw e;
     } finally {
       loading.value = false;
@@ -179,8 +180,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (e: any) {
-      error.value = e.message || 'Failed to download PDF';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to download PDF');
       throw e;
     } finally {
       loading.value = false;
@@ -208,8 +209,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (e: any) {
-      error.value = e.message || 'Failed to download monthly report';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to download monthly report');
       throw e;
     } finally {
       loading.value = false;
@@ -223,8 +224,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
       const result = await invoicesApi.regenerateInvoicePdf(id);
       await reload(id);
       return result;
-    } catch (e: any) {
-      error.value = e.message || 'Failed to regenerate invoice PDF';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to regenerate invoice PDF');
       throw e;
     } finally {
       loading.value = false;
@@ -237,8 +238,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
     try {
       const result = await invoicesApi.regenerateMonthlyReportPdf(id);
       return result;
-    } catch (e: any) {
-      error.value = e.message || 'Failed to regenerate monthly report PDF';
+    } catch (e) {
+      error.value = errorMessage(e, 'Failed to regenerate monthly report PDF');
       throw e;
     } finally {
       loading.value = false;

@@ -148,7 +148,7 @@ async function handleDelete(rate: RateDto) {
   try {
     await ratesStore.remove(rate.id)
     toast.success('Rate deleted')
-  } catch (error: any) {
+  } catch (error) {
     toast.failure('Failed to delete rate', error)
   }
 }

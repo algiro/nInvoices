@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiClient } from '../api/client'
+import { errorMessage } from '@/composables/useToast'
 
 export interface InvoiceSettings {
   numberFormat: string
@@ -19,8 +20,8 @@ export const useSettingsStore = defineStore('settings', () => {
       const data = await apiClient.get<InvoiceSettings>('/api/settings/invoice')
       invoiceSettings.value = data
       return data
-    } catch (err: any) {
-      error.value = err.message || 'Failed to load invoice settings'
+    } catch (err) {
+      error.value = errorMessage(err, 'Failed to load invoice settings')
       throw err
     } finally {
       loading.value = false
