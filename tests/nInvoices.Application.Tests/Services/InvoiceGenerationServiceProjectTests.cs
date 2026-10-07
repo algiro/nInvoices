@@ -5,6 +5,7 @@ using Moq;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Models;
 using nInvoices.Application.Services;
+using nInvoices.Application.Services.InvoiceGeneration;
 using nInvoices.Core.Configuration;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
@@ -134,11 +135,10 @@ public sealed class InvoiceGenerationServiceProjectTests
         _service = new InvoiceGenerationService(
             _templateRepository.Object,
             _customerRepository.Object,
-            _rateRepository.Object,
             _taxRepository.Object,
             _invoiceRepository.Object,
-            _workDayRepository.Object,
-            _projectResolver.Object,
+            new InvoiceRateResolver(_rateRepository.Object),
+            new InvoiceWorkDays(_workDayRepository.Object, _projectResolver.Object),
             _templateRenderer.Object,
             _taxCalculationService.Object,
             new InvoiceNumbering(_sequenceRepository.Object, settings),

@@ -250,6 +250,40 @@ public sealed class ImportExportRoundTripTests
     }
 
     [Test]
+    public async Task Restore_OnAnEmptyServer_BringsBackTemplates_OnTheirCustomerOrShared()
+    {
+        await SeedSourceAsync();
+        var db = Context(_source);
+        var customerId = (await db.Customers.SingleAsync(Token)).Id;
+        var own = new InvoiceTemplate(customerId, InvoiceType.Monthly, "Acme invoice", "<p>own</p>");
+        own.Activate();
+        var shared = new InvoiceTemplate(null, InvoiceType.Monthly, "Shared invoice", "<p>shared</p>");
+        shared.Activate();
+        db.InvoiceTemplates.AddRange(own, shared);
+        db.MonthlyReportTemplates.AddRange(
+            new MonthlyReportTemplate(customerId, "Acme report", "<p>r</p>", InvoiceType.Monthly),
+            new MonthlyReportTemplate(null, "Shared report", "<p>r</p>", InvoiceType.Monthly));
+        db.EmailTemplates.AddRange(
+            new EmailTemplate(customerId, "Acme email", "Invoice", "Hi"),
+            new EmailTemplate(null, "Shared email", "Invoice", "Hello"));
+        await db.SaveChangesAsync(Token);
+
+        await RestoreAsync(await BackupAsync());
+
+        var target = Context(_target);
+        var restoredCustomer = (await target.Customers.SingleAsync(Token)).Id;
+        (await target.InvoiceTemplates.Select(t => new { t.Name, t.CustomerId, t.IsActive }).ToListAsync(Token))
+            .Select(t => (t.Name, t.CustomerId, t.IsActive))
+            .ShouldBe([("Acme invoice", (long?)restoredCustomer, true), ("Shared invoice", null, true)], ignoreOrder: true);
+        (await target.MonthlyReportTemplates.Select(t => new { t.Name, t.CustomerId }).ToListAsync(Token))
+            .Select(t => (t.Name, t.CustomerId))
+            .ShouldBe([("Acme report", (long?)restoredCustomer), ("Shared report", null)], ignoreOrder: true);
+        (await target.EmailTemplates.Select(t => new { t.Name, t.CustomerId }).ToListAsync(Token))
+            .Select(t => (t.Name, t.CustomerId))
+            .ShouldBe([("Acme email", (long?)restoredCustomer), ("Shared email", null)], ignoreOrder: true);
+    }
+
+    [Test]
     public async Task Restore_Twice_AddsNothingTheSecondTime()
     {
         await SeedSourceAsync();

@@ -18,7 +18,7 @@ The problems sit at the edges of that architecture. Several rules the design imp
 | 6 | Two schema-evolution mechanisms (EF/SQLite vs hand-written PG SQL) | Medium | M — ✅ done |
 | 7 | Sync-over-async in the PDF path | Medium | S — ✅ done |
 | 8 | Dead and duplicated code | Medium | S — ✅ done |
-| 9 | Oversized classes and components | Medium | M–L |
+| 9 | Oversized classes and components | Medium | M–L — ◐ backend done |
 | 10 | No CI, no shared build settings, no analyzers | Medium | S |
 | 11 | Frontend: no type-checking of `.vue` files, no lint, no tests | Medium | M |
 | 12 | Inconsistent time source (`DateTime.*` vs `TimeProvider`) | Low | S |
@@ -226,7 +226,27 @@ The project documents controllers as _"thin controllers that dispatch through Me
 | Status-transition endpoints | `Finalize`/`MarkAsSent`/`MarkAsPaid`/`Cancel` are four copies of the same 15 lines | ✅ Collapsed with §4 |
 | DTO mapping | `Mappings/` has 8 mappers, yet 11 handlers keep a private `MapToDto` (e.g. `InvoiceTemplateDto` built in 3 places) | ✅ `InvoiceTemplateMapper`, `WorkDayMapper`; no `MapToDto` left |
 
-## 9. Oversized classes and components — Medium
+## 9. Oversized classes and components — Medium — ◐ Backend done (2026-10-07); Vue views pending
+
+> **Resolution (backend).** `InvoiceGenerationService` (905 lines, 12 dependencies) is now a 266-line orchestrator
+> over `Services/InvoiceGeneration/`: `InvoiceCalculator` (pure: billable checks, subtotal, expenses, day hours,
+> allocation merging), `InvoiceTemplateModelBuilder` (pure: line items, project summary; it no longer needs a
+> fake `GenerateInvoiceDto` to re-render a saved invoice), `InvoiceRateResolver` (default and per-day rates, one
+> call) and `InvoiceWorkDays` (load / replace a month). `persist: bool` is gone: generate and preview are two
+> explicit paths over the same `BuildAsync`, differing only in how the month's work days are settled.
+> `InvoiceCalculatorTests` test the arithmetic with plain values. Before deleting the old code it was run side by
+> side with the new one on 3,000 random requests (rates of every type and currency, per-day rates, projects,
+> expenses, invalid input): preview, generate (incl. the saved work days) and the rebuilt model matched in every
+> case, errors included, and a planted rounding change was caught.
+> `DataPortabilityService` (739 lines) is a thin `IDataPortability` entry point over one class per kind of data
+> (`CustomerPortability`, `SharedTemplatesPortability`, `InvoicePortability`, `SettingsPortability`, helpers in
+> `PortableData`); a new round-trip test covers customer and shared templates, the part that moved.
+> The controllers no longer need splitting: `ImportExportController` is 89 lines after §5, and `InvoicesController`
+> (477) is only endpoint declarations.
+>
+> **Pending (frontend).** The Vue views and `types/index.ts` wait for §11: without `vue-tsc` a split of a
+> 900-line component is checked by nothing, and generated types are only useful once something type-checks
+> the templates against them. They also need a browser check with Keycloak running.
 
 Size is a symptom, not the problem. These files mix several responsibilities, though:
 

@@ -98,10 +98,15 @@ against a running API + frontend.
   (the generator's default is Singleton, which would capture the DbContext); in tests, wrap a
   handler call passed to `Should.ThrowAsync` in `.AsTask()`. DTOs in `DTOs/`, FluentValidation validators
   alongside features, template rendering (`ScribanTemplateRenderer`) and invoice/report
-  generation services in `Services/`, i18n JSON in `Localization/`.
+  generation services in `Services/`, i18n JSON in `Localization/`. Invoice generation
+  (`InvoiceGenerationService`) only orchestrates; its parts live in `Services/InvoiceGeneration/`:
+  `InvoiceCalculator` (pure: billable checks, subtotal, expenses, day hours), `InvoiceTemplateModelBuilder`
+  (pure: line items, project summary), `InvoiceRateResolver` (default + per-day rates → `DayRates`) and
+  `InvoiceWorkDays` (load / replace a month's work days). Put arithmetic in the calculator and test it
+  with plain values (`InvoiceCalculatorTests`).
   **Validation**: `AddApplicationRequests()` registers Mediator with `Behaviors/ValidationBehavior`,
   which runs every `IValidator<TRequest>` before the handler and throws `ValidationException`;
-  the API's `ValidationExceptionFilter` returns it as a 400 `ValidationProblemDetails` (`errors`
+  the API's `ApiExceptionFilter` returns it as a 400 `ValidationProblemDetails` (`errors`
   per field plus an `error` string). Rules live in DTO validators; a command carrying a DTO gets
   a command validator delegating to it (`Features/*/Validators/*CommandValidators.cs`).
   `CommandValidatorsTests` fails if a request carries a validated DTO without one.
@@ -111,7 +116,9 @@ against a running API + frontend.
   implements Application's `IPdfExportService` — rendered templates through headless Chrome (PuppeteerSharp,
   async), built-in layouts through QuestPDF),
   `UserContext` (reads JWT claims), and the implementations of Application/Core ports that need EF Core
-  directly: `DataPortability/DataPortabilityService` (`IDataPortability`: JSON import/export),
+  directly: `DataPortability/DataPortabilityService` (`IDataPortability`: JSON import/export, delegating to
+  one class per kind of data: `CustomerPortability`, `SharedTemplatesPortability`, `InvoicePortability`,
+  `SettingsPortability`; `ImportExportRoundTripTests` backs up and restores through all of them),
   `AccessRequestRepository` (concurrent-insert race), `AccountDataEraser` (account deletion).
 - **nInvoices.Api** — thin controllers (`Controllers/`) that only translate HTTP: they dispatch through Mediator
   (`IMediator.Send`) and never take a repository, `IUnitOfWork`, the DbContext or any Infrastructure type, nor

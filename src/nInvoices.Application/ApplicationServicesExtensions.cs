@@ -18,6 +18,8 @@ public static class ApplicationServicesExtensions
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<IInvoiceGenerationService, InvoiceGenerationService>();
+        services.AddScoped<Services.InvoiceGeneration.IInvoiceRateResolver, Services.InvoiceGeneration.InvoiceRateResolver>();
+        services.AddScoped<Services.InvoiceGeneration.IInvoiceWorkDays, Services.InvoiceGeneration.InvoiceWorkDays>();
         services.AddScoped<IInvoiceNumbering, InvoiceNumbering>();
         services.AddScoped<IDraftInvoiceSynchronizer, DraftInvoiceSynchronizer>();
         services.AddScoped<IInvoiceFinalizer, InvoiceFinalizer>();

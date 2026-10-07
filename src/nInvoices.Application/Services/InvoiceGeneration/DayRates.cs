@@ -4,14 +4,14 @@ using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Exceptions;
 
-namespace nInvoices.Application.Services;
+namespace nInvoices.Application.Services.InvoiceGeneration;
 
 /// <summary>
 /// The rates a monthly invoice is billed with: the invoice's default rate, and the rates worked
 /// days chose for themselves (say some days at one hourly rate, some at another, some at the daily
 /// rate). A day without a rate of its own uses the default.
 /// </summary>
-internal sealed class DayRates
+public sealed class DayRates
 {
     private readonly IReadOnlyDictionary<long, Rate> _byId;
 
