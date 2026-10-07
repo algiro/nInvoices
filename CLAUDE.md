@@ -146,7 +146,10 @@ against a running API + frontend.
   (images, wiring, config precedence, ports, troubleshooting): `src/nInvoices.AppHost/README.md`.
 - **nInvoices.Web** — Vue 3 Composition API. `src/api/` wraps a shared axios `client.ts` with
   one module per resource; `src/stores/` Pinia; `src/services/auth.service.ts` uses
-  `oidc-client-ts` for Keycloak. Views in `src/views/`, routing in `src/router/`.
+  `oidc-client-ts` for Keycloak. Views in `src/views/`, routing in `src/router/`. A view keeps the page's
+  flow; its parts go in `src/components/<area>/` (e.g. `invoices/list/`, `templates/editor/`, `settings/*Panel`)
+  and its logic in composables (`useInvoiceListQuery` holds the invoice list's URL state, `templateKinds.ts`
+  hides the three template APIs behind one interface). Scoped CSS moves with the markup it styles.
   **Data access**: a Pinia store holds state that several views share or cache (customers, projects,
   rates, taxes, settings, auth); a one-off read or action of a single view or panel calls `src/api/`
   directly. **Errors**: `catch (error)` stays `unknown`; read it through `errorMessage(error, fallback)`,

@@ -18,7 +18,7 @@ The problems sit at the edges of that architecture. Several rules the design imp
 | 6 | Two schema-evolution mechanisms (EF/SQLite vs hand-written PG SQL) | Medium | M — ✅ done |
 | 7 | Sync-over-async in the PDF path | Medium | S — ✅ done |
 | 8 | Dead and duplicated code | Medium | S — ✅ done |
-| 9 | Oversized classes and components | Medium | M–L — ◐ backend done |
+| 9 | Oversized classes and components | Medium | M–L — ✅ done (types generation pending) |
 | 10 | No CI, no shared build settings, no analyzers | Medium | S |
 | 11 | Frontend: no type-checking of `.vue` files, no lint, no tests | Medium | M — ✅ done |
 | 12 | Inconsistent time source (`DateTime.*` vs `TimeProvider`) | Low | S |
@@ -226,7 +226,7 @@ The project documents controllers as _"thin controllers that dispatch through Me
 | Status-transition endpoints | `Finalize`/`MarkAsSent`/`MarkAsPaid`/`Cancel` are four copies of the same 15 lines | ✅ Collapsed with §4 |
 | DTO mapping | `Mappings/` has 8 mappers, yet 11 handlers keep a private `MapToDto` (e.g. `InvoiceTemplateDto` built in 3 places) | ✅ `InvoiceTemplateMapper`, `WorkDayMapper`; no `MapToDto` left |
 
-## 9. Oversized classes and components — Medium — ◐ Backend done (2026-10-07); Vue views pending
+## 9. Oversized classes and components — Medium — ✅ Done (2026-10-07), except generated types
 
 > **Resolution (backend).** `InvoiceGenerationService` (905 lines, 12 dependencies) is now a 266-line orchestrator
 > over `Services/InvoiceGeneration/`: `InvoiceCalculator` (pure: billable checks, subtotal, expenses, day hours,
@@ -244,9 +244,25 @@ The project documents controllers as _"thin controllers that dispatch through Me
 > The controllers no longer need splitting: `ImportExportController` is 89 lines after §5, and `InvoicesController`
 > (477) is only endpoint declarations.
 >
-> **Pending (frontend).** The Vue views and `types/index.ts` wait for §11: without `vue-tsc` a split of a
-> 900-line component is checked by nothing, and generated types are only useful once something type-checks
-> the templates against them. They also need a browser check with Keycloak running.
+> **Resolution (frontend).** Each view now keeps its page-level flow; the parts live beside it:
+> - `InvoicesList.vue` 944 → 307 lines: URL state in `useInvoiceListQuery`, selection in `useInvoiceSelection`,
+>   and `components/invoices/list/` (`InvoiceSummaryTiles`, `InvoiceListFilters` with the saved views,
+>   `InvoiceBulkBar` with the bulk rules, `InvoicePager`).
+> - `TemplateEditor.vue` 811 → 424 lines (half of it CSS): `templateKinds.ts` puts the three template kinds behind
+>   one interface, so load, preview and save no longer branch on the kind; `useTemplatePreview` (debounced
+>   preview, error parsing, now unit-tested), `useEditorLayout`, `TemplateEditorHeader`, `TemplateProblems`.
+> - `Settings.vue` 771 → 107 lines: its three inline panels became `ImageAssetsPanel`, `BackupPanel` and
+>   `DeleteAccountPanel`, like the page's other panels.
+>
+> Checked in the running app (local fast loop): every element's position, size, colours and text in 16 states
+> (filters, selection, dialogs, sort; editor kinds, layouts, a syntax error; backup and delete forms) matched
+> before and after the split, and the moved behaviour was exercised (search debounce, saved views, bulk
+> confirm, Ctrl+S refused on errors, save and create, image upload/delete, plain and encrypted backup, restore).
+>
+> **Not done: generating `types/index.ts`.** The OpenAPI document does not describe the wire format yet: enums are
+> declared as integers but sent as strings, every number is `integer | string`, and no property is required.
+> Types generated from it would be looser than the hand-written ones. First make the document match
+> (string-enum and number-handling schema transformers, required non-nullable properties), then generate.
 
 Size is a symptom, not the problem. These files mix several responsibilities, though:
 
