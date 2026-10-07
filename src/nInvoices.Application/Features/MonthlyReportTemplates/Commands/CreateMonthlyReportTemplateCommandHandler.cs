@@ -1,3 +1,4 @@
+using System.Globalization;
 using Mediator;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.DTOs;
@@ -38,7 +39,7 @@ public sealed class CreateMonthlyReportTemplateCommandHandler : IRequestHandler<
         _logger.LogInformation(
             "Monthly report template {TemplateId} created for customer {CustomerId}",
             template.Id,
-            template.CustomerId?.ToString() ?? "(shared)");
+            template.CustomerId?.ToString(CultureInfo.InvariantCulture) ?? "(shared)");
 
         return MonthlyReportTemplateMapper.ToDto(template);
     }

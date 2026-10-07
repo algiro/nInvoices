@@ -28,6 +28,8 @@ public sealed class LifecycleStepTests
 
     private static CancellationToken Token => TestContext.CurrentContext.CancellationToken;
 
+    private static readonly long[] FirstInvoice = [1L];
+
     [SetUp]
     public void SetUp()
     {
@@ -95,7 +97,7 @@ public sealed class LifecycleStepTests
 
         await Finalizer().Handle(new FinalizeInvoiceCommand(1), Token);
 
-        _drafts.Verify(d => d.RerenderAsync(It.Is<IEnumerable<long>>(ids => ids.SequenceEqual(new[] { 1L })), It.IsAny<CancellationToken>()), Times.Once);
+        _drafts.Verify(d => d.RerenderAsync(It.Is<IEnumerable<long>>(ids => ids.SequenceEqual(FirstInvoice)), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
@@ -126,7 +128,7 @@ public sealed class LifecycleStepTests
             .Handle(new BulkChangeInvoiceStatusCommand(BulkInvoiceStatusAction.Finalize, [1]), Token);
 
         _calls.ShouldBe(["step", "save"]);
-        _drafts.Verify(d => d.RerenderAsync(It.Is<IEnumerable<long>>(ids => ids.SequenceEqual(new[] { 1L })), It.IsAny<CancellationToken>()), Times.Once);
+        _drafts.Verify(d => d.RerenderAsync(It.Is<IEnumerable<long>>(ids => ids.SequenceEqual(FirstInvoice)), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // --- Cancelling and deleting ---------------------------------------------------------------------

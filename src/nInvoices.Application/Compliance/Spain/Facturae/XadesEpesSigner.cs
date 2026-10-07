@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
@@ -131,7 +132,7 @@ internal static class XadesEpesSigner
         var issuerSerial = Element(document, "xades", "IssuerSerial", XadesNs);
         issuerSerial.AppendChild(Text(document, "ds", "X509IssuerName", DsNs, certificate.IssuerName.Name));
         issuerSerial.AppendChild(Text(document, "ds", "X509SerialNumber", DsNs,
-            new System.Numerics.BigInteger(certificate.GetSerialNumber(), isUnsigned: true, isBigEndian: true).ToString()));
+            new System.Numerics.BigInteger(certificate.GetSerialNumber(), isUnsigned: true, isBigEndian: true).ToString(CultureInfo.InvariantCulture)));
         var cert = Element(document, "xades", "Cert", XadesNs);
         cert.AppendChild(certDigest);
         cert.AppendChild(issuerSerial);

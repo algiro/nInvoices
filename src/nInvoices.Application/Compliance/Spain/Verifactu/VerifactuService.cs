@@ -238,7 +238,7 @@ public sealed class VerifactuService : IVerifactuService
     }
 
     /// <summary>What the record of the invoice says; null, with the reasons in <paramref name="issues"/>, if it cannot be recorded.</summary>
-    private VerifactuInvoiceData? Describe(
+    private static VerifactuInvoiceData? Describe(
         Invoice invoice, Customer customer, Core.Entities.ComplianceSettings settings, List<Tax> taxes, List<ComplianceIssue> issues)
     {
         var issuerTaxId = SpanishTaxId.Normalize(settings.TaxId);

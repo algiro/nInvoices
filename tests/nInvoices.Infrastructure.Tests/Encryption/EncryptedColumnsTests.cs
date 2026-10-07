@@ -99,7 +99,7 @@ public sealed class EncryptedColumnsTests
             stored.ShouldNotBeNull();
             stored.ShouldStartWith(FieldEncryptor.TextPrefix);
         }
-        name.ShouldNotContain("Acme");
+        name.ShouldNotBeNull().ShouldNotContain("Acme");
         // Not sensitive: stays readable
         (await RawAsync("""SELECT "PriceCurrency" FROM "Rates" """)).ShouldBe("EUR");
     }

@@ -27,6 +27,18 @@ dotnet ef migrations add <Name> -p src/nInvoices.Infrastructure.Migrations.Postg
 dotnet ef database update -s src/nInvoices.Api --context ApplicationDbContext      # local SQLite database
 ```
 
+**Build settings are shared**: `Directory.Build.props` (net10.0, nullable, analyzers at
+`latest-recommended`, `EnforceCodeStyleInBuild`, **`TreatWarningsAsErrors`**) and `Directory.Packages.props`
+(central package versions: a `.csproj` has `<PackageReference Include="X" />` without `Version`; add or bump
+versions there). Any warning fails the build. Fix it; if a rule truly doesn't apply, turn it off in
+`.editorconfig` with the reason, or `#pragma warning disable` at the site with a comment (as for SHA-1 in
+FACe). `.editorconfig` also encodes the C# conventions (file-scoped namespaces, sealed types). Stop a running
+API before building, or its DLLs are locked. `docker/Dockerfile.api` copies the root `Directory.*.props`
+before restoring; keep that in step.
+
+**CI** (`.github/workflows/ci.yml`, every push to main and every PR): backend Release build and tests
+(PostgreSQL tests run on the runner's Docker), frontend `npm run check` + build, and both Docker images build.
+
 ### Frontend (`src/nInvoices.Web`)
 
 ```bash

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Mediator;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.DTOs;
@@ -42,7 +43,7 @@ public sealed class CreateEmailTemplateCommandHandler : IRequestHandler<CreateEm
         _logger.LogInformation(
             "Email template {TemplateId} created for customer {CustomerId}",
             template.Id,
-            template.CustomerId?.ToString() ?? "(shared)");
+            template.CustomerId?.ToString(CultureInfo.InvariantCulture) ?? "(shared)");
 
         return EmailTemplateMapper.ToDto(template);
     }

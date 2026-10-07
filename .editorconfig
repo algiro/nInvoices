@@ -1,0 +1,57 @@
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.{cs,csx}]
+indent_size = 4
+
+[*.{csproj,props,targets,slnx,xml,xsd}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+# ---------------------------------------------------------------------------------------------
+# C#: the conventions of .github/instructions/coding-style.instructions.md, checked by the build
+# (EnforceCodeStyleInBuild in Directory.Build.props; with TreatWarningsAsErrors they fail it).
+# ---------------------------------------------------------------------------------------------
+[*.cs]
+
+# File-scoped namespaces
+csharp_style_namespace_declarations = file_scoped:warning
+dotnet_diagnostic.IDE0161.severity = warning
+
+# Classes sealed unless designed for inheritance (internal types; public ones are covered in review)
+dotnet_diagnostic.CA1852.severity = warning
+
+# var where the type is apparent or built-in
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+
+# Unused private members are noise
+dotnet_diagnostic.IDE0051.severity = warning
+dotnet_diagnostic.IDE0052.severity = warning
+
+# --- .NET analyzer rules turned off on purpose (AnalysisLevel latest-recommended) ---
+
+# High-performance logging (LoggerMessage delegates, guarding argument evaluation): the API logs at
+# a rate where the allocation saved is not worth a delegate per message.
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA1873.severity = none
+
+# "Return the concrete type for performance": interfaces in signatures are a design choice here.
+dotnet_diagnostic.CA1859.severity = none
+
+# Tests are named Method_Scenario_Result
+[tests/**.cs]
+dotnet_diagnostic.CA1707.severity = none
+
+# EF Core migrations are generated: their style is the tool's
+[**/Migrations/*.cs]
+generated_code = true

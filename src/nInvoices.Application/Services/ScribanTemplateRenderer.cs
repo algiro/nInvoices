@@ -14,6 +14,9 @@ namespace nInvoices.Application.Services;
 /// </summary>
 public sealed class ScribanTemplateRenderer : ITemplateRenderer
 {
+    /// <summary>Image "alias" width? height?: Scriban reads the defaults to accept one, two or three arguments.</summary>
+    private delegate string ImageFunction(string alias, int? width = null, int? height = null);
+
     private readonly ILogger<ScribanTemplateRenderer> _logger;
     private readonly ILocalizationService _localizationService;
     private readonly IRepository<ImageAsset> _imageAssetRepository;
@@ -70,7 +73,7 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
 
             // Add image function: Image "alias" width? height?
             // The defaults on the lambda are what let Scriban accept the one- and two-argument forms
-            scriptObject.Import("Image", new Func<string, int?, int?, string>(
+            scriptObject.Import("Image", new ImageFunction(
                 (string alias, int? width = null, int? height = null) => RenderImage(imagesByAlias, alias, width, height)));
             
             // Configure member accessor to use camelCase for all property access (including nested objects)
@@ -98,7 +101,7 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
         {
             return Task.FromResult(new TemplateValidationResult(
                 false,
-                new[] { "Template content cannot be empty" }));
+                ["Template content cannot be empty"]));
         }
 
         try

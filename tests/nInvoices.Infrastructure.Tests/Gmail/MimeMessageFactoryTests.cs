@@ -31,7 +31,7 @@ public sealed class MimeMessageFactoryTests
         message.Cc.Mailboxes.Single().Address.ShouldBe("cfo@acme.it");
         message.Subject.ShouldBe("Fattura 26-09-001 – settembre");
         message.MessageId.ShouldBe("abc123.invoice-42@ninvoices");
-        message.HtmlBody.ShouldContain("in allegato la fattura");
+        message.HtmlBody.ShouldNotBeNull().ShouldContain("in allegato la fattura");
         message.Attachments.OfType<MimePart>().Select(a => a.FileName)
             .ShouldBe(["Invoice-26-09-001.pdf", "MonthlyReport-2026-09-ACME.pdf"]);
     }

@@ -113,7 +113,7 @@ public sealed class MonthlyReportGenerationService : IMonthlyReportGenerationSer
             ?? throw new DomainException($"No active monthly report template found for customer {customer.Id}");
     }
 
-    private MonthlyReportTemplateModel BuildMonthlyReportModel(Invoice invoice, Customer customer, IReadOnlyList<WorkDayDto> workDays)
+    private static MonthlyReportTemplateModel BuildMonthlyReportModel(Invoice invoice, Customer customer, IReadOnlyList<WorkDayDto> workDays)
     {
         var year = invoice.Year!.Value;
         var month = invoice.Month!.Value;

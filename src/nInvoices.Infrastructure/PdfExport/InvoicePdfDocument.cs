@@ -1,3 +1,4 @@
+using System.Globalization;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -56,7 +57,7 @@ public sealed class InvoicePdfDocument : IDocument
                 column.Item().Text(text =>
                 {
                     text.Span("Date: ").Bold();
-                    text.Span(_invoice.IssueDate.ToString("MMM dd, yyyy"));
+                    text.Span(_invoice.IssueDate.ToString("MMM dd, yyyy", CultureInfo.InvariantCulture));
                 });
 
                 if (_invoice.DueDate.HasValue)
@@ -64,7 +65,7 @@ public sealed class InvoicePdfDocument : IDocument
                     column.Item().Text(text =>
                     {
                         text.Span("Due Date: ").Bold();
-                        text.Span(_invoice.DueDate.Value.ToString("MMM dd, yyyy"));
+                        text.Span(_invoice.DueDate.Value.ToString("MMM dd, yyyy", CultureInfo.InvariantCulture));
                     });
                 }
 
@@ -105,12 +106,12 @@ public sealed class InvoicePdfDocument : IDocument
 
             column.Item().Element(ComposeItemsTable);
 
-            if (_invoice.Expenses.Any())
+            if (_invoice.Expenses.Count > 0)
             {
                 column.Item().Element(ComposeExpensesTable);
             }
 
-            if (_invoice.TaxLines.Any())
+            if (_invoice.TaxLines.Count > 0)
             {
                 column.Item().Element(ComposeTaxBreakdown);
             }
@@ -165,7 +166,7 @@ public sealed class InvoicePdfDocument : IDocument
             row.RelativeItem().Text(text =>
             {
                 text.Span("Worked Days: ").Bold();
-                text.Span(_invoice.WorkedDays!.Value.ToString());
+                text.Span(_invoice.WorkedDays!.Value.ToString(CultureInfo.InvariantCulture));
             });
         });
     }
@@ -206,7 +207,7 @@ public sealed class InvoicePdfDocument : IDocument
             table.Cell().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(5)
                 .Text($"{rate:N2} {_invoice.Subtotal.Currency}");
             table.Cell().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(5)
-                .AlignRight().Text(quantity.ToString());
+                .AlignRight().Text(quantity.ToString(CultureInfo.InvariantCulture));
             table.Cell().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(5)
                 .AlignRight().Text(_invoice.Subtotal.ToString()).Bold();
         });
@@ -240,7 +241,7 @@ public sealed class InvoicePdfDocument : IDocument
                 foreach (var expense in _invoice.Expenses)
                 {
                     table.Cell().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(5)
-                        .Text(expense.Date.ToString("MMM dd, yyyy"));
+                        .Text(expense.Date.ToString("MMM dd, yyyy", CultureInfo.InvariantCulture));
                     table.Cell().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(5)
                         .Text(expense.Description);
                     table.Cell().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(5)
@@ -343,7 +344,7 @@ public sealed class InvoicePdfDocument : IDocument
         container.AlignCenter().Text(text =>
         {
             text.Span("Generated on ").FontSize(8).FontColor(Colors.Grey.Darken1);
-            text.Span(DateTime.UtcNow.ToString("MMM dd, yyyy HH:mm")).FontSize(8).FontColor(Colors.Grey.Darken1);
+            text.Span(DateTime.UtcNow.ToString("MMM dd, yyyy HH:mm", CultureInfo.InvariantCulture)).FontSize(8).FontColor(Colors.Grey.Darken1);
             text.Span(" UTC").FontSize(8).FontColor(Colors.Grey.Darken1);
         });
     }
@@ -363,6 +364,6 @@ public sealed class InvoicePdfDocument : IDocument
 
     private static string GetMonthName(int month)
     {
-        return new DateTime(2000, month, 1).ToString("MMMM");
+        return new DateTime(2000, month, 1).ToString("MMMM", CultureInfo.InvariantCulture);
     }
 }

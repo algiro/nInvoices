@@ -220,7 +220,7 @@ public sealed class EInvoiceDeliveryServiceTests
         var result = await _service.SendAsync(InvoiceId, "face", Token);
 
         result.Succeeded.ShouldBeFalse();
-        result.Message.ShouldContain("no está dado de alta");
+        result.Message.ShouldNotBeNull().ShouldContain("no está dado de alta");
         _submissions.Items.ShouldBeEmpty();
         _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -235,7 +235,7 @@ public sealed class EInvoiceDeliveryServiceTests
         var second = await _service.SendAsync(InvoiceId, "face", Token);
 
         second.Succeeded.ShouldBeFalse();
-        second.Message.ShouldContain("already sent");
+        second.Message.ShouldNotBeNull().ShouldContain("already sent");
         second.Message.ShouldContain("REGAGE26e000001");
         _submissions.Items.ShouldHaveSingleItem();
         _face.Verify(f => f.SendInvoiceAsync(It.IsAny<FaceTarget>(), It.IsAny<X509Certificate2>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -257,7 +257,7 @@ public sealed class EInvoiceDeliveryServiceTests
         SpainOn();
         var result = await _service.SendAsync(InvoiceId, "nope", Token);
         result.Succeeded.ShouldBeFalse();
-        result.Message.ShouldContain("Unknown channel");
+        result.Message.ShouldNotBeNull().ShouldContain("Unknown channel");
     }
 
     [Test]

@@ -244,7 +244,7 @@ public sealed class VerifactuSubmitterTests
         Queue(1, from: 4);
         var again = await submitter.SubmitPendingAsync(Token);
         again.Sent.ShouldBe(0);
-        again.Problem.ShouldContain("Record 2 was rejected");
+        again.Problem.ShouldNotBeNull().ShouldContain("Record 2 was rejected");
         _client.Calls.Count.ShouldBe(1);
     }
 
@@ -272,7 +272,7 @@ public sealed class VerifactuSubmitterTests
 
         _submissions.Items[0].Status.ShouldBe(VerifactuSubmissionStatus.Accepted);
         _submissions.Items[1].Status.ShouldBe(VerifactuSubmissionStatus.Pending);
-        _submissions.Items[1].Message.ShouldContain("no answer");
+        _submissions.Items[1].Message.ShouldNotBeNull().ShouldContain("no answer");
     }
 
     [Test]
@@ -283,7 +283,7 @@ public sealed class VerifactuSubmitterTests
 
         var run = await Submitter().SubmitPendingAsync(Token);
 
-        run.Problem.ShouldContain("did not accept");
+        run.Problem.ShouldNotBeNull().ShouldContain("did not accept");
         var submission = _submissions.Items.Single();
         submission.Status.ShouldBe(VerifactuSubmissionStatus.Pending);
         submission.NextAttemptAt.ShouldBe(_time.Now.AddSeconds(60));
@@ -300,7 +300,7 @@ public sealed class VerifactuSubmitterTests
 
         var run = await submitter.SubmitPendingAsync(Token);
 
-        run.Problem.ShouldContain("could not be reached");
+        run.Problem.ShouldNotBeNull().ShouldContain("could not be reached");
         var submission = _submissions.Items.Single();
         submission.Status.ShouldBe(VerifactuSubmissionStatus.Pending);
         submission.Attempts.ShouldBe(1);
@@ -321,7 +321,7 @@ public sealed class VerifactuSubmitterTests
         var run = await Submitter().SubmitPendingAsync(Token);
 
         run.Sent.ShouldBe(0);
-        run.Problem.ShouldContain("certificate");
+        run.Problem.ShouldNotBeNull().ShouldContain("certificate");
         _client.Calls.ShouldBeEmpty();
         _submissions.Items.Single().Attempts.ShouldBe(0);
     }
@@ -334,7 +334,7 @@ public sealed class VerifactuSubmitterTests
 
         var run = await Submitter().SubmitPendingAsync(Token);
 
-        run.Problem.ShouldContain("not set up");
+        run.Problem.ShouldNotBeNull().ShouldContain("not set up");
         _client.Calls.ShouldBeEmpty();
     }
 

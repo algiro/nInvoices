@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace nInvoices.Application.Compliance.Spain;
 
 /// <summary>Checks Spanish tax ids: NIF/DNI, NIE and CIF (check digit/letter included).</summary>
@@ -30,20 +32,20 @@ public static class SpanishTaxId
     }
 
     private static bool IsValidDni(string id) =>
-        id[..8].All(char.IsAsciiDigit) && id[8] == DniLetters[int.Parse(id[..8]) % 23];
+        id[..8].All(char.IsAsciiDigit) && id[8] == DniLetters[int.Parse(id[..8], CultureInfo.InvariantCulture) % 23];
 
     private static bool IsValidNie(string id)
     {
         var prefix = id[0] - 'X'; // X=0, Y=1, Z=2
         var digits = id[1..8];
-        return digits.All(char.IsAsciiDigit) && id[8] == DniLetters[int.Parse($"{prefix}{digits}") % 23];
+        return digits.All(char.IsAsciiDigit) && id[8] == DniLetters[int.Parse($"{prefix}{digits}", CultureInfo.InvariantCulture) % 23];
     }
 
     // K, L and M: Spaniards under 14 and residents abroad; the letter is computed like a DNI's
     private static bool IsValidKlm(string id)
     {
         var digits = id[1..8];
-        return digits.All(char.IsAsciiDigit) && id[8] == DniLetters[int.Parse(digits) % 23];
+        return digits.All(char.IsAsciiDigit) && id[8] == DniLetters[int.Parse(digits, CultureInfo.InvariantCulture) % 23];
     }
 
     private static bool IsValidCif(string id)

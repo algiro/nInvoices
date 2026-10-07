@@ -11,13 +11,13 @@ public sealed class VerifactuRecordRepository : Repository<VerifactuRecord>, IVe
     }
 
     public async Task<VerifactuRecord?> GetLastAsync(CancellationToken cancellationToken = default) =>
-        await _dbSet.OrderByDescending(r => r.Sequence).FirstOrDefaultAsync(cancellationToken);
+        await Entities.OrderByDescending(r => r.Sequence).FirstOrDefaultAsync(cancellationToken);
 
     public async Task<IReadOnlyList<VerifactuRecord>> GetByInvoiceAsync(long invoiceId, CancellationToken cancellationToken = default) =>
-        await _dbSet.Where(r => r.InvoiceId == invoiceId).OrderBy(r => r.Sequence).ToListAsync(cancellationToken);
+        await Entities.Where(r => r.InvoiceId == invoiceId).OrderBy(r => r.Sequence).ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<VerifactuRecord>> GetChainAsync(CancellationToken cancellationToken = default) =>
-        await _dbSet.OrderBy(r => r.Sequence).ToListAsync(cancellationToken);
+        await Entities.OrderBy(r => r.Sequence).ToListAsync(cancellationToken);
 
     // A record is part of the chain for good
     public override Task UpdateAsync(VerifactuRecord entity, CancellationToken cancellationToken = default) =>

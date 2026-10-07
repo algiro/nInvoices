@@ -111,7 +111,9 @@ public sealed class FaceSoapAndSignerTests
         var sha1 = signedInfo.InnerXml.Contains("#rsa-sha1");
         var body = (XmlElement)document.GetElementsByTagName("Body", "http://schemas.xmlsoap.org/soap/envelope/")[0]!;
 
+#pragma warning disable CA5350 // verifying what the FACe profile signs with
         var digest = sha1 ? SHA1.HashData(Canonical(document, body)) : SHA256.HashData(Canonical(document, body));
+#pragma warning restore CA5350
         if (Convert.ToBase64String(digest) != document.GetElementsByTagName("DigestValue", DsNs)[0]!.InnerText)
             return false;
 

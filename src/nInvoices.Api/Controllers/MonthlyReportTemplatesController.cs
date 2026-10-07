@@ -121,7 +121,7 @@ public sealed class MonthlyReportTemplatesController : ControllerBase
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(dto.Content))
-            return BadRequest(new { errors = new[] { "Template content cannot be empty" } });
+            return BadRequest(new { errors = (string[])["Template content cannot be empty"] });
 
         var result = await _templateRenderer.ValidateAsync(dto.Content, cancellationToken);
 

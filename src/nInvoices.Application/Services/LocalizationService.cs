@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace nInvoices.Application.Services;
 
@@ -31,6 +33,8 @@ public interface ILocalizationService
 
 public sealed class LocalizationService : ILocalizationService
 {
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+
     private readonly Dictionary<string, LocaleData> _localeData = new();
     private readonly string _localizationPath;
 
@@ -60,10 +64,7 @@ public sealed class LocalizationService : ILocalizationService
         {
             var locale = Path.GetFileNameWithoutExtension(filePath);
             var json = File.ReadAllText(filePath);
-            var data = JsonSerializer.Deserialize<LocaleData>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            var data = JsonSerializer.Deserialize<LocaleData>(json, JsonOptions);
 
             if (data != null)
             {
@@ -90,7 +91,7 @@ public sealed class LocalizationService : ILocalizationService
         }
 
         var dayIndex = (int)dayOfWeek;
-        var names = shortFormat ? data.DaysOfWeek.Short : data.DaysOfWeek.Full;
+        var names = shortFormat ? data.DaysOfWeek.Abbreviated : data.DaysOfWeek.Full;
         
         return dayIndex >= 0 && dayIndex < names.Length 
             ? names[dayIndex] 
@@ -105,16 +106,16 @@ public sealed class LocalizationService : ILocalizationService
             locale = "en-US";
             if (!_localeData.TryGetValue(locale, out data))
             {
-                return monthNumber.ToString();
+                return monthNumber.ToString(CultureInfo.InvariantCulture);
             }
         }
 
         var monthIndex = monthNumber - 1; // Months are 1-based, array is 0-based
-        var names = shortFormat ? data.Months.Short : data.Months.Full;
+        var names = shortFormat ? data.Months.Abbreviated : data.Months.Full;
         
         return monthIndex >= 0 && monthIndex < names.Length 
             ? names[monthIndex] 
-            : monthNumber.ToString();
+            : monthNumber.ToString(CultureInfo.InvariantCulture);
     }
 
     public bool IsLocaleSupported(string locale) => _localeData.ContainsKey(locale);
@@ -134,11 +135,13 @@ public sealed class LocaleData
 public sealed class DaysOfWeekData
 {
     public string[] Full { get; set; } = Array.Empty<string>();
-    public string[] Short { get; set; } = Array.Empty<string>();
+    [JsonPropertyName("short")]
+    public string[] Abbreviated { get; set; } = Array.Empty<string>();
 }
 
 public sealed class MonthsData
 {
     public string[] Full { get; set; } = Array.Empty<string>();
-    public string[] Short { get; set; } = Array.Empty<string>();
+    [JsonPropertyName("short")]
+    public string[] Abbreviated { get; set; } = Array.Empty<string>();
 }

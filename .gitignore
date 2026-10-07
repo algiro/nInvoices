@@ -109,3 +109,6 @@ docker/secrets/
 docker/encryption/
 
 src/nInvoices.Api/appsettings.Development.json
+
+# Test results and coverage (CI uploads them as artifacts)
+TestResults/

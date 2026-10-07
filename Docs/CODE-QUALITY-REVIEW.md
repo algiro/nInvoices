@@ -19,7 +19,7 @@ The problems sit at the edges of that architecture. Several rules the design imp
 | 7 | Sync-over-async in the PDF path | Medium | S — ✅ done |
 | 8 | Dead and duplicated code | Medium | S — ✅ done |
 | 9 | Oversized classes and components | Medium | M–L — ✅ done (types generation pending) |
-| 10 | No CI, no shared build settings, no analyzers | Medium | S |
+| 10 | No CI, no shared build settings, no analyzers | Medium | S — ✅ done |
 | 11 | Frontend: no type-checking of `.vue` files, no lint, no tests | Medium | M — ✅ done |
 | 12 | Inconsistent time source (`DateTime.*` vs `TimeProvider`) | Low | S |
 | 13 | Package hygiene | Low | S |
@@ -281,7 +281,25 @@ Size is a symptom, not the problem. These files mix several responsibilities, th
 - In Vue, move logic into composables (the project already has `useInvoiceDraft`, `useWorkMonth`) and split views into child components.
 - Generate `types/index.ts` from the OpenAPI document (`openapi-typescript`, or `Microsoft.Extensions.ApiDescription` plus NSwag). `AddOpenApi()` is already enabled, so frontend and backend contracts stay in sync automatically.
 
-## 10. No CI, no shared build settings, no analyzers — Medium
+## 10. No CI, no shared build settings, no analyzers — Medium — ✅ Done (2026-10-07)
+
+> **Resolution.** `Directory.Build.props` holds the shared settings (net10.0, nullable, implicit usings,
+> deterministic) and turns on `AnalysisLevel=latest-recommended`, `EnforceCodeStyleInBuild` and
+> `TreatWarningsAsErrors`; the .csproj files keep only what is theirs. `Directory.Packages.props` holds the 50
+> package versions (none differed between projects). `.editorconfig` makes the style guide's rules diagnostics
+> (file-scoped namespaces, sealed internal types, unused private members) and documents the analyzer rules
+> turned off on purpose (high-performance logging, concrete return types, underscores in test names; EF
+> migrations count as generated code). The build went from ~975 analyzer warnings to 0 by fixing, not muting:
+> culture-dependent formatting in invoice numbers, the built-in PDF layouts and logs (now invariant), `Any()` on
+> collections, missing `static`, an unused logger and field, `protected` fields in the base repository, parameter
+> names differing from their interface, a `JsonSerializerOptions` per file, nullable asserts in tests, the
+> Scriban image delegate, and the obsolete Puppeteer `SetContentAsync` overload (six invoice PDFs compared
+> byte for byte, timestamps aside: identical). Two suppressions remain, each at its site with its reason:
+> SHA-1 (prescribed by the FACe WS-Security profile) and `ToLower()` inside an EF query (translated to SQL).
+> `.github/workflows/ci.yml` runs on every push to main and every PR: Release build and all tests (PostgreSQL
+> included, on the runner's Docker) with coverage uploaded, `npm run check` + build, and both Docker images
+> built (not pushed). `Dockerfile.api` copies the new root props files before restoring, without which the
+> image build would have broken.
 
 - No `.github/workflows`: tests and the frontend build are never run automatically, which matters more now that the repo is public.
 - No `Directory.Build.props`. `TargetFramework`, `Nullable` and `ImplicitUsings` are repeated in each `.csproj`. Nothing enables `TreatWarningsAsErrors`, `AnalysisLevel`, `EnforceCodeStyleInBuild` or `Deterministic`.

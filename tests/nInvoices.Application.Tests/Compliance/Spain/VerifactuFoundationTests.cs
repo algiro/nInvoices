@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
@@ -58,7 +59,7 @@ public sealed class VerifactuFoundationTests
     [TestCase("2026-10-03T09:30:00Z", "2026-10-03T11:30:00+02:00")] // summer time
     [TestCase("2026-01-15T10:00:00Z", "2026-01-15T11:00:00+01:00")] // winter time
     public void Stamp_UsesTheOffsetInForceInSpain(string utc, string expected) =>
-        SpanishClock.Stamp(DateTimeOffset.Parse(utc)).ShouldBe(expected);
+        SpanishClock.Stamp(DateTimeOffset.Parse(utc, CultureInfo.InvariantCulture)).ShouldBe(expected);
 
     // --- The QR code: AEAT examples (QR v0.5.0, sections 4 and 8) ----------------------------------
 

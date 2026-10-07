@@ -1,3 +1,4 @@
+using System.Globalization;
 using Serilog;
 using Microsoft.EntityFrameworkCore;
 using nInvoices.Application;
@@ -30,8 +31,9 @@ var builder = WebApplication.CreateBuilder(args);
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
-    .WriteTo.Console()
-    .WriteTo.File("logs/nInvoices-.log", rollingInterval: RollingInterval.Day)
+    // Log text is for operators: dates and numbers the same whatever the server culture
+    .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
+    .WriteTo.File("logs/nInvoices-.log", rollingInterval: RollingInterval.Day, formatProvider: CultureInfo.InvariantCulture)
     .CreateLogger();
 
 builder.Host.UseSerilog();

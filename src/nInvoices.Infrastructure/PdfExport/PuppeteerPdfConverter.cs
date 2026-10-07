@@ -21,10 +21,10 @@ public sealed class PuppeteerPdfConverter : IHtmlToPdfConverter, IAsyncDisposabl
         var browser = await GetBrowserAsync(cancellationToken);
         await using var page = await browser.NewPageAsync();
 
-        // Set content and wait for it to load
-        await page.SetContentAsync(html, new NavigationOptions
+        // Set content and wait for it to load (images in templates are inline data, nothing else to fetch)
+        await page.SetContentAsync(html, new SetContentOptions
         {
-            WaitUntil = [WaitUntilNavigation.Networkidle0]
+            WaitUntil = [WaitUntilNavigation.Load]
         });
 
         // Generate PDF with appropriate settings

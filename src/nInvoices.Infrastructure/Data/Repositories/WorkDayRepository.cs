@@ -22,7 +22,7 @@ public sealed class WorkDayRepository : Repository<WorkDay>, IWorkDayRepository
         var startDate = new DateOnly(year, month, 1);
         var endDate = new DateOnly(year, month, DateTime.DaysInMonth(year, month));
 
-        return await _context.WorkDays
+        return await Context.WorkDays
             .Include(wd => wd.Projects)
                 .ThenInclude(p => p.Project)
             .Where(wd => wd.CustomerId == customerId && wd.Date >= startDate && wd.Date <= endDate)

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -194,7 +195,7 @@ public sealed class AeatVerifactuClientTests
 
             var head = Encoding.ASCII.GetString(buffer.ToArray());
             seenRequestLine = head.Split("\r\n")[0];
-            var length = int.Parse(head.Split("\r\n").First(l => l.StartsWith("content-length", StringComparison.OrdinalIgnoreCase)).Split(':')[1].Trim());
+            var length = int.Parse(head.Split("\r\n").First(l => l.StartsWith("content-length", StringComparison.OrdinalIgnoreCase)).Split(':')[1].Trim(), CultureInfo.InvariantCulture);
             var body = new byte[length];
             var read = 0;
             while (read < length)

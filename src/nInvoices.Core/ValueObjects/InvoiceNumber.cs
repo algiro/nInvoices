@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace nInvoices.Core.ValueObjects;
@@ -31,10 +32,10 @@ public sealed record InvoiceNumber
 
         var result = pattern;
 
-        result = ReplaceToken(result, "YEAR", date.Year.ToString());
-        result = ReplaceToken(result, "YEAR:yy", date.ToString("yy"));
-        result = ReplaceToken(result, "MONTH:00", date.Month.ToString("00"));
-        result = ReplaceToken(result, "MONTH", date.Month.ToString());
+        result = ReplaceToken(result, "YEAR", date.Year.ToString(CultureInfo.InvariantCulture));
+        result = ReplaceToken(result, "YEAR:yy", date.ToString("yy", CultureInfo.InvariantCulture));
+        result = ReplaceToken(result, "MONTH:00", date.Month.ToString("00", CultureInfo.InvariantCulture));
+        result = ReplaceToken(result, "MONTH", date.Month.ToString(CultureInfo.InvariantCulture));
 
         if (customerCode is not null)
         {
@@ -46,12 +47,12 @@ public sealed record InvoiceNumber
         if (numberMatch.Success)
         {
             var format = numberMatch.Groups[1].Value;
-            var formattedNumber = sequenceNumber.ToString(new string('0', format.Length));
+            var formattedNumber = sequenceNumber.ToString(new string('0', format.Length), CultureInfo.InvariantCulture);
             result = result.Replace(numberMatch.Value, formattedNumber);
         }
         else
         {
-            result = ReplaceToken(result, "NUMBER", sequenceNumber.ToString());
+            result = ReplaceToken(result, "NUMBER", sequenceNumber.ToString(CultureInfo.InvariantCulture));
         }
 
         return new InvoiceNumber(result);

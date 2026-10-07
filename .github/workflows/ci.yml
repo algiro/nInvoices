@@ -1,0 +1,99 @@
+# Every push and pull request: the backend builds with warnings as errors and passes its tests
+# (PostgreSQL ones included, on a Testcontainers database), the frontend type-checks, lints, passes
+# its tests and builds, and both Docker images still build. Nothing is published or deployed.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (.NET)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore nInvoices.slnx
+
+      - name: Build (warnings are errors)
+        run: dotnet build nInvoices.slnx --configuration Release --no-restore
+
+      # The runner has Docker, so the PostgreSQL tests (Category=PostgreSql) run instead of skipping
+      - name: Test
+        run: >
+          dotnet test nInvoices.slnx --configuration Release --no-build
+          --collect:"XPlat Code Coverage" --results-directory TestResults
+          --logger "trx;LogFilePrefix=results"
+
+      - name: Upload test results and coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-test-results
+          path: TestResults
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend (Vue)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/nInvoices.Web
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/nInvoices.Web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Type-check, lint and test
+        run: npm run check
+
+      - name: Build
+        run: npm run build
+
+  docker:
+    name: Docker images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build the API image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.api
+          push: false
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Build the web image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.web
+          push: false
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web

@@ -10,50 +10,50 @@ namespace nInvoices.Infrastructure.Data.Repositories;
 /// </summary>
 public class Repository<TEntity> : IRepository<TEntity> where TEntity : class
 {
-    protected readonly ApplicationDbContext _context;
-    protected readonly DbSet<TEntity> _dbSet;
+    protected ApplicationDbContext Context { get; }
+    protected DbSet<TEntity> Entities { get; }
 
     public Repository(ApplicationDbContext context)
     {
-        _context = context;
-        _dbSet = context.Set<TEntity>();
+        Context = context;
+        Entities = context.Set<TEntity>();
     }
 
     public virtual async Task<TEntity?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
     {
-        return await _dbSet.FindAsync([id], cancellationToken);
+        return await Entities.FindAsync([id], cancellationToken);
     }
 
     public virtual async Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbSet.ToListAsync(cancellationToken);
+        return await Entities.ToListAsync(cancellationToken);
     }
 
     public virtual async Task<IEnumerable<TEntity>> FindAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken cancellationToken = default)
     {
-        return await _dbSet.Where(predicate).ToListAsync(cancellationToken);
+        return await Entities.Where(predicate).ToListAsync(cancellationToken);
     }
 
     public virtual async Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
-        await _dbSet.AddAsync(entity, cancellationToken);
+        await Entities.AddAsync(entity, cancellationToken);
         return entity;
     }
 
     public virtual Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
-        _dbSet.Update(entity);
+        Entities.Update(entity);
         return Task.CompletedTask;
     }
 
     public virtual Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
-        _dbSet.Remove(entity);
+        Entities.Remove(entity);
         return Task.CompletedTask;
     }
 
@@ -65,6 +65,6 @@ public class Repository<TEntity> : IRepository<TEntity> where TEntity : class
 
     public virtual async Task<int> CountAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbSet.CountAsync(cancellationToken);
+        return await Entities.CountAsync(cancellationToken);
     }
 }

@@ -29,6 +29,8 @@ RUN apt-get update && apt-get install -y \
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
+# Shared build settings and the central package versions: restore needs them
+COPY ["Directory.Build.props", "Directory.Packages.props", ".editorconfig", "./"]
 COPY ["src/nInvoices.Api/nInvoices.Api.csproj", "src/nInvoices.Api/"]
 COPY ["src/nInvoices.Application/nInvoices.Application.csproj", "src/nInvoices.Application/"]
 COPY ["src/nInvoices.Core/nInvoices.Core.csproj", "src/nInvoices.Core/"]

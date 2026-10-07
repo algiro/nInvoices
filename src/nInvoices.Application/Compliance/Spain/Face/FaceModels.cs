@@ -52,7 +52,6 @@ public interface IFaceClient
 /// <summary>The messages of FACe providers web service (WSDL proveedores/v1/factura: SOAP 1.1, RPC style, literal).</summary>
 public static class FaceSoap
 {
-    private static readonly XNamespace Soap = "http://schemas.xmlsoap.org/soap/envelope/";
 
     public static string SoapAction(FaceTarget target, string operation) => $"\"{target.Namespace}#{operation}\"";
 

@@ -21,7 +21,7 @@ public sealed class InvoiceRepository : Repository<Invoice>, IInvoiceRepository
     /// </summary>
     public async Task<Invoice?> GetByIdWithRelatedAsync(long id, CancellationToken cancellationToken = default)
     {
-        return await _context.Invoices
+        return await Context.Invoices
             .Include(i => i.TaxLines)
             .Include(i => i.Expenses)
             .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
@@ -31,7 +31,7 @@ public sealed class InvoiceRepository : Repository<Invoice>, IInvoiceRepository
     {
         ArgumentNullException.ThrowIfNull(criteria);
 
-        var query = await FilterAsync(_context.Invoices.AsNoTracking(), criteria, includeStatus: true, cancellationToken);
+        var query = await FilterAsync(Context.Invoices.AsNoTracking(), criteria, includeStatus: true, cancellationToken);
         var total = await query.CountAsync(cancellationToken);
         var skip = (criteria.Page - 1) * criteria.PageSize;
 
@@ -52,7 +52,7 @@ public sealed class InvoiceRepository : Repository<Invoice>, IInvoiceRepository
     {
         ArgumentNullException.ThrowIfNull(criteria);
 
-        return await (await FilterAsync(_context.Invoices.AsNoTracking(), criteria, includeStatus: false, cancellationToken))
+        return await (await FilterAsync(Context.Invoices.AsNoTracking(), criteria, includeStatus: false, cancellationToken))
             .GroupBy(i => i.Status)
             .Select(g => new { Status = g.Key, Count = g.Count() })
             .ToDictionaryAsync(g => g.Status, g => g.Count, cancellationToken);
@@ -61,7 +61,7 @@ public sealed class InvoiceRepository : Repository<Invoice>, IInvoiceRepository
     public async Task<IReadOnlyList<InvoiceTotalsRow>> GetTotalsAsync(CancellationToken cancellationToken = default)
     {
         // Summed by the caller: SQLite can't aggregate decimals, and these rows are small
-        return await _context.Invoices
+        return await Context.Invoices
             .AsNoTracking()
             .Select(i => new InvoiceTotalsRow(i.Status, i.IssueDate, i.Total.Currency, i.Total.Amount))
             .ToListAsync(cancellationToken);
@@ -71,7 +71,7 @@ public sealed class InvoiceRepository : Repository<Invoice>, IInvoiceRepository
     {
         ArgumentNullException.ThrowIfNull(ids);
 
-        return await _context.Invoices
+        return await Context.Invoices
             .Where(i => ids.Contains(i.Id))
             .ToListAsync(cancellationToken);
     }
@@ -95,21 +95,23 @@ public sealed class InvoiceRepository : Repository<Invoice>, IInvoiceRepository
         {
             // Lower-cased on both sides: case-insensitive on SQLite and PostgreSQL alike.
             // Customer names are encrypted, so they are matched here and the query gets their ids.
-            var term = criteria.Search.Trim().ToLower();
+            var term = criteria.Search.Trim().ToLowerInvariant();
             var customerIds = (await CustomerNamesAsync(cancellationToken))
                 .Where(c => c.Value.Contains(term, StringComparison.OrdinalIgnoreCase))
                 .Select(c => c.Key)
                 .ToList();
+#pragma warning disable CA1304, CA1311, CA1862 // translated to SQL lower(): no .NET culture is involved
             query = query.Where(i =>
                 i.Number.Value.ToLower().Contains(term) ||
                 customerIds.Contains(i.CustomerId));
+#pragma warning restore CA1304, CA1311, CA1862
         }
 
         return query;
     }
 
     private async Task<Dictionary<long, string>> CustomerNamesAsync(CancellationToken cancellationToken) =>
-        await _context.Customers.AsNoTracking()
+        await Context.Customers.AsNoTracking()
             .Select(c => new { c.Id, c.Name })
             .ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken);
 

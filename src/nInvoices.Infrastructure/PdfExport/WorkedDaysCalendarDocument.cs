@@ -1,3 +1,4 @@
+using System.Globalization;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -12,6 +13,8 @@ namespace nInvoices.Infrastructure.PdfExport;
 /// </summary>
 public sealed class WorkedDaysCalendarDocument : IDocument
 {
+    private static readonly string[] DayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
     private readonly Invoice _invoice;
     private readonly List<DateOnly> _workedDates;
 
@@ -77,7 +80,7 @@ public sealed class WorkedDaysCalendarDocument : IDocument
                     .FontSize(12)
                     .Bold();
                 
-                column.Item().Text(_invoice.WorkedDays?.ToString() ?? "0")
+                column.Item().Text(_invoice.WorkedDays?.ToString(CultureInfo.InvariantCulture) ?? "0")
                     .FontSize(32)
                     .Bold()
                     .FontColor(Colors.Blue.Darken3);
@@ -113,8 +116,7 @@ public sealed class WorkedDaysCalendarDocument : IDocument
 
             table.Header(header =>
             {
-                string[] dayNames = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
-                foreach (var dayName in dayNames)
+                foreach (var dayName in DayNames)
                 {
                     header.Cell().Background(Colors.Blue.Darken3).Padding(8)
                         .AlignCenter().Text(dayName).FontColor(Colors.White).Bold();
@@ -143,7 +145,7 @@ public sealed class WorkedDaysCalendarDocument : IDocument
                                    isWeekend ? Colors.Grey.Lighten3 : Colors.White)
                         .Padding(5).Column(cellColumn =>
                         {
-                            var dayText = cellColumn.Item().AlignRight().Text(currentDay.ToString())
+                            var dayText = cellColumn.Item().AlignRight().Text(currentDay.ToString(CultureInfo.InvariantCulture))
                                 .FontSize(14);
                             
                             if (isWorked)
@@ -197,13 +199,13 @@ public sealed class WorkedDaysCalendarDocument : IDocument
         container.AlignCenter().Text(text =>
         {
             text.Span("Generated on ").FontSize(8).FontColor(Colors.Grey.Darken1);
-            text.Span(DateTime.UtcNow.ToString("MMM dd, yyyy HH:mm")).FontSize(8).FontColor(Colors.Grey.Darken1);
+            text.Span(DateTime.UtcNow.ToString("MMM dd, yyyy HH:mm", CultureInfo.InvariantCulture)).FontSize(8).FontColor(Colors.Grey.Darken1);
             text.Span(" UTC").FontSize(8).FontColor(Colors.Grey.Darken1);
         });
     }
 
     private static string GetMonthName(int month)
     {
-        return new DateTime(2000, month, 1).ToString("MMMM");
+        return new DateTime(2000, month, 1).ToString("MMMM", CultureInfo.InvariantCulture);
     }
 }

@@ -22,7 +22,7 @@ public static class InvoiceCalculator
 
         if (dto.InvoiceType == InvoiceType.Monthly)
         {
-            if (rate.Type == RateType.Hourly && (dto.WorkDays == null || !dto.WorkDays.Any()))
+            if (rate.Type == RateType.Hourly && (dto.WorkDays == null || dto.WorkDays.Count == 0))
                 throw new DomainException("Work days are required for hourly rate invoices.");
 
             rates.Validate(dto.WorkDays ?? []);
@@ -32,7 +32,7 @@ public static class InvoiceCalculator
                 .Where(wd => wd.DayType == DayType.Worked && !rates.IsFixedMonthly && rates.For(wd).Type == RateType.Hourly && DayHours(wd) <= 0)
                 .ToList();
 
-            if (workedDaysWithoutHours.Any())
+            if (workedDaysWithoutHours.Count > 0)
                 throw new DomainException(
                     $"Hours must be specified for all worked days when using hourly rates " +
                     $"(via a project allocation or the day's hours). Missing hours for {workedDaysWithoutHours.Count} day(s).");

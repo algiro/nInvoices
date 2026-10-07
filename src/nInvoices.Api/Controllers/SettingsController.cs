@@ -14,14 +14,10 @@ namespace nInvoices.Api.Controllers;
 public sealed class SettingsController : ControllerBase
 {
     private readonly IOptionsSnapshot<InvoiceSettings> _invoiceSettings;
-    private readonly ILogger<SettingsController> _logger;
 
-    public SettingsController(
-        IOptionsSnapshot<InvoiceSettings> invoiceSettings,
-        ILogger<SettingsController> logger)
+    public SettingsController(IOptionsSnapshot<InvoiceSettings> invoiceSettings)
     {
         _invoiceSettings = invoiceSettings;
-        _logger = logger;
     }
 
     /// <summary>

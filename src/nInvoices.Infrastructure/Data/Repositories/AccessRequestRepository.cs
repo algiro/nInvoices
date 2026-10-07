@@ -13,16 +13,16 @@ public sealed class AccessRequestRepository : Repository<AccessRequest>, IAccess
     public async Task<bool> TryAddAsync(AccessRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        _dbSet.Add(request);
+        Entities.Add(request);
         try
         {
-            await _context.SaveChangesAsync(cancellationToken);
+            await Context.SaveChangesAsync(cancellationToken);
             return true;
         }
         catch (DbUpdateException)
         {
             // One request per user (unique index): a concurrent call saved its own first
-            _context.Entry(request).State = EntityState.Detached;
+            Context.Entry(request).State = EntityState.Detached;
             return false;
         }
     }

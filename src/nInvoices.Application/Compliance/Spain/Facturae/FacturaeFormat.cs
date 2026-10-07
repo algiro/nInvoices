@@ -38,49 +38,49 @@ public sealed class FacturaeFormat : IEInvoiceFormat
     // Public administrations only accept Facturae, through FACe; for everyone else it is voluntary
     public bool IsMandatoryFor(EInvoiceParty buyer) => SpainComplianceModule.IsPublicAdministration(buyer.Values);
 
-    public IReadOnlyList<ComplianceIssue> Validate(EInvoiceDocument invoice)
+    public IReadOnlyList<ComplianceIssue> Validate(EInvoiceDocument document)
     {
         var issues = new List<ComplianceIssue>();
 
-        foreach (var issue in _spain.ValidateIssuer(invoice.Issuer))
+        foreach (var issue in _spain.ValidateIssuer(document.Issuer))
             issues.Add(issue with { Message = $"Issuer: {issue.Message}" });
-        if (invoice.Issuer.Address is { } issuerAddress && CountryCodes.FromName(issuerAddress.Country) != FacturaeCountries.Spain)
+        if (document.Issuer.Address is { } issuerAddress && CountryCodes.FromName(issuerAddress.Country) != FacturaeCountries.Spain)
             issues.Add(new ComplianceIssue("address", "Issuer: the address must be in Spain"));
-        ValidateIssuerNames(invoice, issues);
+        ValidateIssuerNames(document, issues);
 
-        ValidateBuyer(invoice.Buyer, issues);
-        ValidateLinesAndTaxes(invoice, issues);
+        ValidateBuyer(document.Buyer, issues);
+        ValidateLinesAndTaxes(document, issues);
 
-        if (string.IsNullOrWhiteSpace(invoice.Number))
+        if (string.IsNullOrWhiteSpace(document.Number))
             issues.Add(new ComplianceIssue(null, "The invoice has no number"));
-        else if (invoice.Number.Length > 20)
+        else if (document.Number.Length > 20)
             issues.Add(new ComplianceIssue(null, "Facturae invoice numbers have at most 20 characters; change the numbering pattern"));
 
-        if (invoice.Currency.Length != 3)
+        if (document.Currency.Length != 3)
             issues.Add(new ComplianceIssue(null, "The invoice currency must be a three-letter code"));
 
         return issues;
     }
 
-    public EInvoiceArtifact Build(EInvoiceDocument invoice, X509Certificate2? signingCertificate)
+    public EInvoiceArtifact Build(EInvoiceDocument document, X509Certificate2? signingCertificate)
     {
-        var issues = Validate(invoice);
+        var issues = Validate(document);
         if (issues.Count > 0)
             throw new DomainException("The invoice is not valid Facturae: " + string.Join("; ", issues.Select(i => i.Message)));
         if (signingCertificate is null)
             throw new DomainException("Facturae invoices must be signed: upload a signing certificate in the Spanish compliance settings");
 
-        var xml = FacturaeXmlBuilder.Build(invoice);
+        var xml = FacturaeXmlBuilder.Build(document);
 
-        var document = new XmlDocument { PreserveWhitespace = true };
+        var signed = new XmlDocument { PreserveWhitespace = true };
         using (var reader = xml.CreateReader())
-            document.Load(reader);
+            signed.Load(reader);
 
-        XadesEpesSigner.Sign(document, signingCertificate, _time.GetUtcNow().UtcDateTime);
+        XadesEpesSigner.Sign(signed, signingCertificate, _time.GetUtcNow().UtcDateTime);
 
         using var stream = new MemoryStream();
         using (var writer = XmlWriter.Create(stream, new XmlWriterSettings { Encoding = new UTF8Encoding(false), Indent = false }))
-            document.Save(writer);
+            signed.Save(writer);
 
         return new EInvoiceArtifact(stream.ToArray(), "application/xml", "xsig");
     }

@@ -35,7 +35,7 @@ public sealed class TaxCalculationService : ITaxCalculationService
             .OrderBy(t => t.Order)
             .ToList();
 
-        if (!activeTaxes.Any())
+        if (activeTaxes.Count == 0)
             return (Money.Zero(subtotal.Currency), Array.Empty<InvoiceTaxLine>());
 
         var taxLines = new List<InvoiceTaxLine>();

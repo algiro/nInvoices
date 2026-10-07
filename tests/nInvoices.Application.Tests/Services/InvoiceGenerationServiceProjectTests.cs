@@ -156,7 +156,7 @@ public sealed class InvoiceGenerationServiceProjectTests
             DayType.Worked,
             Projects: projects.Select(p => new WorkDayProjectDto(p.name, p.hours)).ToList());
 
-    private GenerateInvoiceDto MonthlyDto(params WorkDayDto[] workDays) => new()
+    private static GenerateInvoiceDto MonthlyDto(params WorkDayDto[] workDays) => new()
     {
         CustomerId = CustomerId,
         InvoiceType = InvoiceType.Monthly,
@@ -176,7 +176,7 @@ public sealed class InvoiceGenerationServiceProjectTests
     }
 
     /// <summary>A monthly invoice billed at <paramref name="defaultRate"/>, on which some days may choose another rate.</summary>
-    private GenerateInvoiceDto MonthlyDtoAt(Rate defaultRate, params WorkDayDto[] workDays) => new()
+    private static GenerateInvoiceDto MonthlyDtoAt(Rate defaultRate, params WorkDayDto[] workDays) => new()
     {
         CustomerId = CustomerId,
         InvoiceType = InvoiceType.Monthly,
@@ -651,7 +651,7 @@ public sealed class InvoiceGenerationServiceProjectTests
             _service.GenerateInvoiceAsync(OneTimeDto(), TestContext.CurrentContext.CancellationToken));
     }
 
-    private GenerateInvoiceDto OneTimeDto(decimal? hours = null, long? rateId = null) => new()
+    private static GenerateInvoiceDto OneTimeDto(decimal? hours = null, long? rateId = null) => new()
     {
         CustomerId = CustomerId,
         InvoiceType = InvoiceType.OneTime,

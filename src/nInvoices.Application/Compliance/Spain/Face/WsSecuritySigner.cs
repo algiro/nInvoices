@@ -129,7 +129,9 @@ public static class WsSecuritySigner
     private static string Format(DateTime utc) =>
         utc.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
 
+#pragma warning disable CA5350 // FACe signs with rsa-sha1 when asked to: the protocol, not a choice
     private static byte[] Hash(bool sha1, byte[] data) => sha1 ? SHA1.HashData(data) : SHA256.HashData(data);
+#pragma warning restore CA5350
 
     /// <summary>
     /// Exclusive canonical form of an element as it sits in its document: on its own, with the namespace
