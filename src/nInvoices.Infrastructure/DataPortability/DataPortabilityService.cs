@@ -19,17 +19,20 @@ public sealed class DataPortabilityService : IDataPortability
     private readonly SharedTemplatesPortability _sharedTemplates;
     private readonly InvoicePortability _invoices;
     private readonly SettingsPortability _settings;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<DataPortabilityService> _logger;
 
     public DataPortabilityService(
         ApplicationDbContext context,
         IComplianceRegistry compliance,
+        TimeProvider timeProvider,
         ILogger<DataPortabilityService> logger)
     {
-        _customers = new CustomerPortability(context, logger);
+        _customers = new CustomerPortability(context, timeProvider, logger);
         _sharedTemplates = new SharedTemplatesPortability(context);
-        _invoices = new InvoicePortability(context, logger);
-        _settings = new SettingsPortability(context, compliance, logger);
+        _invoices = new InvoicePortability(context, timeProvider, logger);
+        _settings = new SettingsPortability(context, compliance, timeProvider, logger);
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -39,7 +42,7 @@ public sealed class DataPortabilityService : IDataPortability
         // Shared templates have no customer: they are exported on their own
         var shared = await _sharedTemplates.ExportAsync(cancellationToken);
 
-        return new DataExportDto("1.0", DateTime.UtcNow, customers, null, shared);
+        return new DataExportDto("1.0", _timeProvider.GetUtcNow().UtcDateTime, customers, null, shared);
     }
 
     public Task<DataExportDto> ExportInvoicesAsync(int? year, int? month, long? customerId, CancellationToken cancellationToken) =>

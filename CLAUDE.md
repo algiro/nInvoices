@@ -271,6 +271,11 @@ Code style and testing rules are authoritative in `.github/instructions/`
 - Always flow `CancellationToken`; never `.Result` / `.Wait()`; prefer `Try*` methods over
   catching parse/lookup exceptions.
 - `ArgumentNullException.ThrowIfNull` only in public methods taking reference types.
+- **Time comes from the injected `TimeProvider`** (`GetUtcNow()`, `GetLocalNow()` for "today"/"this year").
+  `DateTime.Now/UtcNow/Today` and `DateTimeOffset.Now/UtcNow` are banned in `src` (`BannedSymbols.txt`,
+  build error RS0030); tests may use them, but should pass a fixed clock (`FixedTimeProvider`).
+  `CreatedAt`/`UpdatedAt` are stamped by `ApplicationDbContext` on save; entities never set them. A business
+  time (Gmail connected, e-invoice generated) is a parameter of the entity method that records it.
 - Tests: NUnit + Shouldly (+ Moq when needed), `[TestCase]`/`[TestCaseSource]` for parameters,
   name as `Method_Scenario_ExpectedOutcome`, use `TestContext.Current.CancellationToken`.
 

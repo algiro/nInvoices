@@ -11,11 +11,13 @@ public sealed class GetComplianceCountriesQueryHandler : IRequestHandler<GetComp
 {
     private readonly IComplianceRegistry _registry;
     private readonly IRepository<ComplianceSettings> _settings;
+    private readonly TimeProvider _timeProvider;
 
-    public GetComplianceCountriesQueryHandler(IComplianceRegistry registry, IRepository<ComplianceSettings> settings)
+    public GetComplianceCountriesQueryHandler(IComplianceRegistry registry, IRepository<ComplianceSettings> settings, TimeProvider timeProvider)
     {
         _registry = registry;
         _settings = settings;
+        _timeProvider = timeProvider;
     }
 
     public async ValueTask<IReadOnlyList<ComplianceCountryDto>> Handle(GetComplianceCountriesQuery request, CancellationToken cancellationToken)
@@ -28,7 +30,7 @@ public sealed class GetComplianceCountriesQueryHandler : IRequestHandler<GetComp
             .ToDictionary(s => s.CountryCode, StringComparer.OrdinalIgnoreCase);
 
         return _registry.Offered
-            .Select(m => ComplianceMapper.ToDto(m, saved.GetValueOrDefault(m.CountryCode), _registry.RequiresSigningCertificate(m.CountryCode)))
+            .Select(m => ComplianceMapper.ToDto(m, saved.GetValueOrDefault(m.CountryCode), _registry.RequiresSigningCertificate(m.CountryCode), _timeProvider.GetUtcNow().UtcDateTime))
             .ToList();
     }
 }

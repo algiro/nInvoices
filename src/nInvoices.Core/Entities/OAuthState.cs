@@ -15,7 +15,6 @@ public sealed class OAuthState : EntityBase
 
     public OAuthState()
     {
-        CreatedAt = DateTime.UtcNow;
     }
 
     public OAuthState(string state, string userId, DateTime now) : this()

@@ -38,7 +38,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandlerTests
         _invoices.Setup(r => r.GetByIdWithRelatedAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(() => _invoice);
 
         _connections = new InMemoryRepository<GmailConnection>(
-            new GmailConnection(UserId, "me@gmail.com", "encrypted", GmailScopes.Compose));
+            new GmailConnection(UserId, "me@gmail.com", "encrypted", GmailScopes.Compose, new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)));
         _emails = new InMemoryRepository<InvoiceEmail>();
 
         _composer = new Mock<IInvoiceEmailComposer>();
@@ -66,6 +66,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandlerTests
             _gmail.Object,
             _protector.Object,
             userContext.Object,
+            new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)),
             NullLogger<CreateInvoiceEmailDraftCommandHandler>.Instance);
     }
 

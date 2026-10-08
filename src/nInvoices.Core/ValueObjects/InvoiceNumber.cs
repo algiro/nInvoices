@@ -75,9 +75,6 @@ public sealed record InvoiceNumber
         return hasValidToken;
     }
 
-    public static string GetPreview(string pattern) =>
-        Generate(pattern, 1, DateTime.Now, "CUST").Value;
-
     public override string ToString() => Value;
 
     public static implicit operator string(InvoiceNumber number) => number.Value;

@@ -1,0 +1,5 @@
+P:System.DateTime.Now;Read the time from the injected TimeProvider (GetLocalNow), so it can be fixed in tests
+P:System.DateTime.UtcNow;Read the time from the injected TimeProvider (GetUtcNow), so it can be fixed in tests
+P:System.DateTime.Today;Read the time from the injected TimeProvider (GetLocalNow().Date), so it can be fixed in tests
+P:System.DateTimeOffset.Now;Read the time from the injected TimeProvider (GetLocalNow), so it can be fixed in tests
+P:System.DateTimeOffset.UtcNow;Read the time from the injected TimeProvider (GetUtcNow), so it can be fixed in tests

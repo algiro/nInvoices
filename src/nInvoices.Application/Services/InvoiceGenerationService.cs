@@ -67,6 +67,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     private readonly ITaxCalculationService _taxCalculationService;
     private readonly IInvoiceNumbering _numbering;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly TimeProvider _timeProvider;
     private readonly IReadOnlyList<IInvoiceTemplateModelContributor> _contributors;
 
     public InvoiceGenerationService(
@@ -80,6 +81,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         ITaxCalculationService taxCalculationService,
         IInvoiceNumbering numbering,
         IUnitOfWork unitOfWork,
+        TimeProvider timeProvider,
         IEnumerable<IInvoiceTemplateModelContributor>? contributors = null)
     {
         _contributors = contributors?.ToList() ?? [];
@@ -93,6 +95,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         _taxCalculationService = taxCalculationService;
         _numbering = numbering;
         _unitOfWork = unitOfWork;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Invoice> GenerateInvoiceAsync(
@@ -202,7 +205,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             {
                 invoice.Expenses.Add(new Expense(
                     dto.CustomerId,
-                    expenseDto.Date,
+                    expenseDto.Date ?? DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime),
                     expenseDto.Description,
                     new Money(expenseDto.Amount, expenseDto.Currency)));
             }

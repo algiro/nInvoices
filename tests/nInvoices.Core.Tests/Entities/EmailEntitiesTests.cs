@@ -34,14 +34,14 @@ public sealed class EmailEntitiesTests
     [Test]
     public void GmailConnection_ReconnectReplacesTokenAndConnectionTime()
     {
-        var connection = new GmailConnection("user", "old@gmail.com", "enc-old", "scope");
-        var firstConnected = connection.ConnectedAt;
+        var connection = new GmailConnection("user", "old@gmail.com", "enc-old", "scope", new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc));
+        var reconnectedAt = new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc);
 
-        connection.Reconnect("new@gmail.com", "enc-new", "scope");
+        connection.Reconnect("new@gmail.com", "enc-new", "scope", reconnectedAt);
 
         connection.EmailAddress.ShouldBe("new@gmail.com");
         connection.EncryptedRefreshToken.ShouldBe("enc-new");
-        connection.ConnectedAt.ShouldBeGreaterThanOrEqualTo(firstConnected);
+        connection.ConnectedAt.ShouldBe(reconnectedAt);
     }
 
     [Test]

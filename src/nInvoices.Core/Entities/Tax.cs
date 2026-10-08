@@ -31,7 +31,6 @@ public sealed class Tax : OwnedEntityBase
 
     public Tax()
     {
-        CreatedAt = DateTime.UtcNow;
         IsActive = true;
     }
 
@@ -85,7 +84,6 @@ public sealed class Tax : OwnedEntityBase
 
         Description = description;
         Rate = rate;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void SetCompoundTax(long appliedToTaxId)
@@ -95,6 +93,5 @@ public sealed class Tax : OwnedEntityBase
 
         ApplicationType = TaxApplicationType.OnTax;
         AppliedToTaxId = appliedToTaxId;
-        UpdatedAt = DateTime.UtcNow;
     }
 }

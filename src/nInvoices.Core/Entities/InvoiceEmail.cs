@@ -33,6 +33,5 @@ public sealed class InvoiceEmail : OwnedEntityBase
 
     public InvoiceEmail()
     {
-        CreatedAt = DateTime.UtcNow;
     }
 }

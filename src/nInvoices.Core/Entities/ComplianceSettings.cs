@@ -72,7 +72,6 @@ public sealed class ComplianceSettings : OwnedEntityBase
         CertificateSubject = subject;
         CertificateThumbprint = thumbprint;
         CertificateNotAfter = notAfter;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void ClearCertificate()
@@ -82,7 +81,6 @@ public sealed class ComplianceSettings : OwnedEntityBase
         CertificateSubject = null;
         CertificateThumbprint = null;
         CertificateNotAfter = null;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public IssuerProfile ToIssuerProfile() => new(LegalName, TaxId, Address, Values);

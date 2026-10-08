@@ -4,6 +4,7 @@ using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Invoices.Commands;
 using nInvoices.Application.Features.Invoices.Queries;
 using nInvoices.Application.Services;
+using nInvoices.Application.Tests.TestDoubles;
 using nInvoices.Core.Configuration;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
@@ -41,10 +42,10 @@ public sealed class InvoiceNumberingHandlerTests
     private static CancellationToken Token => TestContext.CurrentContext.CancellationToken;
 
     private Task<InvoiceNumberingDto> Get() =>
-        new GetInvoiceNumberingQueryHandler(_sequences.Object, _settings).Handle(new GetInvoiceNumberingQuery(), Token).AsTask();
+        new GetInvoiceNumberingQueryHandler(_sequences.Object, _settings, new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc))).Handle(new GetInvoiceNumberingQuery(), Token).AsTask();
 
     private Task<InvoiceNumberingDto> Update(int value, string? format) =>
-        new UpdateInvoiceNumberingCommandHandler(_sequences.Object, _drafts.Object, _unitOfWork.Object, _settings)
+        new UpdateInvoiceNumberingCommandHandler(_sequences.Object, _drafts.Object, _unitOfWork.Object, _settings, new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)))
             .Handle(new UpdateInvoiceNumberingCommand(new UpdateInvoiceNumberingDto(value, format)), Token).AsTask();
 
     [Test]

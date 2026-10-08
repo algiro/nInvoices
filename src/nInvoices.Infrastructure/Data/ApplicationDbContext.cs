@@ -23,16 +23,19 @@ public sealed class ApplicationDbContext : DbContext
         .GetMethod(nameof(ConfigureOwnedEntity), BindingFlags.NonPublic | BindingFlags.Instance)!;
 
     private readonly IUserContext? _userContext;
+    private readonly TimeProvider _timeProvider;
 
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options,
         FieldEncryptor encryptor,
-        IUserContext? userContext = null)
+        IUserContext? userContext = null,
+        TimeProvider? timeProvider = null)
         : base(options)
     {
         ArgumentNullException.ThrowIfNull(encryptor);
         Encryptor = encryptor;
         _userContext = userContext;
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     /// <summary>Encrypts the sensitive columns. Part of the model cache key: the converters use it.</summary>
@@ -43,6 +46,12 @@ public sealed class ApplicationDbContext : DbContext
     /// values don't change, only how they are stored.
     /// </summary>
     internal bool AllowRewritingVerifactuRecords { get; set; }
+
+    /// <summary>
+    /// Saves leave CreatedAt/UpdatedAt as they are: for rewriting how rows are stored (encrypting them),
+    /// which changes no data.
+    /// </summary>
+    internal bool KeepAuditTimes { get; set; }
 
     /// <summary>
     /// The user whose data this context reads and writes. Null when there is no authenticated
@@ -123,26 +132,12 @@ public sealed class ApplicationDbContext : DbContext
         entity.HasQueryFilter(e => e.OwnerId == CurrentOwnerId);
     }
 
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        // Update timestamps
-        var entries = ChangeTracker.Entries<EntityBase>();
-        foreach (var entry in entries)
-        {
-            if (entry.State == EntityState.Modified)
-            {
-                entry.Entity.UpdatedAt = DateTime.UtcNow;
-            }
-        }
-
-        return base.SaveChangesAsync(cancellationToken);
-    }
-
     public override async Task<int> SaveChangesAsync(
         bool acceptAllChangesOnSuccess,
         CancellationToken cancellationToken = default)
     {
         EnsureVerifactuRecordsAreAppendOnly();
+        StampTimes();
         await ApplyOwnershipAsync(cancellationToken);
 
         var ownerId = CurrentOwnerId;
@@ -153,6 +148,26 @@ public sealed class ApplicationDbContext : DbContext
         await Encryptor.EnsureKeyAsync(ownerId, cancellationToken);
         using (FieldEncryptor.BeginWriting(ownerId))
             return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    /// <summary>
+    /// Every entity's audit times, from the injected clock: <see cref="EntityBase.CreatedAt"/> when it is first
+    /// saved (unless it already carries one, e.g. restored from a backup), <see cref="EntityBase.UpdatedAt"/> when
+    /// it changes. Entities never read the clock for these themselves.
+    /// </summary>
+    private void StampTimes()
+    {
+        if (KeepAuditTimes)
+            return;
+
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
+        foreach (var entry in ChangeTracker.Entries<EntityBase>())
+        {
+            if (entry.State == EntityState.Added && entry.Entity.CreatedAt == default)
+                entry.Entity.CreatedAt = now;
+            else if (entry.State == EntityState.Modified)
+                entry.Entity.UpdatedAt = now;
+        }
     }
 
     /// <summary>

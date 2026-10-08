@@ -39,7 +39,6 @@ public sealed class HolidayRule : OwnedEntityBase
 
     public HolidayRule()
     {
-        CreatedAt = DateTime.UtcNow;
     }
 
     public static HolidayRule Fixed(string name, int month, int day, int? fromYear = null, int? toYear = null) =>
@@ -126,19 +125,16 @@ public sealed class HolidayRule : OwnedEntityBase
         Occurrence = occurrence;
         FromYear = fromYear;
         ToYear = toYear;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Activate()
     {
         IsActive = true;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Deactivate()
     {
         IsActive = false;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     /// <summary>

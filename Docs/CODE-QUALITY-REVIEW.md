@@ -21,7 +21,7 @@ The problems sit at the edges of that architecture. Several rules the design imp
 | 9 | Oversized classes and components | Medium | M–L — ✅ done (types generation pending) |
 | 10 | No CI, no shared build settings, no analyzers | Medium | S — ✅ done |
 | 11 | Frontend: no type-checking of `.vue` files, no lint, no tests | Medium | M — ✅ done |
-| 12 | Inconsistent time source (`DateTime.*` vs `TimeProvider`) | Low | S |
+| 12 | Inconsistent time source (`DateTime.*` vs `TimeProvider`) | Low | S — ✅ done |
 | 13 | Package hygiene | Low | S |
 | 14 | Repository hygiene (root clutter, stale docs) | Low | S |
 
@@ -335,7 +335,23 @@ Size is a symptom, not the problem. These files mix several responsibilities, th
 - Inconsistent data access: 17 views/components import from `api/` directly, while 8 use Pinia stores. Decide on one rule, e.g. "stores for shared/cached state, direct API calls only for one-off actions", and apply it.
 - `v-html` renders user-authored template output (1 site). Make sure it is sandboxed (`<iframe sandbox>`) or sanitised. This is a correctness/security boundary, not just style.
 
-## 12. Inconsistent time source — Low
+## 12. Inconsistent time source — Low — ✅ Done (2026-10-08)
+
+> **Resolution.** No application code reads the clock directly any more (about 80 calls before): it reads the
+> injected `TimeProvider`, and `BannedSymbols.txt` with Microsoft.CodeAnalysis.BannedApiAnalyzers makes
+> `DateTime.Now/UtcNow/Today` and `DateTimeOffset.Now/UtcNow` build errors in `src` (checked by planting one).
+> - Audit times: entities no longer set `CreatedAt`/`UpdatedAt` (53 lines removed); `ApplicationDbContext` stamps
+>   them on save from the clock (an existing `CreatedAt`, e.g. restored, is kept; re-encrypting rows changes
+>   neither). `AuditTimesTests` covers it, across a year boundary.
+> - Business times are parameters: `GmailConnection(…, connectedAt)`/`Reconnect`/`MarkUsed(usedAt)`,
+>   `InvoiceEInvoice(…, generatedAt)`/`Replace`.
+> - Services, handlers, the PDF documents' footer, the email Date header, backup export times, the data-key
+>   creation time and the "current year" of the summary and holiday endpoints use the injected clock; mappers
+>   take the time as an argument.
+> - DTO defaults: `GenerateInvoiceDto.IssueDate` is `required` (the UI always sends it; the validator already
+>   said "required", but a missing date silently became today); `ExpenseDto.Date` is optional and filled with
+>   today from the clock where an expense is recorded.
+> - A saved invoice without a month now shows its issue month in the template instead of today's.
 
 `TimeProvider` is used in 26 places, but 38 files still call `DateTime.UtcNow` / `DateTime.Today` / `DateTime.Now` directly. Examples: entities stamping `UpdatedAt`, and `InvoicesController.Summary` using `DateTime.Today.Year`, which is the **server's** local date. Tests touching those paths depend on the wall clock, and year-boundary behaviour can't be tested.
 

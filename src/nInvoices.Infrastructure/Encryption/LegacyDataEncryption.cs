@@ -50,6 +50,7 @@ public static class LegacyDataEncryption
                 scope.ServiceProvider.GetRequiredService<OwnerOverride>().OwnerId = owner;
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 context.AllowRewritingVerifactuRecords = true;
+                context.KeepAuditTimes = true;
                 encrypted += await (Task<int>)EncryptTypeMethod.MakeGenericMethod(type).Invoke(null, [context, cancellationToken])!;
             }
         }

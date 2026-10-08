@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using nInvoices.Core.Interfaces;
 using nInvoices.Infrastructure.Data.Repositories;
 using nInvoices.Infrastructure.Encryption;
@@ -27,6 +28,9 @@ public static class DatabaseExtensions
         var dbType = configuration["Database:Type"] ?? "SQLite";
         var connectionString = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("Connection string 'Default' not found");
+
+        // One clock for the whole app (audit times in the DbContext included); tests swap it for a fixed one
+        services.TryAddSingleton(TimeProvider.System);
 
         services.AddDbContext<ApplicationDbContext>(options =>
         {
@@ -100,7 +104,8 @@ public static class DatabaseExtensions
         services.AddSingleton<IUserKeyStore>(new EfUserKeyStore(keyStoreOptions.Options));
         services.AddSingleton(sp => new FieldEncryptor(
             MasterKeyRing.Load(keyFile, previousKeyFiles, createIfMissing),
-            sp.GetRequiredService<IUserKeyStore>()));
+            sp.GetRequiredService<IUserKeyStore>(),
+            sp.GetRequiredService<TimeProvider>()));
 
         return services;
     }

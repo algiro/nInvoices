@@ -10,7 +10,7 @@ public sealed class GenerateInvoiceDto
 {
     public required long CustomerId { get; init; }
     public required InvoiceType InvoiceType { get; init; }
-    public DateOnly IssueDate { get; init; } = DateOnly.FromDateTime(DateTime.UtcNow);
+    public required DateOnly IssueDate { get; init; }
     public int? Year { get; init; }
     public int? Month { get; init; }
     public ICollection<WorkDayDto>? WorkDays { get; init; }

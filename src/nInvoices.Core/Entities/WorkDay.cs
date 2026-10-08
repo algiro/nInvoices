@@ -26,7 +26,6 @@ public sealed class WorkDay : OwnedEntityBase
 
     public WorkDay()
     {
-        CreatedAt = DateTime.UtcNow;
         DayType = DayType.Worked;
     }
 
@@ -48,13 +47,11 @@ public sealed class WorkDay : OwnedEntityBase
     public void UpdateNotes(string? notes)
     {
         Notes = notes;
-        UpdatedAt = DateTime.UtcNow;
     }
     
     public void UpdateDayType(DayType dayType)
     {
         DayType = dayType;
-        UpdatedAt = DateTime.UtcNow;
     }
     
     public void UpdateHoursWorked(decimal? hoursWorked)
@@ -63,6 +60,5 @@ public sealed class WorkDay : OwnedEntityBase
             throw new ArgumentException("Hours worked must be positive", nameof(hoursWorked));
         
         HoursWorked = hoursWorked;
-        UpdatedAt = DateTime.UtcNow;
     }
 }

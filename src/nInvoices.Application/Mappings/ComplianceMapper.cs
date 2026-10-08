@@ -8,7 +8,8 @@ namespace nInvoices.Application.Mappings;
 public static class ComplianceMapper
 {
     /// <param name="settings">The user's settings for the country; null if none were saved yet.</param>
-    public static ComplianceCountryDto ToDto(ICountryComplianceModule module, ComplianceSettings? settings, bool requiresCertificate) => new(
+    /// <param name="now">To tell whether the signing certificate has expired.</param>
+    public static ComplianceCountryDto ToDto(ICountryComplianceModule module, ComplianceSettings? settings, bool requiresCertificate, DateTime now) => new(
         module.CountryCode,
         module.DisplayName,
         module.Capabilities.Select(c => c.ToString()).Order().ToList(),
@@ -29,7 +30,7 @@ public static class ComplianceMapper
                         settings.CertificateSubject ?? "",
                         settings.CertificateThumbprint ?? "",
                         settings.CertificateNotAfter ?? DateTime.MinValue,
-                        settings.CertificateNotAfter < DateTime.UtcNow)
+                        settings.CertificateNotAfter < now)
                     : null));
 
     private static ComplianceFieldDto ToDto(ComplianceField f) => new(

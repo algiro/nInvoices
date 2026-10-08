@@ -23,7 +23,6 @@ public sealed class EmailTemplate : OwnedEntityBase, IScopedTemplate
 
     public EmailTemplate()
     {
-        CreatedAt = DateTime.UtcNow;
     }
 
     /// <param name="customerId">The customer, or null for a template shared by all customers.</param>
@@ -52,18 +51,15 @@ public sealed class EmailTemplate : OwnedEntityBase, IScopedTemplate
         Name = name.Trim();
         Subject = subject;
         Body = body;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Activate()
     {
         IsActive = true;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Deactivate()
     {
         IsActive = false;
-        UpdatedAt = DateTime.UtcNow;
     }
 }

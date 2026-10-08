@@ -30,23 +30,21 @@ public sealed class InvoiceEInvoice : OwnedEntityBase
 
     private InvoiceEInvoice() { }
 
-    public InvoiceEInvoice(long invoiceId, string countryCode, string formatId, byte[] content, string contentType, string fileExtension)
+    public InvoiceEInvoice(long invoiceId, string countryCode, string formatId, byte[] content, string contentType, string fileExtension, DateTime generatedAt)
     {
         InvoiceId = invoiceId;
         CountryCode = countryCode;
         FormatId = formatId;
-        CreatedAt = DateTime.UtcNow;
-        Replace(content, contentType, fileExtension);
+        Replace(content, contentType, fileExtension, generatedAt);
     }
 
     /// <summary>Stores a newly generated file in place of the previous one.</summary>
-    public void Replace(byte[] content, string contentType, string fileExtension)
+    public void Replace(byte[] content, string contentType, string fileExtension, DateTime generatedAt)
     {
         Content = content;
         ContentType = contentType;
         FileExtension = fileExtension;
         Sha256 = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(content));
-        GeneratedAt = DateTime.UtcNow;
-        UpdatedAt = GeneratedAt;
+        GeneratedAt = generatedAt;
     }
 }

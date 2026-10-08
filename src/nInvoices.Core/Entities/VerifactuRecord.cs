@@ -89,6 +89,5 @@ public sealed class VerifactuRecord : OwnedEntityBase
         GeneratedAt = generatedAt;
         Hash = hash;
         Xml = xml;
-        CreatedAt = DateTime.UtcNow;
     }
 }

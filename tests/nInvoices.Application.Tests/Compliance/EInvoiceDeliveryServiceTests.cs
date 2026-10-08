@@ -130,7 +130,7 @@ public sealed class EInvoiceDeliveryServiceTests
 
     private InvoiceEInvoice StoredFile()
     {
-        var file = new InvoiceEInvoice(InvoiceId, "ES", FacturaeFormat.Id, [1, 2, 3], "application/xml", "xsig");
+        var file = new InvoiceEInvoice(InvoiceId, "ES", FacturaeFormat.Id, [1, 2, 3], "application/xml", "xsig", new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc));
         _files.AddAsync(file).GetAwaiter().GetResult();
         return file;
     }

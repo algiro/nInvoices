@@ -16,11 +16,13 @@ public sealed class WorkedDaysCalendarDocument : IDocument
     private static readonly string[] DayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
     private readonly Invoice _invoice;
+    private readonly DateTime _generatedAt;
     private readonly List<DateOnly> _workedDates;
 
-    public WorkedDaysCalendarDocument(Invoice invoice)
+    public WorkedDaysCalendarDocument(Invoice invoice, DateTime generatedAt)
     {
         _invoice = invoice ?? throw new ArgumentNullException(nameof(invoice));
+        _generatedAt = generatedAt;
 
         if (_invoice.Type != Core.Enums.InvoiceType.Monthly)
             throw new DomainException("Calendar is only available for monthly invoices");
@@ -199,7 +201,7 @@ public sealed class WorkedDaysCalendarDocument : IDocument
         container.AlignCenter().Text(text =>
         {
             text.Span("Generated on ").FontSize(8).FontColor(Colors.Grey.Darken1);
-            text.Span(DateTime.UtcNow.ToString("MMM dd, yyyy HH:mm", CultureInfo.InvariantCulture)).FontSize(8).FontColor(Colors.Grey.Darken1);
+            text.Span(_generatedAt.ToString("MMM dd, yyyy HH:mm", CultureInfo.InvariantCulture)).FontSize(8).FontColor(Colors.Grey.Darken1);
             text.Span(" UTC").FontSize(8).FontColor(Colors.Grey.Darken1);
         });
     }

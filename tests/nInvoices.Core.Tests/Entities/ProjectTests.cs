@@ -14,7 +14,6 @@ public sealed class ProjectTests
         project.Name.ShouldBe("Website redesign");
         project.CustomerId.ShouldBe(1);
         project.IsActive.ShouldBeTrue();
-        project.CreatedAt.ShouldNotBe(default);
     }
 
     [TestCase(0)]
@@ -32,14 +31,13 @@ public sealed class ProjectTests
     }
 
     [Test]
-    public void Rename_TrimsAndStampsUpdatedAt()
+    public void Rename_Trims()
     {
         var project = new Project(1, "Old");
 
         project.Rename("  New name  ");
 
         project.Name.ShouldBe("New name");
-        project.UpdatedAt.ShouldNotBeNull();
     }
 
     [Test]

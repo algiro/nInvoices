@@ -26,7 +26,6 @@ public sealed class InvoiceTemplate : OwnedEntityBase, IScopedTemplate
 
     public InvoiceTemplate()
     {
-        CreatedAt = DateTime.UtcNow;
         IsActive = false; // Changed: new templates start as inactive to allow multiple templates
         Version = 1;
     }
@@ -70,18 +69,15 @@ public sealed class InvoiceTemplate : OwnedEntityBase, IScopedTemplate
         Name = name;
         Content = content;
         Version++;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Activate()
     {
         IsActive = true;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Deactivate()
     {
         IsActive = false;
-        UpdatedAt = DateTime.UtcNow;
     }
 }

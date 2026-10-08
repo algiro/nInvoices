@@ -85,7 +85,7 @@ public sealed class ImportExportRoundTripTests
     {
         var registry = new Mock<IComplianceRegistry>();
         registry.Setup(r => r.Find("ES")).Returns(Mock.Of<ICountryComplianceModule>());
-        return new DataPortabilityService(context, registry.Object, NullLogger<DataPortabilityService>.Instance);
+        return new DataPortabilityService(context, registry.Object, TimeProvider.System, NullLogger<DataPortabilityService>.Instance);
     }
 
     private static T Ok<T>(T result) => result;

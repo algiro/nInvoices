@@ -26,7 +26,7 @@ public sealed class EInvoiceDeliveryLifecycleStepTests
     [Test]
     public async Task InvoiceWithAFileThatWasNotSent_CanBeDeleted()
     {
-        var files = new InMemoryRepository<InvoiceEInvoice>(new InvoiceEInvoice(7, "ES", "facturae-3.2.2", [1], "application/xml", "xsig"));
+        var files = new InMemoryRepository<InvoiceEInvoice>(new InvoiceEInvoice(7, "ES", "facturae-3.2.2", [1], "application/xml", "xsig", new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)));
         var step = new EInvoiceDeliveryLifecycleStep(files, new InMemoryRepository<EInvoiceSubmission>());
 
         await Should.NotThrowAsync(() => step.OnDeletingAsync(NewInvoice(), Token));
@@ -35,7 +35,7 @@ public sealed class EInvoiceDeliveryLifecycleStepTests
     [Test]
     public async Task SentInvoice_CannotBeDeleted()
     {
-        var files = new InMemoryRepository<InvoiceEInvoice>(new InvoiceEInvoice(7, "ES", "facturae-3.2.2", [1], "application/xml", "xsig"));
+        var files = new InMemoryRepository<InvoiceEInvoice>(new InvoiceEInvoice(7, "ES", "facturae-3.2.2", [1], "application/xml", "xsig", new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)));
         var submissions = new InMemoryRepository<EInvoiceSubmission>(
             new EInvoiceSubmission(files.Items[0].Id, "face", "Test", "REG1", new DateTime(2026, 10, 3, 9, 30, 0, DateTimeKind.Utc)));
         var step = new EInvoiceDeliveryLifecycleStep(files, submissions);

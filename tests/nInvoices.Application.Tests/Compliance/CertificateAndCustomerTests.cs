@@ -149,7 +149,7 @@ public sealed class CertificateAndCustomerTests
         using var certificate = FacturaeTestData.NewCertificate();
         await Upload("ES", Pfx(certificate), "pw");
 
-        var country = await new RemoveSigningCertificateCommandHandler(_registry, _settings, _unitOfWork.Object)
+        var country = await new RemoveSigningCertificateCommandHandler(_registry, _settings, _unitOfWork.Object, _time)
             .Handle(new RemoveSigningCertificateCommand("ES"), Token);
 
         country!.Settings.Certificate.ShouldBeNull();

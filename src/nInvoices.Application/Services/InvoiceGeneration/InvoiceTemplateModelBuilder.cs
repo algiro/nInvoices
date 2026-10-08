@@ -33,7 +33,7 @@ public static class InvoiceTemplateModelBuilder
         if (invoice.Type == InvoiceType.Monthly && invoice.WorkedDays.HasValue)
         {
             workedDays = invoice.WorkedDays.Value;
-            monthNumber = invoice.Month ?? DateTime.UtcNow.Month;
+            monthNumber = invoice.Month ?? invoice.IssueDate.Month;
             monthlyRate = rate.Price.Amount;
             totalExpenses = invoice.TotalExpenses.Amount;
 

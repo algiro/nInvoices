@@ -14,10 +14,12 @@ namespace nInvoices.Infrastructure.DataPortability;
 internal sealed class CustomerPortability
 {
     private readonly ApplicationDbContext _context;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
 
-    public CustomerPortability(ApplicationDbContext context, ILogger logger)
+    public CustomerPortability(ApplicationDbContext context, TimeProvider timeProvider, ILogger logger)
     {
+        _timeProvider = timeProvider;
         _context = context;
         _logger = logger;
     }
@@ -210,7 +212,7 @@ internal sealed class CustomerPortability
                         CustomerId = customer.Id,
                         Description = expenseData.Description,
                         Amount = new Money(expenseData.Amount, expenseData.Currency),
-                        Date = expenseData.Date
+                        Date = expenseData.Date ?? DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime)
                     }, cancellationToken);
                 }
 

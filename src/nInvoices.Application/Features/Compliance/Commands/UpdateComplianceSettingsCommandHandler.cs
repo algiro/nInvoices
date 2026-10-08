@@ -13,15 +13,18 @@ public sealed class UpdateComplianceSettingsCommandHandler : IRequestHandler<Upd
     private readonly IComplianceRegistry _registry;
     private readonly IRepository<ComplianceSettings> _settings;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly TimeProvider _timeProvider;
 
     public UpdateComplianceSettingsCommandHandler(
         IComplianceRegistry registry,
         IRepository<ComplianceSettings> settings,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        TimeProvider timeProvider)
     {
         _registry = registry;
         _settings = settings;
         _unitOfWork = unitOfWork;
+        _timeProvider = timeProvider;
     }
 
     /// <exception cref="ComplianceValidationException">The regime is being turned on and the settings break its rules.</exception>
@@ -66,6 +69,6 @@ public sealed class UpdateComplianceSettingsCommandHandler : IRequestHandler<Upd
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ComplianceMapper.ToDto(module, settings, _registry.RequiresSigningCertificate(module.CountryCode));
+        return ComplianceMapper.ToDto(module, settings, _registry.RequiresSigningCertificate(module.CountryCode), _timeProvider.GetUtcNow().UtcDateTime);
     }
 }

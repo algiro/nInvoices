@@ -91,6 +91,5 @@ public sealed class VerifactuSubmission : OwnedEntityBase
     public void WaitUntil(DateTime time)
     {
         NextAttemptAt = time;
-        UpdatedAt = DateTime.UtcNow;
     }
 }

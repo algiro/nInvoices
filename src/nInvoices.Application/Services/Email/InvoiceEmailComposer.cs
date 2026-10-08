@@ -63,6 +63,7 @@ public sealed class InvoiceEmailComposer : IInvoiceEmailComposer
     private readonly IPdfExportService _pdfExportService;
     private readonly IHtmlToPdfConverter _htmlToPdfConverter;
     private readonly IMonthlyReportGenerationService _monthlyReportService;
+    private readonly TimeProvider _timeProvider;
 
     public InvoiceEmailComposer(
         IRepository<EmailTemplate> templateRepository,
@@ -72,7 +73,8 @@ public sealed class InvoiceEmailComposer : IInvoiceEmailComposer
         ILocalizationService localization,
         IPdfExportService pdfExportService,
         IHtmlToPdfConverter htmlToPdfConverter,
-        IMonthlyReportGenerationService monthlyReportService)
+        IMonthlyReportGenerationService monthlyReportService,
+        TimeProvider timeProvider)
     {
         _templateRepository = templateRepository;
         _customerRepository = customerRepository;
@@ -82,6 +84,7 @@ public sealed class InvoiceEmailComposer : IInvoiceEmailComposer
         _pdfExportService = pdfExportService;
         _htmlToPdfConverter = htmlToPdfConverter;
         _monthlyReportService = monthlyReportService;
+        _timeProvider = timeProvider;
     }
 
     public async Task<EmailTemplateContent> ResolveTemplateAsync(long customerId, long? templateId, CancellationToken cancellationToken = default)
@@ -247,13 +250,14 @@ public sealed class InvoiceEmailComposer : IInvoiceEmailComposer
 
     private EmailTemplateModel SampleModel(Customer customer)
     {
-        var lastMonth = DateTime.Today.AddMonths(-1);
+        var today = _timeProvider.GetLocalNow().Date;
+        var lastMonth = today.AddMonths(-1);
         return new EmailTemplateModel
         {
             InvoiceNumber = $"{lastMonth:yy}-{lastMonth:MM}-001",
             InvoiceType = nameof(InvoiceType.Monthly),
-            Date = DateTime.Today,
-            DueDate = DateTime.Today.AddDays(30),
+            Date = today,
+            DueDate = today.AddDays(30),
             Currency = "EUR",
             Subtotal = 10000m,
             TotalTax = 2200m,

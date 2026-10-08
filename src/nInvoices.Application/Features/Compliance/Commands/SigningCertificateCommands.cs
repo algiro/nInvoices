@@ -99,7 +99,7 @@ public sealed class SetSigningCertificateCommandHandler : IRequestHandler<SetSig
                 await _settings.UpdateAsync(settings, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            return ComplianceMapper.ToDto(module, settings, _registry.RequiresSigningCertificate(module.CountryCode));
+            return ComplianceMapper.ToDto(module, settings, _registry.RequiresSigningCertificate(module.CountryCode), _time.GetUtcNow().UtcDateTime);
         }
     }
 }
@@ -109,15 +109,18 @@ public sealed class RemoveSigningCertificateCommandHandler : IRequestHandler<Rem
     private readonly IComplianceRegistry _registry;
     private readonly IRepository<ComplianceSettings> _settings;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly TimeProvider _timeProvider;
 
     public RemoveSigningCertificateCommandHandler(
         IComplianceRegistry registry,
         IRepository<ComplianceSettings> settings,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        TimeProvider timeProvider)
     {
         _registry = registry;
         _settings = settings;
         _unitOfWork = unitOfWork;
+        _timeProvider = timeProvider;
     }
 
     public async ValueTask<ComplianceCountryDto?> Handle(RemoveSigningCertificateCommand request, CancellationToken cancellationToken)
@@ -136,6 +139,6 @@ public sealed class RemoveSigningCertificateCommandHandler : IRequestHandler<Rem
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        return ComplianceMapper.ToDto(module, settings, _registry.RequiresSigningCertificate(module.CountryCode));
+        return ComplianceMapper.ToDto(module, settings, _registry.RequiresSigningCertificate(module.CountryCode), _timeProvider.GetUtcNow().UtcDateTime);
     }
 }

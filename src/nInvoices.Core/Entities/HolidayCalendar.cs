@@ -13,7 +13,6 @@ public sealed class HolidayCalendar : OwnedEntityBase
 
     public HolidayCalendar()
     {
-        CreatedAt = DateTime.UtcNow;
     }
 
     public HolidayCalendar(string countryCode) : this()

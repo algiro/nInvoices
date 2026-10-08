@@ -15,17 +15,20 @@ public sealed class UpdateInvoiceNumberingCommandHandler : IRequestHandler<Updat
     private readonly IDraftInvoiceSynchronizer _drafts;
     private readonly IUnitOfWork _unitOfWork;
     private readonly InvoiceSettings _settings;
+    private readonly TimeProvider _timeProvider;
 
     public UpdateInvoiceNumberingCommandHandler(
         IRepository<InvoiceSequence> sequences,
         IDraftInvoiceSynchronizer drafts,
         IUnitOfWork unitOfWork,
-        IOptions<InvoiceSettings> settings)
+        IOptions<InvoiceSettings> settings,
+        TimeProvider timeProvider)
     {
         _sequences = sequences;
         _drafts = drafts;
         _unitOfWork = unitOfWork;
         _settings = settings.Value;
+        _timeProvider = timeProvider;
     }
 
     /// <exception cref="ArgumentException">The value or the pattern is not valid.</exception>
@@ -55,6 +58,6 @@ public sealed class UpdateInvoiceNumberingCommandHandler : IRequestHandler<Updat
         // The drafts show the next number, which the new value or pattern has just changed
         await _drafts.RefreshDraftsAsync(cancellationToken);
 
-        return InvoiceNumberingMapper.ToDto(sequence, _settings.NumberFormat);
+        return InvoiceNumberingMapper.ToDto(sequence, _settings.NumberFormat, _timeProvider.GetLocalNow().DateTime);
     }
 }

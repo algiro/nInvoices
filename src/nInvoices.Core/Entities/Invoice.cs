@@ -50,7 +50,6 @@ public sealed class Invoice : OwnedEntityBase
 
     public Invoice()
     {
-        CreatedAt = DateTime.UtcNow;
         Status = InvoiceStatus.Draft;
     }
 
