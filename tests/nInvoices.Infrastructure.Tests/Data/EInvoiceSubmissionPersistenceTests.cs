@@ -48,7 +48,7 @@ public sealed class EInvoiceSubmissionPersistenceTests
         context.Invoices.Add(invoice);
         await context.SaveChangesAsync(Token);
 
-        var file = new InvoiceEInvoice(invoice.Id, "ES", "facturae-3.2.2", [1, 2, 3], "application/xml", "xsig");
+        var file = new InvoiceEInvoice(invoice.Id, "ES", "facturae-3.2.2", [1, 2, 3], "application/xml", "xsig", DateTime.UtcNow);
         context.InvoiceEInvoices.Add(file);
         await context.SaveChangesAsync(Token);
         return file.Id;

@@ -14,10 +14,12 @@ namespace nInvoices.Infrastructure.PdfExport;
 public sealed class InvoicePdfDocument : IDocument
 {
     private readonly Invoice _invoice;
+    private readonly DateTime _generatedAt;
 
-    public InvoicePdfDocument(Invoice invoice)
+    public InvoicePdfDocument(Invoice invoice, DateTime generatedAt)
     {
         _invoice = invoice ?? throw new ArgumentNullException(nameof(invoice));
+        _generatedAt = generatedAt;
     }
 
     public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
@@ -344,7 +346,7 @@ public sealed class InvoicePdfDocument : IDocument
         container.AlignCenter().Text(text =>
         {
             text.Span("Generated on ").FontSize(8).FontColor(Colors.Grey.Darken1);
-            text.Span(DateTime.UtcNow.ToString("MMM dd, yyyy HH:mm", CultureInfo.InvariantCulture)).FontSize(8).FontColor(Colors.Grey.Darken1);
+            text.Span(_generatedAt.ToString("MMM dd, yyyy HH:mm", CultureInfo.InvariantCulture)).FontSize(8).FontColor(Colors.Grey.Darken1);
             text.Span(" UTC").FontSize(8).FontColor(Colors.Grey.Darken1);
         });
     }

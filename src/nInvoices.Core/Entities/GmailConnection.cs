@@ -24,18 +24,17 @@ public sealed class GmailConnection : EntityBase
 
     public GmailConnection()
     {
-        CreatedAt = DateTime.UtcNow;
     }
 
-    public GmailConnection(string userId, string emailAddress, string encryptedRefreshToken, string scopes) : this()
+    public GmailConnection(string userId, string emailAddress, string encryptedRefreshToken, string scopes, DateTime connectedAt) : this()
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
         UserId = userId;
-        Reconnect(emailAddress, encryptedRefreshToken, scopes);
+        Reconnect(emailAddress, encryptedRefreshToken, scopes, connectedAt);
     }
 
     /// <summary>Replaces the stored authorization after the user connected again.</summary>
-    public void Reconnect(string emailAddress, string encryptedRefreshToken, string scopes)
+    public void Reconnect(string emailAddress, string encryptedRefreshToken, string scopes, DateTime connectedAt)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(emailAddress);
         ArgumentException.ThrowIfNullOrWhiteSpace(encryptedRefreshToken);
@@ -43,12 +42,11 @@ public sealed class GmailConnection : EntityBase
         EmailAddress = emailAddress;
         EncryptedRefreshToken = encryptedRefreshToken;
         Scopes = scopes ?? string.Empty;
-        ConnectedAt = DateTime.UtcNow;
-        UpdatedAt = ConnectedAt;
+        ConnectedAt = connectedAt;
     }
 
-    public void MarkUsed()
+    public void MarkUsed(DateTime usedAt)
     {
-        LastUsedAt = DateTime.UtcNow;
+        LastUsedAt = usedAt;
     }
 }

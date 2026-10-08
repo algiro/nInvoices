@@ -21,10 +21,10 @@ public sealed class InvoiceCalculatorTests
             RateId: rateId);
 
     private static GenerateInvoiceDto Monthly(params WorkDayDto[] days) =>
-        new() { CustomerId = 1, InvoiceType = InvoiceType.Monthly, Year = 2026, Month = 9, WorkDays = days };
+        new() { CustomerId = 1, InvoiceType = InvoiceType.Monthly, IssueDate = new DateOnly(2026, 9, 30), Year = 2026, Month = 9, WorkDays = days };
 
     private static GenerateInvoiceDto OneTime(decimal? hours = null) =>
-        new() { CustomerId = 1, InvoiceType = InvoiceType.OneTime, Hours = hours };
+        new() { CustomerId = 1, InvoiceType = InvoiceType.OneTime, IssueDate = new DateOnly(2026, 9, 30), Hours = hours };
 
     [Test]
     public void Subtotal_DailyRate_BillsWorkedDays_PartialDaysAsHoursOverEight()

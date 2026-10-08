@@ -15,7 +15,6 @@ public sealed class Project : OwnedEntityBase
 
     public Project()
     {
-        CreatedAt = DateTime.UtcNow;
         IsActive = true;
     }
 
@@ -40,18 +39,15 @@ public sealed class Project : OwnedEntityBase
             throw new ArgumentException("Project name cannot be empty", nameof(name));
 
         Name = name.Trim();
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Deactivate()
     {
         IsActive = false;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Activate()
     {
         IsActive = true;
-        UpdatedAt = DateTime.UtcNow;
     }
 }

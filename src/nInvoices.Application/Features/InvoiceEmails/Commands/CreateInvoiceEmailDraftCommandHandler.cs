@@ -22,6 +22,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandler : IRequestHandler<Crea
     private readonly IGmailClient _gmailClient;
     private readonly ISecretProtector _secretProtector;
     private readonly IUserContext _userContext;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<CreateInvoiceEmailDraftCommandHandler> _logger;
 
     public CreateInvoiceEmailDraftCommandHandler(
@@ -34,6 +35,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandler : IRequestHandler<Crea
         IGmailClient gmailClient,
         ISecretProtector secretProtector,
         IUserContext userContext,
+        TimeProvider timeProvider,
         ILogger<CreateInvoiceEmailDraftCommandHandler> logger)
     {
         _invoiceRepository = invoiceRepository;
@@ -45,6 +47,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandler : IRequestHandler<Crea
         _gmailClient = gmailClient;
         _secretProtector = secretProtector;
         _userContext = userContext;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -127,7 +130,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandler : IRequestHandler<Crea
             RfcMessageId = messageId
         };
         await _emailRepository.AddAsync(email, cancellationToken);
-        connection.MarkUsed();
+        connection.MarkUsed(_timeProvider.GetUtcNow().UtcDateTime);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Gmail draft {DraftId} created for invoice {InvoiceId}", draft.DraftId, invoice.Id);

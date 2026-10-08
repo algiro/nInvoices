@@ -31,17 +31,20 @@ public sealed class TemplatePreviewService : ITemplatePreviewService
     private readonly IRepository<Customer> _customerRepository;
     private readonly IRepository<Rate> _rateRepository;
     private readonly IRepository<Tax> _taxRepository;
+    private readonly TimeProvider _timeProvider;
 
     public TemplatePreviewService(
         ITemplateRenderer renderer,
         IRepository<Customer> customerRepository,
         IRepository<Rate> rateRepository,
-        IRepository<Tax> taxRepository)
+        IRepository<Tax> taxRepository,
+        TimeProvider timeProvider)
     {
         _renderer = renderer;
         _customerRepository = customerRepository;
         _rateRepository = rateRepository;
         _taxRepository = taxRepository;
+        _timeProvider = timeProvider;
     }
 
     public async Task<TemplatePreviewResult> PreviewInvoiceAsync(string content, long? customerId, CancellationToken cancellationToken = default)
@@ -136,7 +139,7 @@ public sealed class TemplatePreviewService : ITemplatePreviewService
         }
 
         // Preview the month before the current one, the usual invoicing period
-        var today = DateTime.Today;
+        var today = _timeProvider.GetLocalNow().Date;
         var month = new DateTime(today.Year, today.Month, 1).AddMonths(-1);
 
         return new SampleContext(customerModel, customer?.Locale ?? "en-US", dailyRate, currency, taxes, month);

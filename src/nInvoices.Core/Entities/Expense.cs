@@ -19,7 +19,6 @@ public sealed class Expense : OwnedEntityBase
 
     public Expense()
     {
-        CreatedAt = DateTime.UtcNow;
     }
 
     public Expense(
@@ -52,7 +51,6 @@ public sealed class Expense : OwnedEntityBase
 
         Description = description;
         Amount = amount;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void AssignToInvoice(long invoiceId)
@@ -61,6 +59,5 @@ public sealed class Expense : OwnedEntityBase
             throw new ArgumentException("Invoice ID must be positive", nameof(invoiceId));
 
         InvoiceId = invoiceId;
-        UpdatedAt = DateTime.UtcNow;
     }
 }

@@ -12,11 +12,13 @@ public sealed class GetInvoiceNumberingQueryHandler : IRequestHandler<GetInvoice
 {
     private readonly IRepository<InvoiceSequence> _sequences;
     private readonly InvoiceSettings _settings;
+    private readonly TimeProvider _timeProvider;
 
-    public GetInvoiceNumberingQueryHandler(IRepository<InvoiceSequence> sequences, IOptions<InvoiceSettings> settings)
+    public GetInvoiceNumberingQueryHandler(IRepository<InvoiceSequence> sequences, IOptions<InvoiceSettings> settings, TimeProvider timeProvider)
     {
         _sequences = sequences;
         _settings = settings.Value;
+        _timeProvider = timeProvider;
     }
 
     public async ValueTask<InvoiceNumberingDto> Handle(GetInvoiceNumberingQuery request, CancellationToken cancellationToken)
@@ -24,6 +26,6 @@ public sealed class GetInvoiceNumberingQueryHandler : IRequestHandler<GetInvoice
         // The query filter returns only the current user's row
         var sequence = (await _sequences.GetAllAsync(cancellationToken)).FirstOrDefault();
 
-        return InvoiceNumberingMapper.ToDto(sequence, _settings.NumberFormat);
+        return InvoiceNumberingMapper.ToDto(sequence, _settings.NumberFormat, _timeProvider.GetLocalNow().DateTime);
     }
 }

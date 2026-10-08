@@ -11,10 +11,12 @@ namespace nInvoices.Infrastructure.DataPortability;
 internal sealed class InvoicePortability
 {
     private readonly ApplicationDbContext _context;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
 
-    public InvoicePortability(ApplicationDbContext context, ILogger logger)
+    public InvoicePortability(ApplicationDbContext context, TimeProvider timeProvider, ILogger logger)
     {
+        _timeProvider = timeProvider;
         _context = context;
         _logger = logger;
     }
@@ -73,7 +75,7 @@ internal sealed class InvoicePortability
 
         _logger.LogInformation("Exported {Count} invoices", exported.Count);
 
-        return new DataExportDto("1.0", DateTime.UtcNow, null, exported);
+        return new DataExportDto("1.0", _timeProvider.GetUtcNow().UtcDateTime, null, exported);
     }
 
     /// <summary>
@@ -147,7 +149,7 @@ internal sealed class InvoicePortability
                         InvoiceId = invoice.Id,
                         Description = expenseData.Description,
                         Amount = new Money(expenseData.Amount, expenseData.Currency),
-                        Date = expenseData.Date
+                        Date = expenseData.Date ?? DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime)
                     };
                     await _context.Expenses.AddAsync(expense, cancellationToken);
                 }

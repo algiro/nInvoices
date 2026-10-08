@@ -27,11 +27,13 @@ public sealed class GoogleGmailClient : IGmailClient
 
     private readonly GmailOptions _options;
     private readonly ILogger<GoogleGmailClient> _logger;
+    private readonly TimeProvider _timeProvider;
 
-    public GoogleGmailClient(IOptions<GmailOptions> options, ILogger<GoogleGmailClient> logger)
+    public GoogleGmailClient(IOptions<GmailOptions> options, ILogger<GoogleGmailClient> logger, TimeProvider timeProvider)
     {
         _options = options.Value;
         _logger = logger;
+        _timeProvider = timeProvider;
     }
 
     public bool IsConfigured => _options.IsConfigured;
@@ -98,7 +100,7 @@ public sealed class GoogleGmailClient : IGmailClient
         }
 
         using var gmail = CreateService(credential);
-        var raw = MimeMessageFactory.ToRaw(MimeMessageFactory.Create(email));
+        var raw = MimeMessageFactory.ToRaw(MimeMessageFactory.Create(email, _timeProvider.GetLocalNow()));
 
         try
         {

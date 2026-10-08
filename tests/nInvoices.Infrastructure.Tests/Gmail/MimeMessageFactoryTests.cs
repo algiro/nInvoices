@@ -24,7 +24,7 @@ public sealed class MimeMessageFactoryTests
     [Test]
     public void Create_SetsHeadersBodyAndAttachments()
     {
-        var message = MimeMessageFactory.Create(Email());
+        var message = MimeMessageFactory.Create(Email(), new DateTimeOffset(2026, 10, 1, 11, 0, 0, TimeSpan.FromHours(2)));
 
         message.From.Mailboxes.Single().Address.ShouldBe("me@gmail.com");
         message.To.Mailboxes.Select(m => m.Address).ShouldBe(["billing@acme.it", "boss@acme.it"]);
@@ -39,7 +39,7 @@ public sealed class MimeMessageFactoryTests
     [Test]
     public void ToRaw_IsBase64UrlOfAParsableMessage()
     {
-        var raw = MimeMessageFactory.ToRaw(MimeMessageFactory.Create(Email()));
+        var raw = MimeMessageFactory.ToRaw(MimeMessageFactory.Create(Email(), new DateTimeOffset(2026, 10, 1, 11, 0, 0, TimeSpan.FromHours(2))));
 
         raw.ShouldNotContain('+');
         raw.ShouldNotContain('/');

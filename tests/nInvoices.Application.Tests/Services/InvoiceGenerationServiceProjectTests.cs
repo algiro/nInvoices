@@ -6,6 +6,7 @@ using nInvoices.Application.DTOs;
 using nInvoices.Application.Models;
 using nInvoices.Application.Services;
 using nInvoices.Application.Services.InvoiceGeneration;
+using nInvoices.Application.Tests.TestDoubles;
 using nInvoices.Core.Configuration;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
@@ -25,6 +26,7 @@ public sealed class InvoiceGenerationServiceProjectTests
 {
     private const long CustomerId = 1;
     private const string Currency = "EUR";
+    private static readonly DateOnly IssueDate = new(2026, 1, 31);
 
     private Mock<IRepository<InvoiceTemplate>> _templateRepository = null!;
     private Mock<IRepository<Customer>> _customerRepository = null!;
@@ -142,7 +144,8 @@ public sealed class InvoiceGenerationServiceProjectTests
             _templateRenderer.Object,
             _taxCalculationService.Object,
             new InvoiceNumbering(_sequenceRepository.Object, settings),
-            _unitOfWork.Object);
+            _unitOfWork.Object,
+            new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)));
     }
 
     private void GivenRate(RateType type, decimal amount)
@@ -160,6 +163,7 @@ public sealed class InvoiceGenerationServiceProjectTests
     {
         CustomerId = CustomerId,
         InvoiceType = InvoiceType.Monthly,
+        IssueDate = IssueDate,
         Year = 2026,
         Month = 1,
         WorkDays = workDays
@@ -180,6 +184,7 @@ public sealed class InvoiceGenerationServiceProjectTests
     {
         CustomerId = CustomerId,
         InvoiceType = InvoiceType.Monthly,
+        IssueDate = IssueDate,
         Year = 2026,
         Month = 1,
         WorkDays = workDays,
@@ -655,6 +660,7 @@ public sealed class InvoiceGenerationServiceProjectTests
     {
         CustomerId = CustomerId,
         InvoiceType = InvoiceType.OneTime,
+        IssueDate = IssueDate,
         Hours = hours,
         RateId = rateId
     };
@@ -717,6 +723,7 @@ public sealed class InvoiceGenerationServiceProjectTests
         {
             CustomerId = CustomerId,
             InvoiceType = InvoiceType.Monthly,
+            IssueDate = IssueDate,
             Year = 2026,
             Month = 1,
             RateId = hourly.Id,

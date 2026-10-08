@@ -41,15 +41,17 @@ public sealed class FieldEncryptor
 
     private readonly MasterKeyRing _masterKeys;
     private readonly IUserKeyStore _store;
+    private readonly TimeProvider _timeProvider;
     private readonly ConcurrentDictionary<Guid, byte[]> _keysById = new();
     private readonly ConcurrentDictionary<string, Guid> _keyIdByOwner = new(StringComparer.Ordinal);
 
-    public FieldEncryptor(MasterKeyRing masterKeys, IUserKeyStore store)
+    public FieldEncryptor(MasterKeyRing masterKeys, IUserKeyStore store, TimeProvider? timeProvider = null)
     {
         ArgumentNullException.ThrowIfNull(masterKeys);
         ArgumentNullException.ThrowIfNull(store);
         _masterKeys = masterKeys;
         _store = store;
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     /// <summary>A throwaway encryptor with a random master key and keys kept in memory, for tests.</summary>
@@ -77,7 +79,7 @@ public sealed class FieldEncryptor
                 OwnerId = ownerId,
                 MasterKeyId = _masterKeys.CurrentId,
                 WrappedKey = Wrap(_masterKeys.Current, id, ownerId, key),
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = _timeProvider.GetUtcNow().UtcDateTime
             };
             stored = await _store.TryAddAsync(created, cancellationToken)
                 ? created

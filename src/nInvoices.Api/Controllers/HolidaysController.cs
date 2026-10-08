@@ -18,11 +18,13 @@ public sealed class HolidaysController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly ILogger<HolidaysController> _logger;
+    private readonly TimeProvider _timeProvider;
 
-    public HolidaysController(IMediator mediator, ILogger<HolidaysController> logger)
+    public HolidaysController(IMediator mediator, ILogger<HolidaysController> logger, TimeProvider timeProvider)
     {
         _mediator = mediator;
         _logger = logger;
+        _timeProvider = timeProvider;
     }
 
     /// <summary>Countries with built-in rules or a stored calendar.</summary>
@@ -56,7 +58,7 @@ public sealed class HolidaysController : ControllerBase
         CancellationToken cancellationToken)
     {
         var calendar = await _mediator.Send(
-            new GetHolidayCalendarQuery(countryCode, year ?? DateTime.Today.Year), cancellationToken);
+            new GetHolidayCalendarQuery(countryCode, year ?? _timeProvider.GetLocalNow().Year), cancellationToken);
         return calendar is null ? NotFound() : Ok(calendar);
     }
 
@@ -106,7 +108,7 @@ public sealed class HolidaysController : ControllerBase
         CancellationToken cancellationToken)
     {
         var calendar = await _mediator.Send(
-            new ResetHolidayCalendarCommand(countryCode, year ?? DateTime.Today.Year), cancellationToken);
+            new ResetHolidayCalendarCommand(countryCode, year ?? _timeProvider.GetLocalNow().Year), cancellationToken);
         if (calendar is null)
             return NotFound(new { message = $"There are no built-in holidays for {countryCode.ToUpperInvariant()}" });
 

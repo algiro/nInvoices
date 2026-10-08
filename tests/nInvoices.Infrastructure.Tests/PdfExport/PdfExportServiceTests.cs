@@ -26,7 +26,7 @@ public sealed class PdfExportServiceTests
     public void SetUp()
     {
         _converter = new Mock<IHtmlToPdfConverter>(MockBehavior.Strict);
-        _service = new PdfExportService(_converter.Object);
+        _service = new PdfExportService(_converter.Object, TimeProvider.System);
     }
 
     [Test]

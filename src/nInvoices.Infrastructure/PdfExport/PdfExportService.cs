@@ -13,10 +13,12 @@ namespace nInvoices.Infrastructure.PdfExport;
 public sealed class PdfExportService : IPdfExportService
 {
     private readonly IHtmlToPdfConverter _htmlToPdfConverter;
+    private readonly TimeProvider _timeProvider;
 
-    public PdfExportService(IHtmlToPdfConverter htmlToPdfConverter)
+    public PdfExportService(IHtmlToPdfConverter htmlToPdfConverter, TimeProvider timeProvider)
     {
         _htmlToPdfConverter = htmlToPdfConverter;
+        _timeProvider = timeProvider;
     }
 
     public async Task<byte[]> GenerateInvoicePdfAsync(Invoice invoice, CancellationToken cancellationToken = default)
@@ -27,7 +29,7 @@ public sealed class PdfExportService : IPdfExportService
         if (!string.IsNullOrWhiteSpace(invoice.RenderedContent))
             return await _htmlToPdfConverter.ConvertAsync(invoice.RenderedContent, cancellationToken);
 
-        return new InvoicePdfDocument(invoice).GeneratePdf();
+        return new InvoicePdfDocument(invoice, _timeProvider.GetUtcNow().UtcDateTime).GeneratePdf();
     }
 
     public byte[] GenerateWorkedDaysCalendarPdf(Invoice invoice)
@@ -36,6 +38,6 @@ public sealed class PdfExportService : IPdfExportService
         if (invoice.Type != InvoiceType.Monthly)
             throw new DomainException("Calendar export is only available for monthly invoices");
 
-        return new WorkedDaysCalendarDocument(invoice).GeneratePdf();
+        return new WorkedDaysCalendarDocument(invoice, _timeProvider.GetUtcNow().UtcDateTime).GeneratePdf();
     }
 }

@@ -7,10 +7,12 @@ namespace nInvoices.Api.Controllers;
 public sealed class HealthController : ControllerBase
 {
     private readonly ILogger<HealthController> _logger;
+    private readonly TimeProvider _timeProvider;
 
-    public HealthController(ILogger<HealthController> logger)
+    public HealthController(ILogger<HealthController> logger, TimeProvider timeProvider)
     {
         _logger = logger;
+        _timeProvider = timeProvider;
     }
 
     [HttpGet]
@@ -20,7 +22,7 @@ public sealed class HealthController : ControllerBase
         return Ok(new
         {
             Status = "Healthy",
-            Timestamp = DateTime.UtcNow,
+            Timestamp = _timeProvider.GetUtcNow().UtcDateTime,
             Version = "1.0.0",
             Application = "nInvoices API"
         });

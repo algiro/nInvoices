@@ -44,7 +44,8 @@ public sealed class InvoiceEmailComposerTests
             localization,
             new Mock<IPdfExportService>().Object,
             new Mock<IHtmlToPdfConverter>().Object,
-            new Mock<IMonthlyReportGenerationService>().Object);
+            new Mock<IMonthlyReportGenerationService>().Object,
+            new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)));
     }
 
     private static CancellationToken Ct => TestContext.CurrentContext.CancellationToken;

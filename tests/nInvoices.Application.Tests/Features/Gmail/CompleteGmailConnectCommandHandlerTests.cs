@@ -132,7 +132,7 @@ public sealed class CompleteGmailConnectCommandHandlerTests
     [Test]
     public async Task Handle_Reconnect_ReplacesTheExistingConnection()
     {
-        _connections.Items.Add(new GmailConnection(UserId, "old@gmail.com", "enc(old)", GmailScopes.Compose) { Id = 7 });
+        _connections.Items.Add(new GmailConnection(UserId, "old@gmail.com", "enc(old)", GmailScopes.Compose, new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)) { Id = 7 });
         GoogleGrants(GmailScopes.Compose);
 
         await Complete();

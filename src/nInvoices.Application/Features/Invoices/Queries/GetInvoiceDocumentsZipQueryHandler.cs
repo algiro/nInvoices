@@ -19,17 +19,20 @@ public sealed class GetInvoiceDocumentsZipQueryHandler : IRequestHandler<GetInvo
     private readonly IRepository<Customer> _customerRepository;
     private readonly IInvoiceEmailComposer _documents;
     private readonly ILogger<GetInvoiceDocumentsZipQueryHandler> _logger;
+    private readonly TimeProvider _timeProvider;
 
     public GetInvoiceDocumentsZipQueryHandler(
         IInvoiceRepository invoiceRepository,
         IRepository<Customer> customerRepository,
         IInvoiceEmailComposer documents,
-        ILogger<GetInvoiceDocumentsZipQueryHandler> logger)
+        ILogger<GetInvoiceDocumentsZipQueryHandler> logger,
+        TimeProvider timeProvider)
     {
         _invoiceRepository = invoiceRepository;
         _customerRepository = customerRepository;
         _documents = documents;
         _logger = logger;
+        _timeProvider = timeProvider;
     }
 
     public async ValueTask<DownloadFile> Handle(GetInvoiceDocumentsZipQuery request, CancellationToken cancellationToken)
@@ -85,7 +88,7 @@ public sealed class GetInvoiceDocumentsZipQueryHandler : IRequestHandler<GetInvo
             }
         }
 
-        return new DownloadFile($"Invoices-{DateTime.Now:yyyy-MM-dd-HHmm}.zip", buffer.ToArray(), DownloadFile.Zip);
+        return new DownloadFile($"Invoices-{_timeProvider.GetLocalNow():yyyy-MM-dd-HHmm}.zip", buffer.ToArray(), DownloadFile.Zip);
     }
 
     private static async Task AddAsync(ZipArchive zip, string name, byte[] content, CancellationToken cancellationToken)

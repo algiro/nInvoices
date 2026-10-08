@@ -16,7 +16,6 @@ public sealed class WorkDayProject : OwnedEntityBase
 
     public WorkDayProject()
     {
-        CreatedAt = DateTime.UtcNow;
     }
 
     public WorkDayProject(long projectId, decimal hours) : this()
@@ -51,6 +50,5 @@ public sealed class WorkDayProject : OwnedEntityBase
             throw new ArgumentException("Hours must be positive", nameof(hours));
 
         Hours = hours;
-        UpdatedAt = DateTime.UtcNow;
     }
 }

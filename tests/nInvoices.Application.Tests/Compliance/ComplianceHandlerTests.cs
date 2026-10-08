@@ -42,7 +42,7 @@ public sealed class ComplianceHandlerTests
         new ComplianceRegistry([new SpainComplianceModule()], [], Options.Create(options ?? new ComplianceOptions()));
 
     private Task<ComplianceCountryDto?> Update(string country, UpdateComplianceSettingsDto dto, IComplianceRegistry? registry = null) =>
-        new UpdateComplianceSettingsCommandHandler(registry ?? Registry(), _settings, _unitOfWork.Object)
+        new UpdateComplianceSettingsCommandHandler(registry ?? Registry(), _settings, _unitOfWork.Object, new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)))
             .Handle(new UpdateComplianceSettingsCommand(country, dto), Token).AsTask();
 
     private static UpdateComplianceSettingsDto ValidSpain(bool enabled = true) =>
@@ -51,7 +51,7 @@ public sealed class ComplianceHandlerTests
     [Test]
     public async Task Get_NothingSaved_OffersSpainDisabled()
     {
-        var countries = await new GetComplianceCountriesQueryHandler(Registry(), _settings)
+        var countries = await new GetComplianceCountriesQueryHandler(Registry(), _settings, new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)))
             .Handle(new GetComplianceCountriesQuery(), Token);
 
         var spain = countries.ShouldHaveSingleItem();
@@ -65,7 +65,7 @@ public sealed class ComplianceHandlerTests
     {
         var options = new ComplianceOptions { Countries = { ["ES"] = new CountryComplianceOptions { Enabled = false } } };
 
-        var countries = await new GetComplianceCountriesQueryHandler(Registry(options), _settings)
+        var countries = await new GetComplianceCountriesQueryHandler(Registry(options), _settings, new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)))
             .Handle(new GetComplianceCountriesQuery(), Token);
 
         countries.ShouldBeEmpty();

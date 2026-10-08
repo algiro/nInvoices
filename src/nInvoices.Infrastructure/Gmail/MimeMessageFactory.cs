@@ -8,7 +8,7 @@ namespace nInvoices.Infrastructure.Gmail;
 /// </summary>
 public static class MimeMessageFactory
 {
-    public static MimeMessage Create(OutgoingEmail email)
+    public static MimeMessage Create(OutgoingEmail email, DateTimeOffset date)
     {
         ArgumentNullException.ThrowIfNull(email);
 
@@ -18,7 +18,7 @@ public static class MimeMessageFactory
         message.Cc.AddRange(email.Cc.Select(MailboxAddress.Parse));
         message.Subject = email.Subject;
         message.MessageId = email.MessageId.Trim('<', '>');
-        message.Date = DateTimeOffset.Now;
+        message.Date = date;
 
         var body = new BodyBuilder { HtmlBody = email.HtmlBody };
         foreach (var attachment in email.Attachments)

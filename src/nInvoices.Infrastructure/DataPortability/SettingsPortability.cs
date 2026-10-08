@@ -16,10 +16,12 @@ internal sealed class SettingsPortability
 {
     private readonly ApplicationDbContext _context;
     private readonly IComplianceRegistry _compliance;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
 
-    public SettingsPortability(ApplicationDbContext context, IComplianceRegistry compliance, ILogger logger)
+    public SettingsPortability(ApplicationDbContext context, IComplianceRegistry compliance, TimeProvider timeProvider, ILogger logger)
     {
+        _timeProvider = timeProvider;
         _context = context;
         _compliance = compliance;
         _logger = logger;
@@ -52,7 +54,7 @@ internal sealed class SettingsPortability
                 c.Address is { } a ? new AddressDto(a.Street, a.HouseNumber, a.City, a.ZipCode, a.Country, a.State) : null,
                 c.Values)).ToList());
 
-        return new DataExportDto("1.0", DateTime.UtcNow, null, null, Settings: settings);
+        return new DataExportDto("1.0", _timeProvider.GetUtcNow().UtcDateTime, null, null, Settings: settings);
     }
 
     /// <summary>

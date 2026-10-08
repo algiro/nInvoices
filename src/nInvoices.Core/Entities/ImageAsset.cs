@@ -14,7 +14,6 @@ public sealed class ImageAsset : OwnedEntityBase
 
     public ImageAsset()
     {
-        CreatedAt = DateTime.UtcNow;
     }
 
     public ImageAsset(string alias, string fileName, string contentType, string base64Data, long fileSize) : this()
@@ -35,7 +34,6 @@ public sealed class ImageAsset : OwnedEntityBase
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(alias);
         Alias = alias;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void UpdateImage(string fileName, string contentType, string base64Data, long fileSize)
@@ -48,6 +46,5 @@ public sealed class ImageAsset : OwnedEntityBase
         ContentType = contentType;
         Base64Data = base64Data;
         FileSize = fileSize;
-        UpdatedAt = DateTime.UtcNow;
     }
 }

@@ -28,13 +28,12 @@ public sealed class WorkDayProjectTests
     }
 
     [Test]
-    public void UpdateHours_WithPositiveValue_SetsHoursAndStampsUpdatedAt()
+    public void UpdateHours_WithPositiveValue_SetsHours()
     {
         var allocation = new WorkDayProject(1L, 2m);
 
         allocation.UpdateHours(6m);
 
         allocation.Hours.ShouldBe(6m);
-        allocation.UpdatedAt.ShouldNotBeNull();
     }
 }

@@ -41,7 +41,6 @@ public sealed class Customer : OwnedEntityBase
 
     public Customer()
     {
-        CreatedAt = DateTime.UtcNow;
     }
 
     public Customer(string name, string fiscalId, Address address, string locale = "en-US") : this()
@@ -67,7 +66,6 @@ public sealed class Customer : OwnedEntityBase
         HolidayCountry = string.IsNullOrWhiteSpace(countryCode)
             ? null
             : HolidayCalendar.NormalizeCountryCode(countryCode);
-        UpdatedAt = DateTime.UtcNow;
     }
 
     /// <summary>One country values, without the country prefix.</summary>
@@ -80,7 +78,6 @@ public sealed class Customer : OwnedEntityBase
     public void SetComplianceValues(string countryCode, IReadOnlyDictionary<string, string> values)
     {
         ComplianceValues = ComplianceValueMap.Replace(ComplianceValues, countryCode, values);
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Update(string name, string fiscalId, Address address, string locale = "en-US")
@@ -115,7 +112,6 @@ public sealed class Customer : OwnedEntityBase
         FiscalId = fiscalId;
         Address = address;
         Locale = locale;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void SetContact(string? email, string? ccEmails)

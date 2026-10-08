@@ -24,13 +24,16 @@ public sealed class InvoicesController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly ILogger<InvoicesController> _logger;
+    private readonly TimeProvider _timeProvider;
 
     public InvoicesController(
         IMediator mediator, 
-        ILogger<InvoicesController> logger)
+        ILogger<InvoicesController> logger,
+        TimeProvider timeProvider)
     {
         _mediator = mediator;
         _logger = logger;
+        _timeProvider = timeProvider;
     }
 
     /// <summary>
@@ -60,7 +63,7 @@ public sealed class InvoicesController : ControllerBase
     [HttpGet("summary")]
     [ProducesResponseType(typeof(InvoiceSummaryDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<InvoiceSummaryDto>> Summary(CancellationToken cancellationToken) =>
-        Ok(await _mediator.Send(new GetInvoiceSummaryQuery(DateTime.Today.Year), cancellationToken));
+        Ok(await _mediator.Send(new GetInvoiceSummaryQuery(_timeProvider.GetLocalNow().Year), cancellationToken));
 
     /// <summary>
     /// Finalizes, marks as sent or marks as paid several invoices. Invoices the change doesn't

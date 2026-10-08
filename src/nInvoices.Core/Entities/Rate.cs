@@ -25,7 +25,6 @@ public sealed class Rate : OwnedEntityBase
 
     public Rate()
     {
-        CreatedAt = DateTime.UtcNow;
         IsActive = true;
     }
 
@@ -56,18 +55,15 @@ public sealed class Rate : OwnedEntityBase
     {
         ArgumentNullException.ThrowIfNull(newPrice);
         Price = newPrice;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Deactivate()
     {
         IsActive = false;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Activate()
     {
         IsActive = true;
-        UpdatedAt = DateTime.UtcNow;
     }
 }

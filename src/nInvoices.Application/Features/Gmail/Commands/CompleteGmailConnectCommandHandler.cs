@@ -79,12 +79,12 @@ public sealed class CompleteGmailConnectCommandHandler : IRequestHandler<Complet
         if (existing is null)
         {
             await _connectionRepository.AddAsync(
-                new GmailConnection(pending.UserId, authorization.EmailAddress, encrypted, authorization.Scopes),
+                new GmailConnection(pending.UserId, authorization.EmailAddress, encrypted, authorization.Scopes, _timeProvider.GetUtcNow().UtcDateTime),
                 cancellationToken);
         }
         else
         {
-            existing.Reconnect(authorization.EmailAddress, encrypted, authorization.Scopes);
+            existing.Reconnect(authorization.EmailAddress, encrypted, authorization.Scopes, _timeProvider.GetUtcNow().UtcDateTime);
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);

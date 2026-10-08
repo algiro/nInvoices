@@ -111,7 +111,7 @@ public sealed class AccountDataDeletionTests
             InvoiceId = invoice.Id, From = "me@example.com", To = "them@example.com", Subject = "Invoice",
             Attachments = "invoice.pdf", GmailDraftId = "d", GmailMessageId = "m", RfcMessageId = "r"
         });
-        var eInvoice = new InvoiceEInvoice(invoice.Id, "ES", "facturae", [1, 2, 3], "application/xml", "xsig");
+        var eInvoice = new InvoiceEInvoice(invoice.Id, "ES", "facturae", [1, 2, 3], "application/xml", "xsig", DateTime.UtcNow);
         db.InvoiceEInvoices.Add(eInvoice);
         var record = new VerifactuRecord(1, VerifactuRecordKind.Issued, invoice.Id, "12345678Z", invoice.Number.Value, "30-09-2026",
             "F1", "140.80", "780.80", "", "2026-09-30T10:00:00+02:00", "HASH1", "<x/>");
@@ -121,7 +121,7 @@ public sealed class AccountDataDeletionTests
         db.AddRange(
             new EInvoiceSubmission(eInvoice.Id, "face", "Test", "REF-1", DateTime.UtcNow),
             new VerifactuSubmission(record.Id, record.Sequence, DateTime.UtcNow),
-            new GmailConnection(userId, "me@example.com", "protected-token", "gmail.compose"),
+            new GmailConnection(userId, "me@example.com", "protected-token", "gmail.compose", DateTime.UtcNow),
             new OAuthState($"state-{userId}", userId, DateTime.UtcNow));
         await db.SaveChangesAsync(Token);
     }

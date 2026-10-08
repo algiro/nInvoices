@@ -280,7 +280,7 @@ public sealed class LifecycleStepTests
     public async Task Preview_InTheTemplateEditor_ShowsASampleQr_WithoutFailing()
     {
         var preview = new TemplatePreviewService(
-            Renderer(), new InMemoryRepository<Customer>(), new InMemoryRepository<Rate>(), new InMemoryRepository<Tax>());
+            Renderer(), new InMemoryRepository<Customer>(), new InMemoryRepository<Rate>(), new InMemoryRepository<Tax>(), new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)));
 
         var result = await preview.PreviewInvoiceAsync("<div>[[ compliance.verifactu.qrSvg ]]</div>", null, Token);
 

@@ -23,7 +23,6 @@ public sealed class MonthlyReportTemplate : OwnedEntityBase, IScopedTemplate
 
     public MonthlyReportTemplate()
     {
-        CreatedAt = DateTime.UtcNow;
         IsActive = false; // Changed: new templates start as inactive
         InvoiceType = InvoiceType.Monthly; // Monthly reports are only for monthly invoices
     }
@@ -65,18 +64,15 @@ public sealed class MonthlyReportTemplate : OwnedEntityBase, IScopedTemplate
 
         Name = name;
         Content = content;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Activate()
     {
         IsActive = true;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Deactivate()
     {
         IsActive = false;
-        UpdatedAt = DateTime.UtcNow;
     }
 }

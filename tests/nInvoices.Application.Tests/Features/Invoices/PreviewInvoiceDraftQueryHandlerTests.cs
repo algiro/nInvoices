@@ -23,6 +23,7 @@ public sealed class PreviewInvoiceDraftQueryHandlerTests
         {
             CustomerId = 1,
             InvoiceType = InvoiceType.OneTime,
+            IssueDate = new DateOnly(2026, 10, 1),
             Expenses = [new ExpenseDto { Description = "Train", Amount = 0m, Currency = "EUR" }]
         };
 

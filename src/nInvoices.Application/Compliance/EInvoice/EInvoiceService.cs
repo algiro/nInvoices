@@ -50,6 +50,7 @@ public sealed class EInvoiceService : IEInvoiceService
     private readonly IEInvoiceDocumentFactory _documents;
     private readonly SigningCertificateLoader _certificates;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly TimeProvider _timeProvider;
 
     public EInvoiceService(
         IComplianceGate gate,
@@ -60,7 +61,8 @@ public sealed class EInvoiceService : IEInvoiceService
         IRepository<EInvoiceSubmission> submissions,
         IEInvoiceDocumentFactory documents,
         SigningCertificateLoader certificates,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        TimeProvider timeProvider)
     {
         _gate = gate;
         _formats = formats;
@@ -71,6 +73,7 @@ public sealed class EInvoiceService : IEInvoiceService
         _documents = documents;
         _certificates = certificates;
         _unitOfWork = unitOfWork;
+        _timeProvider = timeProvider;
     }
 
     public async Task<IReadOnlyList<EInvoiceStatus>> GetStatusAsync(long invoiceId, CancellationToken cancellationToken = default)
@@ -148,11 +151,12 @@ public sealed class EInvoiceService : IEInvoiceService
                 var artifact = format.Build(document, certificate);
 
                 var current = existing.FirstOrDefault(e => e.FormatId == format.FormatId);
+                var generatedAt = _timeProvider.GetUtcNow().UtcDateTime;
                 if (current is null)
-                    await _stored.AddAsync(new InvoiceEInvoice(invoiceId, format.CountryCode, format.FormatId, artifact.Content, artifact.ContentType, artifact.FileExtension), cancellationToken);
+                    await _stored.AddAsync(new InvoiceEInvoice(invoiceId, format.CountryCode, format.FormatId, artifact.Content, artifact.ContentType, artifact.FileExtension, generatedAt), cancellationToken);
                 else
                 {
-                    current.Replace(artifact.Content, artifact.ContentType, artifact.FileExtension);
+                    current.Replace(artifact.Content, artifact.ContentType, artifact.FileExtension, generatedAt);
                     await _stored.UpdateAsync(current, cancellationToken);
                 }
             }
