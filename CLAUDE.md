@@ -38,6 +38,9 @@ before restoring; keep that in step.
 
 **CI** (`.github/workflows/ci.yml`, every push to main and every PR): backend Release build and tests
 (PostgreSQL tests run on the runner's Docker), frontend `npm run check` + build, and both Docker images build.
+`.github/dependabot.yml` opens update PRs weekly (NuGet, npm: minor/patch grouped, majors separately) and
+monthly (Actions, Docker base images). Updates to QuestPDF, PuppeteerSharp or Scriban change PDF/template
+output: compare rendered invoices before merging them.
 
 ### Frontend (`src/nInvoices.Web`)
 

@@ -22,7 +22,7 @@ The problems sit at the edges of that architecture. Several rules the design imp
 | 10 | No CI, no shared build settings, no analyzers | Medium | S — ✅ done |
 | 11 | Frontend: no type-checking of `.vue` files, no lint, no tests | Medium | M — ✅ done |
 | 12 | Inconsistent time source (`DateTime.*` vs `TimeProvider`) | Low | S — ✅ done |
-| 13 | Package hygiene | Low | S |
+| 13 | Package hygiene | Low | S — ✅ done |
 | 14 | Repository hygiene (root clutter, stale docs) | Low | S |
 
 ---
@@ -357,7 +357,19 @@ Size is a symptom, not the problem. These files mix several responsibilities, th
 
 **Recommendation**: inject `TimeProvider` everywhere outside the domain and pass dates into entity methods. Add an analyzer ban (`BannedApiAnalyzers` with `BannedSymbols.txt`) on `DateTime.Now/UtcNow/Today`.
 
-## 13. Package hygiene — Low
+## 13. Package hygiene — Low — ✅ Done (2026-10-09)
+
+> **Resolution.** Infrastructure takes HttpContext, Data Protection, hosting and options from
+> `<FrameworkReference Include="Microsoft.AspNetCore.App" />` instead of four packages, among them the ASP.NET
+> Core 2.x `Http.Abstractions`; `Microsoft.Extensions.Options` is 10.0.12 like the rest. The Keycloak hosting
+> package has no stable release: it stays pinned (central versions are exact) with a note why.
+> `.github/dependabot.yml` proposes updates weekly (NuGet and npm, minor and patch grouped into one PR each,
+> majors one by one) and monthly (GitHub Actions, Docker base images); CI runs on each PR. `npm audit`: the 4
+> high advisories (axios, vue and its server renderer, source-map-js) are fixed by patch/minor updates within the
+> existing ranges (`vue` ^3.5.43); 0 left. `dotnet list package --vulnerable` finds none.
+> Not done here: the remaining outdated packages, notably QuestPDF, PuppeteerSharp and Scriban (they shape the
+> PDFs and templates, so each update wants an output comparison) and the major test-tooling versions (NUnit 5,
+> test adapter 6, Test SDK 18, coverlet 10). Dependabot will propose them.
 
 - `Microsoft.AspNetCore.Http.Abstractions` **2.3.11** (Infrastructure): a legacy ASP.NET Core 2.x package on a net10 project. Use `<FrameworkReference Include="Microsoft.AspNetCore.App" />` instead.
 - `Microsoft.Extensions.Options` **9.0.1** (Application), while everything else is 10.0.x.
