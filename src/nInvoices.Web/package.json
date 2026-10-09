@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run typecheck && npm run lint && npm run test"
+    "check": "npm run types:check && npm run typecheck && npm run lint && npm run test",
+    "types": "openapi-typescript openapi.json --output src/types/api.generated.ts",
+    "types:check": "openapi-typescript openapi.json --output src/types/api.generated.ts --check"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -22,6 +24,7 @@
     "eslint-plugin-vue": "^10.11.1",
     "globals": "^17.13.0",
     "jsdom": "^29.1.1",
+    "openapi-typescript": "^7.13.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.71.1",
     "vite": "^7.3.6",

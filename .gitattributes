@@ -1,3 +1,8 @@
 # Shell scripts run in bash (WSL, the server, containers) and must keep LF endings,
 # whatever core.autocrlf says on Windows checkouts.
 *.sh text eol=lf
+
+# Generated from the API (openapi.json by OpenApiDocumentTests, the types by `npm run types`): byte-stable
+# on every platform, so the "is it up to date" checks compare like with like
+src/nInvoices.Web/openapi.json text eol=lf
+src/nInvoices.Web/src/types/api.generated.ts text eol=lf

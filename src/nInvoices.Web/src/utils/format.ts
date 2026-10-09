@@ -25,12 +25,6 @@ export function formatPeriod(month: number | null | undefined, year: number | nu
   return new Date(year, month - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 }
 
-// The API serialises enums as names ("Paid"); older payloads may carry the numeric value
-function enumName<T extends Record<string, string | number>>(enumType: T, value: unknown): string {
-  if (typeof value === 'number') return String(enumType[value as unknown as keyof T] ?? value)
-  return String(value ?? '')
-}
-
 const statusMeta: Record<string, { label: string; tone: Tone }> = {
   Draft: { label: 'Draft', tone: 'neutral' },
   Finalized: { label: 'Finalized', tone: 'info' },
@@ -39,8 +33,8 @@ const statusMeta: Record<string, { label: string; tone: Tone }> = {
   Cancelled: { label: 'Cancelled', tone: 'danger' }
 }
 
-export function invoiceStatus(status: InvoiceStatus | string | number): { label: string; tone: Tone; name: string } {
-  const name = enumName(InvoiceStatus, status)
+export function invoiceStatus(status: InvoiceStatus | string): { label: string; tone: Tone; name: string } {
+  const name = String(status ?? '')
   return { name, ...(statusMeta[name] ?? { label: name, tone: 'neutral' }) }
 }
 
@@ -51,8 +45,8 @@ const typeLabels: Record<string, string> = {
   Annual: 'Annual'
 }
 
-export function invoiceTypeLabel(type: InvoiceType | string | number): string {
-  const name = enumName(InvoiceType, type)
+export function invoiceTypeLabel(type: InvoiceType | string): string {
+  const name = String(type ?? '')
   return typeLabels[name] ?? name
 }
 

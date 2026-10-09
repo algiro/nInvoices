@@ -264,7 +264,7 @@ function kindClass(date: string): string {
 }
 
 function onKindChange(date: string, value: string) {
-  const kind: DayKind = value === 'none' ? 'none' : (Number(value) as DayType)
+  const kind: DayKind = value === 'none' ? 'none' : (value as DayType)
   setKind([date], kind)
 }
 

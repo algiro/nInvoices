@@ -161,7 +161,7 @@ export function useWorkMonth(options: {
 
   // ---------- edits ----------
 
-  function newWorkedDay(date: string, notes?: string): WorkDayDto {
+  function newWorkedDay(date: string, notes?: string | null): WorkDayDto {
     return { date, dayType: DayType.Worked, projects: [{ projectName: defaultProject(), hours: FULL_DAY_HOURS }], notes }
   }
 
