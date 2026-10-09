@@ -5,11 +5,14 @@
     <ProjectReference Include="..\nInvoices.Application\nInvoices.Application.csproj" />
   </ItemGroup>
 
+  <!-- HttpContext, Data Protection, hosting and options ship with ASP.NET Core itself, at the runtime's version -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Google.Apis.Auth" />
     <PackageReference Include="Google.Apis.Gmail.v1" />
-    <PackageReference Include="Microsoft.AspNetCore.DataProtection.Abstractions" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
@@ -17,8 +20,6 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     <PackageReference Include="MimeKit" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="PuppeteerSharp" />

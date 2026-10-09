@@ -1,0 +1,38 @@
+# Weekly update pull requests, grouped so each ecosystem is one PR (CI runs on each).
+# Major versions come as their own PRs: they can change behaviour (PDF rendering, templates,
+# test frameworks) and are reviewed one by one. Security updates are raised as soon as GitHub
+# knows of them, whatever this schedule says.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /                 # Directory.Packages.props holds every version
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      nuget-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /src/nInvoices.Web
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /docker           # the API and web image base images
+    schedule:
+      interval: monthly
