@@ -172,7 +172,7 @@ sudo chmod -R 755 volumes/keycloak
 sudo docker compose up -d
 ```
 
-**See:** `docker/KEYCLOAK-PERMISSION-FIX.md` for detailed guide
+**See:** `Docs/history/KEYCLOAK-PERMISSION-FIX.md` for detailed guide
 
 ---
 

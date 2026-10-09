@@ -23,7 +23,7 @@ The problems sit at the edges of that architecture. Several rules the design imp
 | 11 | Frontend: no type-checking of `.vue` files, no lint, no tests | Medium | M — ✅ done |
 | 12 | Inconsistent time source (`DateTime.*` vs `TimeProvider`) | Low | S — ✅ done |
 | 13 | Package hygiene | Low | S — ✅ done |
-| 14 | Repository hygiene (root clutter, stale docs) | Low | S |
+| 14 | Repository hygiene (root clutter, stale docs) | Low | S — ✅ done |
 
 ---
 
@@ -376,7 +376,17 @@ Size is a symptom, not the problem. These files mix several responsibilities, th
 - `Aspire.Hosting.Keycloak` is a preview build (acceptable since AppHost is dev-only, but pin and track it).
 - ~~`QuestPDF.Settings.License` is set inside the `PdfExportService` constructor on every scope. Move it to startup.~~ ✅ Set once in `AddPdfExport` (§7).
 
-## 14. Repository hygiene — Low
+## 14. Repository hygiene — Low — ✅ Done (2026-10-09)
+
+> **Resolution.** The root holds only project files: the debugging artefacts (`final-*.pdf`, `firefox-debug-*.png`,
+> `test-results.json`) and the ad-hoc Playwright scripts with their root `package.json` are deleted, as is
+> `tests/test-regenerate-pdfs.mjs`. The scripts were not moved into a Playwright project: they clicked generic
+> selectors (`button`, `tr`) and asserted little, so they protected nothing; a real end-to-end suite would be new
+> work. The four incident notes moved from `docker/` to `Docs/history/` (with a README saying what they explain),
+> and every link to them was updated. `Docs/Apply_changes_on_db_Docker.txt` (manual SQL steps that the EF
+> migrations of §6 replaced) is deleted. CLAUDE.md and the Copilot instructions no longer point at the scripts.
+> Checked on the way: the Google OAuth `client_secret_*.json` lying in `Docs/` locally is git-ignored and has never
+> been committed (no commit holds its client id or a `GOCSPX` secret).
 
 - Tracked debugging artefacts at the root: `final-invoice.pdf`, `final-calendar.pdf`, `firefox-debug-*.png`, `test-results.json`, plus a root `package.json`/`package-lock.json` used only by the ad-hoc Playwright scripts.
 - Ad-hoc E2E scripts (`e2e-tests.mjs`, `test-pdf-generation.mjs`, `test-monthly-report.mjs`, `tests/test-regenerate-pdfs.mjs`) sit outside any test runner and are not in CI. Move them into a proper `tests/e2e` Playwright Test project, or delete them.
@@ -386,6 +396,11 @@ Size is a symptom, not the problem. These files mix several responsibilities, th
 ---
 
 ## Suggested order of work
+
+> **Status (2026-10-09):** all 14 points are done. Left open on purpose: OpenAPI-generated TypeScript types
+> (§9, waits for an accurate OpenAPI document) and the outdated packages that change PDF/template output or
+> are major test-tooling versions (§13, proposed by Dependabot).
+
 
 1. **Quick wins (≈1 day)**: §2 (switch template validation to Scriban), §7 (async PDF), §8 dead-code removal, §13 packages, §14 clutter.
 2. **Safety net (≈1–2 days)**: §10 CI + `Directory.Build.props` + analyzers; §11 `vue-tsc` + ESLint. Fix the warnings this surfaces.

@@ -54,13 +54,6 @@ npm run build
 npm run preview
 ```
 
-### E2E Tests (Playwright)
-
-```bash
-# Run from repository root
-node e2e-tests.mjs
-```
-
 ### Run Development Environment
 
 **Option 1: Manual (Two Terminals)**

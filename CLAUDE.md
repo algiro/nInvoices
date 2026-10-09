@@ -93,10 +93,12 @@ cp ../.env.example .env      # use alphanumeric-only passwords — special chars
 docker-compose -f docker-compose.dev.yml up -d   # web :3000, api :8080, keycloak :8080
 ```
 
-### E2E / smoke scripts (repo root, Playwright)
+### End-to-end checks
 
-`e2e-tests.mjs`, `test-pdf-generation.mjs`, `test-monthly-report.mjs` — run with `node <file>`
-against a running API + frontend.
+There is no end-to-end test suite (the ad-hoc Playwright scripts that used to sit in the repo root were
+removed: they clicked generic selectors and asserted little). Behaviour is covered by the .NET and Vitest
+tests; check a UI change in the browser against the fast loop above. Past incident notes live in
+`Docs/history/`.
 
 ## Architecture
 
