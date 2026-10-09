@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
@@ -23,13 +24,19 @@ public sealed class OpenApiDocumentTests
     private WebApplication _app = null!;
     private JsonElement _document;
     private JsonElement _schemas;
+    private string _json = "";
 
     private static CancellationToken Token => TestContext.CurrentContext.CancellationToken;
 
     [OneTimeSetUp]
     public async Task GenerateDocument()
     {
-        var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = "Development" });
+        // Named as the API, so the document is the one the API serves
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            EnvironmentName = "Development",
+            ApplicationName = typeof(InvoicesController).Assembly.GetName().Name
+        });
         builder.WebHost.UseTestServer();
         builder.Services.AddControllers().AddApplicationPart(typeof(InvoicesController).Assembly).AddApiJson();
         builder.Services.AddApiDocument();
@@ -40,6 +47,7 @@ public sealed class OpenApiDocumentTests
         await _app.StartAsync(Token);
 
         var json = await _app.GetTestClient().GetStringAsync("/openapi/v1.json", Token);
+        _json = json;
         _document = JsonDocument.Parse(json).RootElement.Clone();
         _schemas = _document.GetProperty("components").GetProperty("schemas");
     }
@@ -57,6 +65,45 @@ public sealed class OpenApiDocumentTests
         where schema.Value.TryGetProperty("properties", out _)
         from property in schema.Value.GetProperty("properties").EnumerateObject()
         select (schema.Name, property.Name, property.Value);
+
+    /// <summary>
+    /// The web app generates its API types from a copy of this document (src/nInvoices.Web/openapi.json,
+    /// then <c>npm run types</c>): the copy must be the document the API serves now. Refresh it with
+    /// <c>UPDATE_OPENAPI_SNAPSHOT=1 dotnet test --filter OpenApiDocumentTests</c>.
+    /// </summary>
+    [Test]
+    public async Task Snapshot_InTheWebApp_IsTheCurrentDocument()
+    {
+        var path = Path.Combine(RepositoryRoot(), "src", "nInvoices.Web", "openapi.json");
+        var current = Snapshot(_json);
+
+        if (Environment.GetEnvironmentVariable("UPDATE_OPENAPI_SNAPSHOT") == "1")
+        {
+            await File.WriteAllTextAsync(path, current, Token);
+            Assert.Pass($"Snapshot written to {path}");
+        }
+
+        var saved = File.Exists(path) ? (await File.ReadAllTextAsync(path, Token)).ReplaceLineEndings("\n") : null;
+        (saved == current).ShouldBeTrue(
+            "The API changed: refresh src/nInvoices.Web/openapi.json (UPDATE_OPENAPI_SNAPSHOT=1 dotnet test " +
+            "--filter OpenApiDocumentTests), then run npm run types in src/nInvoices.Web and fix what vue-tsc reports");
+    }
+
+    /// <summary>The document as committed: indented, without the request-dependent server URL.</summary>
+    private static string Snapshot(string json)
+    {
+        var document = JsonNode.Parse(json)!.AsObject();
+        document.Remove("servers");
+        return document.ToJsonString(new JsonSerializerOptions { WriteIndented = true }).ReplaceLineEndings("\n") + "\n";
+    }
+
+    private static string RepositoryRoot()
+    {
+        var directory = new DirectoryInfo(TestContext.CurrentContext.TestDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "nInvoices.slnx")))
+            directory = directory.Parent;
+        return directory?.FullName ?? throw new InvalidOperationException("nInvoices.slnx not found above the test directory");
+    }
 
     [Test]
     public void Numbers_AreDocumentedAsNumbers_NotAsNumbersOrStrings()

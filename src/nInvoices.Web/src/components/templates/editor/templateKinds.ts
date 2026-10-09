@@ -1,7 +1,6 @@
 import { templatesApi } from '@/api/templates'
 import { monthlyReportTemplatesApi } from '@/api/monthlyReportTemplates'
 import { emailTemplatesApi } from '@/api/emailTemplates'
-import type { InvoiceType } from '@/types'
 import type { TemplateKind } from './templateVariables'
 
 export type InvoiceTypeName = 'Monthly' | 'OneTime'
@@ -55,7 +54,7 @@ const invoice: TemplateKindApi = {
   async create(draft, customerId) {
     const created = await templatesApi.create({
       customerId,
-      invoiceType: draft.invoiceType as unknown as InvoiceType,
+      invoiceType: draft.invoiceType,
       name: draft.name,
       content: draft.content
     })
@@ -63,7 +62,6 @@ const invoice: TemplateKindApi = {
   },
   async update(id, draft, isActive) {
     await templatesApi.update(id, {
-      invoiceType: draft.invoiceType as unknown as InvoiceType,
       name: draft.name,
       content: draft.content,
       isActive // the API defaults to active

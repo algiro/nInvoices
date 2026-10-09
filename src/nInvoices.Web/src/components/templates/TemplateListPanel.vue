@@ -178,7 +178,7 @@ interface TemplateRow {
   invoiceType?: unknown
   isActive: boolean
   createdAt: string
-  updatedAt?: string
+  updatedAt?: string | null
   content?: string
   subject?: string
   body?: string

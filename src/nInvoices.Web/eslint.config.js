@@ -4,7 +4,7 @@ import pluginVue from 'eslint-plugin-vue'
 import globals from 'globals'
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'node_modules/**', 'public/**'] },
+  { ignores: ['dist/**', 'node_modules/**', 'public/**', 'src/types/api.generated.ts'] },
 
   js.configs.recommended,
   ...tseslint.configs.recommended,

@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest'
-import type { InvoiceDto } from '@/types'
+import type { InvoiceDto, InvoiceStatus, InvoiceType } from '@/types'
 import { actionsFor } from './useInvoiceActions'
 
-function invoice(status: string, type = 'Monthly'): InvoiceDto {
+function invoice(status: InvoiceStatus, type: InvoiceType = 'Monthly'): InvoiceDto {
   const money = { amount: 0, currency: 'EUR' }
   return {
     id: 1, customerId: 1, type, invoiceNumber: '26-09-001', issueDate: '2026-09-30',
@@ -27,7 +27,7 @@ describe('actionsFor', () => {
     expect(actionsFor(invoice('Finalized')).primary?.id).toBe('markSent')
     expect(actionsFor(invoice('Sent')).primary?.id).toBe('markPaid')
 
-    for (const status of ['Finalized', 'Sent']) {
+    for (const status of ['Finalized', 'Sent'] as const) {
       const more = ids(actionsFor(invoice(status)).more)
       expect(more).toContain('cancel')
       expect(more).toContain('forceDelete')
@@ -36,7 +36,7 @@ describe('actionsFor', () => {
   })
 
   it('leaves a paid or cancelled invoice with its documents only', () => {
-    for (const status of ['Paid', 'Cancelled']) {
+    for (const status of ['Paid', 'Cancelled'] as const) {
       const { primary, more } = actionsFor(invoice(status))
       expect(primary).toBeNull()
       expect(ids(more)).not.toContain('cancel')
@@ -49,7 +49,4 @@ describe('actionsFor', () => {
     expect(ids(actionsFor(invoice('Paid', 'OneTime')).more)).toEqual(['downloadPdf', 'regenerate', '|', 'forceDelete'])
   })
 
-  it('reads the status whether the API sent it as a name or a number', () => {
-    expect(actionsFor({ ...invoice('Draft'), status: 1 }).primary?.id).toBe('markSent')
-  })
 })

@@ -3,7 +3,7 @@ import { RateType, type RateDto, type WorkDayDto } from '@/types'
 import { dayAmount, isDayRate } from './rates'
 
 function rate(type: RateType, amount: number): RateDto {
-  return { id: 1, customerId: 1, type, price: { amount, currency: 'EUR' }, isActive: true, createdAt: '2026-01-01' }
+  return { id: 1, customerId: 1, type, price: { amount, currency: 'EUR' }, createdAt: '2026-01-01', updatedAt: '2026-01-01' }
 }
 
 const day = (...hours: number[]): WorkDayDto => ({

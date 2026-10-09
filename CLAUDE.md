@@ -49,11 +49,24 @@ npm install
 npm run dev       # Vite dev server on http://localhost:5173
 npm run build     # vue-tsc type-check (incl. .vue files) + vite build
 npm run preview
-npm run check     # what to run before committing: typecheck + lint + test
+npm run check     # what to run before committing: types up to date + typecheck + lint + test
+npm run types     # regenerate src/types/api.generated.ts from openapi.json (after an API change)
 npm run typecheck # vue-tsc --noEmit (plain tsc does not see inside .vue files)
 npm run lint      # ESLint (eslint.config.js: typescript-eslint + eslint-plugin-vue; layout rules off)
 npm run test      # Vitest, src/**/*.test.ts next to the code (Node; `// @vitest-environment jsdom` per file if needed)
 ```
+
+**API types are generated, not written.** `openapi.json` (the API's OpenAPI document, kept up to date by
+`OpenApiDocumentTests`) → `npm run types` → `src/types/api.generated.ts`; `src/types/index.ts` gives them their
+usual names (`export type InvoiceDto = Schemas['InvoiceDto']`) and holds only frontend-only types by hand.
+Enums are name-valued const objects (`DayType.Worked === 'Worked'`), as on the wire. After changing a C# DTO:
+
+```bash
+UPDATE_OPENAPI_SNAPSHOT=1 dotnet test tests/nInvoices.Api.Tests --filter OpenApiDocumentTests   # refresh openapi.json
+cd src/nInvoices.Web && npm run types && npm run typecheck   # regenerate, then fix what the compiler reports
+```
+
+CI fails if either the snapshot or the generated file is stale.
 
 ### Run locally — fast loop (SQLite + DevAuth, no Docker/Keycloak)
 
@@ -298,8 +311,8 @@ Code style and testing rules are authoritative in `.github/instructions/`
    (handlers call it, never a private `MapToDto` copy); commands/queries/validators under
    `Application/Features/<Entity>/` (a DTO validator plus a command validator wrapping it).
 4. Controller in `Api/Controllers/` dispatching via Mediator (no repositories: `ArchitectureTests` fails otherwise).
-5. Frontend: `src/api/<entity>.ts` + store (only if shared, see Data access) / view as needed;
-   `npm run check` must pass.
+5. Refresh the API types (commands under Frontend above), then frontend: `src/api/<entity>.ts` + store (only if
+   shared, see Data access) / view as needed; `npm run check` must pass.
 
 ## Notes
 
