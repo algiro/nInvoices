@@ -18,7 +18,7 @@ The problems sit at the edges of that architecture. Several rules the design imp
 | 6 | Two schema-evolution mechanisms (EF/SQLite vs hand-written PG SQL) | Medium | M — ✅ done |
 | 7 | Sync-over-async in the PDF path | Medium | S — ✅ done |
 | 8 | Dead and duplicated code | Medium | S — ✅ done |
-| 9 | Oversized classes and components | Medium | M–L — ✅ done (types generation pending) |
+| 9 | Oversized classes and components | Medium | M–L — ✅ done (OpenAPI accurate; types generation pending) |
 | 10 | No CI, no shared build settings, no analyzers | Medium | S — ✅ done |
 | 11 | Frontend: no type-checking of `.vue` files, no lint, no tests | Medium | M — ✅ done |
 | 12 | Inconsistent time source (`DateTime.*` vs `TimeProvider`) | Low | S — ✅ done |
@@ -259,10 +259,13 @@ The project documents controllers as _"thin controllers that dispatch through Me
 > before and after the split, and the moved behaviour was exercised (search debounce, saved views, bulk
 > confirm, Ctrl+S refused on errors, save and create, image upload/delete, plain and encrypted backup, restore).
 >
-> **Not done: generating `types/index.ts`.** The OpenAPI document does not describe the wire format yet: enums are
-> declared as integers but sent as strings, every number is `integer | string`, and no property is required.
-> Types generated from it would be looser than the hand-written ones. First make the document match
-> (string-enum and number-handling schema transformers, required non-nullable properties), then generate.
+> **OpenAPI document accurate (2026-10-09); generating `types/index.ts` from it is the remaining step.** The
+> document used to disagree with the API on 22 of 47 checked endpoints (enums as integers, every number
+> `integer | string`, PDF downloads declared as JSON, framework types such as `FileContentResult` leaking in).
+> Controllers and the document now share one JSON setup (`ApiJsonExtensions`), enum schemas are strings with their
+> names, file downloads are binary of their content type, `InvoiceDto` marks its always-present fields
+> `required`. Every GET endpoint with local data (44) returned JSON that matches its schema; `OpenApiDocumentTests`
+> keeps it so. openapi-typescript now produces exact types (e.g. `InvoiceStatus = "Draft" | … | "Cancelled"`).
 
 Size is a symptom, not the problem. These files mix several responsibilities, though:
 
@@ -398,7 +401,7 @@ Size is a symptom, not the problem. These files mix several responsibilities, th
 ## Suggested order of work
 
 > **Status (2026-10-09):** all 14 points are done. Left open on purpose: OpenAPI-generated TypeScript types
-> (§9, waits for an accurate OpenAPI document) and the outdated packages that change PDF/template output or
+> (§9; the document is now accurate, the generation itself is the next step) and the outdated packages that change PDF/template output or
 > are major test-tooling versions (§13, proposed by Dependabot).
 
 

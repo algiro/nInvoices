@@ -11,7 +11,6 @@ using nInvoices.Infrastructure.Face;
 using nInvoices.Infrastructure.Verifactu;
 using nInvoices.Api.Infrastructure;
 using Microsoft.AspNetCore.DataProtection;
-using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -51,16 +50,13 @@ builder.Services.AddControllers(options =>
         // Exceptions become ProblemDetails responses in one place (404, 400, 409, 500): actions do not catch to translate
         options.Filters.Add<ApiExceptionFilter>();
     })
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    });
+    .AddApiJson();
 builder.Services.AddEndpointsApiExplorer();
 // Every ProblemDetails (ApiExceptionFilter's, a plain NotFound(), a body that fails model binding...)
 // also carries "error", the message the web app shows
 builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
     context.ProblemDetails.Extensions.TryAdd("error", ApiExceptionFilter.MessageOf(context.ProblemDetails)));
-builder.Services.AddOpenApi();
+builder.Services.AddApiDocument();
 
 // Add Configuration
 builder.Services.Configure<InvoiceSettings>(builder.Configuration.GetSection(InvoiceSettings.SectionName));

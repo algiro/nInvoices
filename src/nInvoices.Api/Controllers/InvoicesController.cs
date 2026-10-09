@@ -97,7 +97,7 @@ public sealed class InvoicesController : ControllerBase
     /// Invoices whose documents can't be produced are listed in NOT-INCLUDED.txt inside the zip.
     /// </summary>
     [HttpPost("bulk/pdf")]
-    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Stream), StatusCodes.Status200OK, "application/zip")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> BulkDownload([FromBody] BulkInvoiceDownloadDto dto, CancellationToken cancellationToken)
     {
@@ -311,7 +311,8 @@ public sealed class InvoicesController : ControllerBase
 
     /// <summary>Downloads the generated e-invoice file (e.g. the signed Facturae XML) of an invoice.</summary>
     [HttpGet("{id}/einvoices/{formatId}/file")]
-    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    // The format decides the content type (Facturae is XML)
+    [ProducesResponseType(typeof(Stream), StatusCodes.Status200OK, "application/octet-stream")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DownloadEInvoice(long id, string formatId, CancellationToken cancellationToken)
     {
@@ -358,14 +359,14 @@ public sealed class InvoicesController : ControllerBase
 
     /// <summary>The invoice as a PDF, for download.</summary>
     [HttpGet("{id}/pdf")]
-    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Stream), StatusCodes.Status200OK, "application/pdf")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> ExportPdf(long id, CancellationToken cancellationToken) =>
         Download(await _mediator.Send(new GetInvoicePdfQuery(id), cancellationToken));
 
     /// <summary>The calendar of worked days of a monthly invoice as a PDF, for timesheet documentation.</summary>
     [HttpGet("{id}/calendar/pdf")]
-    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Stream), StatusCodes.Status200OK, "application/pdf")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> ExportCalendarPdf(long id, CancellationToken cancellationToken) =>
@@ -376,7 +377,7 @@ public sealed class InvoicesController : ControllerBase
     /// holidays and unpaid leave of the month.
     /// </summary>
     [HttpGet("{id}/monthlyreport/pdf")]
-    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Stream), StatusCodes.Status200OK, "application/pdf")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> ExportMonthlyReportPdf(long id, CancellationToken cancellationToken) =>

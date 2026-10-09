@@ -147,6 +147,11 @@ tests; check a UI change in the browser against the fast loop above. Past incide
   the layer direction). Application services that don't touch data (template preview/validation, email
   preview) may be injected. HTTP-only work stays in the controller: reading an uploaded file, claims,
   turning a `DownloadFile` into a file response.
+  **JSON and the OpenAPI document** share one setup (`Infrastructure/ApiJsonExtensions`: `AddApiJson`, `AddApiDocument`),
+  because the document reads its schemas from a different options object than the controllers. Enums go by name,
+  numbers are documented as numbers, a file download declares `typeof(Stream)` with its content type (never
+  `FileContentResult`), and a response DTO that is a class marks its always-present properties `required`.
+  `OpenApiDocumentTests` fails when the document drifts from the wire format (`/openapi/v1.json`, Development).
   `Program.cs` wires everything via extension methods: `AddServiceDefaults`, `AddDatabase`,
   `AddTaxHandlers`, `AddPdfExport`, `AddApplicationServices`, `AddApplicationRequests` (Mediator + validators).
   Auth is either `DevAuthenticationHandler` (dev) or Keycloak JWT Bearer. Policies:
