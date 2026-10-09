@@ -26,14 +26,14 @@ This directory contains comprehensive documentation for deploying and troublesho
   - Multi-server deployment
 
 ### 🔧 Technical Solutions
-- **[JWT-AUTHENTICATION-FIX.md](./JWT-AUTHENTICATION-FIX.md)** - BackchannelHandler solution explained
+- **[JWT-AUTHENTICATION-FIX.md](../Docs/history/JWT-AUTHENTICATION-FIX.md)** - BackchannelHandler solution explained
   - Why the Docker networking issue occurs
   - How BackchannelHandler solves it
   - Implementation details
   - Why other solutions don't work
 
 ### ✅ Status & Resolution
-- **[RESOLUTION-SUMMARY.md](./RESOLUTION-SUMMARY.md)** - Complete resolution summary
+- **[RESOLUTION-SUMMARY.md](../Docs/history/RESOLUTION-SUMMARY.md)** - Complete resolution summary
   - All issues resolved
   - Verification steps
   - Current application status
@@ -61,7 +61,7 @@ This directory contains comprehensive documentation for deploying and troublesho
   - Data migration
 
 ### 🔨 Build Issues
-- **[BUILD-ISSUES.md](./BUILD-ISSUES.md)** - Build-related problems
+- **[BUILD-ISSUES.md](../Docs/history/BUILD-ISSUES.md)** - Build-related problems
   - npm/node issues
   - Docker build failures
   - Dockerfile troubleshooting
@@ -77,7 +77,7 @@ This directory contains comprehensive documentation for deploying and troublesho
 
 ### I'm getting authentication errors
 1. Check **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** for common solutions
-2. Read **[JWT-AUTHENTICATION-FIX.md](./JWT-AUTHENTICATION-FIX.md)** to understand the fix
+2. Read **[JWT-AUTHENTICATION-FIX.md](../Docs/history/JWT-AUTHENTICATION-FIX.md)** to understand the fix
 3. Verify **BackchannelHandler** is in place
 
 ### I want to deploy to production with Docker Hub
@@ -87,8 +87,8 @@ This directory contains comprehensive documentation for deploying and troublesho
 4. Use `docker-compose.registry.yml` on production server
 ### I want to understand the complete implementation
 1. Read **[KEYCLOAK-DOCKER-GUIDE.md](./KEYCLOAK-DOCKER-GUIDE.md)** for full details
-2. Review **[RESOLUTION-SUMMARY.md](./RESOLUTION-SUMMARY.md)** for what was done
-3. Check **[JWT-AUTHENTICATION-FIX.md](./JWT-AUTHENTICATION-FIX.md)** for technical details
+2. Review **[RESOLUTION-SUMMARY.md](../Docs/history/RESOLUTION-SUMMARY.md)** for what was done
+3. Check **[JWT-AUTHENTICATION-FIX.md](../Docs/history/JWT-AUTHENTICATION-FIX.md)** for technical details
 4. See **[PRODUCTION-DEPLOYMENT.md](./PRODUCTION-DEPLOYMENT.md)** for registry workflow
 
 ### I'm setting up for production
@@ -111,12 +111,12 @@ This directory contains comprehensive documentation for deploying and troublesho
 | **PRODUCTION-DEPLOYMENT.md** | 18 KB | Complete prod guide | DevOps |
 | **QUICK-REFERENCE.md** | 9 KB | Fast command reference | All users |
 | **KEYCLOAK-DOCKER-GUIDE.md** | 26 KB | Complete implementation | Developers/DevOps |
-| **JWT-AUTHENTICATION-FIX.md** | 9 KB | Technical solution | Developers |
-| **RESOLUTION-SUMMARY.md** | 8 KB | Status overview | All users |
+| **JWT-AUTHENTICATION-FIX.md** (in `Docs/history/`) | 9 KB | Technical solution | Developers |
+| **RESOLUTION-SUMMARY.md** (in `Docs/history/`) | 8 KB | Status overview | All users |
 | **TROUBLESHOOTING.md** | 10 KB | Problem solving | All users |
 | **ENV-FILE-FAQ.md** | 7 KB | Configuration help | All users |
 | **MIGRATION.md** | 5 KB | Data migration | DevOps |
-| **BUILD-ISSUES.md** | 5 KB | Build problems | Developers |
+| **BUILD-ISSUES.md** (in `Docs/history/`) | 5 KB | Build problems | Developers |
 | **README.md** | 10 KB | Deployment overview | All users |
 
 **Total**: ~120 KB of comprehensive documentation
@@ -133,7 +133,7 @@ This directory contains comprehensive documentation for deploying and troublesho
 
 **Without this fix**: Authentication will fail with "signature key not found"
 
-**More details**: See **[JWT-AUTHENTICATION-FIX.md](./JWT-AUTHENTICATION-FIX.md)**
+**More details**: See **[JWT-AUTHENTICATION-FIX.md](../Docs/history/JWT-AUTHENTICATION-FIX.md)**
 
 ### Password Rules
 
@@ -167,8 +167,8 @@ This directory contains comprehensive documentation for deploying and troublesho
 
 ### Intermediate (Want to understand)
 1. **[KEYCLOAK-DOCKER-GUIDE.md](./KEYCLOAK-DOCKER-GUIDE.md)** - Complete walkthrough
-2. **[JWT-AUTHENTICATION-FIX.md](./JWT-AUTHENTICATION-FIX.md)** - Technical solution
-3. **[RESOLUTION-SUMMARY.md](./RESOLUTION-SUMMARY.md)** - What was implemented
+2. **[JWT-AUTHENTICATION-FIX.md](../Docs/history/JWT-AUTHENTICATION-FIX.md)** - Technical solution
+3. **[RESOLUTION-SUMMARY.md](../Docs/history/RESOLUTION-SUMMARY.md)** - What was implemented
 
 ### Advanced (Production deployment)
 1. **[KEYCLOAK-DOCKER-GUIDE.md](./KEYCLOAK-DOCKER-GUIDE.md)** - Full guide + production section
@@ -197,7 +197,7 @@ docker logs ninvoices-postgres-dev
 
 ### Step 4: Consult Guides
 - **[KEYCLOAK-DOCKER-GUIDE.md](./KEYCLOAK-DOCKER-GUIDE.md)** for complete reference
-- **[JWT-AUTHENTICATION-FIX.md](./JWT-AUTHENTICATION-FIX.md)** for auth issues
+- **[JWT-AUTHENTICATION-FIX.md](../Docs/history/JWT-AUTHENTICATION-FIX.md)** for auth issues
 
 ---
 
@@ -214,7 +214,7 @@ After deployment, verify:
 - [ ] JWT tokens validated successfully
 - [ ] BackchannelHandler is in place
 
-**See**: **[RESOLUTION-SUMMARY.md](./RESOLUTION-SUMMARY.md)** for complete checklist
+**See**: **[RESOLUTION-SUMMARY.md](../Docs/history/RESOLUTION-SUMMARY.md)** for complete checklist
 
 ---
 

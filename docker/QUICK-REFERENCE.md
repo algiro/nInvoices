@@ -179,9 +179,9 @@ lsof -ti:8080 | xargs kill -9
 | Document | Purpose |
 |----------|---------|
 | **[KEYCLOAK-DOCKER-GUIDE.md](./KEYCLOAK-DOCKER-GUIDE.md)** | Complete implementation guide |
-| **[JWT-AUTHENTICATION-FIX.md](./JWT-AUTHENTICATION-FIX.md)** | BackchannelHandler explanation |
+| **[JWT-AUTHENTICATION-FIX.md](../Docs/history/JWT-AUTHENTICATION-FIX.md)** | BackchannelHandler explanation |
 | **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Common issues & solutions |
-| **[RESOLUTION-SUMMARY.md](./RESOLUTION-SUMMARY.md)** | Implementation summary |
+| **[RESOLUTION-SUMMARY.md](../Docs/history/RESOLUTION-SUMMARY.md)** | Implementation summary |
 | **[ENV-FILE-FAQ.md](./ENV-FILE-FAQ.md)** | Environment configuration |
 | **[MIGRATION.md](./MIGRATION.md)** | Database migration guide |
 

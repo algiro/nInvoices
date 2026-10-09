@@ -125,7 +125,7 @@ Token validated for user: <user-id>
    - Testing procedures
    - Production considerations
 
-2. **[docker/JWT-AUTHENTICATION-FIX.md](./JWT-AUTHENTICATION-FIX.md)** (9 KB)
+2. **[JWT-AUTHENTICATION-FIX.md](./JWT-AUTHENTICATION-FIX.md)** (9 KB)
    - Detailed explanation of the networking issue
    - Why BackchannelHandler is required
    - Step-by-step implementation

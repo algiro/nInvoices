@@ -747,7 +747,7 @@ docker-compose down
 For issues, consult:
 - `docker/TROUBLESHOOTING.md`
 - `docker/KEYCLOAK-DOCKER-GUIDE.md`
-- `docker/JWT-AUTHENTICATION-FIX.md`
+- `Docs/history/JWT-AUTHENTICATION-FIX.md`
 
 ---
 
