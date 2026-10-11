@@ -1,6 +1,6 @@
 <template>
   <div class="settings-page">
-    <PageHeader title="Settings" subtitle="Appearance, invoice numbering, calendar, images for templates, Gmail, and backups." />
+    <PageHeader title="Settings" subtitle="Appearance, invoice numbering, calendar, images for templates, Gmail, invoicing rules, taxes, and backups." />
 
     <div class="sections">
       <BasePanel title="Appearance" description="Pick a light and a dark theme; the mode decides which one is shown. Saved in this browser.">
@@ -27,6 +27,8 @@
 
       <ComplianceSettingsPanel />
 
+      <TaxProfilePanel />
+
       <BackupPanel />
 
       <DeleteAccountPanel />
@@ -43,6 +45,7 @@ import ThemePicker from '@/components/settings/ThemePicker.vue'
 import InvoiceNumberingPanel from '@/components/settings/InvoiceNumberingPanel.vue'
 import GmailConnectionPanel from '@/components/settings/GmailConnectionPanel.vue'
 import ComplianceSettingsPanel from '@/components/settings/ComplianceSettingsPanel.vue'
+import TaxProfilePanel from '@/components/settings/TaxProfilePanel.vue'
 import HolidayCalendarsPanel from '@/components/settings/HolidayCalendarsPanel.vue'
 import ImageAssetsPanel from '@/components/settings/ImageAssetsPanel.vue'
 import BackupPanel from '@/components/settings/BackupPanel.vue'

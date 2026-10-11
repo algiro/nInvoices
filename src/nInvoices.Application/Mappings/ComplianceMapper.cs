@@ -33,7 +33,7 @@ public static class ComplianceMapper
                         settings.CertificateNotAfter < now)
                     : null));
 
-    private static ComplianceFieldDto ToDto(ComplianceField f) => new(
+    public static ComplianceFieldDto ToDto(ComplianceField f) => new(
         f.Key,
         f.Label,
         f.Type.ToString(),

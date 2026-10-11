@@ -52,6 +52,20 @@ export const HolidayRuleKind = {
   NthWeekday: 'NthWeekday'
 } as const satisfies Record<HolidayRuleKind, HolidayRuleKind>
 
+export type ExpenseCategory = Schemas['ExpenseCategory']
+export const ExpenseCategory = {
+  Other: 'Other',
+  SocialSecurity: 'SocialSecurity',
+  ProfessionalServices: 'ProfessionalServices',
+  Software: 'Software',
+  Equipment: 'Equipment',
+  Office: 'Office',
+  Travel: 'Travel',
+  Training: 'Training',
+  Insurance: 'Insurance',
+  Banking: 'Banking'
+} as const satisfies Record<ExpenseCategory, ExpenseCategory>
+
 // Labels shown in the UI
 export const InvoiceTypeNames: Record<InvoiceType, string> = {
   Monthly: 'Monthly',
@@ -79,6 +93,19 @@ export const RateTypeNames: Record<RateType, string> = {
   Monthly: 'Monthly',
   Hourly: 'Hourly',
   Fixed: 'Fixed'
+}
+
+export const ExpenseCategoryNames: Record<ExpenseCategory, string> = {
+  Other: 'Other',
+  SocialSecurity: 'Social security',
+  ProfessionalServices: 'Professional services',
+  Software: 'Software and subscriptions',
+  Equipment: 'Equipment',
+  Office: 'Office and utilities',
+  Travel: 'Travel',
+  Training: 'Training',
+  Insurance: 'Insurance',
+  Banking: 'Bank and payment fees'
 }
 
 // ---------- the API's data ----------
@@ -150,6 +177,21 @@ export type InvoicePageDto = Schemas['InvoicePageDto']
 export type InvoiceAmountDto = Schemas['InvoiceAmountDto']
 export type InvoiceSummaryDto = Schemas['InvoiceSummaryDto']
 export type BulkInvoiceResultDto = Schemas['BulkInvoiceResultDto']
+export type TaxPredictionDto = Schemas['TaxPredictionDto']
+export type TaxPeriodDto = Schemas['TaxPeriodDto']
+export type TaxFormDto = Schemas['TaxFormDto']
+export type TaxFormLineDto = Schemas['TaxFormLineDto']
+export type TaxPaymentDto = Schemas['TaxPaymentDto']
+export type RecordTaxPaymentDto = Schemas['RecordTaxPaymentDto']
+export type TaxPredictionSettingsDto = Schemas['TaxPredictionSettingsDto']
+export type TaxCountryDto = Schemas['TaxCountryDto']
+export type TaxRegimeDto = Schemas['TaxRegimeDto']
+export type TaxProfileDto = Schemas['TaxProfileDto']
+export type UpdateTaxProfileDto = Schemas['UpdateTaxProfileDto']
+export type BusinessExpenseDto = Schemas['BusinessExpenseDto']
+export type SaveBusinessExpenseDto = Schemas['SaveBusinessExpenseDto']
+export type RecurringExpenseDto = Schemas['RecurringExpenseDto']
+export type SaveRecurringExpenseDto = Schemas['SaveRecurringExpenseDto']
 
 // ---------- frontend-only ----------
 

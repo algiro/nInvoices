@@ -9,7 +9,7 @@ namespace nInvoices.Infrastructure.DataPortability;
 /// <summary>
 /// Exports and imports the user's data as JSON, for backups and moving between installations:
 /// customers (with rates, taxes, templates, projects, worked days and unbilled expenses), invoices,
-/// and settings and assets. Imports keep what the user already has and report per item what was
+/// settings and assets, and the tax prediction's records (with the settings). Imports keep what the user already has and report per item what was
 /// imported, skipped or failed. Works on the DbContext directly: it is bulk data transfer. Each kind
 /// of data has its own class; this one puts them together.
 /// </summary>
@@ -19,6 +19,7 @@ public sealed class DataPortabilityService : IDataPortability
     private readonly SharedTemplatesPortability _sharedTemplates;
     private readonly InvoicePortability _invoices;
     private readonly SettingsPortability _settings;
+    private readonly TaxRecordsPortability _taxes;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<DataPortabilityService> _logger;
 
@@ -32,6 +33,7 @@ public sealed class DataPortabilityService : IDataPortability
         _sharedTemplates = new SharedTemplatesPortability(context);
         _invoices = new InvoicePortability(context, timeProvider, logger);
         _settings = new SettingsPortability(context, compliance, timeProvider, logger);
+        _taxes = new TaxRecordsPortability(context, logger);
         _timeProvider = timeProvider;
         _logger = logger;
     }
@@ -48,8 +50,11 @@ public sealed class DataPortabilityService : IDataPortability
     public Task<DataExportDto> ExportInvoicesAsync(int? year, int? month, long? customerId, CancellationToken cancellationToken) =>
         _invoices.ExportAsync(year, month, customerId, cancellationToken);
 
-    public Task<DataExportDto> ExportSettingsAsync(CancellationToken cancellationToken) =>
-        _settings.ExportAsync(cancellationToken);
+    public async Task<DataExportDto> ExportSettingsAsync(CancellationToken cancellationToken)
+    {
+        var export = await _settings.ExportAsync(cancellationToken);
+        return export with { Settings = export.Settings! with { Taxes = await _taxes.ExportAsync(cancellationToken) } };
+    }
 
     public async Task<ImportResultDto> ImportCustomersAsync(DataExportDto data, CancellationToken cancellationToken)
     {
@@ -79,6 +84,16 @@ public sealed class DataPortabilityService : IDataPortability
     public Task<ImportResultDto> ImportInvoicesAsync(DataExportDto data, CancellationToken cancellationToken) =>
         _invoices.ImportAsync(data, cancellationToken);
 
-    public Task<ImportResultDto> ImportSettingsAsync(DataExportDto data, CancellationToken cancellationToken) =>
-        _settings.ImportAsync(data, cancellationToken);
+    public async Task<ImportResultDto> ImportSettingsAsync(DataExportDto data, CancellationToken cancellationToken)
+    {
+        var settings = await _settings.ImportAsync(data, cancellationToken);
+        if (data.Settings?.Taxes is not { } taxes)
+            return settings;
+
+        var taxRecords = await _taxes.ImportAsync(taxes, cancellationToken);
+        return new ImportResultDto(
+            settings.Imported + taxRecords.Imported,
+            settings.Skipped + taxRecords.Skipped,
+            [.. settings.Errors, .. taxRecords.Errors]);
+    }
 }

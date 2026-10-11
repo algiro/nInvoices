@@ -132,7 +132,7 @@ internal static class FacturaeXmlBuilder
 
     /// <summary>Facturae tax type of a tax that is added: 01 IVA, 03 IGIC (Canary Islands).</summary>
     private static string TypeCode(EInvoiceTax tax) =>
-        tax.Values?.GetValueOrDefault(SpainComplianceModule.TaxTypeKey) == SpainComplianceModule.Igic ? "03" : "01";
+        SpainComplianceModule.IsIgic(tax.Values) ? "03" : "01";
 
     /// <summary>The tax of each line: rate applied to the line, the last one absorbing the rounding difference.</summary>
     private static decimal[] Share(EInvoiceTax tax, IReadOnlyList<EInvoiceLine> lines)

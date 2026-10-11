@@ -49,11 +49,10 @@ public sealed class EInvoiceDocumentFactory : IEInvoiceDocumentFactory
 
         var taxSettings = (await _taxes.GetAllAsync(cancellationToken)).ToList();
 
-        // A negative rate is a withholding (e.g. -15 for an income-tax retention): it is taken off what is paid
         var taxes = invoice.TaxLines
             .OrderBy(t => t.Order)
             .Select(t => new EInvoiceTax(
-                t.Rate < 0 ? EInvoiceTaxKind.Withheld : EInvoiceTaxKind.Added,
+                t.IsWithholding ? EInvoiceTaxKind.Withheld : EInvoiceTaxKind.Added,
                 t.Description,
                 Math.Abs(t.Rate),
                 t.BaseAmount.Amount,

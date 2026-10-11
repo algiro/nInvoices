@@ -80,6 +80,31 @@ public sealed class InvoiceRepositorySearchTests
             .ToList();
 
     [Test]
+    public async Task GetIssuedInYearAsync_FinalizedSentAndPaidOfThatYear_WithTheirTaxLines()
+    {
+        var token = TestContext.CurrentContext.CancellationToken;
+        Add(_acme, "26-03-005", new DateOnly(2026, 3, 31), 700m, InvoiceStatus.Finalized);
+        await _context.SaveChangesAsync(token);
+        var cancelled = await _context.Invoices.SingleAsync(i => i.Id == _context.Invoices.Max(x => x.Id), token);
+        cancelled.Cancel();
+        var issued = await _context.Invoices.ToListAsync(token);
+        _context.InvoiceTaxLines.Add(new InvoiceTaxLine("IGIC", "IGIC 7%", 7m, new Money(99.99m, "EUR"), new Money(7m, "EUR"), 0)
+        {
+            InvoiceId = issued.Single(i => i.Number.Value == "26-01-003").Id
+        });
+        await _context.SaveChangesAsync(token);
+        _context.ChangeTracker.Clear();
+
+        var year2026 = await _repository.GetIssuedInYearAsync(2026, token);
+        var year2025 = await _repository.GetIssuedInYearAsync(2025, token);
+
+        // The draft (26-02-004) and the cancelled invoice (26-03-005) are not counted
+        year2026.Select(i => i.Number.Value).ShouldBe(["26-01-003"]);
+        year2026[0].TaxLines.ShouldHaveSingleItem().TaxAmount.Amount.ShouldBe(7m);
+        year2025.Select(i => i.Number.Value).ShouldBe(["25-11-001", "25-12-002"]);
+    }
+
+    [Test]
     public async Task SearchAsync_Default_NewestIssuedFirst()
     {
         (await NumbersAsync(new InvoiceSearchCriteria())).ShouldBe(["26-02-004", "26-01-003", "25-12-002", "25-11-001"]);

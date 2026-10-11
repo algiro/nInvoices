@@ -129,6 +129,18 @@ const router = createRouter({
           component: () => import('../views/invoices/InvoiceDetails.vue'),
         },
         {
+          path: 'tax',
+          name: 'tax-prediction',
+          meta: { title: 'Tax prediction', section: 'tax' },
+          component: () => import('../views/tax/TaxPrediction.vue'),
+        },
+        {
+          path: 'expenses',
+          name: 'expenses',
+          meta: { title: 'Expenses', section: 'expenses' },
+          component: () => import('../views/expenses/Expenses.vue'),
+        },
+        {
           path: 'settings',
           name: 'settings',
           meta: { title: 'Settings', section: 'settings' },

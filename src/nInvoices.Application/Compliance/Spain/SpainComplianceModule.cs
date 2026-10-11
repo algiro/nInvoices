@@ -223,6 +223,10 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
         return issues;
     }
 
+    /// <summary>Whether a tax is IGIC (Canary Islands) rather than IVA, from its Spanish values (<see cref="TaxFields"/>).</summary>
+    public static bool IsIgic(IReadOnlyDictionary<string, string>? taxValues) =>
+        taxValues?.GetValueOrDefault(TaxTypeKey) == Igic;
+
     public static bool IsPublicAdministration(IReadOnlyDictionary<string, string> customerValues) =>
         customerValues.TryGetValue(IsPublicAdministrationKey, out var flag) && flag == "true";
 

@@ -65,13 +65,16 @@ public sealed class PostgreSqlMigrationScriptsTests
     }
 
     [Test]
-    public async Task Production_AfterTheScripts_MatchesTheModel()
+    public async Task Production_AfterTheScriptsAndPendingMigrations_MatchesTheModel()
     {
         // The schema production has (PostgreSql/production-schema.sql, from pg_dump), brought up to date
-        // the way deploy.sh --migrate does, must be the schema the EF model describes
+        // the way a deploy does (the frozen scripts, then the EF migrations the API applies at startup),
+        // must be the schema the EF model describes
         await RunPsqlAsync(Fixture("production-schema.sql"));
         foreach (var script in Scripts())
             await RunPsqlAsync(script);
+        await using (var context = MigrationsContext(ConnectionString))
+            await context.Database.MigrateAsync(Token);
 
         PostgreSqlSchema.Diff(await ModelSnapshotAsync(), await PostgreSqlSchema.SnapshotAsync(ConnectionString, Token)).ShouldBeEmpty();
     }
@@ -87,15 +90,22 @@ public sealed class PostgreSqlMigrationScriptsTests
     }
 
     [Test]
-    public async Task EfMigrations_OnProduction_HaveNothingToApply()
+    public async Task EfMigrations_OnProduction_OnlyThoseAfterTheLastAppliedArePending()
     {
-        // Production now: its schema, and the (frozen) scripts, the last of which records the baseline
+        // Production now: its schema, and the (frozen) scripts, the last of which records the baseline.
+        // Migrations added since the dump are pending (the next deploy applies them), but none may
+        // come before what production already has: it would never be applied there
         await RunPsqlAsync(Fixture("production-schema.sql"));
         foreach (var script in Scripts())
             await RunPsqlAsync(script);
 
         await using var context = MigrationsContext(ConnectionString);
-        (await context.Database.GetPendingMigrationsAsync(Token)).ShouldBeEmpty();
+        var applied = (await context.Database.GetAppliedMigrationsAsync(Token)).ToList();
+        var pending = await context.Database.GetPendingMigrationsAsync(Token);
+
+        applied.ShouldContain(m => m.EndsWith("_PostgreSqlBaseline", StringComparison.Ordinal));
+        var last = applied.Max(StringComparer.Ordinal)!;
+        pending.ShouldAllBe(m => string.CompareOrdinal(m, last) > 0);
     }
 
     [Test]
