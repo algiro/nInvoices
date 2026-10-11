@@ -31,7 +31,8 @@ public sealed class InvoicePdfDocument : IDocument
             {
                 page.Size(PageSizes.A4);
                 page.Margin(50);
-                page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
+                // QuestPDF's bundled font (Lato): the same everywhere, without relying on the fonts of the system
+                page.DefaultTextStyle(x => x.FontSize(10));
 
                 page.Header().Element(ComposeHeader);
                 page.Content().Element(ComposeContent);
