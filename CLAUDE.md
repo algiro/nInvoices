@@ -218,7 +218,10 @@ tests; check a UI change in the browser against the fast loop above. Past incide
   model changed without a migration for each provider. `dotnet test --filter Category=PostgreSql` (needs Docker)
   checks on a real PostgreSQL 17 that the migrations build exactly the model and that production's schema
   (`tests/.../PostgreSql/production-schema.sql`, a pg_dump) plus the pending migrations reaches the model, every
-  pending migration coming after the last one production has. Refresh the dump after a deploy. `docker/migrations-postgres` is
+  pending migration coming after the last one production has. After a deploy that changes the schema, refresh the
+  dump with `docker/refresh-production-schema.ps1` (reads production over SSH: the structure plus the migration
+  history rows, without which the tests re-apply migrations production already has; then runs these tests), and
+  commit it. `docker/migrations-postgres` is
   frozen (only for databases restored from backups older than 2026-10-06).
 - Database provider is chosen by `Database:Type` config (`SQLite` | `PostgreSQL`); the
   connection string key is `ConnectionStrings:Default`. Each provider has its own migrations assembly:
