@@ -1,7 +1,7 @@
 # Weekly update pull requests, grouped so each ecosystem is one PR (CI runs on each).
 # Major versions come as their own PRs: they can change behaviour (PDF rendering, templates,
-# test frameworks) and are reviewed one by one. Security updates are raised as soon as GitHub
-# knows of them, whatever this schedule says.
+# test frameworks) and are reviewed one by one, except the test tooling, whose majors move together.
+# Security updates are raised as soon as GitHub knows of them, whatever this schedule says.
 version: 2
 updates:
   - package-ecosystem: nuget
@@ -11,6 +11,10 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     groups:
+      # Only the tests use these; NUnit, its adapter and analyzers must move in step, so their
+      # majors are one PR too. First, so it takes them before the group below.
+      test-tooling:
+        patterns: ["NUnit*", "Microsoft.NET.Test.Sdk", "coverlet.*", "Moq", "Shouldly", "Testcontainers*"]
       nuget-minor-and-patch:
         update-types: [minor, patch]
 
@@ -23,6 +27,11 @@ updates:
     groups:
       npm-minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # Node's types follow the Node version we run (Dockerfile.web, ci.yml): their major moves by
+      # hand with it, not with each Node release
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
@@ -36,3 +45,7 @@ updates:
     directory: /docker           # the API and web image base images
     schedule:
       interval: monthly
+    ignore:
+      # Odd Node releases are supported for six months only: stay on the even (LTS) ones
+      - dependency-name: node
+        versions: ["21.x", "23.x", "25.x", "27.x", "29.x", "31.x"]
