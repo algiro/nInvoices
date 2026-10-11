@@ -54,6 +54,61 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.ToTable("AccessRequests", (string)null);
                 });
 
+            modelBuilder.Entity("nInvoices.Core.Entities.BusinessExpense", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("DeductiblePercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasAnnotation("nInvoices:EncryptionPurpose", "BusinessExpense.Description");
+
+                    b.Property<string>("IndirectTax")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasAnnotation("nInvoices:EncryptionPurpose", "BusinessExpense.IndirectTax");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("ReverseCharge")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Supplier")
+                        .HasColumnType("TEXT")
+                        .HasAnnotation("nInvoices:EncryptionPurpose", "BusinessExpense.Supplier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("OwnerId", "Date");
+
+                    b.ToTable("BusinessExpenses", (string)null);
+                });
+
             modelBuilder.Entity("nInvoices.Core.Entities.ComplianceSettings", b =>
                 {
                     b.Property<long>("Id")
@@ -1062,6 +1117,46 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.ToTable("Rates", (string)null);
                 });
 
+            modelBuilder.Entity("nInvoices.Core.Entities.RecurringExpense", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasAnnotation("nInvoices:EncryptionPurpose", "RecurringExpense.Description");
+
+                    b.Property<DateOnly>("FromMonth")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("ToMonth")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("RecurringExpenses", (string)null);
+                });
+
             modelBuilder.Entity("nInvoices.Core.Entities.Tax", b =>
                 {
                     b.Property<long>("Id")
@@ -1134,6 +1229,86 @@ namespace nInvoices.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Taxes", (string)null);
+                });
+
+            modelBuilder.Entity("nInvoices.Core.Entities.TaxPayment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Form")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("PaidOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Period")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("OwnerId", "Year", "Period", "Form")
+                        .IsUnique();
+
+                    b.ToTable("TaxPayments", (string)null);
+                });
+
+            modelBuilder.Entity("nInvoices.Core.Entities.TaxProfile", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RegimeId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Values")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId")
+                        .IsUnique();
+
+                    b.ToTable("TaxProfiles", (string)null);
                 });
 
             modelBuilder.Entity("nInvoices.Core.Entities.VerifactuRecord", b =>
@@ -1403,6 +1578,37 @@ namespace nInvoices.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("UserKeys", (string)null);
+                });
+
+            modelBuilder.Entity("nInvoices.Core.Entities.BusinessExpense", b =>
+                {
+                    b.OwnsOne("nInvoices.Core.ValueObjects.Money", "Amount", b1 =>
+                        {
+                            b1.Property<long>("BusinessExpenseId")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("Amount")
+                                .IsRequired()
+                                .HasColumnType("TEXT")
+                                .HasColumnName("Amount")
+                                .HasAnnotation("nInvoices:EncryptionPurpose", "BusinessExpense.Amount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("TEXT")
+                                .HasColumnName("Currency");
+
+                            b1.HasKey("BusinessExpenseId");
+
+                            b1.ToTable("BusinessExpenses");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BusinessExpenseId");
+                        });
+
+                    b.Navigation("Amount")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("nInvoices.Core.Entities.ComplianceSettings", b =>
@@ -1826,6 +2032,37 @@ namespace nInvoices.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("nInvoices.Core.Entities.RecurringExpense", b =>
+                {
+                    b.OwnsOne("nInvoices.Core.ValueObjects.Money", "Amount", b1 =>
+                        {
+                            b1.Property<long>("RecurringExpenseId")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("Amount")
+                                .IsRequired()
+                                .HasColumnType("TEXT")
+                                .HasColumnName("Amount")
+                                .HasAnnotation("nInvoices:EncryptionPurpose", "RecurringExpense.Amount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("TEXT")
+                                .HasColumnName("Currency");
+
+                            b1.HasKey("RecurringExpenseId");
+
+                            b1.ToTable("RecurringExpenses");
+
+                            b1.WithOwner()
+                                .HasForeignKey("RecurringExpenseId");
+                        });
+
+                    b.Navigation("Amount")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("nInvoices.Core.Entities.Tax", b =>
                 {
                     b.HasOne("nInvoices.Core.Entities.Tax", "AppliedToTax")
@@ -1842,6 +2079,37 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.Navigation("AppliedToTax");
 
                     b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("nInvoices.Core.Entities.TaxPayment", b =>
+                {
+                    b.OwnsOne("nInvoices.Core.ValueObjects.Money", "Amount", b1 =>
+                        {
+                            b1.Property<long>("TaxPaymentId")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("Amount")
+                                .IsRequired()
+                                .HasColumnType("TEXT")
+                                .HasColumnName("Amount")
+                                .HasAnnotation("nInvoices:EncryptionPurpose", "TaxPayment.Amount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("TEXT")
+                                .HasColumnName("Currency");
+
+                            b1.HasKey("TaxPaymentId");
+
+                            b1.ToTable("TaxPayments");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TaxPaymentId");
+                        });
+
+                    b.Navigation("Amount")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("nInvoices.Core.Entities.VerifactuRecord", b =>

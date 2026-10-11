@@ -11,3 +11,5 @@ export * from './emailTemplates';
 export * from './gmail';
 export * from './compliance';
 export * from './verifactu';
+export * from './taxPrediction';
+export * from './businessExpenses';

@@ -144,7 +144,39 @@ public sealed record UserSettingsExportDto(
     InvoiceNumberingExportDto? InvoiceNumbering,
     IReadOnlyList<ImageAssetExportDto> Images,
     IReadOnlyList<HolidayCalendarExportDto> HolidayCalendars,
-    IReadOnlyList<ComplianceSettingsExportDto> Compliance);
+    IReadOnlyList<ComplianceSettingsExportDto> Compliance,
+    // Absent from older exports
+    TaxRecordsExportDto? Taxes = null);
+
+/// <summary>The tax prediction's data: where the user pays taxes, their business expenses and the tax payments they recorded.</summary>
+public sealed record TaxRecordsExportDto(
+    TaxProfileExportDto? Profile,
+    IReadOnlyList<BusinessExpenseExportDto> Expenses,
+    IReadOnlyList<RecurringExpenseExportDto> RecurringExpenses,
+    IReadOnlyList<TaxPaymentExportDto> Payments);
+
+public sealed record TaxProfileExportDto(string CountryCode, string RegimeId, IReadOnlyDictionary<string, string> Values);
+
+public sealed record BusinessExpenseExportDto(
+    DateOnly Date,
+    string Description,
+    string? Supplier,
+    decimal Amount,
+    string Currency,
+    decimal IndirectTax,
+    bool ReverseCharge,
+    ExpenseCategory Category,
+    decimal DeductiblePercent);
+
+public sealed record RecurringExpenseExportDto(
+    string Description,
+    decimal Amount,
+    string Currency,
+    ExpenseCategory Category,
+    DateOnly FromMonth,
+    DateOnly? ToMonth);
+
+public sealed record TaxPaymentExportDto(int Year, int Period, string Form, decimal Amount, string Currency, DateOnly PaidOn);
 
 /// <param name="NextNumber">The number the next finalized invoice takes.</param>
 public sealed record InvoiceNumberingExportDto(int NextNumber, string? NumberFormat);

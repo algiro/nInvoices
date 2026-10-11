@@ -88,6 +88,10 @@ Country-specific data is stored with the issuer, customer and tax as simple `COU
 - **Bulk actions:** finalize, mark as sent or mark as paid in one go, or download many PDFs, with their timesheets, as a single zip.
 - **Gmail drafts (optional):** compose the email from a per-customer template and create a Gmail draft with the PDFs attached; you review and send it from Gmail. Needs your own Google OAuth client.
 
+### Taxes
+- **Tax prediction:** an estimate of the taxes you pay each quarter, from your invoices and the business expenses you record, with each form's boxes and its deadline. Record what you actually paid and the next quarters start from it. Built in for Spain (autónomo, estimación directa simplificada: Modelo 130 and Modelo 420 for IGIC or 303 for IVA); other countries can be added as modules. It estimates, it doesn't file. See [`Docs/TAX-PREDICTION.md`](Docs/TAX-PREDICTION.md).
+- **Business expenses**, one-off or paid every month (such as the social security fee), with the IVA/IGIC paid, reverse charge for suppliers abroad and the business share.
+
 ### Look and feel
 - **Nine themes**, four light and five dark, with a separate choice for day and night that can follow your operating system.
 - **Readable by design:** body text meets WCAG AA contrast in every theme, the calendar works from the keyboard, and animations respect *reduce motion*.

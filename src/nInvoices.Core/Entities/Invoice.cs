@@ -206,6 +206,9 @@ public sealed class InvoiceTaxLine : IOwnedEntity
     public Money TaxAmount { get; set; } = null!;
     public int Order { get; set; }
 
+    /// <summary>A negative rate is a withholding (e.g. -15 for an income-tax retention): it is taken off what is paid.</summary>
+    public bool IsWithholding => Rate < 0;
+
     // Navigation property
     public Invoice Invoice { get; set; } = null!;
 

@@ -93,6 +93,11 @@ public sealed class AccountDataDeletionTests
         var compliance = new ComplianceSettings("ES");
         compliance.Update(true, "Name", "12345678Z", null, null);
         db.ComplianceSettings.Add(compliance);
+        db.AddRange(
+            new TaxProfile("ES", "eds", new Dictionary<string, string> { ["territory"] = "canarias" }),
+            new BusinessExpense(new DateOnly(2026, 9, 5), "Laptop", new Money(1200m, "EUR"), ExpenseCategory.Equipment, 84m),
+            new RecurringExpense("Social Security", new Money(300.00m, "EUR"), ExpenseCategory.SocialSecurity, new DateOnly(2026, 1, 1)),
+            new TaxPayment(2026, 1, "130", new Money(2625.00m, "EUR"), new DateOnly(2026, 4, 20)));
 
         var invoice = new Invoice(customer.Id, new InvoiceNumber($"INV-{userId}"), InvoiceType.Monthly, new DateOnly(2026, 9, 30),
             new Money(640m, "EUR"), "EUR") { RateId = rate.Id };

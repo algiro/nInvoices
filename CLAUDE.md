@@ -217,7 +217,8 @@ tests; check a UI change in the browser against the fast loop above. Past incide
   migrations at startup (`Program.cs`), so a deploy needs nothing else. `MigrationsUpToDateTests` fails when the
   model changed without a migration for each provider. `dotnet test --filter Category=PostgreSql` (needs Docker)
   checks on a real PostgreSQL 17 that the migrations build exactly the model and that production's schema
-  (`tests/.../PostgreSql/production-schema.sql`, a pg_dump) has nothing pending. `docker/migrations-postgres` is
+  (`tests/.../PostgreSql/production-schema.sql`, a pg_dump) plus the pending migrations reaches the model, every
+  pending migration coming after the last one production has. Refresh the dump after a deploy. `docker/migrations-postgres` is
   frozen (only for databases restored from backups older than 2026-10-06).
 - Database provider is chosen by `Database:Type` config (`SQLite` | `PostgreSQL`); the
   connection string key is `ConnectionStrings:Default`. Each provider has its own migrations assembly:

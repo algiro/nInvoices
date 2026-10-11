@@ -23,6 +23,12 @@ public interface IInvoiceRepository : IRepository<Core.Entities.Invoice>
     /// <summary>Status, issue date and total of every invoice, for the list's summary figures.</summary>
     Task<IReadOnlyList<InvoiceTotalsRow>> GetTotalsAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The invoices issued in <paramref name="year"/> (finalized, sent or paid, by issue date) with their
+    /// tax lines: what a tax return counts. Drafts and cancelled invoices are left out.
+    /// </summary>
+    Task<IReadOnlyList<Core.Entities.Invoice>> GetIssuedInYearAsync(int year, CancellationToken cancellationToken = default);
+
     /// <summary>The invoices with these ids, in no particular order; unknown ids are ignored.</summary>
     Task<IReadOnlyList<Core.Entities.Invoice>> GetByIdsAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default);
 }

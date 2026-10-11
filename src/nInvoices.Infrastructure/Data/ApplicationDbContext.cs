@@ -84,6 +84,10 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<VerifactuRecord> VerifactuRecords => Set<VerifactuRecord>();
     public DbSet<VerifactuSubmission> VerifactuSubmissions => Set<VerifactuSubmission>();
     public DbSet<AccessRequest> AccessRequests => Set<AccessRequest>();
+    public DbSet<TaxProfile> TaxProfiles => Set<TaxProfile>();
+    public DbSet<BusinessExpense> BusinessExpenses => Set<BusinessExpense>();
+    public DbSet<RecurringExpense> RecurringExpenses => Set<RecurringExpense>();
+    public DbSet<TaxPayment> TaxPayments => Set<TaxPayment>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
         optionsBuilder.ReplaceService<IModelCacheKeyFactory, EncryptorModelCacheKeyFactory>();

@@ -146,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, nextTick, onMounted } from 'vue'
 import { complianceApi, verifactuApi } from '@/api'
 import type { ComplianceCountryDto, ChainReportDto, VerifactuStatusDto } from '@/types'
 import { useToast, errorMessage, apiStatus, apiErrorData } from '@/composables/useToast'
@@ -333,6 +333,11 @@ async function save(country: ComplianceCountryDto) {
       }
       if (Object.keys(byField).length === 0) byField.address = errorMessage(err, 'The settings are not valid')
       errors[code] = byField
+      // The messages sit under their fields, possibly out of sight: say so, and show the first one
+      toast.warning(`${country.name} settings not saved`, { message: 'Check the fields marked in red.' })
+      await nextTick()
+      document.getElementById(`${code}-legalName`)?.closest('form')?.querySelector('[role="alert"]')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     } else {
       toast.failure('Failed to save the country rules', err)
     }

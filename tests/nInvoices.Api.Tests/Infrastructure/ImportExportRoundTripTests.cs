@@ -156,6 +156,17 @@ public sealed class ImportExportRoundTripTests
         compliance.Update(true, "Freelancer Name", "12345678Z", new Address("Gran Via", "1", "Madrid", "28013", "Spain"),
             new Dictionary<string, string> { ["residence"] = "R" });
         db.ComplianceSettings.Add(compliance);
+        db.AddRange(
+            new TaxProfile("ES", "eds", new Dictionary<string, string> { ["territory"] = "canarias", ["difficultExpenses"] = "true" }),
+            new BusinessExpense(new DateOnly(2026, 2, 10), "Gestor", new Money(60m, "EUR"), ExpenseCategory.ProfessionalServices, 4.20m,
+                supplier: "Asesoría Pérez"),
+            new BusinessExpense(new DateOnly(2026, 3, 1), "Cloud hosting", new Money(20m, "USD"), ExpenseCategory.Software,
+                reverseCharge: true, deductiblePercent: 80m),
+            new RecurringExpense("Social Security", new Money(300.00m, "EUR"), ExpenseCategory.SocialSecurity,
+                new DateOnly(2026, 1, 1), new DateOnly(2026, 6, 1)),
+            new RecurringExpense("Social Security", new Money(500.00m, "EUR"), ExpenseCategory.SocialSecurity, new DateOnly(2026, 7, 1)),
+            new TaxPayment(2026, 1, "130", new Money(2625.00m, "EUR"), new DateOnly(2026, 4, 20)),
+            new TaxPayment(2026, 1, "420", new Money(210m, "EUR"), new DateOnly(2026, 4, 20)));
         await db.SaveChangesAsync(Token);
     }
 
@@ -247,6 +258,70 @@ public sealed class ImportExportRoundTripTests
         (compliance.LegalName, compliance.TaxId, compliance.Address!.City).ShouldBe(("Freelancer Name", "12345678Z", "Madrid"));
         compliance.Values["residence"].ShouldBe("R");
         compliance.HasCertificate.ShouldBeFalse();
+    }
+
+    [Test]
+    public async Task Restore_OnAnEmptyServer_BringsBackTheTaxRecords()
+    {
+        await SeedSourceAsync();
+
+        await RestoreAsync(await BackupAsync());
+
+        var db = Context(_target);
+        var profile = await db.TaxProfiles.SingleAsync(Token);
+        (profile.CountryCode, profile.RegimeId).ShouldBe(("ES", "eds"));
+        profile.Values.ShouldBe(new Dictionary<string, string> { ["territory"] = "canarias", ["difficultExpenses"] = "true" });
+
+        (await db.BusinessExpenses.ToListAsync(Token)).OrderBy(e => e.Date)
+            .Select(e => (e.Date, e.Description, e.Supplier, e.Amount, e.IndirectTax, e.ReverseCharge, e.Category, e.DeductiblePercent))
+            .ShouldBe(
+            [
+                (new DateOnly(2026, 2, 10), "Gestor", "Asesoría Pérez", new Money(60m, "EUR"), 4.20m, false, ExpenseCategory.ProfessionalServices, 100m),
+                (new DateOnly(2026, 3, 1), "Cloud hosting", null, new Money(20m, "USD"), 0m, true, ExpenseCategory.Software, 80m)
+            ]);
+        (await db.RecurringExpenses.ToListAsync(Token)).OrderBy(e => e.FromMonth)
+            .Select(e => (e.Amount.Amount, e.FromMonth, e.ToMonth))
+            .ShouldBe([(300.00m, new DateOnly(2026, 1, 1), (DateOnly?)new DateOnly(2026, 6, 1)), (500.00m, new DateOnly(2026, 7, 1), null)]);
+        (await db.TaxPayments.ToListAsync(Token)).OrderBy(p => p.Form)
+            .Select(p => (p.Year, p.Period, p.Form, p.Amount.Amount, p.PaidOn))
+            .ShouldBe([(2026, 1, "130", 2625.00m, new DateOnly(2026, 4, 20)), (2026, 1, "420", 210m, new DateOnly(2026, 4, 20))]);
+    }
+
+    [Test]
+    public async Task ImportSettings_TaxRecordsAlreadyThere_AreKept()
+    {
+        var db = Context(_target);
+        db.AddRange(
+            new TaxProfile("ES", "eds", new Dictionary<string, string> { ["territory"] = "mainland" }),
+            new TaxPayment(2026, 1, "130", new Money(1000m, "EUR"), new DateOnly(2026, 4, 15)));
+        await db.SaveChangesAsync(Token);
+        var backup = ViaFile(new DataExportDto("1.0", DateTime.UtcNow, null, null, Settings: new UserSettingsExportDto(
+            null, [], [], [], new TaxRecordsExportDto(
+                new TaxProfileExportDto("ES", "eds", new Dictionary<string, string> { ["territory"] = "canarias" }),
+                [],
+                [],
+                [new TaxPaymentExportDto(2026, 1, "130", 2625.00m, "EUR", new DateOnly(2026, 4, 20)),
+                 new TaxPaymentExportDto(2026, 2, "130", 2243.56m, "EUR", new DateOnly(2026, 7, 20))]))));
+
+        var result = Ok(await Controller(Context(_target)).ImportSettingsAsync(backup, Token));
+
+        (result.Imported, result.Skipped).ShouldBe((1, 2));
+        var target = Context(_target);
+        (await target.TaxProfiles.SingleAsync(Token)).Values["territory"].ShouldBe("mainland");
+        (await target.TaxPayments.ToListAsync(Token)).Select(p => (p.Period, p.Amount.Amount)).OrderBy(p => p.Period)
+            .ShouldBe([(1, 1000m), (2, 2243.56m)]);
+    }
+
+    [Test]
+    public async Task ImportSettings_FileFromBeforeTheTaxRecords_StillImports()
+    {
+        const string file = """{"exportVersion":"1.0","exportedAt":"2026-09-01T00:00:00Z","settings":{"images":[],"holidayCalendars":[],"compliance":[]}}""";
+        var backup = JsonSerializer.Deserialize<DataExportDto>(file, Json)!;
+
+        var result = Ok(await Controller(Context(_target)).ImportSettingsAsync(backup, Token));
+
+        result.Errors.ShouldBeEmpty();
+        (await Context(_target).TaxProfiles.CountAsync(Token)).ShouldBe(0);
     }
 
     [Test]

@@ -269,7 +269,7 @@ public sealed class VerifactuService : IVerifactuService
 
             var values = taxes.FirstOrDefault(t => t.TaxId == line.TaxId)
                 ?.GetComplianceValues(SpainComplianceModule.CountryCodeValue);
-            var igic = values?.GetValueOrDefault(SpainComplianceModule.TaxTypeKey) == SpainComplianceModule.Igic;
+            var igic = SpainComplianceModule.IsIgic(values);
 
             string operation;
             if (line.Rate > 0)

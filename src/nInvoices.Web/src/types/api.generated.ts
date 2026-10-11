@@ -95,6 +95,363 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/business-expenses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    year?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["BusinessExpenseDto"][];
+                        "application/json": components["schemas"]["BusinessExpenseDto"][];
+                        "text/json": components["schemas"]["BusinessExpenseDto"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SaveBusinessExpenseDto"];
+                    "text/json": components["schemas"]["SaveBusinessExpenseDto"];
+                    "application/*+json": components["schemas"]["SaveBusinessExpenseDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["BusinessExpenseDto"];
+                        "application/json": components["schemas"]["BusinessExpenseDto"];
+                        "text/json": components["schemas"]["BusinessExpenseDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/business-expenses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SaveBusinessExpenseDto"];
+                    "text/json": components["schemas"]["SaveBusinessExpenseDto"];
+                    "application/*+json": components["schemas"]["SaveBusinessExpenseDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["BusinessExpenseDto"];
+                        "application/json": components["schemas"]["BusinessExpenseDto"];
+                        "text/json": components["schemas"]["BusinessExpenseDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/business-expenses/recurring": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["RecurringExpenseDto"][];
+                        "application/json": components["schemas"]["RecurringExpenseDto"][];
+                        "text/json": components["schemas"]["RecurringExpenseDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SaveRecurringExpenseDto"];
+                    "text/json": components["schemas"]["SaveRecurringExpenseDto"];
+                    "application/*+json": components["schemas"]["SaveRecurringExpenseDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["RecurringExpenseDto"];
+                        "application/json": components["schemas"]["RecurringExpenseDto"];
+                        "text/json": components["schemas"]["RecurringExpenseDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/business-expenses/recurring/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SaveRecurringExpenseDto"];
+                    "text/json": components["schemas"]["SaveRecurringExpenseDto"];
+                    "application/*+json": components["schemas"]["SaveRecurringExpenseDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["RecurringExpenseDto"];
+                        "application/json": components["schemas"]["RecurringExpenseDto"];
+                        "text/json": components["schemas"]["RecurringExpenseDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/Compliance/countries": {
         parameters: {
             query?: never;
@@ -5297,6 +5654,247 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tax-prediction/{year}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    year: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["TaxPredictionDto"];
+                        "application/json": components["schemas"]["TaxPredictionDto"];
+                        "text/json": components["schemas"]["TaxPredictionDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tax-prediction/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["TaxPredictionSettingsDto"];
+                        "application/json": components["schemas"]["TaxPredictionSettingsDto"];
+                        "text/json": components["schemas"]["TaxPredictionSettingsDto"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tax-prediction/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateTaxProfileDto"];
+                    "text/json": components["schemas"]["UpdateTaxProfileDto"];
+                    "application/*+json": components["schemas"]["UpdateTaxProfileDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["TaxProfileDto"];
+                        "application/json": components["schemas"]["TaxProfileDto"];
+                        "text/json": components["schemas"]["TaxProfileDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tax-prediction/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RecordTaxPaymentDto"];
+                    "text/json": components["schemas"]["RecordTaxPaymentDto"];
+                    "application/*+json": components["schemas"]["RecordTaxPaymentDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["TaxPaymentDto"];
+                        "application/json": components["schemas"]["TaxPaymentDto"];
+                        "text/json": components["schemas"]["TaxPaymentDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tax-prediction/payments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/Verifactu/invoices/{invoiceId}": {
         parameters: {
             query?: never;
@@ -5480,6 +6078,36 @@ export interface components {
             id: number;
             invoiceNumber: null | string;
             reason: string;
+        };
+        BusinessExpenseDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: date */
+            date: string;
+            description: string;
+            supplier: null | string;
+            amount: components["schemas"]["MoneyDto"];
+            /** Format: double */
+            indirectTax: number;
+            reverseCharge: boolean;
+            category: components["schemas"]["ExpenseCategory"];
+            /** Format: double */
+            deductiblePercent: number;
+        };
+        BusinessExpenseExportDto: {
+            /** Format: date */
+            date: string;
+            description: string;
+            supplier: null | string;
+            /** Format: double */
+            amount: number;
+            currency: string;
+            /** Format: double */
+            indirectTax: number;
+            reverseCharge: boolean;
+            category: components["schemas"]["ExpenseCategory"];
+            /** Format: double */
+            deductiblePercent: number;
         };
         ChainProblemDto: {
             /** Format: int64 */
@@ -5756,6 +6384,8 @@ export interface components {
             html: null | string;
             errors: string[];
         };
+        /** @enum {string} */
+        ExpenseCategory: "Other" | "SocialSecurity" | "ProfessionalServices" | "Software" | "Equipment" | "Office" | "Travel" | "Training" | "Insurance" | "Banking";
         ExpenseDto: {
             description: string;
             /** Format: double */
@@ -6209,6 +6839,59 @@ export interface components {
         };
         /** @enum {string} */
         RateType: "Daily" | "Monthly" | "Hourly" | "Fixed";
+        RecordTaxPaymentDto: {
+            /** Format: int32 */
+            year: number;
+            /** Format: int32 */
+            period: number;
+            form: string;
+            /** Format: double */
+            amount: number;
+            /** Format: date */
+            paidOn: string;
+        };
+        RecurringExpenseDto: {
+            /** Format: int64 */
+            id: number;
+            description: string;
+            amount: components["schemas"]["MoneyDto"];
+            category: components["schemas"]["ExpenseCategory"];
+            /** Format: date */
+            fromMonth: string;
+            /** Format: date */
+            toMonth: null | string;
+        };
+        RecurringExpenseExportDto: {
+            description: string;
+            /** Format: double */
+            amount: number;
+            currency: string;
+            category: components["schemas"]["ExpenseCategory"];
+            /** Format: date */
+            fromMonth: string;
+            /** Format: date */
+            toMonth: null | string;
+        };
+        SaveBusinessExpenseDto: {
+            /** Format: date */
+            date: string;
+            description: string;
+            supplier: null | string;
+            amount: components["schemas"]["MoneyDto"];
+            /**
+             * Format: double
+             * @default 0
+             */
+            indirectTax: number;
+            /** @default false */
+            reverseCharge: boolean;
+            category?: components["schemas"]["ExpenseCategory"];
+            /**
+             * Format: double
+             * @default 100
+             */
+            deductiblePercent: number;
+        };
         SaveHolidayRuleDto: {
             name: string;
             kind: components["schemas"]["HolidayRuleKind"];
@@ -6228,6 +6911,15 @@ export interface components {
             /** @default true */
             isActive: boolean;
         };
+        SaveRecurringExpenseDto: {
+            description: string;
+            amount: components["schemas"]["MoneyDto"];
+            /** Format: date */
+            fromMonth: string;
+            /** Format: date */
+            toMonth?: null | string;
+            category?: components["schemas"]["ExpenseCategory"];
+        };
         SharedTemplatesExportDto: {
             invoiceTemplates: components["schemas"]["InvoiceTemplateExportDto"][];
             monthlyReportTemplates: components["schemas"]["MonthlyReportTemplateExportDto"][];
@@ -6244,6 +6936,12 @@ export interface components {
         Stream: string;
         /** @enum {string} */
         TaxApplicationType: "OnSubtotal" | "OnTax";
+        TaxCountryDto: {
+            countryCode: string;
+            name: string;
+            currency: string;
+            regimes: components["schemas"]["TaxRegimeDto"][];
+        };
         TaxDto: {
             /** Format: int64 */
             id: number;
@@ -6282,6 +6980,100 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
             complianceValues?: null | {
+                [key: string]: string;
+            };
+        };
+        TaxFormDto: {
+            code: string;
+            name: string;
+            /** Format: date */
+            deadline: string;
+            /** Format: double */
+            estimated: number;
+            payment: null | components["schemas"]["TaxPaymentDto"];
+            lines: components["schemas"]["TaxFormLineDto"][];
+        };
+        TaxFormLineDto: {
+            box: null | string;
+            label: string;
+            /** Format: double */
+            amount: number;
+        };
+        TaxPaymentDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            year: number;
+            /** Format: int32 */
+            period: number;
+            form: string;
+            /** Format: double */
+            amount: number;
+            currency: string;
+            /** Format: date */
+            paidOn: string;
+        };
+        TaxPaymentExportDto: {
+            /** Format: int32 */
+            year: number;
+            /** Format: int32 */
+            period: number;
+            form: string;
+            /** Format: double */
+            amount: number;
+            currency: string;
+            /** Format: date */
+            paidOn: string;
+        };
+        TaxPeriodDto: {
+            /** Format: int32 */
+            period: number;
+            name: string;
+            /** Format: date */
+            start: string;
+            /** Format: date */
+            end: string;
+            forms: components["schemas"]["TaxFormDto"][];
+        };
+        TaxPredictionDto: {
+            /** Format: int32 */
+            year: number;
+            isSetUp: boolean;
+            countryCode: null | string;
+            currency: null | string;
+            periods: components["schemas"]["TaxPeriodDto"][];
+            warnings: string[];
+        };
+        TaxPredictionSettingsDto: {
+            countries: components["schemas"]["TaxCountryDto"][];
+            profile: null | components["schemas"]["TaxProfileDto"];
+        };
+        TaxProfileDto: {
+            countryCode: string;
+            regimeId: string;
+            values: {
+                [key: string]: string;
+            };
+        };
+        TaxProfileExportDto: {
+            countryCode: string;
+            regimeId: string;
+            values: {
+                [key: string]: string;
+            };
+        };
+        TaxRecordsExportDto: {
+            profile: null | components["schemas"]["TaxProfileExportDto"];
+            expenses: components["schemas"]["BusinessExpenseExportDto"][];
+            recurringExpenses: components["schemas"]["RecurringExpenseExportDto"][];
+            payments: components["schemas"]["TaxPaymentExportDto"][];
+        };
+        TaxRegimeDto: {
+            id: string;
+            name: string;
+            help: null | string;
+            fields: components["schemas"]["ComplianceFieldDto"][];
+            defaults: {
                 [key: string]: string;
             };
         };
@@ -6371,6 +7163,13 @@ export interface components {
                 [key: string]: string;
             };
         };
+        UpdateTaxProfileDto: {
+            countryCode: string;
+            regimeId: string;
+            values: null | {
+                [key: string]: string;
+            };
+        };
         UploadCertificateDto: {
             pfx: string;
             password: string;
@@ -6380,6 +7179,7 @@ export interface components {
             images: components["schemas"]["ImageAssetExportDto"][];
             holidayCalendars: components["schemas"]["HolidayCalendarExportDto"][];
             compliance: components["schemas"]["ComplianceSettingsExportDto"][];
+            taxes?: null | components["schemas"]["TaxRecordsExportDto"];
         };
         ValidateTemplateDto: {
             content: string;
