@@ -33,15 +33,16 @@ Log.Logger = new LoggerConfiguration()
     // Log text is for operators: dates and numbers the same whatever the server culture
     .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
     .WriteTo.File("logs/nInvoices-.log", rollingInterval: RollingInterval.Day, formatProvider: CultureInfo.InvariantCulture)
+    // OTLP (Grafana Cloud, a collector...) when OTEL_EXPORTER_OTLP_ENDPOINT is set; the console and files stay
+    .WriteToOtlpWhenConfigured(builder.Configuration, builder.Environment.ApplicationName, builder.Environment.EnvironmentName)
     .CreateLogger();
 
 builder.Host.UseSerilog();
 
 // Aspire service defaults: OpenTelemetry (traces + metrics), "/health" + "/alive"
 // health checks, HTTP resilience, and service discovery.
-// Logs continue to flow through Serilog; they are exported over OTLP only once
-// Serilog.Sinks.OpenTelemetry is added (Phase 3). Traces and metrics export
-// automatically when OTEL_EXPORTER_OTLP_ENDPOINT is set.
+// Logs flow through Serilog (console, files and, with OTEL_EXPORTER_OTLP_ENDPOINT set, OTLP: see
+// OtlpLogExtensions). Traces and metrics export automatically when that endpoint is set.
 builder.AddServiceDefaults();
 
 // Add services to the container

@@ -172,9 +172,10 @@ tests; check a UI change in the browser against the fast loop above. Past incide
 - **nInvoices.ServiceDefaults** — Aspire shared project (`AddServiceDefaults()` /
   `MapDefaultEndpoints()`): OpenTelemetry traces + metrics, HTTP resilience, service discovery,
   and the `/health` (all checks incl. `AddDbContextCheck`) + `/alive` (liveness) endpoints.
-  Referenced only by `Api`. OTLP export activates when `OTEL_EXPORTER_OTLP_ENDPOINT` is set;
-  Serilog still owns log sinks (`HealthController` at `/api/health` is kept for the nginx-routed
-  check).
+  Referenced only by `Api`. OTLP export activates when `OTEL_EXPORTER_OTLP_ENDPOINT` is set (traces and
+  metrics from ServiceDefaults, query strings stripped from spans; logs through Serilog's OTLP sink,
+  `Api/Infrastructure/OtlpLogExtensions`, which also keeps the console and file sinks); `Docs/OBSERVABILITY.md`
+  has the Grafana Cloud setup (`HealthController` at `/api/health` is kept for the nginx-routed check).
 - **nInvoices.AppHost** — dev-only Aspire orchestrator (`aspire run`): PostgreSQL + Keycloak +
   API + Vite. Not referenced by any deployable project, never published. Production deploy is
   unchanged (Docker Hub + compose + SSH); Aspire is not used for deployment. Full walkthrough

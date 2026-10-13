@@ -5,7 +5,9 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ServiceDiscovery;
 using OpenTelemetry;
+using System.Diagnostics;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
 namespace Microsoft.Extensions.Hosting;
@@ -52,7 +54,16 @@ public static class Extensions
             logging.IncludeScopes = true;
         });
 
+        // Same resource as the log sink's (OtlpLogExtensions): one service in the backend, whatever the signal.
+        // OTEL_SERVICE_NAME and OTEL_RESOURCE_ATTRIBUTES still override.
+        var serviceName = builder.Configuration["OTEL_SERVICE_NAME"] is { Length: > 0 } configured
+            ? configured
+            : builder.Environment.ApplicationName;
+
         builder.Services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource
+                .AddService(serviceName)
+                .AddAttributes([new KeyValuePair<string, object>("deployment.environment", builder.Environment.EnvironmentName)]))
             .WithMetrics(metrics =>
             {
                 metrics.AddAspNetCoreInstrumentation()
@@ -61,7 +72,9 @@ public static class Extensions
             })
             .WithTracing(tracing =>
             {
-                tracing.AddSource(builder.Environment.ApplicationName)
+                // Before the exporters: what leaves the server carries no query strings (see QueryStringStripper)
+                tracing.AddProcessor(new QueryStringStripper())
+                    .AddSource(builder.Environment.ApplicationName)
                     .AddAspNetCoreInstrumentation(tracing =>
                         // Exclude health check requests from tracing
                         tracing.Filter = context =>

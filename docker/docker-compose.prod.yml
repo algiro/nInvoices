@@ -96,6 +96,14 @@ services:
       # Telegram message when a new account waits for approval (off while empty). Docs/GOOGLE-LOGIN.md
       - Notifications__TelegramBotToken=${TELEGRAM_TOKEN:-}
       - Notifications__TelegramChatId=${TELEGRAM_CHAT_ID:-}
+      # Traces, metrics and logs over OTLP, e.g. to Grafana Cloud (off while OTEL_EXPORTER_OTLP_ENDPOINT is empty).
+      # The headers carry the credentials: keep them in the server's .env. Docs/OBSERVABILITY.md
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      - OTEL_EXPORTER_OTLP_PROTOCOL=${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
+      - OTEL_EXPORTER_OTLP_HEADERS=${OTEL_EXPORTER_OTLP_HEADERS:-}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-ninvoices-api}
+      - OTEL_RESOURCE_ATTRIBUTES=${OTEL_RESOURCE_ATTRIBUTES:-service.namespace=ninvoices}
+      - OTEL_LOGS_EXPORTER=${OTEL_LOGS_EXPORTER:-}
     volumes:
       - ./volumes/logs:/app/logs
       - ./volumes/dataprotection:/app/keys
