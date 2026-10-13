@@ -2,6 +2,8 @@
   <!-- One version per package for the whole solution; a .csproj references packages without a Version -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- A PackageVersion also applies to the packages other packages bring in: used below to patch a transitive one -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
 
   <ItemGroup Label="Application">
@@ -41,7 +43,10 @@
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.12" />
+    <!-- Not referenced directly: MimeKit brings it in at 10.0.0, which has a known vulnerability (GHSA-846f-f764-76mx).
+         Pinned here to the patched release; remove once MimeKit asks for 10.0.13 or later. -->
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
+    <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.13" />
   </ItemGroup>
 
   <ItemGroup Label="Tests">
