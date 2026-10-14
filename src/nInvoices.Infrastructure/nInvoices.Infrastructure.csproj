@@ -21,6 +21,8 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="MimeKit" />
+    <!-- MimeKit's own dependency at 10.0.0 has a known vulnerability; this makes the patched version win -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="PuppeteerSharp" />
     <PackageReference Include="QuestPDF" />

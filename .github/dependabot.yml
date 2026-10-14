@@ -11,12 +11,15 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     groups:
-      # Only the tests use these; NUnit, its adapter and analyzers must move in step, so their
-      # majors are one PR too. First, so it takes them before the group below.
+      # Only the tests use these; NUnit, its adapter and analyzers must move in step, so all their updates,
+      # majors included, are one PR.
       test-tooling:
         patterns: ["NUnit*", "Microsoft.NET.Test.Sdk", "coverlet.*", "Moq", "Shouldly", "Testcontainers*"]
+      # Excludes the test tooling: a package in two groups ends up in two PRs that edit the same line of
+      # Directory.Packages.props, and merging one conflicts the other.
       nuget-minor-and-patch:
         update-types: [minor, patch]
+        exclude-patterns: ["NUnit*", "Microsoft.NET.Test.Sdk", "coverlet.*", "Moq", "Shouldly", "Testcontainers*"]
 
   - package-ecosystem: npm
     directory: /src/nInvoices.Web
@@ -46,6 +49,7 @@ updates:
     schedule:
       interval: monthly
     ignore:
-      # Odd Node releases are supported for six months only: stay on the even (LTS) ones
+      # Node's odd releases are supported for six months only, and a new major is a decision to take
+      # by hand (here, in ci.yml and in @types/node together)
       - dependency-name: node
-        versions: ["21.x", "23.x", "25.x", "27.x", "29.x", "31.x"]
+        update-types: ["version-update:semver-major"]
