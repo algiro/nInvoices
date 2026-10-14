@@ -68,7 +68,9 @@ public static class Extensions
             {
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation();
+                    .AddRuntimeInstrumentation()
+                    // The application's own meters (nInvoices.Application.Telemetry.AppMetrics), by name prefix
+                    .AddMeter("nInvoices*");
             })
             .WithTracing(tracing =>
             {

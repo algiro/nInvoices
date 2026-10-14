@@ -48,7 +48,8 @@ public static class ApplicationServicesExtensions
             options.Assemblies = [typeof(ApplicationAssemblyMarker)];
             // Handlers use the request's DbContext and user: never the generator's default, Singleton
             options.ServiceLifetime = ServiceLifetime.Scoped;
-            options.PipelineBehaviors = [typeof(ValidationBehavior<,>)];
+            // The first one wraps the rest: metrics see the whole request, validation included
+            options.PipelineBehaviors = [typeof(MetricsBehavior<,>), typeof(ValidationBehavior<,>)];
         });
         services.AddValidatorsFromAssembly(typeof(ApplicationAssemblyMarker).Assembly);
         return services;
