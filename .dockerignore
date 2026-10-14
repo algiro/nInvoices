@@ -1,5 +1,8 @@
-node_modules
-dist
+# Anywhere in the tree, not only at the root: a node_modules installed on Windows (src/nInvoices.Web) would
+# otherwise be copied over the container's own install, and a package that only exists in that stale copy
+# (a previous Vite's Rollup) has no Linux binary there.
+**/node_modules
+**/dist
 .git
 .gitignore
 *.log
