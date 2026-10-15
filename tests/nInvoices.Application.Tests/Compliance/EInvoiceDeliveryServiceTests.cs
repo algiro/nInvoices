@@ -8,6 +8,7 @@ using nInvoices.Application.Compliance.Spain.Face;
 using nInvoices.Application.Compliance.Spain.Facturae;
 using nInvoices.Application.Tests.Compliance.Spain;
 using nInvoices.Application.Services.Email;
+using nInvoices.Application.Telemetry;
 using nInvoices.Application.Tests.TestDoubles;
 using nInvoices.Core.Configuration;
 using nInvoices.Core.Entities;
@@ -223,6 +224,53 @@ public sealed class EInvoiceDeliveryServiceTests
         result.Message.ShouldNotBeNull().ShouldContain("no está dado de alta");
         _submissions.Items.ShouldBeEmpty();
         _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Test]
+    public async Task Send_Delivered_IsCountedForFace_AndTheCallIsTimed()
+    {
+        SpainOn();
+        StoredFile();
+        using var submissions = new MetricCapture("ninvoices.einvoice.submissions");
+        using var duration = new MetricCapture("ninvoices.einvoice.submit.duration");
+
+        await _service.SendAsync(InvoiceId, "face", Token);
+
+        submissions.Total(("system", "face"), ("result", "accepted")).ShouldBe(1);
+        var call = duration.All().ShouldHaveSingleItem();
+        call.Tag("system").ShouldBe("face");
+        call.Tag("outcome").ShouldBe("success");
+    }
+
+    [Test]
+    public async Task Send_RefusedByFace_IsCountedAsFailed()
+    {
+        SpainOn();
+        StoredFile();
+        _face
+            .Setup(f => f.SendInvoiceAsync(It.IsAny<FaceTarget>(), It.IsAny<X509Certificate2>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new FaceException("El certificado no está dado de alta"));
+        using var submissions = new MetricCapture("ninvoices.einvoice.submissions");
+        using var duration = new MetricCapture("ninvoices.einvoice.submit.duration");
+
+        await _service.SendAsync(InvoiceId, "face", Token);
+
+        submissions.Total(("system", "face"), ("result", "failed")).ShouldBe(1);
+        submissions.Total(("system", "face"), ("result", "accepted")).ShouldBe(0);
+        duration.All().ShouldHaveSingleItem().Tag("outcome").ShouldBe("error");
+    }
+
+    [Test]
+    public async Task Send_RefusedBeforeTheCall_CountsNothing()
+    {
+        // Nothing reached FACe: not a result of a submission
+        using var submissions = new MetricCapture("ninvoices.einvoice.submissions");
+        using var duration = new MetricCapture("ninvoices.einvoice.submit.duration");
+
+        await _service.SendAsync(InvoiceId, "face", Token); // Spain is not turned on
+
+        submissions.All().ShouldBeEmpty();
+        duration.All().ShouldBeEmpty();
     }
 
     [Test]

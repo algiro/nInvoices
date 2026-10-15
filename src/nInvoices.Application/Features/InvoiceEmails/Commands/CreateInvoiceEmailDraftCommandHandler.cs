@@ -1,3 +1,4 @@
+using nInvoices.Application.Telemetry;
 using System.Security.Cryptography;
 using Mediator;
 using Microsoft.Extensions.Logging;
@@ -133,12 +134,14 @@ public sealed class CreateInvoiceEmailDraftCommandHandler : IRequestHandler<Crea
         connection.MarkUsed(_timeProvider.GetUtcNow().UtcDateTime);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        AppMetrics.EmailDrafts.Add(1, new KeyValuePair<string, object?>("outcome", AppMetrics.DraftOutcome.Created));
         _logger.LogInformation("Gmail draft {DraftId} created for invoice {InvoiceId}", draft.DraftId, invoice.Id);
         return InvoiceEmailMapper.ToDto(email);
     }
 
     private async Task ForgetConnectionAsync(GmailConnection connection, Exception reason, CancellationToken cancellationToken)
     {
+        AppMetrics.EmailDrafts.Add(1, new KeyValuePair<string, object?>("outcome", AppMetrics.DraftOutcome.ReconnectRequired));
         _logger.LogWarning(reason, "Removing unusable Gmail connection for {Email}", connection.EmailAddress);
         await _connectionRepository.DeleteAsync(connection, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

@@ -1,6 +1,7 @@
 using Mediator;
 using nInvoices.Application.Features.Invoices;
 using nInvoices.Application.Features.Invoices.Notifications;
+using nInvoices.Application.Telemetry;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 
@@ -36,6 +37,10 @@ public sealed class InvoiceFinalizer : IInvoiceFinalizer
     private readonly IPublisher _publisher;
     private readonly IReadOnlyList<IInvoiceLifecycleStep> _steps;
 
+    // The type of each invoice between its two halves: the second only gets ids, and counts what was really saved.
+    // One instance serves one request (it is scoped), so this never holds more than that request's invoices.
+    private readonly Dictionary<long, InvoiceType> _finalizing = [];
+
     public InvoiceFinalizer(
         IInvoiceNumbering numbering,
         IDraftInvoiceSynchronizer drafts,
@@ -60,6 +65,7 @@ public sealed class InvoiceFinalizer : IInvoiceFinalizer
         // The document of an up-to-date draft already carries this number
         var outdated = invoice.Number != number;
         invoice.Finalize(number);
+        _finalizing[invoice.Id] = invoice.Type;
 
         // What country rules require of an issued invoice is stored in the same save
         foreach (var step in _steps)
@@ -79,6 +85,12 @@ public sealed class InvoiceFinalizer : IInvoiceFinalizer
         await _drafts.RefreshDraftsAsync(cancellationToken);
 
         foreach (var id in finalizedIds)
+        {
+            // Counted here, after the caller's save: an invoice whose save failed was not issued
+            if (_finalizing.Remove(id, out var type))
+                AppMetrics.InvoicesFinalized.Add(1, new KeyValuePair<string, object?>("type", type.ToString()));
+
             await _publisher.Publish(new InvoiceFinalizedNotification(id), cancellationToken);
+        }
     }
 }

@@ -6,6 +6,7 @@ using nInvoices.Application.Compliance;
 using nInvoices.Application.Compliance.Spain;
 using nInvoices.Application.Compliance.Spain.Verifactu;
 using nInvoices.Application.Services.Email;
+using nInvoices.Application.Telemetry;
 using nInvoices.Application.Tests.TestDoubles;
 using nInvoices.Core.Configuration;
 using nInvoices.Core.Entities;
@@ -287,6 +288,76 @@ public sealed class VerifactuSubmitterTests
         var submission = _submissions.Items.Single();
         submission.Status.ShouldBe(VerifactuSubmissionStatus.Pending);
         submission.NextAttemptAt.ShouldBe(_time.Now.AddSeconds(60));
+    }
+
+    // --- What is measured ---------------------------------------------------------------------------
+
+    [Test]
+    public async Task EachAnswer_IsCountedByResult_AndTheCallIsTimed()
+    {
+        Queue(5);
+        _client.Answer = _ => new AeatResponse("A-9", 60, "ParcialmenteCorrecto",
+        [
+            new AeatLineResult("26-10-001", "Alta", "Correcto", null, null),
+            new AeatLineResult("26-10-002", "Alta", "AceptadoConErrores", "2000", "La huella no coincide"),
+            new AeatLineResult("26-10-003", "Alta", "Incorrecto", "1100", "Valor o formato incorrecto"),
+            new AeatLineResult("26-10-004", "Alta", "Incorrecto", "3000", "Registro de facturación duplicado")
+            // 26-10-005: no answer
+        ]);
+        using var submissions = new MetricCapture("ninvoices.einvoice.submissions");
+        using var duration = new MetricCapture("ninvoices.einvoice.submit.duration");
+
+        await Submitter().SubmitPendingAsync(Token);
+
+        double Count(string result) => submissions.Total(("system", "verifactu"), ("result", result));
+        Count("accepted").ShouldBe(2);               // Correcto, and the one the Tax Agency already had
+        Count("accepted_with_errors").ShouldBe(1);
+        Count("rejected").ShouldBe(1);
+        Count("failed").ShouldBe(1);                 // no answer: it stays pending
+        var call = duration.All().ShouldHaveSingleItem();
+        call.Tag("system").ShouldBe("verifactu");
+        call.Tag("outcome").ShouldBe("success");
+    }
+
+    [Test]
+    public async Task ATransportFailure_IsCountedAsFailed_AndTheCallAsAnError()
+    {
+        Queue(3);
+        _client.Answer = _ => throw new AeatException("The Tax Agency could not be reached");
+        using var submissions = new MetricCapture("ninvoices.einvoice.submissions");
+        using var duration = new MetricCapture("ninvoices.einvoice.submit.duration");
+
+        await Submitter().SubmitPendingAsync(Token);
+
+        submissions.Total(("system", "verifactu"), ("result", "failed")).ShouldBe(3);
+        submissions.Total(("system", "verifactu"), ("result", "accepted")).ShouldBe(0);
+        duration.All().ShouldHaveSingleItem().Tag("outcome").ShouldBe("error");
+    }
+
+    [Test]
+    public async Task ABatchRefusedAsAWhole_IsCountedAsFailed_NotRejected()
+    {
+        Queue(2);
+        _client.Answer = _ => new AeatResponse(null, 60, "Incorrecto", []);
+        using var submissions = new MetricCapture("ninvoices.einvoice.submissions");
+
+        await Submitter().SubmitPendingAsync(Token);
+
+        // Both records wait for the pause and are sent again: nothing was rejected
+        submissions.Total(("system", "verifactu"), ("result", "failed")).ShouldBe(2);
+        submissions.Total(("system", "verifactu"), ("result", "rejected")).ShouldBe(0);
+    }
+
+    [Test]
+    public async Task NothingToSend_RecordsNothing()
+    {
+        using var submissions = new MetricCapture("ninvoices.einvoice.submissions");
+        using var duration = new MetricCapture("ninvoices.einvoice.submit.duration");
+
+        await Submitter().SubmitPendingAsync(Token);
+
+        submissions.All().ShouldBeEmpty();
+        duration.All().ShouldBeEmpty();
     }
 
     // --- When sending fails -------------------------------------------------------------------------

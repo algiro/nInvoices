@@ -50,6 +50,104 @@ public static class AppMetrics
             HistogramBucketBoundaries = [0.05, 0.1, 0.25, 0.5, 1, 2, 4, 8, 15, 30, 60]
         });
 
+    /// <summary>
+    /// Invoices issued (finalized), counted once the save went through. Tag: <c>type</c> (the invoice type:
+    /// Monthly, OneTime...).
+    /// </summary>
+    public static readonly Counter<long> InvoicesFinalized = Meter.CreateCounter<long>(
+        "ninvoices.invoices.finalized",
+        unit: "{invoice}",
+        description: "Invoices finalized.");
+
+    /// <summary>
+    /// What came of handing an e-invoice record to a tax authority or a portal. Tags: <c>system</c>
+    /// (<see cref="Systems"/>) and <c>result</c> (<see cref="SubmissionResult"/>).
+    /// </summary>
+    public static readonly Counter<long> EInvoiceSubmissions = Meter.CreateCounter<long>(
+        "ninvoices.einvoice.submissions",
+        unit: "{submission}",
+        description: "E-invoice submissions to a tax authority or portal, by result.");
+
+    /// <summary>
+    /// How long the remote system takes to answer a submission (the call only, not our own work). Tags:
+    /// <c>system</c> and <c>outcome</c> (<c>success</c> or <c>error</c>).
+    /// </summary>
+    public static readonly Histogram<double> EInvoiceSubmitDuration = Meter.CreateHistogram(
+        "ninvoices.einvoice.submit.duration",
+        unit: "s",
+        description: "Duration of the call that submits e-invoices to a tax authority or portal.",
+        tags: null,
+        advice: new InstrumentAdvice<double>
+        {
+            HistogramBucketBoundaries = [0.1, 0.25, 0.5, 1, 2, 5, 10, 20, 30, 60]
+        });
+
+    /// <summary>
+    /// Gmail drafts of invoice emails. Tag: <c>outcome</c> (<see cref="DraftOutcome"/>). A reconnect that is
+    /// needed is worth seeing: the user's Gmail link broke.
+    /// </summary>
+    public static readonly Counter<long> EmailDrafts = Meter.CreateCounter<long>(
+        "ninvoices.email.drafts",
+        unit: "{draft}",
+        description: "Gmail drafts created for invoices, by outcome.");
+
+    /// <summary>The values of the <c>system</c> tag.</summary>
+    public static class Systems
+    {
+        /// <summary>The Spanish Tax Agency (AEAT), through Verifactu.</summary>
+        public const string Verifactu = "verifactu";
+
+        /// <summary>FACe, the Spanish portal for invoices to public administrations.</summary>
+        public const string Face = "face";
+    }
+
+    /// <summary>The values of the <c>result</c> tag of <see cref="EInvoiceSubmissions"/>.</summary>
+    public static class SubmissionResult
+    {
+        /// <summary>The authority registered it.</summary>
+        public const string Accepted = "accepted";
+
+        /// <summary>Registered, with errors the user may want to correct (Verifactu).</summary>
+        public const string AcceptedWithErrors = "accepted_with_errors";
+
+        /// <summary>The authority refused it.</summary>
+        public const string Rejected = "rejected";
+
+        /// <summary>
+        /// It was not registered and is tried again: the authority could not be reached, refused the whole batch,
+        /// or gave no answer for the record.
+        /// </summary>
+        public const string Failed = "failed";
+    }
+
+    /// <summary>The values of the <c>outcome</c> tag of <see cref="EmailDrafts"/>.</summary>
+    public static class DraftOutcome
+    {
+        public const string Created = "created";
+
+        /// <summary>The Gmail authorization is gone or unreadable: the user must connect Gmail again.</summary>
+        public const string ReconnectRequired = "reconnect_required";
+    }
+
+    /// <summary>Counts <paramref name="count"/> submissions with the same result (nothing is recorded for 0).</summary>
+    public static void RecordSubmissions(string system, string result, long count)
+    {
+        if (count <= 0)
+            return;
+
+        EInvoiceSubmissions.Add(
+            count,
+            new KeyValuePair<string, object?>("system", system),
+            new KeyValuePair<string, object?>("result", result));
+    }
+
+    /// <summary>Records the time a remote system took to answer.</summary>
+    public static void RecordSubmitDuration(string system, double seconds, bool succeeded) =>
+        EInvoiceSubmitDuration.Record(
+            seconds,
+            new KeyValuePair<string, object?>("system", system),
+            new KeyValuePair<string, object?>("outcome", succeeded ? Outcome.Success : Outcome.Error));
+
     /// <summary>The values of the <c>outcome</c> tag.</summary>
     public static class Outcome
     {

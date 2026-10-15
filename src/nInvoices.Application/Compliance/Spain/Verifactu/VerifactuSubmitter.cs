@@ -1,3 +1,4 @@
+using nInvoices.Application.Telemetry;
 using System.Xml.Linq;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Entities;
@@ -108,12 +109,17 @@ public sealed class VerifactuSubmitter : IVerifactuSubmitter
             settings.Values.GetValueOrDefault(SpainComplianceModule.SealCertificateKey) == "true");
 
         AeatResponse response;
+        var called = _time.GetTimestamp();
         try
         {
             response = await _client.SendAsync(target, certificate, xml, cancellationToken);
+            AppMetrics.RecordSubmitDuration(AppMetrics.Systems.Verifactu, _time.GetElapsedTime(called).TotalSeconds, succeeded: true);
         }
         catch (AeatException ex)
         {
+            AppMetrics.RecordSubmitDuration(AppMetrics.Systems.Verifactu, _time.GetElapsedTime(called).TotalSeconds, succeeded: false);
+            AppMetrics.RecordSubmissions(AppMetrics.Systems.Verifactu, AppMetrics.SubmissionResult.Failed, batch.Count);
+
             foreach (var submission in batch)
                 submission.Failed(ex.Message, now, Backoff(submission.Attempts + 1));
 
@@ -146,13 +152,15 @@ public sealed class VerifactuSubmitter : IVerifactuSubmitter
         List<VerifactuSubmission> batch, List<VerifactuSubmission> pending, Dictionary<long, VerifactuRecord> records,
         AeatResponse response, DateTime now, CancellationToken cancellationToken)
     {
-        int accepted = 0, withErrors = 0, rejected = 0;
+        int accepted = 0, withErrors = 0, rejected = 0, unanswered = 0;
         var wait = TimeSpan.FromSeconds(response.WaitSeconds > 0 ? response.WaitSeconds : DefaultWaitSeconds);
 
         // No line at all: the whole submission was refused (say, the header)
         if (response.Lines.Count == 0)
         {
             var reason = $"The Tax Agency did not accept the submission ({response.EnvelopeStatus})";
+            // Nothing was registered and the records wait for the pause: not a rejection of any of them
+            AppMetrics.RecordSubmissions(AppMetrics.Systems.Verifactu, AppMetrics.SubmissionResult.Failed, batch.Count);
             foreach (var submission in batch)
                 submission.Failed(reason, now, wait);
 
@@ -170,6 +178,7 @@ public sealed class VerifactuSubmitter : IVerifactuSubmitter
             if (line is null)
             {
                 submission.Failed("The Tax Agency gave no answer for this record", now, wait);
+                unanswered++;
                 continue;
             }
 
@@ -203,6 +212,12 @@ public sealed class VerifactuSubmitter : IVerifactuSubmitter
         HoldBack(pending, now + wait);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Once saved: what the Tax Agency answered for each record
+        AppMetrics.RecordSubmissions(AppMetrics.Systems.Verifactu, AppMetrics.SubmissionResult.Accepted, accepted);
+        AppMetrics.RecordSubmissions(AppMetrics.Systems.Verifactu, AppMetrics.SubmissionResult.AcceptedWithErrors, withErrors);
+        AppMetrics.RecordSubmissions(AppMetrics.Systems.Verifactu, AppMetrics.SubmissionResult.Rejected, rejected);
+        AppMetrics.RecordSubmissions(AppMetrics.Systems.Verifactu, AppMetrics.SubmissionResult.Failed, unanswered);
         return new SubmissionRun(batch.Count, accepted, withErrors, rejected, null);
     }
 

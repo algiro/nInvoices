@@ -4,6 +4,7 @@ using Moq;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.InvoiceEmails.Commands;
 using nInvoices.Application.Services.Email;
+using nInvoices.Application.Telemetry;
 using nInvoices.Application.Tests.TestDoubles;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
@@ -103,6 +104,29 @@ public sealed class CreateInvoiceEmailDraftCommandHandlerTests
     }
 
     [Test]
+    public async Task Handle_CreatedDraft_IsCounted()
+    {
+        _gmail.Setup(g => g.CreateDraftAsync("refresh", It.IsAny<OutgoingEmail>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GmailDraft("draft-1", "msg-1"));
+        using var drafts = new MetricCapture("ninvoices.email.drafts");
+
+        await Send();
+
+        drafts.Total(("outcome", "created")).ShouldBe(1);
+        drafts.Total(("outcome", "reconnect_required")).ShouldBe(0);
+    }
+
+    [Test]
+    public async Task Handle_ARefusedEmail_IsNotCounted()
+    {
+        using var drafts = new MetricCapture("ninvoices.email.drafts");
+
+        await Should.ThrowAsync<InvoiceEmailException>(() => Send(Email(to: "not-an-address")));
+
+        drafts.All().ShouldBeEmpty();
+    }
+
+    [Test]
     public async Task Handle_DoesNotChangeTheInvoiceStatus()
     {
         await Send();
@@ -152,6 +176,19 @@ public sealed class CreateInvoiceEmailDraftCommandHandlerTests
         ex.Code.ShouldBe(InvoiceEmailException.GmailReconnectRequired);
         _connections.Items.ShouldBeEmpty();
         _emails.Items.ShouldBeEmpty();
+    }
+
+    [Test]
+    public async Task Handle_TokenRevoked_CountsAReconnectNeeded_NotADraft()
+    {
+        _gmail.Setup(g => g.CreateDraftAsync("refresh", It.IsAny<OutgoingEmail>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new GmailAuthorizationException("invalid_grant"));
+        using var drafts = new MetricCapture("ninvoices.email.drafts");
+
+        await Should.ThrowAsync<InvoiceEmailException>(() => Send());
+
+        drafts.Total(("outcome", "reconnect_required")).ShouldBe(1);
+        drafts.Total(("outcome", "created")).ShouldBe(0);
     }
 
     [Test]

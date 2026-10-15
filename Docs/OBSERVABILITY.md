@@ -38,6 +38,10 @@ unit suffix.
 |---|---|---|---|
 | `ninvoices.request.duration` | `ninvoices_request_duration_seconds_{bucket,count,sum}` | `request`, `outcome` | How long each use case takes (open an invoice, create one, download a PDF...) and how it ended |
 | `ninvoices.pdf.render.duration` | `ninvoices_pdf_render_duration_seconds_{bucket,count,sum}` | `engine`, `document`, `outcome`, `browser` | How long drawing a PDF takes |
+| `ninvoices.invoices.finalized` | `ninvoices_invoices_finalized_total` (counter) | `type` | How many invoices are issued, by type (Monthly, OneTime...); counted once the save went through |
+| `ninvoices.einvoice.submissions` | `ninvoices_einvoice_submissions_total` (counter) | `system`, `result` | What the Tax Agency (`verifactu`) and FACe (`face`) answered: `accepted`, `accepted_with_errors`, `rejected`, `failed` |
+| `ninvoices.einvoice.submit.duration` | `ninvoices_einvoice_submit_duration_seconds_{bucket,count,sum}` | `system`, `outcome` | How long the authority takes to answer (the call only) |
+| `ninvoices.email.drafts` | `ninvoices_email_drafts_total` (counter) | `outcome` | Gmail drafts: `created`, or `reconnect_required` when a user's Gmail link broke |
 
 - **`request`** is the Mediator request's name, so every use case is measured without code of its own
   (`MetricsBehavior`, the outermost behaviour of the pipeline, validation included). "Opening an invoice" is
@@ -48,7 +52,13 @@ unit suffix.
 - **PDF `engine`**: `chrome` renders the HTML templates (invoice, timesheet, email attachments; `document` is
   `html`), `questpdf` the built-in layouts (`document` is `invoice` or `calendar`). For Chrome, `browser=cold`
   marks the render that had to start the headless browser; read warm and cold apart.
-- **Buckets** are set with the instruments (requests 5 ms to 30 s, PDFs 50 ms to 60 s).
+- **Submission `result`**: `accepted` (the authority registered it, including a record it already had),
+  `accepted_with_errors` (registered with remarks to correct), `rejected` (refused: needs attention), `failed`
+  (not registered and tried again: unreachable, a refusal of the whole batch, or no answer for the record).
+  For FACe, `accepted` means the portal took the invoice; where it goes next (registered, accounted, paid) is
+  its status, which the user refreshes, and is not counted again. Nothing is counted when the send is refused
+  before reaching the authority (no certificate, Spain not turned on...).
+- **Buckets** are set with the instruments (requests 5 ms to 30 s, PDFs 50 ms to 60 s, submissions 100 ms to 60 s).
 
 Example queries (p95 over the range):
 

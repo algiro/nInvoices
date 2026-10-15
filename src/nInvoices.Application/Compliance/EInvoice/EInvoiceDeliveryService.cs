@@ -4,6 +4,7 @@ using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
 using nInvoices.Application.Exceptions;
+using nInvoices.Application.Telemetry;
 
 namespace nInvoices.Application.Compliance.EInvoice;
 
@@ -133,15 +134,21 @@ public sealed class EInvoiceDeliveryService : IEInvoiceDeliveryService
         if (certificate is null)
             return Fail(issues[0].Message);
 
+        // The channel's id names the system in the metrics (face): a new channel is a new value, with no code here
+        var system = channel.ChannelId.ToLowerInvariant();
         ChannelDelivery delivery;
+        var called = _time.GetTimestamp();
         try
         {
             delivery = await channel.SendAsync(
                 new EInvoiceShipment(invoice.Number.ToString(), EInvoiceMapper.FileName(invoice.Number.ToString(), file), file.Content, active.Settings.ToIssuerProfile()),
                 certificate, cancellationToken);
+            AppMetrics.RecordSubmitDuration(system, _time.GetElapsedTime(called).TotalSeconds, succeeded: true);
         }
         catch (ChannelException ex)
         {
+            AppMetrics.RecordSubmitDuration(system, _time.GetElapsedTime(called).TotalSeconds, succeeded: false);
+            AppMetrics.RecordSubmissions(system, AppMetrics.SubmissionResult.Failed, 1);
             return Fail(ex.Message); // nothing is stored: it can be tried again
         }
 
@@ -151,6 +158,9 @@ public sealed class EInvoiceDeliveryService : IEInvoiceDeliveryService
         await _submissions.AddAsync(submission, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        // The portal took it. Where it goes from there (registered, accounted, paid, rejected...) is the
+        // submission's status, which the user refreshes; it is not counted again
+        AppMetrics.RecordSubmissions(system, AppMetrics.SubmissionResult.Accepted, 1);
         return new DeliveryResult(true, null, submission);
     }
 
