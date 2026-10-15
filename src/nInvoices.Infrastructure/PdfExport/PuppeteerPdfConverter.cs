@@ -12,12 +12,28 @@ public sealed class PuppeteerPdfConverter : IHtmlToPdfConverter, IAsyncDisposabl
 {
     private IBrowser? _browser;
     private readonly SemaphoreSlim _browserLock = new(1, 1);
+    private readonly TimeProvider _timeProvider;
     private bool _isDisposed;
 
-    public async Task<byte[]> ConvertAsync(string html, CancellationToken cancellationToken = default)
+    public PuppeteerPdfConverter(TimeProvider? timeProvider = null)
+    {
+        _timeProvider = timeProvider ?? TimeProvider.System;
+    }
+
+    /// <remarks>
+    /// Timed as a whole, the wait for the browser included: it is what the user waits for. The first render
+    /// after a start also launches Chrome, so it is tagged <c>cold</c> and kept apart from the warm ones.
+    /// </remarks>
+    public Task<byte[]> ConvertAsync(string html, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(html);
 
+        var browser = _browser is null ? "cold" : "warm";
+        return PdfMetrics.RecordAsync(_timeProvider, PdfMetrics.Chrome, "html", browser, () => RenderAsync(html, cancellationToken));
+    }
+
+    private async Task<byte[]> RenderAsync(string html, CancellationToken cancellationToken)
+    {
         var browser = await GetBrowserAsync(cancellationToken);
         await using var page = await browser.NewPageAsync();
 

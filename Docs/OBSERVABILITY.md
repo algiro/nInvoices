@@ -27,6 +27,49 @@ Every signal carries the same resource: `service.name` (`ninvoices-api`), `servi
 account being connected or removed. User ids (the Keycloak `sub`) appear in some. If you don't want logs
 in a third party at all, set `OTEL_LOGS_EXPORTER=none`: traces and metrics are still sent.
 
+## Application metrics
+
+Besides what the instrumentation gives for free (`http_server_request_duration_seconds` per route, .NET
+runtime metrics), the application records its own measurements, from the meter `nInvoices`
+(`Application/Telemetry/AppMetrics.cs`). In Grafana's Prometheus they are named with underscores and a
+unit suffix.
+
+| Metric | Prometheus name | Tags | Answers |
+|---|---|---|---|
+| `ninvoices.request.duration` | `ninvoices_request_duration_seconds_{bucket,count,sum}` | `request`, `outcome` | How long each use case takes (open an invoice, create one, download a PDF...) and how it ended |
+| `ninvoices.pdf.render.duration` | `ninvoices_pdf_render_duration_seconds_{bucket,count,sum}` | `engine`, `document`, `outcome`, `browser` | How long drawing a PDF takes |
+
+- **`request`** is the Mediator request's name, so every use case is measured without code of its own
+  (`MetricsBehavior`, the outermost behaviour of the pipeline, validation included). "Opening an invoice" is
+  `GetInvoiceByIdQuery`; "creating an invoice" `GenerateInvoiceCommand`; "invoice PDF" `GetInvoicePdfQuery`.
+- **`outcome`**: `success`; `invalid` (refused by a validator); `not_found`; `rejected` (a business rule or an
+  entity); `canceled`; `error` (anything else). A query that answers "nothing found" by returning null, such as
+  opening an invoice that doesn't exist, is a `success`: the HTTP 404 is in the ASP.NET metrics.
+- **PDF `engine`**: `chrome` renders the HTML templates (invoice, timesheet, email attachments; `document` is
+  `html`), `questpdf` the built-in layouts (`document` is `invoice` or `calendar`). For Chrome, `browser=cold`
+  marks the render that had to start the headless browser; read warm and cold apart.
+- **Buckets** are set with the instruments (requests 5 ms to 30 s, PDFs 50 ms to 60 s).
+
+Example queries (p95 over the range):
+
+```promql
+histogram_quantile(0.95, sum by (le) (rate(ninvoices_request_duration_seconds_bucket{request="GetInvoiceByIdQuery"}[$__rate_interval])))
+histogram_quantile(0.95, sum by (le, engine, browser) (rate(ninvoices_pdf_render_duration_seconds_bucket[$__rate_interval])))
+```
+
+A ready dashboard is in [`grafana/ninvoices-dashboard.json`](grafana/ninvoices-dashboard.json): in Grafana,
+*Dashboards → New → Import*, upload it and pick your Prometheus data source. With one user's traffic a line
+has gaps; widen the time range or use `increase()` over an hour.
+
+### Adding a measurement
+
+1. Create the instrument in `AppMetrics` (a `Histogram<double>` with `unit: "s"` and bucket `advice`, or a
+   `Counter<long>`), named `ninvoices.<area>.<what>`.
+2. Record it where the work happens. A use case needs nothing: `MetricsBehavior` already times it.
+3. **Tags are small fixed sets.** Never a customer, an invoice number, an email or a user id: each distinct
+   combination is a time series in a backend that is not ours (and the free tier has a series limit).
+4. Test it with a `MeterListener` (see `MetricsBehaviorTests`).
+
 ## Grafana Cloud
 
 1. In Grafana Cloud, open **Connections → Add new connection → OpenTelemetry (OTLP)** (or *Details* of
