@@ -81,6 +81,8 @@ const difference = computed(() =>
 
 <style scoped>
 .tax-form {
+  /* The row lays itself out by its own width: next to the sidebar it is much narrower than the window */
+  container-type: inline-size;
   padding: 0.9rem 1rem;
   border-top: 1px solid var(--color-border);
 }
@@ -181,7 +183,7 @@ const difference = computed(() =>
   text-align: center;
 }
 
-@media (max-width: 52rem) {
+@container (max-width: 52rem) {
   .summary {
     grid-template-columns: 1fr auto;
   }

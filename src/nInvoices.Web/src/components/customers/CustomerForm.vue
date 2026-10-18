@@ -77,7 +77,7 @@
             <select id="customer-holiday-country" v-model="holidayCountryValue" class="control">
               <option value="">{{ t('customers.form.addressCountry') }}</option>
               <option v-for="country in holidayCountries" :key="country.countryCode" :value="country.countryCode">
-                {{ country.countryName }} ({{ country.countryCode }})
+                {{ regionName(country.countryCode, country.countryName) }} ({{ country.countryCode }})
               </option>
             </select>
           </BaseField>
@@ -127,7 +127,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import { useToast, apiErrorData, apiStatus } from '@/composables/useToast'
 import { setPageTitle } from '@/composables/usePageTitle'
-import { localeLabel } from '@/utils/format'
+import { localeLabel, regionName } from '@/utils/format'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()

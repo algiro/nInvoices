@@ -62,6 +62,19 @@ export function expenseCategoryLabel(category: ExpenseCategory | string): string
   return name in ExpenseCategory ? t(`expenseCategory.${name as ExpenseCategory}`) : name
 }
 
+/**
+ * A country's name in the app's language: "DE" -> "Germania" in Italian. The API names countries in English;
+ * its name is the fallback where the browser doesn't know the code.
+ */
+export function regionName(code: string | null | undefined, fallback?: string | null): string {
+  if (!code) return fallback ?? ''
+  try {
+    return new Intl.DisplayNames(currentLanguage(), { type: 'region' }).of(code.toUpperCase()) ?? fallback ?? code
+  } catch {
+    return fallback ?? code
+  }
+}
+
 /** "it-IT" -> "Italian (Italy)" in the app's language; an empty locale reads "Not set". */
 export function localeLabel(locale: string | null | undefined): string {
   if (!locale) return t('common.notSet')

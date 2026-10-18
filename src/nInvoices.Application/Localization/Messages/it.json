@@ -589,7 +589,7 @@
     "common": {
       "taxOfTheYear": "Imposta dell'anno",
       "taxableIncome": "Reddito imponibile",
-      "notANumber": "\"{text}\" non è un numero, quindi {what} resta fuori dal calcolo. Correggilo nelle Impostazioni.",
+      "notANumber": "Il valore \"{text}\" inserito per {what} non è un numero e viene ignorato. Correggilo nelle Impostazioni.",
       "chargedOnInvoices": "{tax} addebitata in fattura",
       "deductibleOnExpenses": "{tax} detraibile sugli acquisti",
       "selfCharged": "Autoliquidata sui servizi dall'estero (inversione contabile)",
@@ -724,7 +724,7 @@
         },
         "difficultExpenses": {
           "label": "Deduci le spese di difficile giustificazione (gastos de difícil justificación)",
-          "help": "Il 5% del reddito netto, al massimo 2.000 € l'anno. La maggior parte degli autónomos e dei gestores la applica."
+          "help": "Il 5% del reddito netto, al massimo 2.000 € l'anno. La maggior parte degli autónomos e dei gestores applica questa deduzione."
         },
         "deductWithholdings": {
           "label": "Sottrai nel Modelo 130 le ritenute dei clienti",

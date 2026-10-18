@@ -9,7 +9,7 @@
       <BaseField :label="t('address.country')" for="holiday-country">
         <select id="holiday-country" v-model="countryCode" class="control">
           <option v-for="country in countries" :key="country.countryCode" :value="country.countryCode">
-            {{ country.countryName }} ({{ country.countryCode }})
+            {{ regionName(country.countryCode, country.countryName) }} ({{ country.countryCode }})
           </option>
           <option value="__other">{{ t('holidays.anotherCountry') }}</option>
         </select>
@@ -157,6 +157,7 @@ import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { holidaysApi } from '@/api/holidays'
 import { HolidayRuleKind } from '@/types'
 import type { HolidayCalendarDto, HolidayCountryDto, HolidayRuleDto, SaveHolidayRuleDto, Weekday } from '@/types'
+import { regionName } from '@/utils/format'
 import { useToast, apiStatus } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import BasePanel from '@/components/ui/BasePanel.vue'
@@ -391,7 +392,7 @@ async function handleDelete(rule: HolidayRuleDto) {
 
 async function handleReset() {
   const confirmed = await confirm({
-    title: t('holidays.resetTitle', { country: calendar.value?.countryName ?? '' }),
+    title: t('holidays.resetTitle', { country: regionName(calendar.value?.countryCode, calendar.value?.countryName) }),
     message: t('holidays.resetMessage'),
     confirmLabel: t('holidays.reset'),
     tone: 'danger'

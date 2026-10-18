@@ -9,7 +9,7 @@ import type { GenerateInvoiceDto, PublicHolidayDto, RateDto, WorkDayDto } from '
 import { useWorkMonth, localDateString, dayHours, billedHours, FULL_DAY_HOURS } from '@/composables/useWorkMonth'
 import { holidaysApi } from '@/api/holidays'
 import { useToast } from '@/composables/useToast'
-import { formatMoney } from '@/utils/format'
+import { formatMoney, regionName } from '@/utils/format'
 import { currentLanguage, t } from '@/i18n'
 import { dayAmount, isDayRate } from '@/utils/rates'
 
@@ -254,7 +254,7 @@ export function useInvoiceDraft() {
       try {
         const response = await holidaysApi.getForCustomer(form.customerId, selectedYear.value, selectedMonth.value)
         result = response.holidays
-        countryName = response.countryName
+        countryName = regionName(response.countryCode, response.countryName)
       } catch (error) {
         if (request === holidayRequest) toast.failure(t('invoiceWizard.holidaysFailed'), error)
       }
