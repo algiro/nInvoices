@@ -66,7 +66,7 @@ public static class XRechnungXmlBuilder
                 new XElement(Cac + "TaxSubtotal",
                     Money("TaxableAmount", lines, currency),
                     Money("TaxAmount", vat.Amount, currency),
-                    TaxCategory("TaxCategory", vat, withReason: true))),
+                    TaxCategory("TaxCategory", vat, isBreakdown: true))),
             new XElement(Cac + "LegalMonetaryTotal",
                 Money("LineExtensionAmount", lines, currency),
                 Money("TaxExclusiveAmount", lines, currency),
@@ -78,7 +78,7 @@ public static class XRechnungXmlBuilder
                 Money("LineExtensionAmount", line.Amount, currency),
                 new XElement(Cac + "Item",
                     new XElement(Cbc + "Name", Cut(line.Description, 1000)),
-                    TaxCategory("ClassifiedTaxCategory", vat, withReason: false)),
+                    TaxCategory("ClassifiedTaxCategory", vat, isBreakdown: false)),
                 new XElement(Cac + "Price",
                     new XElement(Cbc + "PriceAmount", new XAttribute("currencyID", currency), Precise(line.UnitPrice))))));
 
@@ -105,6 +105,11 @@ public static class XRechnungXmlBuilder
         return new XElement(Cac + "AccountingSupplierParty",
             new XElement(Cac + "Party",
                 new XElement(Cbc + "EndpointID", new XAttribute("schemeID", "EM"), email),
+                // BR-CO-26: the seller needs an identifier (BT-29), a registration (BT-30) or the VAT ID (BT-31);
+                // without the VAT ID, the Steuernummer is the identifier
+                vatId is null && taxNumber is not null
+                    ? new XElement(Cac + "PartyIdentification", new XElement(Cbc + "ID", taxNumber))
+                    : null,
                 PostalAddress(issuer.Address!),
                 vatId is null ? null : PartyTaxScheme(vatId, "VAT"),
                 // The Steuernummer (BT-32): the "FC" scheme, for fiscal code
@@ -155,12 +160,12 @@ public static class XRechnungXmlBuilder
         new XElement(Cbc + "CompanyID", id),
         new XElement(Cac + "TaxScheme", new XElement(Cbc + "ID", scheme)));
 
-    private static XElement TaxCategory(string name, GermanVat vat, bool withReason) => new(Cac + name,
+    // The breakdown (BG-23) always has a rate, 0 when not subject (BR-DE-14); a line not subject has none (BR-O-5)
+    private static XElement TaxCategory(string name, GermanVat vat, bool isBreakdown) => new(Cac + name,
         new XElement(Cbc + "ID", vat.Category),
-        // Not subject (O) has no rate at all (BR-O-5, BR-O-10)
-        vat.Category == GermanyComplianceModule.NotSubject ? null : new XElement(Cbc + "Percent", Amount(vat.Rate)),
-        withReason && vat.ExemptionCode is not null ? new XElement(Cbc + "TaxExemptionReasonCode", vat.ExemptionCode) : null,
-        withReason && vat.ExemptionReason is not null ? new XElement(Cbc + "TaxExemptionReason", vat.ExemptionReason) : null,
+        isBreakdown || vat.Category != GermanyComplianceModule.NotSubject ? new XElement(Cbc + "Percent", Amount(vat.Rate)) : null,
+        isBreakdown && vat.ExemptionCode is not null ? new XElement(Cbc + "TaxExemptionReasonCode", vat.ExemptionCode) : null,
+        isBreakdown && vat.ExemptionReason is not null ? new XElement(Cbc + "TaxExemptionReason", vat.ExemptionReason) : null,
         new XElement(Cac + "TaxScheme", new XElement(Cbc + "ID", "VAT")));
 
     private static XElement Money(string name, decimal value, string currency) =>

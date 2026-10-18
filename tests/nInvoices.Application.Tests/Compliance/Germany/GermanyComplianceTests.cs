@@ -188,14 +188,26 @@ public sealed class XRechnungFormatTests
     }
 
     [Test]
-    public void Build_NotSubject_HasNoVatIdentifiersAndNoRate()
+    public void Build_NotSubject_HasNoVatIdentifiers_NoLineRate_AndTheSteuernummerAsSellerId()
     {
         var zero = XRechnungTestData.Vat(0m, 1000m, new Dictionary<string, string> { [GermanyComplianceModule.CategoryKey] = GermanyComplianceModule.NotSubject });
 
         var root = Build(XRechnungTestData.Invoice(XRechnungTestData.Issuer(), XRechnungTestData.FrenchCustomer(), [zero]));
 
         root.Descendants(Cac + "PartyTaxScheme").Select(s => Value(s, Cac + "TaxScheme", Cbc + "ID")).ShouldBe(["FC"]);
-        root.Descendants(Cbc + "Percent").ShouldBeEmpty();
+        Value(root, Cac + "AccountingSupplierParty", Cac + "Party", Cac + "PartyIdentification", Cbc + "ID").ShouldBe("21/815/08150");
+        root.Element(Cac + "InvoiceLine")!.Descendants(Cbc + "Percent").ShouldBeEmpty();
+        // XRechnung wants the breakdown's rate even then (BR-DE-14)
+        Value(root, Cac + "TaxTotal", Cac + "TaxSubtotal", Cac + "TaxCategory", Cbc + "Percent").ShouldBe("0.00");
+    }
+
+    [Test]
+    public void Validate_NotSubjectWithTheUstIdNrAsTaxId_AsksForTheSteuernummer()
+    {
+        var zero = XRechnungTestData.Vat(0m, 1000m, new Dictionary<string, string> { [GermanyComplianceModule.CategoryKey] = GermanyComplianceModule.NotSubject });
+
+        _format.Validate(XRechnungTestData.Invoice(XRechnungTestData.Issuer(taxId: "DE123456788"), XRechnungTestData.FrenchCustomer(), [zero]))
+            .ShouldContain(i => i.Field == "taxId" && i.Message.Contains("Steuernummer"));
     }
 
     [Test]

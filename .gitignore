@@ -112,3 +112,6 @@ src/nInvoices.Api/appsettings.Development.json
 
 # Test results and coverage (CI uploads them as artifacts)
 TestResults/
+
+# The KoSIT validator jar, fetched by get-kosit-validator.ps1 (not committed)
+tests/nInvoices.Application.Tests/Compliance/Germany/Validator/
