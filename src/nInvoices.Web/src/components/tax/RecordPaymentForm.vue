@@ -1,7 +1,7 @@
 <template>
   <form class="payment-form" novalidate @submit.prevent="submit">
     <p class="intro">
-      What you paid for {{ form.name }}, {{ period.name }} {{ year }}. Later quarters start from it instead of the estimate
+      What you paid for {{ form.name }}, {{ period.name }} {{ year }}. Later periods start from it instead of the estimate
       ({{ formatMoney(form.estimated, currency) }}).
     </p>
 

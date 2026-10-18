@@ -22,9 +22,9 @@ describe('formStatus', () => {
     expect(formStatus(q1.forms[0], q1, '2026-12-31')).toEqual({ label: 'Paid', tone: 'success' })
   })
 
-  it('is in progress while the quarter runs, due until the deadline, then overdue', () => {
+  it('is in progress while the period runs, due until the deadline, then overdue', () => {
     const igic = q1.forms[1]
-    expect(formStatus(igic, q1, '2026-03-31').label).toBe('Quarter in progress')
+    expect(formStatus(igic, q1, '2026-03-31').label).toBe('Period in progress')
     expect(formStatus(igic, q1, '2026-04-20').label).toBe('Due')
     expect(formStatus(igic, q1, '2026-04-21').label).toBe('Overdue')
   })
@@ -37,7 +37,7 @@ describe('yearTotals', () => {
 })
 
 describe('nextDue', () => {
-  it('is the first unpaid form of a quarter that has ended', () => {
+  it('is the first unpaid form of a period that has ended', () => {
     expect(nextDue(prediction, '2026-04-10')?.form.code).toBe('420')
     expect(nextDue(prediction, '2026-03-15')).toBeNull()
   })

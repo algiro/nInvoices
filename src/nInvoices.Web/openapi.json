@@ -8238,6 +8238,10 @@
             "items": {
               "$ref": "#/components/schemas/ComplianceFieldOptionDto"
             }
+          },
+          "zeroRateOnly": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -8627,6 +8631,10 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "addsToTaxableBase": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -11462,6 +11470,10 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "addsToTaxableBase": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -11520,6 +11532,10 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "addsToTaxableBase": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -12205,6 +12221,10 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "addsToTaxableBase": {
+            "type": "boolean",
+            "default": false
           }
         }
       },

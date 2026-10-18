@@ -13,12 +13,14 @@ public enum ComplianceFieldType
 /// <param name="Required">Whether it must be filled in when the regime is enabled.</param>
 /// <param name="Help">Optional explanation shown with the field.</param>
 /// <param name="Options">For <see cref="ComplianceFieldType.Choice"/>: the allowed values.</param>
+/// <param name="ZeroRateOnly">For a tax field: only asked of a tax at 0% (why no tax is charged).</param>
 public sealed record ComplianceField(
     string Key,
     string Label,
     ComplianceFieldType Type = ComplianceFieldType.Text,
     bool Required = false,
     string? Help = null,
-    IReadOnlyList<ComplianceFieldOption>? Options = null);
+    IReadOnlyList<ComplianceFieldOption>? Options = null,
+    bool ZeroRateOnly = false);
 
 public sealed record ComplianceFieldOption(string Value, string Label);

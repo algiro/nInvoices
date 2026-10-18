@@ -6137,6 +6137,8 @@ export interface components {
             required: boolean;
             help: null | string;
             options: null | components["schemas"]["ComplianceFieldOptionDto"][];
+            /** @default false */
+            zeroRateOnly: boolean;
         };
         ComplianceFieldOptionDto: {
             value: string;
@@ -6239,6 +6241,8 @@ export interface components {
             complianceValues?: null | {
                 [key: string]: string;
             };
+            /** @default false */
+            addsToTaxableBase: boolean;
         };
         CustomerDto: {
             /** Format: int64 */
@@ -6966,6 +6970,8 @@ export interface components {
             complianceValues?: null | {
                 [key: string]: string;
             };
+            /** @default false */
+            addsToTaxableBase: boolean;
         };
         TaxExportDto: {
             taxId: string;
@@ -6983,6 +6989,8 @@ export interface components {
             complianceValues?: null | {
                 [key: string]: string;
             };
+            /** @default false */
+            addsToTaxableBase: boolean;
         };
         TaxFormDto: {
             code: string;
@@ -7163,6 +7171,8 @@ export interface components {
             complianceValues?: null | {
                 [key: string]: string;
             };
+            /** @default false */
+            addsToTaxableBase: boolean;
         };
         UpdateTaxProfileDto: {
             countryCode: string;

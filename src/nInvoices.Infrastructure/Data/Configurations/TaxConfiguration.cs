@@ -40,6 +40,10 @@ public sealed class TaxConfiguration : IEntityTypeConfiguration<Tax>
             .IsRequired()
             .HasDefaultValue(true);
 
+        builder.Property(t => t.AddsToTaxableBase)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         // The data country regimes ask for, as one JSON object keyed "<COUNTRY>.<field>"
         builder.Property(t => t.ComplianceValues)
             .HasJsonMapConversion()

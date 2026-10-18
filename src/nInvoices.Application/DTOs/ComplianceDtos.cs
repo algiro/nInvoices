@@ -20,7 +20,8 @@ public sealed record ComplianceFieldDto(
     string Type,
     bool Required,
     string? Help,
-    IReadOnlyList<ComplianceFieldOptionDto>? Options);
+    IReadOnlyList<ComplianceFieldOptionDto>? Options,
+    bool ZeroRateOnly = false);
 
 public sealed record ComplianceFieldOptionDto(string Value, string Label);
 

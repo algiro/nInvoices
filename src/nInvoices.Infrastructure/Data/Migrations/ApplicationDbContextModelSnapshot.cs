@@ -16,7 +16,7 @@ namespace nInvoices.Infrastructure.Data.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.13");
 
             modelBuilder.Entity("nInvoices.Core.Entities.AccessRequest", b =>
                 {
@@ -1163,6 +1163,11 @@ namespace nInvoices.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("AddsToTaxableBase")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("ApplicationType")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -1311,7 +1316,92 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.ToTable("TaxProfiles", (string)null);
                 });
 
-            modelBuilder.Entity("nInvoices.Core.Entities.VerifactuRecord", b =>
+            modelBuilder.Entity("nInvoices.Core.Entities.WorkDay", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DayType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal?>("HoursWorked")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("TEXT")
+                        .HasAnnotation("nInvoices:EncryptionPurpose", "WorkDay.Notes");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("RateId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("CustomerId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("WorkDays", (string)null);
+                });
+
+            modelBuilder.Entity("nInvoices.Core.Entities.WorkDayProject", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Hours")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("ProjectId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("WorkDayId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("WorkDayId", "ProjectId")
+                        .IsUnique();
+
+                    b.ToTable("WorkDayProjects", (string)null);
+                });
+
+            modelBuilder.Entity("nInvoices.Countries.Spain.Verifactu.VerifactuRecord", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -1401,7 +1491,7 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.ToTable("VerifactuRecords", (string)null);
                 });
 
-            modelBuilder.Entity("nInvoices.Core.Entities.VerifactuSubmission", b =>
+            modelBuilder.Entity("nInvoices.Countries.Spain.Verifactu.VerifactuSubmission", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -1463,91 +1553,6 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.HasIndex("Status", "NextAttemptAt");
 
                     b.ToTable("VerifactuSubmissions", (string)null);
-                });
-
-            modelBuilder.Entity("nInvoices.Core.Entities.WorkDay", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("CustomerId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("DayType")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<decimal?>("HoursWorked")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("TEXT")
-                        .HasAnnotation("nInvoices:EncryptionPurpose", "WorkDay.Notes");
-
-                    b.Property<string>("OwnerId")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long?>("RateId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OwnerId");
-
-                    b.HasIndex("CustomerId", "Date")
-                        .IsUnique();
-
-                    b.ToTable("WorkDays", (string)null);
-                });
-
-            modelBuilder.Entity("nInvoices.Core.Entities.WorkDayProject", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("Hours")
-                        .HasPrecision(6, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("OwnerId")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("ProjectId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("WorkDayId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OwnerId");
-
-                    b.HasIndex("ProjectId");
-
-                    b.HasIndex("WorkDayId", "ProjectId")
-                        .IsUnique();
-
-                    b.ToTable("WorkDayProjects", (string)null);
                 });
 
             modelBuilder.Entity("nInvoices.Infrastructure.Encryption.UserKey", b =>
@@ -2112,28 +2117,6 @@ namespace nInvoices.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("nInvoices.Core.Entities.VerifactuRecord", b =>
-                {
-                    b.HasOne("nInvoices.Core.Entities.Invoice", "Invoice")
-                        .WithMany()
-                        .HasForeignKey("InvoiceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Invoice");
-                });
-
-            modelBuilder.Entity("nInvoices.Core.Entities.VerifactuSubmission", b =>
-                {
-                    b.HasOne("nInvoices.Core.Entities.VerifactuRecord", "Record")
-                        .WithMany()
-                        .HasForeignKey("RecordId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Record");
-                });
-
             modelBuilder.Entity("nInvoices.Core.Entities.WorkDay", b =>
                 {
                     b.HasOne("nInvoices.Core.Entities.Customer", "Customer")
@@ -2162,6 +2145,28 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.Navigation("Project");
 
                     b.Navigation("WorkDay");
+                });
+
+            modelBuilder.Entity("nInvoices.Countries.Spain.Verifactu.VerifactuRecord", b =>
+                {
+                    b.HasOne("nInvoices.Core.Entities.Invoice", "Invoice")
+                        .WithMany()
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Invoice");
+                });
+
+            modelBuilder.Entity("nInvoices.Countries.Spain.Verifactu.VerifactuSubmission", b =>
+                {
+                    b.HasOne("nInvoices.Countries.Spain.Verifactu.VerifactuRecord", "Record")
+                        .WithMany()
+                        .HasForeignKey("RecordId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Record");
                 });
 
             modelBuilder.Entity("nInvoices.Core.Entities.Customer", b =>

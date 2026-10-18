@@ -36,6 +36,7 @@ public sealed class UpdateTaxCommandHandler : IRequestHandler<UpdateTaxCommand, 
         tax.AppliedToTaxId = dto.AppliedToTaxId;
         tax.Order = dto.Order;
         tax.IsActive = dto.IsActive;
+        tax.AddsToTaxableBase = dto.AddsToTaxableBase;
 
         await _compliance.ApplyAsync(tax, dto.ComplianceValues, cancellationToken);
 

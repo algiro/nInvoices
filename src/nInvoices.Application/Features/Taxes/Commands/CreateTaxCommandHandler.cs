@@ -52,7 +52,8 @@ public sealed class CreateTaxCommandHandler : IRequestHandler<CreateTaxCommand, 
             dto.ApplicationType,
             dto.Order)
         {
-            AppliedToTaxId = dto.AppliedToTaxId
+            AppliedToTaxId = dto.AppliedToTaxId,
+            AddsToTaxableBase = dto.AddsToTaxableBase
         };
 
         await _compliance.ApplyAsync(tax, dto.ComplianceValues, cancellationToken);

@@ -39,7 +39,8 @@ public static class ComplianceMapper
         f.Type.ToString(),
         f.Required,
         f.Help,
-        f.Options?.Select(o => new ComplianceFieldOptionDto(o.Value, o.Label)).ToList());
+        f.Options?.Select(o => new ComplianceFieldOptionDto(o.Value, o.Label)).ToList(),
+        f.ZeroRateOnly);
 
     /// <returns>The address, or null when every part is blank.</returns>
     /// <exception cref="ArgumentException">Only some parts are filled in.</exception>
