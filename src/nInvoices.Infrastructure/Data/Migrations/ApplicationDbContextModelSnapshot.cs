@@ -1316,6 +1316,36 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.ToTable("TaxProfiles", (string)null);
                 });
 
+            modelBuilder.Entity("nInvoices.Core.Entities.UserCountry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId")
+                        .IsUnique();
+
+                    b.ToTable("UserCountries", (string)null);
+                });
+
             modelBuilder.Entity("nInvoices.Core.Entities.WorkDay", b =>
                 {
                     b.Property<long>("Id")

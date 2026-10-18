@@ -88,6 +88,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<EInvoiceSubmission> EInvoiceSubmissions => Set<EInvoiceSubmission>();
     public DbSet<AccessRequest> AccessRequests => Set<AccessRequest>();
     public DbSet<TaxProfile> TaxProfiles => Set<TaxProfile>();
+    public DbSet<UserCountry> UserCountries => Set<UserCountry>();
     public DbSet<BusinessExpense> BusinessExpenses => Set<BusinessExpense>();
     public DbSet<RecurringExpense> RecurringExpenses => Set<RecurringExpense>();
     public DbSet<TaxPayment> TaxPayments => Set<TaxPayment>();

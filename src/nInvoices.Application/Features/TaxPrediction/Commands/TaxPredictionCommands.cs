@@ -1,4 +1,5 @@
 using Mediator;
+using nInvoices.Application.Countries;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Compliance.Commands;
 using nInvoices.Application.Mappings;
@@ -25,12 +26,21 @@ public sealed class UpdateTaxProfileCommandHandler : IRequestHandler<UpdateTaxPr
     private readonly ITaxPredictionRegistry _registry;
     private readonly IRepository<TaxProfile> _profiles;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserCountry? _country;
+    private readonly IRepository<UserCountry>? _countries;
 
-    public UpdateTaxProfileCommandHandler(ITaxPredictionRegistry registry, IRepository<TaxProfile> profiles, IUnitOfWork unitOfWork)
+    public UpdateTaxProfileCommandHandler(
+        ITaxPredictionRegistry registry,
+        IRepository<TaxProfile> profiles,
+        IUnitOfWork unitOfWork,
+        IUserCountry? country = null,
+        IRepository<UserCountry>? countries = null)
     {
         _registry = registry;
         _profiles = profiles;
         _unitOfWork = unitOfWork;
+        _country = country;
+        _countries = countries;
     }
 
     /// <exception cref="DomainException">The country or regime is not offered.</exception>
@@ -42,6 +52,16 @@ public sealed class UpdateTaxProfileCommandHandler : IRequestHandler<UpdateTaxPr
             ?? throw new DomainException($"Tax estimates for {dto.CountryCode} are not available");
         var regime = module.Regimes.FirstOrDefault(r => r.Id == dto.RegimeId)
             ?? throw new DomainException($"\"{dto.RegimeId}\" is not a tax regime of {module.DisplayName}");
+
+        // Taxes are paid where the user works from; without a country yet, this one becomes it
+        if (_country is not null && _countries is not null)
+        {
+            var current = await _country.GetAsync(cancellationToken);
+            if (current is not null && !string.Equals(current, module.CountryCode, StringComparison.OrdinalIgnoreCase))
+                throw new DomainException($"You work from {current}: choose {module.DisplayName} as your country in Settings › Country & taxes first.");
+            if (!await _country.IsChosenAsync(cancellationToken))
+                await _countries.AddAsync(new UserCountry(module.CountryCode), cancellationToken);
+        }
 
         // Keep only the values the regime asks for
         var fields = regime.Fields.ToDictionary(f => f.Key);

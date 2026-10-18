@@ -160,6 +160,7 @@ public sealed class ImportExportRoundTripTests
         db.ComplianceSettings.Add(compliance);
         db.AddRange(
             new TaxProfile("ES", "eds", new Dictionary<string, string> { ["territory"] = "canarias", ["difficultExpenses"] = "true" }),
+            new UserCountry("ES"),
             new BusinessExpense(new DateOnly(2026, 2, 10), "Gestor", new Money(60m, "EUR"), ExpenseCategory.ProfessionalServices, 4.20m,
                 supplier: "Asesoría Pérez"),
             new BusinessExpense(new DateOnly(2026, 3, 1), "Cloud hosting", new Money(20m, "USD"), ExpenseCategory.Software,
@@ -272,6 +273,7 @@ public sealed class ImportExportRoundTripTests
         var db = Context(_target);
         var profile = await db.TaxProfiles.SingleAsync(Token);
         (profile.CountryCode, profile.RegimeId).ShouldBe(("ES", "eds"));
+        (await db.UserCountries.SingleAsync(Token)).CountryCode.ShouldBe("ES");
         profile.Values.ShouldBe(new Dictionary<string, string> { ["territory"] = "canarias", ["difficultExpenses"] = "true" });
 
         (await db.BusinessExpenses.ToListAsync(Token)).OrderBy(e => e.Date)

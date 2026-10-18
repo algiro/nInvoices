@@ -918,6 +918,102 @@
         }
       }
     },
+    "/api/country": {
+      "get": {
+        "tags": [
+          "Country"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserCountryDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserCountryDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserCountryDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Country"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserCountryDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserCountryDto"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserCountryDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserCountryDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserCountryDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserCountryDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Customers": {
       "get": {
         "tags": [
@@ -10834,6 +10930,29 @@
           }
         }
       },
+      "OfferedCountryDto": {
+        "required": [
+          "countryCode",
+          "name",
+          "hasInvoicingRules",
+          "hasTaxPrediction"
+        ],
+        "type": "object",
+        "properties": {
+          "countryCode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "hasInvoicingRules": {
+            "type": "boolean"
+          },
+          "hasTaxPrediction": {
+            "type": "boolean"
+          }
+        }
+      },
       "PreviewEmailTemplateDto": {
         "required": [
           "subject",
@@ -11303,6 +11422,17 @@
           },
           "category": {
             "$ref": "#/components/schemas/ExpenseCategory"
+          }
+        }
+      },
+      "SetUserCountryDto": {
+        "required": [
+          "countryCode"
+        ],
+        "type": "object",
+        "properties": {
+          "countryCode": {
+            "type": "string"
           }
         }
       },
@@ -11862,6 +11992,12 @@
             "items": {
               "$ref": "#/components/schemas/TaxPaymentExportDto"
             }
+          },
+          "countryCode": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -12268,6 +12404,31 @@
           }
         }
       },
+      "UserCountryDto": {
+        "required": [
+          "countryCode",
+          "isChosen",
+          "offered"
+        ],
+        "type": "object",
+        "properties": {
+          "countryCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isChosen": {
+            "type": "boolean"
+          },
+          "offered": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfferedCountryDto"
+            }
+          }
+        }
+      },
       "UserSettingsExportDto": {
         "required": [
           "invoiceNumbering",
@@ -12539,6 +12700,9 @@
     },
     {
       "name": "Compliance"
+    },
+    {
+      "name": "Country"
     },
     {
       "name": "Customers"

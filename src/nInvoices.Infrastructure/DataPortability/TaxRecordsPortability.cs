@@ -25,6 +25,7 @@ internal sealed class TaxRecordsPortability
     public async Task<TaxRecordsExportDto> ExportAsync(CancellationToken cancellationToken)
     {
         var profile = await _context.TaxProfiles.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+        var country = await _context.UserCountries.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
         var expenses = await _context.BusinessExpenses.AsNoTracking().OrderBy(e => e.Date).ThenBy(e => e.Id).ToListAsync(cancellationToken);
         var recurring = await _context.RecurringExpenses.AsNoTracking().OrderBy(e => e.FromMonth).ThenBy(e => e.Id).ToListAsync(cancellationToken);
         var payments = await _context.TaxPayments.AsNoTracking()
@@ -38,11 +39,12 @@ internal sealed class TaxRecordsPortability
             recurring.Select(e => new RecurringExpenseExportDto(
                 e.Description, e.Amount.Amount, e.Amount.Currency, e.Category, e.FromMonth, e.ToMonth)).ToList(),
             payments.Select(p => new TaxPaymentExportDto(
-                p.Year, p.Period, p.Form, p.Amount.Amount, p.Amount.Currency, p.PaidOn)).ToList());
+                p.Year, p.Period, p.Form, p.Amount.Amount, p.Amount.Currency, p.PaidOn)).ToList(),
+            country?.CountryCode);
     }
 
     /// <summary>
-    /// Imports what the user doesn't have yet: the profile if they have none, an expense unless one with
+    /// Imports what the user doesn't have yet: the country and the profile if they have none, an expense unless one with
     /// the same date, description and amount exists, a recurring expense unless one with the same
     /// description, start and amount exists, a payment unless the form and period already have one.
     /// </summary>
@@ -68,6 +70,18 @@ internal sealed class TaxRecordsPortability
                 errors.Add($"{what}: {ex.Message}");
                 _logger.LogError(ex, "Failed to import {What}", what);
             }
+        }
+
+        if (data.CountryCode is { } countryCode)
+        {
+            await Try("Country", async () =>
+            {
+                if (await _context.UserCountries.AnyAsync(cancellationToken))
+                    return false;
+                await _context.UserCountries.AddAsync(new UserCountry(countryCode), cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
+                return true;
+            });
         }
 
         if (data.Profile is { } profile)
