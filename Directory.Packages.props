@@ -15,6 +15,10 @@
     <PackageVersion Include="Google.Apis.Gmail.v1" Version="1.77.0.4295" />
     <PackageVersion Include="Mediator.Abstractions" Version="3.0.2" />
     <PackageVersion Include="Mediator.SourceGenerator" Version="3.0.2" />
+    <!-- Aspire (through StreamJsonRpc, still in 13.6.1) brings MessagePack in at 2.5.302, which has a known vulnerability
+         (GHSA-qhrr-8q5h-9q3h): nInvoices.AppHost references it directly at the patched release. Remove that reference
+         once Aspire asks for 2.5.303 or later. -->
+    <PackageVersion Include="MessagePack" Version="2.5.307" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
     <PackageVersion Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="5.6.0" />

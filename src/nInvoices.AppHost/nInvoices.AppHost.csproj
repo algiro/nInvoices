@@ -12,6 +12,8 @@
     <PackageReference Include="Aspire.Hosting.PostgreSQL" />
     <PackageReference Include="Aspire.Hosting.Keycloak" />
     <PackageReference Include="Aspire.Hosting.JavaScript" />
+    <!-- Patched release of a vulnerable transitive dependency of Aspire; see Directory.Packages.props -->
+    <PackageReference Include="MessagePack" />
   </ItemGroup>
 
   <ItemGroup>
