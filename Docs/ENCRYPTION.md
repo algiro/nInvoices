@@ -95,7 +95,7 @@ the API won't start.
 ## Backups for users
 
 Users don't hold any key: while their account exists, the server can always read their data. A
-user's backup is *Settings → Backup and transfer → Download a backup*: one file with
+user's backup is *Settings → Data & account → Backup and transfer → Download a backup*: one file with
 
 - customers, with their rates, taxes, templates, projects, worked days (and how they were split
   across projects) and expenses not on an invoice yet;
@@ -130,7 +130,7 @@ node tools/decrypt-backup.mjs ninvoices-backup-2026-10-05.encrypted.json > backu
 
 ## Deleting an account (crypto-shredding)
 
-Users delete their own account in *Settings → Delete your account*. They tick that they have a
+Users delete their own account in *Settings → Data & account → Delete your account*. They tick that they have a
 backup, type `DELETE`, and confirm. Then:
 
 1. **nInvoices deletes all their data** (`DELETE /api/account`, `AccountDataDeletion`): every row of

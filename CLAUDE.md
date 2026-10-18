@@ -195,7 +195,12 @@ tests; check a UI change in the browser against the fast loop above. Past incide
   its plugin in `PostgreSqlDesignTimeFactory.Countries`, the project in `nInvoices.slnx`, `docker/Dockerfile.api`, the Api and the
   PostgreSQL migrations project (`SupportedCountriesTests` fails when a list is missed); a migration per
   provider if it brings entities; on the web side, a `src/countries/<code>/` folder if it has screens of its own.
-  Its tests sit in the existing test projects under a folder named after the country.
+  Its tests sit in the existing test projects under a folder named after the country. An e-invoice format is
+  tested against its official schema, copied under `tests/nInvoices.Application.Tests/Compliance/<Country>/Schemas/`
+  (Facturae, FatturaPA; for XRechnung, KoSIT's validator configuration). XRechnung is also run through KoSIT's
+  validator (EN 16931 + XRechnung Schematron, `XRechnungValidationTests`): it needs Java and the jar that
+  `Compliance/Germany/get-kosit-validator.ps1` fetches (gitignored), is skipped without them, and CI requires
+  it (`REQUIRE_KOSIT_VALIDATOR`). Germany's guide is `Docs/GERMANY-EINVOICING.md`.
 - **nInvoices.AppHost** — dev-only Aspire orchestrator (`aspire run`): PostgreSQL + Keycloak +
   API + Vite. Not referenced by any deployable project, never published. Production deploy is
   unchanged (Docker Hub + compose + SSH); Aspire is not used for deployment. Full walkthrough
