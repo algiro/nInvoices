@@ -1,8 +1,8 @@
 <template>
   <BasePanel
     v-if="countries.length || loadError"
-    title="Invoicing rules by country"
-    description="Some countries require extra data or formats on invoices. Turn a country on only if its rules apply to you; with everything off, invoices work exactly as before."
+    title="Invoicing rules"
+    :description="`What ${countries[0]?.name ?? 'your country'} requires on invoices: your fiscal data, e-invoices and the like. Turn the rules on only if they apply to you; while they are off, invoices work exactly as before.`"
   >
     <EmptyState v-if="loadError" icon="alert" title="The country rules could not be loaded" :description="loadError" compact>
       <BaseButton @click="load">Try again</BaseButton>
@@ -11,7 +11,6 @@
     <div v-else class="countries">
       <section v-for="country in countries" :key="country.countryCode" class="country">
         <header class="country-header">
-          <h3>{{ country.name }}</h3>
           <StatusPill :tone="country.settings.isEnabled ? 'success' : 'neutral'">
             {{ country.settings.isEnabled ? 'On' : 'Off' }}
           </StatusPill>
@@ -144,6 +143,11 @@ interface CountryForm {
   values: Record<string, string>
 }
 
+const props = defineProps<{
+  /** The country the user works from: only its rules are shown */
+  countryCode: string
+}>()
+
 const toast = useToast()
 
 const countries = ref<ComplianceCountryDto[]>([])
@@ -238,7 +242,7 @@ async function load() {
   try {
     const result = await complianceApi.getCountries()
     countries.value = []
-    result.forEach(apply)
+    result.filter(c => c.countryCode === props.countryCode).forEach(apply)
   } catch (err) {
     loadError.value = errorMessage(err, 'Failed to load the country rules')
   }

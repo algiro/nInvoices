@@ -187,7 +187,9 @@ tests; check a UI change in the browser against the fast loop above. Past incide
   `compliance.<key>` in templates), `IEInvoiceFormat`, `IEInvoiceChannel`, `IAppendOnlyEntity` (rows the
   DbContext refuses to change or delete), and `UseCountryModels` (the DbContext model includes every listed
   country's entities, offered or not, so migrations are the same everywhere). Whether an installation offers a
-  country is `Compliance:Countries:<CODE>:Enabled`; whether it applies to a user is their settings.
+  country is `Compliance:Countries:<CODE>:Enabled`. A user works from one country (`UserCountry`, `IUserCountry`:
+  chosen in Settings › Country & taxes, or inferred from the rules they turned on or their tax profile): the
+  compliance gate applies only its rules, and turning on another country's rules or tax profile is refused.
   **Adding a country**: a `src/nInvoices.Countries.<Name>` project (references Application + Infrastructure),
   its plugin in `Api/Infrastructure/SupportedCountries.All`, its assembly in the Mediator `Assemblies` there,
   its plugin in `PostgreSqlDesignTimeFactory.Countries`, the project in `nInvoices.slnx`, `docker/Dockerfile.api`, the Api and the
@@ -213,7 +215,8 @@ tests; check a UI change in the browser against the fast loop above. Past incide
   `allow-scripts`. **Countries**: the shared screens are built from what the API describes (fields, regimes,
   formats); what a country shows beyond that lives in `src/countries/<code>/` (its components, API module and
   types) and is listed in `src/countries/index.ts` (`CountryUi`: `complianceSettings`, `invoicePanels`).
-  Nothing outside that folder names a country.
+  Nothing outside that folder names a country. Settings is split into sub-pages (`views/settings/*Settings.vue`,
+  routes `/settings/<section>`): General, Invoices, Country & taxes, Email, Data & account.
 
 ### Persistence conventions
 

@@ -27,7 +27,7 @@
         <AppIcon name="alert" />
         <span>
           {{ notConnectedMessage }}
-          <router-link to="/settings" @click="emit('close')">Open Settings</router-link>
+          <router-link to="/settings/email" @click="emit('close')">Open Settings</router-link>
         </span>
       </div>
 

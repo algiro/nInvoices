@@ -19,9 +19,9 @@
       v-else-if="prediction && !prediction.isSetUp"
       icon="landmark"
       title="Tell us where you pay taxes"
-      :description="prediction.warnings[0] ?? 'Choose your country and tax regime in Settings.'"
+      :description="prediction.warnings[0] ?? 'Choose your country and tax regime in Settings › Country & taxes.'"
     >
-      <BaseButton variant="primary" icon="settings" to="/settings">Open Settings</BaseButton>
+      <BaseButton variant="primary" icon="settings" to="/settings/country">Open Settings</BaseButton>
     </EmptyState>
 
     <template v-else-if="prediction">
@@ -76,7 +76,7 @@
 
       <p class="disclaimer">
         An estimate from what is recorded in nInvoices, to plan ahead: it is not tax advice, and your gestor's figures may differ
-        (expenses not recorded here, other income). The rules applied are in Settings → Taxes.
+        (expenses not recorded here, other income). The rules applied are in Settings → Country & taxes.
       </p>
     </template>
 

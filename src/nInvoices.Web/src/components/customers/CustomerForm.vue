@@ -186,8 +186,8 @@ const holidayCountries = ref<HolidayCountryDto[]>([])
 const addressHolidayCountry = ref<string | null>(null)
 
 const holidayHelp = computed(() => {
-  if (form.holidayCountry) return 'Holidays are edited in Settings → Public holidays.'
-  if (addressHolidayCountry.value) return `The address country resolves to ${addressHolidayCountry.value}. Holidays are edited in Settings → Public holidays.`
+  if (form.holidayCountry) return 'Holidays are edited in Settings → General → Public holidays.'
+  if (addressHolidayCountry.value) return `The address country resolves to ${addressHolidayCountry.value}. Holidays are edited in Settings → General → Public holidays.`
   return 'The country name of the address is matched to a country code; pick one if it isn’t recognized.'
 })
 

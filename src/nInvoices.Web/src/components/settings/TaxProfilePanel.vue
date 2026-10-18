@@ -1,8 +1,8 @@
 <template>
   <BasePanel
-    v-if="countries.length || loadError"
-    title="Taxes"
-    description="Where you pay taxes and how, for the tax prediction. It only estimates: nothing is filed or paid for you."
+    v-if="country || loadError"
+    title="Tax regime"
+    :description="`How you pay taxes in ${country?.name ?? 'your country'}, for the tax prediction. It only estimates: nothing is filed or paid for you.`"
   >
     <EmptyState v-if="loadError" icon="alert" title="The tax settings could not be loaded" :description="loadError" compact>
       <BaseButton @click="load">Try again</BaseButton>
@@ -10,13 +10,6 @@
 
     <form v-else novalidate class="tax-form" @submit.prevent="save">
       <div class="grid">
-        <BaseField label="Country where you pay taxes" for="tax-country" required :error="errors.countryCode">
-          <select id="tax-country" v-model="countryCode" class="control" @change="onCountryChange">
-            <option value="">Select…</option>
-            <option v-for="offered in countries" :key="offered.countryCode" :value="offered.countryCode">{{ offered.name }}</option>
-          </select>
-        </BaseField>
-
         <BaseField v-if="country" label="Tax regime" for="tax-regime" required :help="regime?.help ?? undefined" :error="errors.regimeId">
           <select id="tax-regime" v-model="regimeId" class="control" @change="onRegimeChange">
             <option v-for="option in country.regimes" :key="option.id" :value="option.id">{{ option.name }}</option>
@@ -59,6 +52,11 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import ComplianceFieldInput from '@/components/settings/ComplianceFieldInput.vue'
 import { initialValues } from '@/utils/taxPrediction'
 
+const props = defineProps<{
+  /** The country the user works from: only its regimes are offered */
+  countryCode: string
+}>()
+
 const toast = useToast()
 
 const countries = ref<TaxCountryDto[]>([])
@@ -66,7 +64,7 @@ const profile = ref<TaxProfileDto | null>(null)
 const loadError = ref<string | null>(null)
 const saving = ref(false)
 
-const countryCode = ref('')
+const countryCode = computed(() => props.countryCode)
 const regimeId = ref('')
 const values = ref<Record<string, string>>({})
 // Field key (or countryCode / regimeId / general) -> message
@@ -80,7 +78,7 @@ function resetValues() {
   errors.value = {}
 }
 
-function onCountryChange() {
+function selectRegime() {
   const saved = profile.value?.countryCode === countryCode.value ? profile.value.regimeId : null
   regimeId.value = saved ?? country.value?.regimes[0]?.id ?? ''
   resetValues()
@@ -96,9 +94,7 @@ async function load() {
     const settings = await taxPredictionApi.getSettings()
     countries.value = settings.countries
     profile.value = settings.profile ?? null
-    // A single country is preselected: it is the only choice anyway
-    countryCode.value = profile.value?.countryCode ?? (settings.countries.length === 1 ? settings.countries[0].countryCode : '')
-    onCountryChange()
+    selectRegime()
   } catch (err) {
     loadError.value = errorMessage(err, 'Failed to load the tax settings')
   }
@@ -106,11 +102,6 @@ async function load() {
 
 async function save() {
   errors.value = {}
-  if (!countryCode.value) {
-    errors.value = { countryCode: 'Choose the country where you pay taxes' }
-    return
-  }
-
   saving.value = true
   try {
     profile.value = await taxPredictionApi.updateProfile({ countryCode: countryCode.value, regimeId: regimeId.value, values: values.value })
@@ -126,7 +117,7 @@ async function save() {
       // The messages sit under their fields, possibly out of sight: say so, and show the first one
       toast.warning('Tax settings not saved', { message: 'Check the fields marked in red.' })
       await nextTick()
-      document.getElementById('tax-country')?.closest('form')?.querySelector('[role="alert"]')
+      document.getElementById('tax-regime')?.closest('form')?.querySelector('[role="alert"]')
         ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     } else {
       toast.failure('Failed to save the tax settings', err)
