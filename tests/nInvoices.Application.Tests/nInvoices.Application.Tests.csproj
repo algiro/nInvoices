@@ -23,6 +23,14 @@
     <None Update="Compliance\Italy\Schemas\*.xsd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <!-- KoSIT's XRechnung 3.0.2 validator configuration: the UBL 2.1 schemas and the compiled EN 16931 and XRechnung
+         Schematron; and the KoSIT validator jar, when get-kosit-validator.ps1 fetched it (not committed) -->
+    <None Update="Compliance\Germany\Schemas\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Compliance\Germany\Validator\*.jar">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

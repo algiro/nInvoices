@@ -152,6 +152,10 @@ public sealed class XRechnungFormat : IEInvoiceFormat
             case GermanyComplianceModule.Export when sellerVatId is null:
                 issues.Add(new ComplianceIssue(null, "An export needs your USt-IdNr"));
                 break;
+            // The USt-IdNr can't appear (BR-O-2), so the Steuernummer has to identify the seller (BR-CO-26)
+            case GermanyComplianceModule.NotSubject when GermanyComplianceModule.IssuerTaxNumber(document.Issuer.TaxId) is null:
+                issues.Add(new ComplianceIssue("taxId", "Not subject to VAT: XRechnung then needs your Steuernummer as the Tax ID, since the USt-IdNr cannot appear"));
+                break;
         }
 
         if (vat.Vat is { } tax)

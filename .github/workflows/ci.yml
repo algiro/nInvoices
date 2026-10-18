@@ -30,11 +30,19 @@ jobs:
       - name: Restore
         run: dotnet restore nInvoices.slnx
 
+      # The runner has Java: the XRechnung files are checked with KoSIT's validator (the EN 16931 and XRechnung rules);
+      # before the build, which copies the jar next to the tests
+      - name: Fetch the KoSIT validator
+        shell: pwsh
+        run: tests/nInvoices.Application.Tests/Compliance/Germany/get-kosit-validator.ps1
+
       - name: Build (warnings are errors)
         run: dotnet build nInvoices.slnx --configuration Release --no-restore
 
       # The runner has Docker, so the PostgreSQL tests (Category=PostgreSql) run instead of skipping
       - name: Test
+        env:
+          REQUIRE_KOSIT_VALIDATOR: "1"
         run: >
           dotnet test nInvoices.slnx --configuration Release --no-build
           --collect:"XPlat Code Coverage" --results-directory TestResults
