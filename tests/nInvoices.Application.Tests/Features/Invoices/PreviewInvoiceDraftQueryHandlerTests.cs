@@ -19,7 +19,8 @@ public sealed class PreviewInvoiceDraftQueryHandlerTests
         var handler = new PreviewInvoiceDraftQueryHandler(
             generation.Object,
             Mock.Of<IMonthlyReportGenerationService>(),
-            new GenerateInvoiceDtoValidator(TestText.Instance));
+            new GenerateInvoiceDtoValidator(TestText.Instance),
+            TestText.Instance);
         var dto = new GenerateInvoiceDto
         {
             CustomerId = 1,

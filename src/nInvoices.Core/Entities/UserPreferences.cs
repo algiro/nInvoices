@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Core.Entities;
 
@@ -38,7 +39,7 @@ public sealed partial class UserPreferences : OwnedEntityBase
     {
         var tag = language?.Trim().Replace('_', '-') ?? string.Empty;
         if (!LanguageTag().IsMatch(tag))
-            throw new ArgumentException($"'{language}' is not a language tag such as 'en' or 'pt-BR'", nameof(language));
+            throw new ArgumentException($"'{language}' is not a language tag such as 'en' or 'pt-BR'", nameof(language)).WithText("errors.input.language", ("language", language));
 
         var parts = tag.Split('-');
         parts[0] = parts[0].ToLowerInvariant();

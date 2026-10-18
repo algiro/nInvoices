@@ -105,8 +105,14 @@ throw new DomainException(_text.Translate("errors.project.nameExists", ("name", 
   a full estimate in each language and fails when a text comes out as its key (keys built at run time, such as a
   month's, escape `AppTextTests`).
 
-Still English: messages thrown by `Core` entities and value objects (`Invoice` lifecycle refusals, `Money`'s
-currency mismatch, `ArgumentException`s), which can't take services and carry runtime details; what comes from outside
+- `Core` takes no services, so it can't translate: what it throws carries the key and values
+  (`throw new ArgumentException("Street cannot be empty", nameof(street)).WithText("errors.input.street")`), its own
+  message staying English for the logs, and the API translates when it answers (`IAppText.MessageOf(exception)`, used
+  by `ApiExceptionFilter` and the import's per-item errors). A value that is a `UserText` is translated too (the
+  lifecycle refusal names its action and reason that way); `InvoiceLifecycle.WhyNot` gives the reason's key
+  (`errors.lifecycle.*`) with its English.
+
+Still English: what comes from outside
 (Scriban's syntax errors, the answers of FACe and the Tax Agency) and what runs without a request (the Verifactu
 submitter's notes); Infrastructure's internal checks (tax handlers, PDF export guards that the request handlers already
 check); and the signing-certificate checks of the Spanish signers.

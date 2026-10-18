@@ -1,4 +1,5 @@
 using nInvoices.Core.ValueObjects;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Core.Entities;
 
@@ -31,9 +32,9 @@ public sealed class Expense : OwnedEntityBase
         ArgumentNullException.ThrowIfNull(amount);
 
         if (customerId <= 0)
-            throw new ArgumentException("Customer ID must be positive", nameof(customerId));
+            throw new ArgumentException("Customer ID must be positive", nameof(customerId)).WithText("errors.input.customerId");
         if (string.IsNullOrWhiteSpace(description))
-            throw new ArgumentException("Description cannot be empty", nameof(description));
+            throw new ArgumentException("Description cannot be empty", nameof(description)).WithText("errors.input.descriptionRequired");
 
         CustomerId = customerId;
         Date = date;
@@ -47,7 +48,7 @@ public sealed class Expense : OwnedEntityBase
         ArgumentNullException.ThrowIfNull(amount);
 
         if (string.IsNullOrWhiteSpace(description))
-            throw new ArgumentException("Description cannot be empty", nameof(description));
+            throw new ArgumentException("Description cannot be empty", nameof(description)).WithText("errors.input.descriptionRequired");
 
         Description = description;
         Amount = amount;
@@ -56,7 +57,7 @@ public sealed class Expense : OwnedEntityBase
     public void AssignToInvoice(long invoiceId)
     {
         if (invoiceId <= 0)
-            throw new ArgumentException("Invoice ID must be positive", nameof(invoiceId));
+            throw new ArgumentException("Invoice ID must be positive", nameof(invoiceId)).WithText("errors.input.invoiceId");
 
         InvoiceId = invoiceId;
     }

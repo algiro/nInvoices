@@ -16,10 +16,10 @@ public sealed record Money
         ArgumentNullException.ThrowIfNull(currency);
         
         if (string.IsNullOrWhiteSpace(currency))
-            throw new ArgumentException("Currency cannot be empty", nameof(currency));
+            throw new ArgumentException("Currency cannot be empty", nameof(currency)).WithText("errors.input.currency");
         
         if (currency.Length != 3)
-            throw new ArgumentException("Currency must be ISO 4217 code (3 letters)", nameof(currency));
+            throw new ArgumentException("Currency must be ISO 4217 code (3 letters)", nameof(currency)).WithText("errors.input.currencyCode");
 
         Amount = amount;
         Currency = currency.ToUpperInvariant();
@@ -31,7 +31,8 @@ public sealed record Money
     {
         if (left.Currency != right.Currency)
             throw new DomainException(
-                $"Cannot add different currencies: {left.Currency} and {right.Currency}");
+                $"Cannot add different currencies: {left.Currency} and {right.Currency}")
+                .WithText("errors.money.addCurrencies", ("left", left.Currency), ("right", right.Currency));
 
         return new Money(left.Amount + right.Amount, left.Currency);
     }
@@ -40,7 +41,8 @@ public sealed record Money
     {
         if (left.Currency != right.Currency)
             throw new DomainException(
-                $"Cannot subtract different currencies: {left.Currency} and {right.Currency}");
+                $"Cannot subtract different currencies: {left.Currency} and {right.Currency}")
+                .WithText("errors.money.subtractCurrencies", ("left", left.Currency), ("right", right.Currency));
 
         return new Money(left.Amount - right.Amount, left.Currency);
     }

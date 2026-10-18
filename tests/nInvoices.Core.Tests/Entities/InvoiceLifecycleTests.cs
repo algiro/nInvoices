@@ -34,7 +34,7 @@ public sealed class InvoiceLifecycleTests
         if (allowed)
             reason.ShouldBeNull();
         else
-            reason.ShouldNotBeNullOrWhiteSpace();
+            reason.ShouldNotBeNull().Text.ShouldNotBeNullOrWhiteSpace();
     }
 
     [TestCaseSource(nameof(EveryStatusAndAction))]
@@ -53,7 +53,7 @@ public sealed class InvoiceLifecycleTests
         else
         {
             var error = Should.Throw<InvalidOperationException>(act);
-            error.Message.ShouldContain(InvoiceLifecycle.WhyNot(status, action)!);
+            error.Message.ShouldContain(InvoiceLifecycle.WhyNot(status, action)!.Text);
             invoice.Status.ShouldBe(status);
         }
     }
@@ -73,7 +73,7 @@ public sealed class InvoiceLifecycleTests
     public void CancelAndDelete_PointToEachOther(InvoiceStatus status, InvoiceAction action, string hint)
     {
         // A draft was never issued, so it goes away; an issued invoice keeps its number on record
-        InvoiceLifecycle.WhyNot(status, action).ShouldNotBeNull().ShouldContain(hint);
+        InvoiceLifecycle.WhyNot(status, action).ShouldNotBeNull().Text.ShouldContain(hint);
     }
 
     [Test]

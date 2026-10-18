@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Features.ImportExport;
 using nInvoices.Infrastructure.Data;
 
@@ -16,6 +17,7 @@ namespace nInvoices.Infrastructure.DataPortability;
 public sealed class DataPortabilityService : IDataPortability
 {
     private readonly CustomerPortability _customers;
+    private readonly IAppText _text;
     private readonly SharedTemplatesPortability _sharedTemplates;
     private readonly InvoicePortability _invoices;
     private readonly SettingsPortability _settings;
@@ -27,13 +29,15 @@ public sealed class DataPortabilityService : IDataPortability
         ApplicationDbContext context,
         IComplianceRegistry compliance,
         TimeProvider timeProvider,
-        ILogger<DataPortabilityService> logger)
+        ILogger<DataPortabilityService> logger,
+        IAppText text)
     {
-        _customers = new CustomerPortability(context, timeProvider, logger);
+        _text = text;
+        _customers = new CustomerPortability(context, timeProvider, logger, text);
         _sharedTemplates = new SharedTemplatesPortability(context);
-        _invoices = new InvoicePortability(context, timeProvider, logger);
-        _settings = new SettingsPortability(context, compliance, timeProvider, logger);
-        _taxes = new TaxRecordsPortability(context, logger);
+        _invoices = new InvoicePortability(context, timeProvider, logger, text);
+        _settings = new SettingsPortability(context, compliance, timeProvider, logger, text);
+        _taxes = new TaxRecordsPortability(context, logger, text);
         _timeProvider = timeProvider;
         _logger = logger;
     }
@@ -70,7 +74,7 @@ public sealed class DataPortabilityService : IDataPortability
             }
             catch (Exception ex)
             {
-                errors.Add($"Shared templates: {ex.Message}");
+                errors.Add(_text.Translate("errors.import.sharedTemplates", ("error", _text.MessageOf(ex))));
                 _logger.LogError(ex, "Failed to import the shared templates");
             }
         }

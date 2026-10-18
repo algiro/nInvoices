@@ -1,5 +1,6 @@
 using nInvoices.Core.Enums;
 using nInvoices.Core.ValueObjects;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Core.Entities;
 
@@ -33,7 +34,7 @@ public sealed class Rate : OwnedEntityBase
         ArgumentNullException.ThrowIfNull(price);
 
         if (customerId <= 0)
-            throw new ArgumentException("Customer ID must be positive", nameof(customerId));
+            throw new ArgumentException("Customer ID must be positive", nameof(customerId)).WithText("errors.input.customerId");
 
         CustomerId = customerId;
         Type = type;
@@ -46,7 +47,7 @@ public sealed class Rate : OwnedEntityBase
     {
         var trimmed = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
         if (trimmed is { Length: > MaxNameLength })
-            throw new ArgumentException($"The rate name must not exceed {MaxNameLength} characters");
+            throw new ArgumentException($"The rate name must not exceed {MaxNameLength} characters").WithText("errors.input.rateNameLength", ("max", MaxNameLength));
 
         Name = trimmed;
     }

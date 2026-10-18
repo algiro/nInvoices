@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Entities;
 using nInvoices.Core.ValueObjects;
 using nInvoices.Infrastructure.Data;
@@ -14,11 +15,13 @@ namespace nInvoices.Infrastructure.DataPortability;
 internal sealed class CustomerPortability
 {
     private readonly ApplicationDbContext _context;
+    private readonly IAppText _text;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
 
-    public CustomerPortability(ApplicationDbContext context, TimeProvider timeProvider, ILogger logger)
+    public CustomerPortability(ApplicationDbContext context, TimeProvider timeProvider, ILogger logger, IAppText text)
     {
+        _text = text;
         _timeProvider = timeProvider;
         _context = context;
         _logger = logger;
@@ -222,7 +225,7 @@ internal sealed class CustomerPortability
             }
             catch (Exception ex)
             {
-                errors.Add($"Customer '{customerData.Name}' ({customerData.FiscalId}): {ex.Message}");
+                errors.Add(_text.Translate("errors.import.customer", ("name", customerData.Name), ("fiscalId", customerData.FiscalId), ("error", _text.MessageOf(ex))));
                 _logger.LogError(ex, "Failed to import customer {FiscalId}", customerData.FiscalId);
             }
         }

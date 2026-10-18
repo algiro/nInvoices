@@ -124,7 +124,7 @@ public sealed class LifecycleStepTests
         repository.Setup(r => r.GetByIdsAsync(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<CancellationToken>())).ReturnsAsync([invoice]);
         var finalizer = new InvoiceFinalizer(_numbering.Object, _drafts.Object, Mock.Of<IPublisher>(), [_step.Object]);
 
-        await new BulkChangeInvoiceStatusCommandHandler(repository.Object, _customers, finalizer, _unitOfWork.Object)
+        await new BulkChangeInvoiceStatusCommandHandler(repository.Object, _customers, finalizer, _unitOfWork.Object, TestText.Instance)
             .Handle(new BulkChangeInvoiceStatusCommand(BulkInvoiceStatusAction.Finalize, [1]), Token);
 
         _calls.ShouldBe(["step", "save"]);

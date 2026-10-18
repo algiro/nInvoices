@@ -1,8 +1,10 @@
 using FluentValidation;
 using Mediator;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services;
 using nInvoices.Core.Enums;
+using nInvoices.Core.Exceptions;
 using nInvoices.Core.ValueObjects;
 
 namespace nInvoices.Application.Features.Invoices.Queries;
@@ -12,12 +14,15 @@ public sealed class PreviewInvoiceDraftQueryHandler : IRequestHandler<PreviewInv
     private readonly IInvoiceGenerationService _invoiceGenerationService;
     private readonly IMonthlyReportGenerationService _monthlyReportGenerationService;
     private readonly IValidator<GenerateInvoiceDto> _validator;
+    private readonly IAppText _text;
 
     public PreviewInvoiceDraftQueryHandler(
         IInvoiceGenerationService invoiceGenerationService,
         IMonthlyReportGenerationService monthlyReportGenerationService,
-        IValidator<GenerateInvoiceDto> validator)
+        IValidator<GenerateInvoiceDto> validator,
+        IAppText text)
     {
+        _text = text;
         _invoiceGenerationService = invoiceGenerationService;
         _monthlyReportGenerationService = monthlyReportGenerationService;
         _validator = validator;
@@ -79,5 +84,7 @@ public sealed class PreviewInvoiceDraftQueryHandler : IRequestHandler<PreviewInv
     private static MoneyDto ToDto(Money money) => new(money.Amount, money.Currency);
 
     // The renderer wraps Scriban's runtime error (e.g. an unknown function) in its own exception
-    private static string Reason(InvalidOperationException ex) => ex.InnerException?.Message ?? ex.Message;
+    // The renderer wraps Scriban's error; a refusal from Core carries its text
+    private string Reason(InvalidOperationException ex) =>
+        ex.GetUserText() is not null ? _text.MessageOf(ex) : ex.InnerException?.Message ?? ex.Message;
 }

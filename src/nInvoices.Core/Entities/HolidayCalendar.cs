@@ -1,3 +1,4 @@
+using nInvoices.Core.Exceptions;
 namespace nInvoices.Core.Entities;
 
 /// <summary>
@@ -36,7 +37,7 @@ public sealed class HolidayCalendar : OwnedEntityBase
 
         var code = countryCode.Trim().ToUpperInvariant();
         if (code.Length != 2 || !code.All(char.IsAsciiLetterUpper))
-            throw new ArgumentException("Country code must be two letters (ISO 3166-1 alpha-2)", nameof(countryCode));
+            throw new ArgumentException("Country code must be two letters (ISO 3166-1 alpha-2)", nameof(countryCode)).WithText("errors.input.countryCode");
 
         return code;
     }

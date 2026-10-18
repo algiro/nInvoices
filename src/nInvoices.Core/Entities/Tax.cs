@@ -1,5 +1,6 @@
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Enums;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Core.Entities;
 
@@ -55,13 +56,13 @@ public sealed class Tax : OwnedEntityBase
         ArgumentNullException.ThrowIfNull(handlerId);
 
         if (customerId <= 0)
-            throw new ArgumentException("Customer ID must be positive", nameof(customerId));
+            throw new ArgumentException("Customer ID must be positive", nameof(customerId)).WithText("errors.input.customerId");
         if (string.IsNullOrWhiteSpace(taxId))
-            throw new ArgumentException("Tax ID cannot be empty", nameof(taxId));
+            throw new ArgumentException("Tax ID cannot be empty", nameof(taxId)).WithText("errors.input.taxId");
         if (string.IsNullOrWhiteSpace(description))
-            throw new ArgumentException("Description cannot be empty", nameof(description));
+            throw new ArgumentException("Description cannot be empty", nameof(description)).WithText("errors.input.descriptionRequired");
         if (string.IsNullOrWhiteSpace(handlerId))
-            throw new ArgumentException("Handler ID cannot be empty", nameof(handlerId));
+            throw new ArgumentException("Handler ID cannot be empty", nameof(handlerId)).WithText("errors.input.taxHandler");
 
         CustomerId = customerId;
         TaxId = taxId;
@@ -87,7 +88,7 @@ public sealed class Tax : OwnedEntityBase
         ArgumentNullException.ThrowIfNull(description);
 
         if (string.IsNullOrWhiteSpace(description))
-            throw new ArgumentException("Description cannot be empty", nameof(description));
+            throw new ArgumentException("Description cannot be empty", nameof(description)).WithText("errors.input.descriptionRequired");
 
         Description = description;
         Rate = rate;
@@ -96,7 +97,7 @@ public sealed class Tax : OwnedEntityBase
     public void SetCompoundTax(long appliedToTaxId)
     {
         if (appliedToTaxId <= 0)
-            throw new ArgumentException("Applied to tax ID must be positive", nameof(appliedToTaxId));
+            throw new ArgumentException("Applied to tax ID must be positive", nameof(appliedToTaxId)).WithText("errors.input.appliedToTax");
 
         ApplicationType = TaxApplicationType.OnTax;
         AppliedToTaxId = appliedToTaxId;

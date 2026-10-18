@@ -1,4 +1,5 @@
 using nInvoices.Core.Enums;
+using nInvoices.Core.Exceptions;
 
 using nInvoices.Core.Interfaces;
 
@@ -43,11 +44,11 @@ public sealed class InvoiceTemplate : OwnedEntityBase, IScopedTemplate
         ArgumentNullException.ThrowIfNull(format);
 
         if (customerId <= 0)
-            throw new ArgumentException("Customer ID must be positive", nameof(customerId));
+            throw new ArgumentException("Customer ID must be positive", nameof(customerId)).WithText("errors.input.customerId");
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Template name cannot be empty", nameof(name));
+            throw new ArgumentException("Template name cannot be empty", nameof(name)).WithText("errors.input.templateName");
         if (string.IsNullOrWhiteSpace(content))
-            throw new ArgumentException("Template content cannot be empty", nameof(content));
+            throw new ArgumentException("Template content cannot be empty", nameof(content)).WithText("errors.input.templateContent");
 
         CustomerId = customerId;
         InvoiceType = invoiceType;
@@ -62,9 +63,9 @@ public sealed class InvoiceTemplate : OwnedEntityBase, IScopedTemplate
         ArgumentNullException.ThrowIfNull(content);
 
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Template name cannot be empty", nameof(name));
+            throw new ArgumentException("Template name cannot be empty", nameof(name)).WithText("errors.input.templateName");
         if (string.IsNullOrWhiteSpace(content))
-            throw new ArgumentException("Template content cannot be empty", nameof(content));
+            throw new ArgumentException("Template content cannot be empty", nameof(content)).WithText("errors.input.templateContent");
 
         Name = name;
         Content = content;

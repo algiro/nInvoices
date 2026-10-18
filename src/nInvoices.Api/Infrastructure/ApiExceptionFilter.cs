@@ -51,7 +51,7 @@ public sealed class ApiExceptionFilter : IExceptionFilter
             ValidationException validation => ValidationProblem(context.HttpContext, factory, validation),
             NotFoundException => Problem(StatusCodes.Status404NotFound, exception.Message),
             InvoiceEmailException { IsGmailSetupProblem: true } => Problem(StatusCodes.Status409Conflict, exception.Message),
-            DomainException or ArgumentException and not ArgumentNullException => Problem(StatusCodes.Status400BadRequest, exception.Message),
+            DomainException or ArgumentException and not ArgumentNullException => Problem(StatusCodes.Status400BadRequest, _text.MessageOf(exception)),
             _ => null
         };
 

@@ -1,6 +1,8 @@
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Entities;
 using nInvoices.Core.ValueObjects;
 using nInvoices.Infrastructure.Data;
@@ -14,10 +16,12 @@ namespace nInvoices.Infrastructure.DataPortability;
 internal sealed class TaxRecordsPortability
 {
     private readonly ApplicationDbContext _context;
+    private readonly IAppText _text;
     private readonly ILogger _logger;
 
-    public TaxRecordsPortability(ApplicationDbContext context, ILogger logger)
+    public TaxRecordsPortability(ApplicationDbContext context, ILogger logger, IAppText text)
     {
+        _text = text;
         _context = context;
         _logger = logger;
     }
@@ -67,14 +71,14 @@ internal sealed class TaxRecordsPortability
             {
                 // Whatever this item staged is dropped, so the next save doesn't retry it
                 _context.ChangeTracker.Clear();
-                errors.Add($"{what}: {ex.Message}");
+                errors.Add($"{what}: {_text.MessageOf(ex)}");
                 _logger.LogError(ex, "Failed to import {What}", what);
             }
         }
 
         if (data.CountryCode is { } countryCode)
         {
-            await Try("Country", async () =>
+            await Try(_text.Translate("errors.import.country"), async () =>
             {
                 if (await _context.UserCountries.AnyAsync(cancellationToken))
                     return false;
@@ -86,7 +90,7 @@ internal sealed class TaxRecordsPortability
 
         if (data.Profile is { } profile)
         {
-            await Try("Tax profile", async () =>
+            await Try(_text.Translate("errors.import.taxProfile"), async () =>
             {
                 if (await _context.TaxProfiles.AnyAsync(cancellationToken))
                     return false;
@@ -102,7 +106,7 @@ internal sealed class TaxRecordsPortability
             .ToHashSet();
         foreach (var e in data.Expenses ?? [])
         {
-            await Try($"Expense '{e.Description}' of {e.Date:yyyy-MM-dd}", async () =>
+            await Try(_text.Translate("errors.import.expense", ("description", e.Description), ("date", e.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))), async () =>
             {
                 var amount = new Money(e.Amount, e.Currency);
                 if (!expenses.Add((e.Date, e.Description.Trim(), amount)))
@@ -119,7 +123,7 @@ internal sealed class TaxRecordsPortability
             .ToHashSet();
         foreach (var e in data.RecurringExpenses ?? [])
         {
-            await Try($"Recurring expense '{e.Description}'", async () =>
+            await Try(_text.Translate("errors.import.recurringExpense", ("description", e.Description)), async () =>
             {
                 var expense = new RecurringExpense(e.Description, new Money(e.Amount, e.Currency), e.Category, e.FromMonth, e.ToMonth);
                 if (!recurring.Add((expense.Description, expense.FromMonth, expense.Amount)))
@@ -135,7 +139,7 @@ internal sealed class TaxRecordsPortability
             .ToHashSet();
         foreach (var p in data.Payments ?? [])
         {
-            await Try($"Tax payment {p.Form} {p.Year}/{p.Period}", async () =>
+            await Try(_text.Translate("errors.import.taxPayment", ("form", p.Form), ("year", p.Year), ("period", p.Period)), async () =>
             {
                 var payment = new TaxPayment(p.Year, p.Period, p.Form, new Money(p.Amount, p.Currency), p.PaidOn);
                 if (!payments.Add((payment.Year, payment.Period, payment.Form)))

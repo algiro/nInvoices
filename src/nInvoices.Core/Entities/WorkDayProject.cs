@@ -1,3 +1,4 @@
+using nInvoices.Core.Exceptions;
 namespace nInvoices.Core.Entities;
 
 /// <summary>
@@ -21,9 +22,9 @@ public sealed class WorkDayProject : OwnedEntityBase
     public WorkDayProject(long projectId, decimal hours) : this()
     {
         if (projectId <= 0)
-            throw new ArgumentException("Project ID must be positive", nameof(projectId));
+            throw new ArgumentException("Project ID must be positive", nameof(projectId)).WithText("errors.input.projectId");
         if (hours <= 0)
-            throw new ArgumentException("Hours must be positive", nameof(hours));
+            throw new ArgumentException("Hours must be positive", nameof(hours)).WithText("errors.input.hours");
 
         ProjectId = projectId;
         Hours = hours;
@@ -37,7 +38,7 @@ public sealed class WorkDayProject : OwnedEntityBase
     {
         ArgumentNullException.ThrowIfNull(project);
         if (hours <= 0)
-            throw new ArgumentException("Hours must be positive", nameof(hours));
+            throw new ArgumentException("Hours must be positive", nameof(hours)).WithText("errors.input.hours");
 
         Project = project;
         ProjectId = project.Id;
@@ -47,7 +48,7 @@ public sealed class WorkDayProject : OwnedEntityBase
     public void UpdateHours(decimal hours)
     {
         if (hours <= 0)
-            throw new ArgumentException("Hours must be positive", nameof(hours));
+            throw new ArgumentException("Hours must be positive", nameof(hours)).WithText("errors.input.hours");
 
         Hours = hours;
     }

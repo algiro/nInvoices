@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Core.ValueObjects;
 
@@ -17,7 +18,7 @@ public sealed record InvoiceNumber
         ArgumentNullException.ThrowIfNull(value);
 
         if (string.IsNullOrWhiteSpace(value))
-            throw new ArgumentException("Invoice number cannot be empty", nameof(value));
+            throw new ArgumentException("Invoice number cannot be empty", nameof(value)).WithText("errors.input.invoiceNumber");
 
         Value = value;
     }

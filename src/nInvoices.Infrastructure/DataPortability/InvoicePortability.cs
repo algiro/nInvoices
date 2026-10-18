@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Entities;
 using nInvoices.Core.ValueObjects;
 using nInvoices.Infrastructure.Data;
@@ -11,11 +12,13 @@ namespace nInvoices.Infrastructure.DataPortability;
 internal sealed class InvoicePortability
 {
     private readonly ApplicationDbContext _context;
+    private readonly IAppText _text;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
 
-    public InvoicePortability(ApplicationDbContext context, TimeProvider timeProvider, ILogger logger)
+    public InvoicePortability(ApplicationDbContext context, TimeProvider timeProvider, ILogger logger, IAppText text)
     {
+        _text = text;
         _timeProvider = timeProvider;
         _context = context;
         _logger = logger;
@@ -100,7 +103,7 @@ internal sealed class InvoicePortability
             {
                 if (!customerCache.TryGetValue(invoiceData.CustomerFiscalId, out var customerId))
                 {
-                    errors.Add($"Invoice '{invoiceData.InvoiceNumber}': Customer with FiscalId '{invoiceData.CustomerFiscalId}' not found");
+                    errors.Add(_text.Translate("errors.import.invoiceCustomerMissing", ("number", invoiceData.InvoiceNumber), ("fiscalId", invoiceData.CustomerFiscalId)));
                     continue;
                 }
 
@@ -175,7 +178,7 @@ internal sealed class InvoicePortability
             }
             catch (Exception ex)
             {
-                errors.Add($"Invoice '{invoiceData.InvoiceNumber}': {ex.Message}");
+                errors.Add(_text.Translate("errors.import.invoice", ("number", invoiceData.InvoiceNumber), ("error", _text.MessageOf(ex))));
                 _logger.LogError(ex, "Failed to import invoice {InvoiceNumber}", invoiceData.InvoiceNumber);
             }
         }

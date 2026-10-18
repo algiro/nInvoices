@@ -1,5 +1,6 @@
 using nInvoices.Core.Compliance;
 using nInvoices.Core.ValueObjects;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Core.Entities;
 
@@ -50,7 +51,7 @@ public sealed class ComplianceSettings : OwnedEntityBase
     {
         var code = countryCode?.Trim().ToUpperInvariant();
         if (code is not { Length: 2 } || !code.All(char.IsAsciiLetter))
-            throw new ArgumentException("The country must be a two-letter ISO code", nameof(countryCode));
+            throw new ArgumentException("The country must be a two-letter ISO code", nameof(countryCode)).WithText("errors.input.countryCode");
         return code;
     }
 

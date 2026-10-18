@@ -1,5 +1,6 @@
 using nInvoices.Core.Enums;
 using nInvoices.Core.ValueObjects;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Core.Entities;
 
@@ -42,17 +43,17 @@ public sealed class RecurringExpense : OwnedEntityBase
         ArgumentNullException.ThrowIfNull(amount);
 
         if (string.IsNullOrWhiteSpace(description))
-            throw new ArgumentException("Description cannot be empty", nameof(description));
+            throw new ArgumentException("Description cannot be empty", nameof(description)).WithText("errors.input.descriptionRequired");
 
         if (amount.Amount < 0)
-            throw new ArgumentException("The amount cannot be negative", nameof(amount));
+            throw new ArgumentException("The amount cannot be negative", nameof(amount)).WithText("errors.input.amountNegative");
         if (!Enum.IsDefined(category))
-            throw new ArgumentException("Unknown expense category", nameof(category));
+            throw new ArgumentException("Unknown expense category", nameof(category)).WithText("errors.input.expenseCategory");
 
         var from = FirstOfMonth(fromMonth);
         var to = toMonth is { } t ? FirstOfMonth(t) : (DateOnly?)null;
         if (to < from)
-            throw new ArgumentException("It cannot end before it starts", nameof(toMonth));
+            throw new ArgumentException("It cannot end before it starts", nameof(toMonth)).WithText("errors.input.endBeforeStart");
 
         Description = description.Trim();
         Amount = amount;

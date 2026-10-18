@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Entities;
 using nInvoices.Core.ValueObjects;
 using nInvoices.Infrastructure.Data;
@@ -15,12 +16,14 @@ namespace nInvoices.Infrastructure.DataPortability;
 internal sealed class SettingsPortability
 {
     private readonly ApplicationDbContext _context;
+    private readonly IAppText _text;
     private readonly IComplianceRegistry _compliance;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
 
-    public SettingsPortability(ApplicationDbContext context, IComplianceRegistry compliance, TimeProvider timeProvider, ILogger logger)
+    public SettingsPortability(ApplicationDbContext context, IComplianceRegistry compliance, TimeProvider timeProvider, ILogger logger, IAppText text)
     {
+        _text = text;
         _timeProvider = timeProvider;
         _context = context;
         _compliance = compliance;
@@ -88,19 +91,19 @@ internal sealed class SettingsPortability
             {
                 // Whatever this item staged is dropped, so the next save doesn't retry it
                 _context.ChangeTracker.Clear();
-                errors.Add($"{what}: {ex.Message}");
+                errors.Add($"{what}: {_text.MessageOf(ex)}");
                 _logger.LogError(ex, "Failed to import {What}", what);
             }
         }
 
         if (settings.InvoiceNumbering is { } numbering)
-            await Try("Invoice numbering", () => ImportNumberingAsync(numbering, cancellationToken));
+            await Try(_text.Translate("errors.import.numbering"), () => ImportNumberingAsync(numbering, cancellationToken));
 
         var aliases = (await _context.ImageAssets.AsNoTracking().Select(i => i.Alias).ToListAsync(cancellationToken))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var image in settings.Images ?? [])
         {
-            await Try($"Image '{image.Alias}'", async () =>
+            await Try(_text.Translate("errors.import.image", ("alias", image.Alias)), async () =>
             {
                 if (!aliases.Add(image.Alias))
                     return false;
@@ -115,7 +118,7 @@ internal sealed class SettingsPortability
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var calendarData in settings.HolidayCalendars ?? [])
         {
-            await Try($"Holiday calendar {calendarData.CountryCode}", async () =>
+            await Try(_text.Translate("errors.import.holidayCalendar", ("country", calendarData.CountryCode)), async () =>
             {
                 var calendar = new HolidayCalendar(calendarData.CountryCode);
                 if (!countries.Add(calendar.CountryCode))
@@ -156,7 +159,7 @@ internal sealed class SettingsPortability
 
         if (settings.Preferences is { } preferencesData)
         {
-            await Try("Preferences", async () =>
+            await Try(_text.Translate("errors.import.preferences"), async () =>
             {
                 if (await _context.UserPreferences.AnyAsync(cancellationToken))
                     return false;

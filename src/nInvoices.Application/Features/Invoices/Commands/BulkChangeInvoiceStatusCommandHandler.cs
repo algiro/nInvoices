@@ -1,5 +1,7 @@
+using System.Globalization;
 using Mediator;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
@@ -15,13 +17,16 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
     private readonly IRepository<Customer> _customerRepository;
     private readonly IInvoiceFinalizer _finalizer;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAppText _text;
 
     public BulkChangeInvoiceStatusCommandHandler(
         IInvoiceRepository repository,
         IRepository<Customer> customerRepository,
         IInvoiceFinalizer finalizer,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAppText text)
     {
+        _text = text;
         _repository = repository;
         _customerRepository = customerRepository;
         _finalizer = finalizer;
@@ -32,7 +37,7 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
     {
         var ids = request.InvoiceIds.Distinct().ToList();
         if (ids.Count > MaxInvoices)
-            throw new ArgumentException($"At most {MaxInvoices} invoices can be changed at once");
+            throw new ArgumentException(_text.Translate("errors.bulk.tooMany", ("max", MaxInvoices)));
 
         var invoices = (await _repository.GetByIdsAsync(ids, cancellationToken)).ToDictionary(i => i.Id);
         var eligible = new List<Invoice>();
@@ -42,14 +47,14 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
         {
             if (!invoices.TryGetValue(id, out var invoice))
             {
-                skipped.Add(new BulkInvoiceSkipDto(id, null, "Not found"));
+                skipped.Add(new BulkInvoiceSkipDto(id, null, _text.Translate("errors.bulk.notFound")));
                 continue;
             }
 
             var reason = WhyNot(request.Action, invoice.Status);
             if (reason is not null)
             {
-                skipped.Add(new BulkInvoiceSkipDto(id, invoice.Number.ToString(), reason));
+                skipped.Add(new BulkInvoiceSkipDto(id, invoice.Number.ToString(), Sentence(_text.Translate(reason.Key))));
                 continue;
             }
 
@@ -65,7 +70,7 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
                 var customer = await _customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken);
                 if (customer == null)
                 {
-                    skipped.Add(new BulkInvoiceSkipDto(invoice.Id, invoice.Number.ToString(), "Customer not found"));
+                    skipped.Add(new BulkInvoiceSkipDto(invoice.Id, invoice.Number.ToString(), _text.Translate("errors.bulk.customerNotFound")));
                     continue;
                 }
 
@@ -96,7 +101,7 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
     /// the invoice's own (<see cref="InvoiceLifecycle"/>), so a bulk change allows exactly what a
     /// single one does.
     /// </summary>
-    public static string? WhyNot(BulkInvoiceStatusAction action, InvoiceStatus status) =>
+    public static LifecycleRefusal? WhyNot(BulkInvoiceStatusAction action, InvoiceStatus status) =>
         InvoiceLifecycle.WhyNot(status, action switch
         {
             BulkInvoiceStatusAction.Finalize => InvoiceAction.Finalize,
@@ -104,6 +109,10 @@ public sealed class BulkChangeInvoiceStatusCommandHandler : IRequestHandler<Bulk
             BulkInvoiceStatusAction.MarkAsPaid => InvoiceAction.MarkAsPaid,
             _ => throw new ArgumentOutOfRangeException(nameof(action), action, null)
         });
+
+    // The lifecycle's reasons are written to go inside a sentence ("cannot be marked as paid: already paid"); here one stands alone
+    private static string Sentence(string reason) =>
+        reason.Length == 0 ? reason : char.ToUpper(reason[0], CultureInfo.CurrentCulture) + reason[1..];
 
     private static void Apply(BulkInvoiceStatusAction action, Invoice invoice)
     {

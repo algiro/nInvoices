@@ -65,7 +65,7 @@ public sealed class Invoice : OwnedEntityBase
         ArgumentNullException.ThrowIfNull(subtotal);
 
         if (customerId <= 0)
-            throw new ArgumentException("Customer ID must be positive", nameof(customerId));
+            throw new ArgumentException("Customer ID must be positive", nameof(customerId)).WithText("errors.input.customerId");
 
         CustomerId = customerId;
         Number = number;
@@ -80,11 +80,11 @@ public sealed class Invoice : OwnedEntityBase
     public void SetMonthlyInvoiceDetails(int year, int month, int workedDays)
     {
         if (year < 2000 || year > 2100)
-            throw new ArgumentException("Year must be between 2000 and 2100", nameof(year));
+            throw new ArgumentException("Year must be between 2000 and 2100", nameof(year)).WithText("errors.input.year");
         if (month < 1 || month > 12)
-            throw new ArgumentException("Month must be between 1 and 12", nameof(month));
+            throw new ArgumentException("Month must be between 1 and 12", nameof(month)).WithText("errors.input.month");
         if (workedDays < 0)
-            throw new ArgumentException("Worked days cannot be negative", nameof(workedDays));
+            throw new ArgumentException("Worked days cannot be negative", nameof(workedDays)).WithText("errors.input.workedDays");
 
         Year = year;
         Month = month;
@@ -122,7 +122,8 @@ public sealed class Invoice : OwnedEntityBase
     {
         var reason = InvoiceLifecycle.WhyNot(Status, action);
         if (reason is not null)
-            throw new DomainException($"Invoice {Number} cannot be {Describe(action)}: {char.ToLowerInvariant(reason[0])}{reason[1..]}.");
+            throw new DomainException($"Invoice {Number} cannot be {Describe(action)}: {char.ToLowerInvariant(reason.Text[0])}{reason.Text[1..]}.")
+                .WithText("errors.lifecycle.refused", ("number", Number.Value), ("action", new UserText(ActionKey(action))), ("reason", new UserText(reason.Key)));
     }
 
     /// <summary>Issues the draft with <paramref name="number"/>, the one it keeps for good.</summary>
@@ -138,7 +139,8 @@ public sealed class Invoice : OwnedEntityBase
     {
         ArgumentNullException.ThrowIfNull(number);
         if (Status != InvoiceStatus.Draft)
-            throw new DomainException($"Invoice {Number} is {Status}: only a draft can be renumbered.");
+            throw new DomainException($"Invoice {Number} is {Status}: only a draft can be renumbered.")
+                .WithText("errors.lifecycle.onlyDraftRenumbered", ("number", Number.Value));
 
         Number = number;
     }
@@ -161,7 +163,8 @@ public sealed class Invoice : OwnedEntityBase
         if (!Enum.IsDefined(status))
             throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown invoice status");
         if (new[] { totalExpenses, totalTaxes, total }.Any(m => m.Currency != Subtotal.Currency))
-            throw new ArgumentException($"The amounts must be in the invoice currency, {Subtotal.Currency}");
+            throw new ArgumentException($"The amounts must be in the invoice currency, {Subtotal.Currency}")
+                .WithText("errors.input.invoiceCurrency", ("currency", Subtotal.Currency));
 
         Status = status;
         TotalExpenses = totalExpenses;
@@ -183,6 +186,15 @@ public sealed class Invoice : OwnedEntityBase
         InvoiceAction.Cancel => "cancelled",
         InvoiceAction.Delete => "deleted",
         _ => action.ToString()
+    };
+
+    private static string ActionKey(InvoiceAction action) => action switch
+    {
+        InvoiceAction.Finalize => "errors.lifecycle.actions.finalize",
+        InvoiceAction.MarkAsSent => "errors.lifecycle.actions.markAsSent",
+        InvoiceAction.MarkAsPaid => "errors.lifecycle.actions.markAsPaid",
+        InvoiceAction.Cancel => "errors.lifecycle.actions.cancel",
+        _ => "errors.lifecycle.actions.delete"
     };
 
     private void RecalculateTotal()

@@ -1,3 +1,4 @@
+using nInvoices.Core.Exceptions;
 namespace nInvoices.Core.Entities;
 
 /// <summary>
@@ -27,7 +28,7 @@ public sealed class InvoiceSequence : OwnedEntityBase
     public InvoiceSequence(int initialValue)
     {
         if (initialValue < 1)
-            throw new ArgumentException("Sequence value must be at least 1", nameof(initialValue));
+            throw new ArgumentException("Sequence value must be at least 1", nameof(initialValue)).WithText("errors.input.sequenceValue");
 
         CurrentValue = initialValue;
     }
@@ -50,7 +51,7 @@ public sealed class InvoiceSequence : OwnedEntityBase
     public void SetValue(int value)
     {
         if (value < 1)
-            throw new ArgumentException("Sequence value must be at least 1", nameof(value));
+            throw new ArgumentException("Sequence value must be at least 1", nameof(value)).WithText("errors.input.sequenceValue");
 
         CurrentValue = value;
     }
@@ -66,7 +67,7 @@ public sealed class InvoiceSequence : OwnedEntityBase
         }
 
         if (!ValueObjects.InvoiceNumber.ValidatePattern(pattern))
-            throw new ArgumentException("The pattern must contain at least one token, e.g. {NUMBER:000}");
+            throw new ArgumentException("The pattern must contain at least one token, e.g. {NUMBER:000}").WithText("errors.input.patternToken");
 
         NumberFormat = pattern.Trim();
     }

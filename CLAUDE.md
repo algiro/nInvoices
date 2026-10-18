@@ -333,8 +333,9 @@ exception into a ProblemDetails response that also carries `error` (the message 
 
 `DomainException` derives from `InvalidOperationException` and `NotFoundException` from
 `KeyNotFoundException`, so internal `catch`es of those still work. Keep `catch` in controllers only for
-deliberate local handling (per-item import errors, best-effort cleanup). The message is the user's: a translated key (Localization above), except
-from `Core` entities, which stay English.
+deliberate local handling (per-item import errors, best-effort cleanup). The message is the user's: a translated key (Localization above).
+`Core` can't translate, so it attaches the key to what it throws (`.WithText("errors.input.street")`) and the filter
+translates it (`IAppText.MessageOf`); read a caught exception's message the same way.
 
 ## Conventions
 

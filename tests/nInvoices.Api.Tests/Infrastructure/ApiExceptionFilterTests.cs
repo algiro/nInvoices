@@ -25,6 +25,7 @@ using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Exceptions;
 using nInvoices.Core.Interfaces;
+using nInvoices.Core.ValueObjects;
 using Shouldly;
 
 namespace nInvoices.Api.Tests.Infrastructure;
@@ -130,6 +131,43 @@ public sealed class ApiExceptionFilterTests
         }
     }
 
+    // Core can't translate: its exceptions carry a key, and the answer is in the user's language
+    private static IEnumerable<TestCaseData> CoreRefusals()
+    {
+        yield return new TestCaseData(
+            (Action)(() => new Invoice(1, new InvoiceNumber("26-10-001"), InvoiceType.OneTime, new DateOnly(2026, 10, 5), new Money(100m, "EUR"), "EUR").MarkAsPaid()),
+            "Invoice 26-10-001 cannot be marked as paid: not finalized yet.",
+            "La fattura 26-10-001 non può essere segnata come pagata: non è ancora finalizzata.").SetName("Lifecycle refusal");
+        yield return new TestCaseData(
+            (Action)(() => _ = new Money(1m, "EUR") + new Money(1m, "USD")),
+            "Cannot add different currencies: EUR and USD",
+            "Impossibile sommare valute diverse: EUR e USD").SetName("Money");
+        yield return new TestCaseData(
+            (Action)(() => _ = new Address("", "1", "Milano", "20121", "Italy")),
+            "The street is required",
+            "La via è obbligatoria").SetName("Entity input");
+    }
+
+    [TestCaseSource(nameof(CoreRefusals))]
+    public void CoreRefusal_IsInTheUsersLanguage(Action refuse, string english, string italian)
+    {
+        var exception = Should.Throw<Exception>(refuse);
+        var previous = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en");
+            Handle(exception, text: Shipped).Extensions["error"].ShouldBe(english);
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("it-IT");
+            var problem = Handle(exception, text: Shipped);
+            problem.Status.ShouldBe(StatusCodes.Status400BadRequest);
+            problem.Extensions["error"].ShouldBe(italian);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previous;
+        }
+    }
+
     [Test]
     public void UnexpectedException_InDevelopment_ShowsTheExceptionInDetail()
     {
@@ -203,11 +241,11 @@ public sealed class ApiExceptionFilterTests
         unitOfWork.VerifyNoOtherCalls();
     }
 
-    private static ProblemDetails Handle(Exception exception, string environment = "Production")
+    private static ProblemDetails Handle(Exception exception, string environment = "Production", IAppText? text = null)
     {
         var context = CreateContext(exception);
 
-        Filter(environment).OnException(context);
+        Filter(environment, text).OnException(context);
 
         context.ExceptionHandled.ShouldBeTrue();
         var result = context.Result.ShouldBeOfType<ObjectResult>();
@@ -217,8 +255,11 @@ public sealed class ApiExceptionFilterTests
         return problem;
     }
 
-    private static ApiExceptionFilter Filter(string environment) =>
-        new(NullLogger<ApiExceptionFilter>.Instance, Mock.Of<IHostEnvironment>(e => e.EnvironmentName == environment), Text);
+    private static ApiExceptionFilter Filter(string environment, IAppText? text = null) =>
+        new(NullLogger<ApiExceptionFilter>.Instance, Mock.Of<IHostEnvironment>(e => e.EnvironmentName == environment), text ?? Text);
+
+    // The texts the API ships, for what Core throws
+    private static readonly AppText Shipped = new();
 
     private static readonly AppText Text = new(new Dictionary<string, string>
     {

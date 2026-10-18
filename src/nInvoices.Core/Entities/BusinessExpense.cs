@@ -1,5 +1,6 @@
 using nInvoices.Core.Enums;
 using nInvoices.Core.ValueObjects;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Core.Entities;
 
@@ -67,18 +68,18 @@ public sealed class BusinessExpense : OwnedEntityBase
         ArgumentNullException.ThrowIfNull(amount);
 
         if (string.IsNullOrWhiteSpace(description))
-            throw new ArgumentException("Description cannot be empty", nameof(description));
+            throw new ArgumentException("Description cannot be empty", nameof(description)).WithText("errors.input.descriptionRequired");
 
         if (amount.Amount < 0)
-            throw new ArgumentException("The amount cannot be negative", nameof(amount));
+            throw new ArgumentException("The amount cannot be negative", nameof(amount)).WithText("errors.input.amountNegative");
         if (indirectTax < 0)
-            throw new ArgumentException("The indirect tax cannot be negative", nameof(indirectTax));
+            throw new ArgumentException("The indirect tax cannot be negative", nameof(indirectTax)).WithText("errors.input.indirectTaxNegative");
         if (reverseCharge && indirectTax != 0)
-            throw new ArgumentException("A reverse-charge expense has no indirect tax: the supplier didn't charge any", nameof(indirectTax));
+            throw new ArgumentException("A reverse-charge expense has no indirect tax: the supplier didn't charge any", nameof(indirectTax)).WithText("errors.input.reverseChargeTax");
         if (deductiblePercent is < 0 or > 100)
-            throw new ArgumentException("The deductible percentage must be between 0 and 100", nameof(deductiblePercent));
+            throw new ArgumentException("The deductible percentage must be between 0 and 100", nameof(deductiblePercent)).WithText("errors.input.deductiblePercent");
         if (!Enum.IsDefined(category))
-            throw new ArgumentException("Unknown expense category", nameof(category));
+            throw new ArgumentException("Unknown expense category", nameof(category)).WithText("errors.input.expenseCategory");
 
         Date = date;
         Description = description.Trim();

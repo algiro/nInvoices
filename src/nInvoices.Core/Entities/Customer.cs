@@ -1,5 +1,6 @@
 using nInvoices.Core.Compliance;
 using nInvoices.Core.ValueObjects;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Core.Entities;
 
@@ -50,9 +51,9 @@ public sealed class Customer : OwnedEntityBase
         ArgumentNullException.ThrowIfNull(address);
 
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Customer name cannot be empty", nameof(name));
+            throw new ArgumentException("Customer name cannot be empty", nameof(name)).WithText("errors.input.customerName");
         if (string.IsNullOrWhiteSpace(fiscalId))
-            throw new ArgumentException("Fiscal ID cannot be empty", nameof(fiscalId));
+            throw new ArgumentException("Fiscal ID cannot be empty", nameof(fiscalId)).WithText("errors.input.fiscalId");
 
         Name = name;
         FiscalId = fiscalId;
@@ -87,9 +88,9 @@ public sealed class Customer : OwnedEntityBase
         ArgumentNullException.ThrowIfNull(address);
 
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Customer name cannot be empty", nameof(name));
+            throw new ArgumentException("Customer name cannot be empty", nameof(name)).WithText("errors.input.customerName");
         if (string.IsNullOrWhiteSpace(fiscalId))
-            throw new ArgumentException("Fiscal ID cannot be empty", nameof(fiscalId));
+            throw new ArgumentException("Fiscal ID cannot be empty", nameof(fiscalId)).WithText("errors.input.fiscalId");
 
         Name = name;
         FiscalId = fiscalId;
@@ -104,9 +105,9 @@ public sealed class Customer : OwnedEntityBase
         ArgumentNullException.ThrowIfNull(address);
 
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Customer name cannot be empty", nameof(name));
+            throw new ArgumentException("Customer name cannot be empty", nameof(name)).WithText("errors.input.customerName");
         if (string.IsNullOrWhiteSpace(fiscalId))
-            throw new ArgumentException("Fiscal ID cannot be empty", nameof(fiscalId));
+            throw new ArgumentException("Fiscal ID cannot be empty", nameof(fiscalId)).WithText("errors.input.fiscalId");
 
         Name = name;
         FiscalId = fiscalId;

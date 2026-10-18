@@ -1,3 +1,4 @@
+using nInvoices.Core.Exceptions;
 namespace nInvoices.Core.Entities;
 
 /// <summary>
@@ -23,9 +24,9 @@ public sealed class Project : OwnedEntityBase
         ArgumentNullException.ThrowIfNull(name);
 
         if (customerId <= 0)
-            throw new ArgumentException("Customer ID must be positive", nameof(customerId));
+            throw new ArgumentException("Customer ID must be positive", nameof(customerId)).WithText("errors.input.customerId");
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Project name cannot be empty", nameof(name));
+            throw new ArgumentException("Project name cannot be empty", nameof(name)).WithText("errors.input.projectName");
 
         CustomerId = customerId;
         Name = name.Trim();
@@ -36,7 +37,7 @@ public sealed class Project : OwnedEntityBase
         ArgumentNullException.ThrowIfNull(name);
 
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Project name cannot be empty", nameof(name));
+            throw new ArgumentException("Project name cannot be empty", nameof(name)).WithText("errors.input.projectName");
 
         Name = name.Trim();
     }

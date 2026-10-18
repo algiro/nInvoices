@@ -1,3 +1,4 @@
+using nInvoices.Application.Localization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Data.Sqlite;
@@ -87,7 +88,7 @@ public sealed class ImportExportRoundTripTests
     {
         var registry = new Mock<IComplianceRegistry>();
         registry.Setup(r => r.Find("ES")).Returns(Mock.Of<ICountryComplianceModule>());
-        return new DataPortabilityService(context, registry.Object, TimeProvider.System, NullLogger<DataPortabilityService>.Instance);
+        return new DataPortabilityService(context, registry.Object, TimeProvider.System, NullLogger<DataPortabilityService>.Instance, new AppText());
     }
 
     private static T Ok<T>(T result) => result;

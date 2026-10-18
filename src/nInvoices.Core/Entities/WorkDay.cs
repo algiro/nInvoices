@@ -1,4 +1,5 @@
 using nInvoices.Core.Enums;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Core.Entities;
 
@@ -32,10 +33,10 @@ public sealed class WorkDay : OwnedEntityBase
     public WorkDay(long customerId, DateOnly date, DayType dayType = DayType.Worked, decimal? hoursWorked = null, string? notes = null) : this()
     {
         if (customerId <= 0)
-            throw new ArgumentException("Customer ID must be positive", nameof(customerId));
+            throw new ArgumentException("Customer ID must be positive", nameof(customerId)).WithText("errors.input.customerId");
 
         if (hoursWorked.HasValue && hoursWorked.Value <= 0)
-            throw new ArgumentException("Hours worked must be positive", nameof(hoursWorked));
+            throw new ArgumentException("Hours worked must be positive", nameof(hoursWorked)).WithText("errors.input.hoursWorked");
 
         CustomerId = customerId;
         Date = date;
@@ -57,7 +58,7 @@ public sealed class WorkDay : OwnedEntityBase
     public void UpdateHoursWorked(decimal? hoursWorked)
     {
         if (hoursWorked.HasValue && hoursWorked.Value <= 0)
-            throw new ArgumentException("Hours worked must be positive", nameof(hoursWorked));
+            throw new ArgumentException("Hours worked must be positive", nameof(hoursWorked)).WithText("errors.input.hoursWorked");
         
         HoursWorked = hoursWorked;
     }

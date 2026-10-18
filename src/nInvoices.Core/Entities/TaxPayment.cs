@@ -1,4 +1,5 @@
 using nInvoices.Core.ValueObjects;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Core.Entities;
 
@@ -32,11 +33,11 @@ public sealed class TaxPayment : OwnedEntityBase
     public TaxPayment(int year, int period, string form, Money amount, DateOnly paidOn)
     {
         if (string.IsNullOrWhiteSpace(form))
-            throw new ArgumentException("The tax form is required", nameof(form));
+            throw new ArgumentException("The tax form is required", nameof(form)).WithText("errors.input.taxForm");
         if (year is < 2000 or > 2100)
-            throw new ArgumentException("Year must be between 2000 and 2100", nameof(year));
+            throw new ArgumentException("Year must be between 2000 and 2100", nameof(year)).WithText("errors.input.year");
         if (period is < 1 or > MaxPeriod)
-            throw new ArgumentException($"Period must be between 1 and {MaxPeriod}", nameof(period));
+            throw new ArgumentException($"Period must be between 1 and {MaxPeriod}", nameof(period)).WithText("errors.input.period", ("max", MaxPeriod));
 
         Year = year;
         Period = period;
@@ -49,7 +50,7 @@ public sealed class TaxPayment : OwnedEntityBase
     {
         ArgumentNullException.ThrowIfNull(amount);
         if (amount.Amount < 0)
-            throw new ArgumentException("The amount cannot be negative", nameof(amount));
+            throw new ArgumentException("The amount cannot be negative", nameof(amount)).WithText("errors.input.amountNegative");
 
         Amount = amount;
         PaidOn = paidOn;

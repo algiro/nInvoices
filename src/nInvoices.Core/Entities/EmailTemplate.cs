@@ -1,4 +1,5 @@
 using nInvoices.Core.Interfaces;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Core.Entities;
 
@@ -29,7 +30,7 @@ public sealed class EmailTemplate : OwnedEntityBase, IScopedTemplate
     public EmailTemplate(long? customerId, string name, string subject, string body) : this()
     {
         if (customerId <= 0)
-            throw new ArgumentException("Customer ID must be positive", nameof(customerId));
+            throw new ArgumentException("Customer ID must be positive", nameof(customerId)).WithText("errors.input.customerId");
 
         CustomerId = customerId;
         Update(name, subject, body);
@@ -42,11 +43,11 @@ public sealed class EmailTemplate : OwnedEntityBase, IScopedTemplate
         ArgumentNullException.ThrowIfNull(body);
 
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Template name cannot be empty", nameof(name));
+            throw new ArgumentException("Template name cannot be empty", nameof(name)).WithText("errors.input.templateName");
         if (string.IsNullOrWhiteSpace(subject))
-            throw new ArgumentException("Email subject cannot be empty", nameof(subject));
+            throw new ArgumentException("Email subject cannot be empty", nameof(subject)).WithText("errors.input.emailSubject");
         if (string.IsNullOrWhiteSpace(body))
-            throw new ArgumentException("Email body cannot be empty", nameof(body));
+            throw new ArgumentException("Email body cannot be empty", nameof(body)).WithText("errors.input.emailBody");
 
         Name = name.Trim();
         Subject = subject;

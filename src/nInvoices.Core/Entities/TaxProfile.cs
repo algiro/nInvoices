@@ -1,3 +1,4 @@
+using nInvoices.Core.Exceptions;
 namespace nInvoices.Core.Entities;
 
 /// <summary>
@@ -27,7 +28,7 @@ public sealed class TaxProfile : OwnedEntityBase
     public void Update(string countryCode, string regimeId, IReadOnlyDictionary<string, string>? values)
     {
         if (string.IsNullOrWhiteSpace(regimeId))
-            throw new ArgumentException("Choose a tax regime", nameof(regimeId));
+            throw new ArgumentException("Choose a tax regime", nameof(regimeId)).WithText("errors.input.taxRegime");
 
         CountryCode = ComplianceSettings.NormalizeCountryCode(countryCode);
         RegimeId = regimeId.Trim();

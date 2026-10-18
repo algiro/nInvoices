@@ -1,4 +1,5 @@
 using nInvoices.Core.Enums;
+using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Core.Entities;
 
@@ -81,39 +82,39 @@ public sealed class HolidayRule : OwnedEntityBase
         ArgumentNullException.ThrowIfNull(name);
 
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Holiday name cannot be empty", nameof(name));
+            throw new ArgumentException("Holiday name cannot be empty", nameof(name)).WithText("errors.input.holidayName");
         if (fromYear.HasValue && toYear.HasValue && fromYear > toYear)
-            throw new ArgumentException("The first year cannot be after the last year", nameof(fromYear));
+            throw new ArgumentException("The first year cannot be after the last year", nameof(fromYear)).WithText("errors.input.holidayYears");
 
         switch (kind)
         {
             case HolidayRuleKind.Fixed:
                 if (month is not (>= 1 and <= 12))
-                    throw new ArgumentException("Month must be between 1 and 12", nameof(month));
+                    throw new ArgumentException("Month must be between 1 and 12", nameof(month)).WithText("errors.input.month");
                 // 29 February is allowed: it simply has no date in common years
                 if (day is null || day < 1 || day > DateTime.DaysInMonth(2024, month.Value))
-                    throw new ArgumentException("Day is not valid for the month", nameof(day));
+                    throw new ArgumentException("Day is not valid for the month", nameof(day)).WithText("errors.input.day");
                 (easterOffset, weekday, occurrence) = (null, null, null);
                 break;
 
             case HolidayRuleKind.EasterOffset:
                 if (easterOffset is null or < -100 or > 100)
-                    throw new ArgumentException("Days from Easter must be between -100 and 100", nameof(easterOffset));
+                    throw new ArgumentException("Days from Easter must be between -100 and 100", nameof(easterOffset)).WithText("errors.input.easterOffset");
                 (month, day, weekday, occurrence) = (null, null, null, null);
                 break;
 
             case HolidayRuleKind.NthWeekday:
                 if (month is not (>= 1 and <= 12))
-                    throw new ArgumentException("Month must be between 1 and 12", nameof(month));
+                    throw new ArgumentException("Month must be between 1 and 12", nameof(month)).WithText("errors.input.month");
                 if (weekday is null || !Enum.IsDefined(weekday.Value))
-                    throw new ArgumentException("Weekday is required", nameof(weekday));
+                    throw new ArgumentException("Weekday is required", nameof(weekday)).WithText("errors.input.weekday");
                 if (occurrence is not (-1 or (>= 1 and <= 5)))
-                    throw new ArgumentException("Occurrence must be 1 to 5, or -1 for the last", nameof(occurrence));
+                    throw new ArgumentException("Occurrence must be 1 to 5, or -1 for the last", nameof(occurrence)).WithText("errors.input.occurrence");
                 (day, easterOffset) = (null, null);
                 break;
 
             default:
-                throw new ArgumentException($"Unknown holiday rule kind {kind}", nameof(kind));
+                throw new ArgumentException($"Unknown holiday rule kind {kind}", nameof(kind)).WithText("errors.input.holidayKind", ("kind", kind));
         }
 
         Name = name.Trim();

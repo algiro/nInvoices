@@ -1,3 +1,4 @@
+using nInvoices.Core.Exceptions;
 namespace nInvoices.Core.ValueObjects;
 
 /// <summary>
@@ -28,15 +29,15 @@ public sealed record Address
         ArgumentNullException.ThrowIfNull(country);
 
         if (string.IsNullOrWhiteSpace(street))
-            throw new ArgumentException("Street cannot be empty", nameof(street));
+            throw new ArgumentException("Street cannot be empty", nameof(street)).WithText("errors.input.street");
         if (string.IsNullOrWhiteSpace(houseNumber))
-            throw new ArgumentException("House number cannot be empty", nameof(houseNumber));
+            throw new ArgumentException("House number cannot be empty", nameof(houseNumber)).WithText("errors.input.houseNumber");
         if (string.IsNullOrWhiteSpace(city))
-            throw new ArgumentException("City cannot be empty", nameof(city));
+            throw new ArgumentException("City cannot be empty", nameof(city)).WithText("errors.input.city");
         if (string.IsNullOrWhiteSpace(zipCode))
-            throw new ArgumentException("Zip code cannot be empty", nameof(zipCode));
+            throw new ArgumentException("Zip code cannot be empty", nameof(zipCode)).WithText("errors.input.zipCode");
         if (string.IsNullOrWhiteSpace(country))
-            throw new ArgumentException("Country cannot be empty", nameof(country));
+            throw new ArgumentException("Country cannot be empty", nameof(country)).WithText("errors.input.country");
 
         Street = street;
         HouseNumber = houseNumber;
