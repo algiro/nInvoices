@@ -94,7 +94,7 @@ public sealed class UpdateTaxProfileCommandHandler : IRequestHandler<UpdateTaxPr
         return TaxPredictionMapper.ToDto(profile);
     }
 
-    private static List<ComplianceIssue> Check(IReadOnlyList<ComplianceField> fields, Dictionary<string, string> values)
+    private List<ComplianceIssue> Check(IReadOnlyList<ComplianceField> fields, Dictionary<string, string> values)
     {
         var issues = new List<ComplianceIssue>();
         foreach (var field in fields)
@@ -103,15 +103,15 @@ public sealed class UpdateTaxProfileCommandHandler : IRequestHandler<UpdateTaxPr
             if (value is null)
             {
                 if (field.Required)
-                    issues.Add(new ComplianceIssue(field.Key, $"\"{field.Label}\" is required"));
+                    issues.Add(new ComplianceIssue(field.Key, _text.Translate("compliance.taxProfile.required", ("field", field.Label))));
             }
             else if (field.Type == ComplianceFieldType.Choice && field.Options?.Any(o => o.Value == value) != true)
             {
-                issues.Add(new ComplianceIssue(field.Key, $"\"{value}\" is not an option for \"{field.Label}\""));
+                issues.Add(new ComplianceIssue(field.Key, _text.Translate("compliance.taxProfile.notAnOption", ("value", value), ("field", field.Label))));
             }
             else if (field.Type == ComplianceFieldType.Boolean && value != "true")
             {
-                issues.Add(new ComplianceIssue(field.Key, $"\"{field.Label}\" is ticked with \"true\" or left out"));
+                issues.Add(new ComplianceIssue(field.Key, _text.Translate("compliance.taxProfile.notBoolean", ("field", field.Label))));
             }
         }
         return issues;

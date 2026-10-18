@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.ValueObjects;
 
@@ -111,6 +112,13 @@ public sealed partial class GermanyComplianceModule : ICountryComplianceModule
             ZeroRateOnly: true)
     ];
 
+    private readonly IAppText _text;
+
+    public GermanyComplianceModule(IAppText text)
+    {
+        _text = text;
+    }
+
     public IReadOnlyList<ComplianceIssue> ValidateIssuer(IssuerProfile issuer)
     {
         ArgumentNullException.ThrowIfNull(issuer);
@@ -118,25 +126,25 @@ public sealed partial class GermanyComplianceModule : ICountryComplianceModule
         var values = issuer.Values;
 
         if (string.IsNullOrWhiteSpace(issuer.LegalName))
-            issues.Add(new ComplianceIssue("legalName", "The legal name is required"));
+            issues.Add(new ComplianceIssue("legalName", _text.Translate("compliance.common.legalNameRequired")));
 
         if (string.IsNullOrWhiteSpace(issuer.TaxId))
-            issues.Add(new ComplianceIssue("taxId", "The Steuernummer or USt-IdNr is required on every invoice (§ 14 UStG)"));
+            issues.Add(new ComplianceIssue("taxId", _text.Translate("compliance.germany.taxIdRequired")));
         else if (!GermanTaxId.IsValidVatId(issuer.TaxId) && !GermanTaxId.IsPlausibleTaxNumber(issuer.TaxId))
-            issues.Add(new ComplianceIssue("taxId", "This is neither a Steuernummer (10, 11 or 13 digits) nor a valid USt-IdNr"));
+            issues.Add(new ComplianceIssue("taxId", _text.Translate("compliance.germany.taxIdInvalid")));
 
         if (HasValue(values, VatIdKey) && !GermanTaxId.IsValidVatId(values[VatIdKey]))
-            issues.Add(new ComplianceIssue(VatIdKey, "This is not a valid USt-IdNr (DE and nine digits)"));
+            issues.Add(new ComplianceIssue(VatIdKey, _text.Translate("compliance.germany.vatIdInvalid")));
 
         if (issuer.Address is null)
-            issues.Add(new ComplianceIssue("address", "The address is required"));
+            issues.Add(new ComplianceIssue("address", _text.Translate("compliance.common.addressRequired")));
         else
-            issues.AddRange(ValidateGermanAddress(issuer.Address, "address", "The address"));
+            issues.AddRange(ValidateGermanAddress(issuer.Address, "address", _text.Translate("compliance.common.subjectAddress")));
 
         if (HasValue(values, IbanKey) && !GermanTaxId.IsValidIban(values[IbanKey]))
-            issues.Add(new ComplianceIssue(IbanKey, "This is not a valid IBAN"));
+            issues.Add(new ComplianceIssue(IbanKey, _text.Translate("compliance.germany.ibanInvalid")));
         if (HasValue(values, ContactEmailKey) && !values[ContactEmailKey].Contains('@', StringComparison.Ordinal))
-            issues.Add(new ComplianceIssue(ContactEmailKey, "This is not an email address"));
+            issues.Add(new ComplianceIssue(ContactEmailKey, _text.Translate("compliance.common.notEmail")));
 
         return issues;
     }
@@ -146,16 +154,16 @@ public sealed partial class GermanyComplianceModule : ICountryComplianceModule
         ArgumentNullException.ThrowIfNull(customer);
         var issues = new List<ComplianceIssue>();
         if (customer.Values.TryGetValue(BuyerEmailKey, out var email) && !email.Contains('@', StringComparison.Ordinal))
-            issues.Add(new ComplianceIssue(BuyerEmailKey, "This is not an email address"));
+            issues.Add(new ComplianceIssue(BuyerEmailKey, _text.Translate("compliance.common.notEmail")));
         return issues;
     }
 
     /// <summary>A five-digit Postleitzahl.</summary>
-    public static IEnumerable<ComplianceIssue> ValidateGermanAddress(Address address, string? field, string subject)
+    public IEnumerable<ComplianceIssue> ValidateGermanAddress(Address address, string? field, string subject)
     {
         ArgumentNullException.ThrowIfNull(address);
         if (!PostalCode().IsMatch(address.ZipCode.Trim()))
-            yield return new ComplianceIssue(field, $"{subject}: a German Postleitzahl has five digits");
+            yield return new ComplianceIssue(field, _text.Translate("compliance.germany.postalCode", ("subject", subject)));
     }
 
     public static bool IsSmallBusiness(IReadOnlyDictionary<string, string> issuerValues)

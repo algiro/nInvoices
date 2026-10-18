@@ -33,7 +33,7 @@ public sealed class UserCountryTests
     private static CancellationToken Token => TestContext.CurrentContext.CancellationToken;
 
     private static readonly IComplianceRegistry ComplianceRegistry = new ComplianceRegistry(
-        [new SpainComplianceModule(), new ItalyComplianceModule()], [], Options.Create(new ComplianceOptions()));
+        [new SpainComplianceModule(TestText.Instance), new ItalyComplianceModule(TestText.Instance)], [], Options.Create(new ComplianceOptions()));
 
     private static readonly ITaxPredictionRegistry TaxRegistry = new TaxPredictionRegistry(
         [new SpainTaxPredictionModule(), new ItalyTaxPredictionModule()]);

@@ -1,5 +1,6 @@
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Options;
+using nInvoices.Application.Localization;
 using nInvoices.Countries.Spain.Facturae;
 using nInvoices.Application.Services.Email;
 using nInvoices.Core.Compliance;
@@ -19,11 +20,13 @@ public sealed class FaceChannel : IEInvoiceChannel
 
     private readonly IFaceClient _client;
     private readonly FaceOptions _options;
+    private readonly IAppText _text;
 
-    public FaceChannel(IFaceClient client, IOptions<FaceOptions> options)
+    public FaceChannel(IFaceClient client, IOptions<FaceOptions> options, IAppText text)
     {
         _client = client;
         _options = options.Value;
+        _text = text;
     }
 
     public string ChannelId => Id;
@@ -54,7 +57,7 @@ public sealed class FaceChannel : IEInvoiceChannel
         var email = issuer.Values.GetValueOrDefault(SpainComplianceModule.FaceEmailKey);
         return email is not null && EmailAddresses.IsValid(email)
             ? []
-            : [new ComplianceIssue(SpainComplianceModule.FaceEmailKey, "Fill in the email for FACe notifications in the Spanish settings")];
+            : [new ComplianceIssue(SpainComplianceModule.FaceEmailKey, _text.Translate("compliance.face.emailRequired"))];
     }
 
     public async Task<ChannelDelivery> SendAsync(EInvoiceShipment shipment, X509Certificate2 certificate, CancellationToken cancellationToken = default)

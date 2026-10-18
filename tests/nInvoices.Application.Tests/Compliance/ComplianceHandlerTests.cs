@@ -39,7 +39,7 @@ public sealed class ComplianceHandlerTests
     }
 
     private static IComplianceRegistry Registry(ComplianceOptions? options = null) =>
-        new ComplianceRegistry([new SpainComplianceModule()], [], Options.Create(options ?? new ComplianceOptions()));
+        new ComplianceRegistry([new SpainComplianceModule(TestText.Instance)], [], Options.Create(options ?? new ComplianceOptions()));
 
     private Task<ComplianceCountryDto?> Update(string country, UpdateComplianceSettingsDto dto, IComplianceRegistry? registry = null) =>
         new UpdateComplianceSettingsCommandHandler(registry ?? Registry(), _settings, _unitOfWork.Object, new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)), TestText.Instance)

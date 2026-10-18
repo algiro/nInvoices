@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.ValueObjects;
 
@@ -86,6 +87,13 @@ public sealed partial class ItalyComplianceModule : ICountryComplianceModule
         new(Individual, "Individual (libero professionista, ditta individuale)"),
         new(LegalEntity, "Legal entity (company)")
     ];
+
+    private readonly IAppText _text;
+
+    public ItalyComplianceModule(IAppText text)
+    {
+        _text = text;
+    }
 
     public string CountryCode => CountryCodeValue;
 
@@ -200,39 +208,39 @@ public sealed partial class ItalyComplianceModule : ICountryComplianceModule
         var values = issuer.Values;
 
         if (string.IsNullOrWhiteSpace(issuer.TaxId))
-            issues.Add(new ComplianceIssue("taxId", "The Partita IVA is required"));
+            issues.Add(new ComplianceIssue("taxId", _text.Translate("compliance.italy.partitaIvaRequired")));
         else if (!ItalianTaxId.IsValidPartitaIva(issuer.TaxId))
-            issues.Add(new ComplianceIssue("taxId", "This is not a valid Partita IVA (eleven digits)"));
+            issues.Add(new ComplianceIssue("taxId", _text.Translate("compliance.italy.partitaIvaInvalid")));
 
         if (issuer.Address is null)
-            issues.Add(new ComplianceIssue("address", "The address is required"));
+            issues.Add(new ComplianceIssue("address", _text.Translate("compliance.common.addressRequired")));
         else
-            issues.AddRange(ValidateItalianAddress(issuer.Address, "address", "The address"));
+            issues.AddRange(ValidateItalianAddress(issuer.Address, "address", _text.Translate("compliance.common.subjectAddress")));
 
         if (values.GetValueOrDefault(RegimeKey) is not (Ordinario or Minimi or Forfettario))
-            issues.Add(new ComplianceIssue(RegimeKey, "Choose your tax regime"));
+            issues.Add(new ComplianceIssue(RegimeKey, _text.Translate("compliance.italy.chooseRegime")));
 
         var personType = values.GetValueOrDefault(PersonTypeKey);
         if (personType is not (Individual or LegalEntity))
         {
-            issues.Add(new ComplianceIssue(PersonTypeKey, "Choose whether the issuer is an individual or a legal entity"));
+            issues.Add(new ComplianceIssue(PersonTypeKey, _text.Translate("compliance.common.chooseIssuerType")));
         }
         else if (personType == Individual)
         {
             if (!HasValue(values, FirstNameKey))
-                issues.Add(new ComplianceIssue(FirstNameKey, "An individual needs a first name"));
+                issues.Add(new ComplianceIssue(FirstNameKey, _text.Translate("compliance.common.firstNameRequired")));
             if (!HasValue(values, LastNameKey))
-                issues.Add(new ComplianceIssue(LastNameKey, "An individual needs a last name"));
+                issues.Add(new ComplianceIssue(LastNameKey, _text.Translate("compliance.italy.lastNameRequired")));
             if (!HasValue(values, FiscalCodeKey))
-                issues.Add(new ComplianceIssue(FiscalCodeKey, "An individual needs their codice fiscale"));
+                issues.Add(new ComplianceIssue(FiscalCodeKey, _text.Translate("compliance.italy.fiscalCodeRequired")));
         }
         else if (string.IsNullOrWhiteSpace(issuer.LegalName))
         {
-            issues.Add(new ComplianceIssue("legalName", "The legal name is required"));
+            issues.Add(new ComplianceIssue("legalName", _text.Translate("compliance.common.legalNameRequired")));
         }
 
         if (HasValue(values, FiscalCodeKey) && !ItalianTaxId.IsValidCodiceFiscale(values[FiscalCodeKey]))
-            issues.Add(new ComplianceIssue(FiscalCodeKey, "This is not a valid codice fiscale"));
+            issues.Add(new ComplianceIssue(FiscalCodeKey, _text.Translate("compliance.italy.fiscalCodeInvalid")));
 
         return issues;
     }
@@ -244,23 +252,23 @@ public sealed partial class ItalyComplianceModule : ICountryComplianceModule
         var values = customer.Values;
 
         if (values.TryGetValue(RecipientCodeKey, out var code) && !RecipientCode().IsMatch(code))
-            issues.Add(new ComplianceIssue(RecipientCodeKey, "A codice destinatario has 7 letters or digits"));
+            issues.Add(new ComplianceIssue(RecipientCodeKey, _text.Translate("compliance.italy.recipientCodeInvalid")));
         if (values.TryGetValue(PecKey, out var pec) && !pec.Contains('@', StringComparison.Ordinal))
-            issues.Add(new ComplianceIssue(PecKey, "This is not an email address"));
+            issues.Add(new ComplianceIssue(PecKey, _text.Translate("compliance.common.notEmail")));
         if (values.TryGetValue(FiscalCodeKey, out var fiscalCode) && !ItalianTaxId.IsValidCodiceFiscale(fiscalCode))
-            issues.Add(new ComplianceIssue(FiscalCodeKey, "This is not a valid codice fiscale"));
+            issues.Add(new ComplianceIssue(FiscalCodeKey, _text.Translate("compliance.italy.fiscalCodeInvalid")));
 
         return issues;
     }
 
     /// <summary>A five-digit CAP and the two-letter province (the "Province / state" of the address).</summary>
-    public static IEnumerable<ComplianceIssue> ValidateItalianAddress(Address address, string? field, string subject)
+    public IEnumerable<ComplianceIssue> ValidateItalianAddress(Address address, string? field, string subject)
     {
         ArgumentNullException.ThrowIfNull(address);
         if (!PostalCode().IsMatch(address.ZipCode.Trim()))
-            yield return new ComplianceIssue(field, $"{subject}: an Italian CAP has five digits");
+            yield return new ComplianceIssue(field, _text.Translate("compliance.italy.postalCode", ("subject", subject)));
         if (!Province().IsMatch(address.State?.Trim() ?? string.Empty))
-            yield return new ComplianceIssue(field, $"{subject}: the province is its two-letter code, e.g. MI");
+            yield return new ComplianceIssue(field, _text.Translate("compliance.italy.province", ("subject", subject)));
     }
 
     /// <summary>Whether the regime charges no IVA (forfettario, minimi).</summary>

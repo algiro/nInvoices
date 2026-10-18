@@ -15,8 +15,8 @@ namespace nInvoices.Countries.Spain.Verifactu;
 /// <summary>An invoice cannot be recorded because it does not meet Verifactu rules; <see cref="Issues"/> says why.</summary>
 public sealed class VerifactuException : DomainException
 {
-    public VerifactuException(IReadOnlyList<ComplianceIssue> issues)
-        : base("Verifactu cannot record this invoice: " + string.Join("; ", issues.Select(i => i.Message)))
+    public VerifactuException(IReadOnlyList<ComplianceIssue> issues, IAppText text)
+        : base(text.Translate("errors.verifactu.cannotRecord", ("issues", string.Join("; ", issues.Select(i => i.Message)))))
     {
         Issues = issues;
     }
@@ -108,7 +108,7 @@ public sealed class VerifactuService : IVerifactuService
         var issues = new List<ComplianceIssue>();
         var missing = _options.Missing();
         if (missing.Count > 0)
-            throw new VerifactuException([new ComplianceIssue(null, $"Verifactu is not set up on this server ({string.Join(", ", missing)} missing)")]);
+            throw new VerifactuException([new ComplianceIssue(null, _text.Translate("compliance.verifactu.notConfigured", ("missing", string.Join(", ", missing))))], _text);
 
         // The tax lines come with the invoice
         var full = await _invoices.GetByIdWithRelatedAsync(invoice.Id, cancellationToken) ?? invoice;
@@ -116,7 +116,7 @@ public sealed class VerifactuService : IVerifactuService
 
         var data = Describe(full, customer, settings, taxes, issues);
         if (issues.Count > 0 || data is null)
-            throw new VerifactuException(issues);
+            throw new VerifactuException(issues, _text);
 
         var previous = await LastAsync(cancellationToken);
         var stamp = Stamp(previous);
@@ -243,24 +243,22 @@ public sealed class VerifactuService : IVerifactuService
     }
 
     /// <summary>What the record of the invoice says; null, with the reasons in <paramref name="issues"/>, if it cannot be recorded.</summary>
-    private static VerifactuInvoiceData? Describe(
+    private VerifactuInvoiceData? Describe(
         Invoice invoice, Customer customer, Core.Entities.ComplianceSettings settings, List<Tax> taxes, List<ComplianceIssue> issues)
     {
         var issuerTaxId = SpanishTaxId.Normalize(settings.TaxId);
         if (issuerTaxId.Length != 9)
-            issues.Add(new ComplianceIssue(null, "Your NIF in the Spanish settings must have nine characters"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.verifactu.issuerNif")));
 
         var number = invoice.Number.ToString();
         if (number.Length is 0 or > 60 || number.Any(c => c < 32 || c > 126))
-            issues.Add(new ComplianceIssue(null, "The invoice number must be 1 to 60 printable ASCII characters"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.verifactu.invoiceNumber")));
 
         var recipient = Recipient(customer, issues);
 
         var added = invoice.TaxLines.Where(t => t.Rate >= 0).OrderBy(t => t.Order).ToList();
         if (added.Count != 1)
-            issues.Add(new ComplianceIssue(null, added.Count == 0
-                ? "The invoice needs a VAT (or IGIC) line; for an exempt invoice add a tax at 0% and say why in the tax settings"
-                : "Verifactu is supported with one VAT (or IGIC) line per invoice"));
+            issues.Add(new ComplianceIssue(null, _text.Translate(added.Count == 0 ? "compliance.verifactu.vatLineRequired" : "compliance.verifactu.singleVatLine")));
 
         var taxableBase = invoice.Subtotal.Amount + invoice.TotalExpenses.Amount;
         var breakdown = new List<VerifactuBreakdown>();
@@ -268,7 +266,7 @@ public sealed class VerifactuService : IVerifactuService
         {
             if (Math.Abs(line.BaseAmount.Amount - taxableBase) > 0.01m)
             {
-                issues.Add(new ComplianceIssue(null, $"Tax \"{line.Description}\" is not calculated on the whole invoice, which Verifactu cannot express"));
+                issues.Add(new ComplianceIssue(null, _text.Translate("compliance.verifactu.taxBase", ("tax", line.Description))));
                 continue;
             }
 
@@ -285,9 +283,9 @@ public sealed class VerifactuService : IVerifactuService
             {
                 operation = values?.GetValueOrDefault(SpainComplianceModule.OperationKey) ?? "";
                 if (operation.Length == 0)
-                    issues.Add(new ComplianceIssue(null, $"Choose why tax \"{line.Description}\" is 0% (exempt, not subject...) in Taxes, under Verifactu"));
+                    issues.Add(new ComplianceIssue(null, _text.Translate("compliance.verifactu.zeroRateReason", ("tax", line.Description))));
                 else if (operation is "E7" or "E8" && !igic)
-                    issues.Add(new ComplianceIssue(null, $"Tax \"{line.Description}\": the exemptions E7 and E8 exist for IGIC only; set the tax type to IGIC or choose another"));
+                    issues.Add(new ComplianceIssue(null, _text.Translate("compliance.verifactu.igicOnlyExemption", ("tax", line.Description))));
             }
 
             breakdown.Add(new VerifactuBreakdown(
@@ -317,12 +315,12 @@ public sealed class VerifactuService : IVerifactuService
 
     private static decimal VerifactuHashRound(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);
 
-    private static VerifactuRecipient? Recipient(Customer customer, List<ComplianceIssue> issues)
+    private VerifactuRecipient? Recipient(Customer customer, List<ComplianceIssue> issues)
     {
         var country = CountryCodes.FromName(customer.Address.Country);
         if (country is null)
         {
-            issues.Add(new ComplianceIssue(null, $"The country of the customer (\"{customer.Address.Country}\") is not recognized"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.verifactu.customerCountry", ("country", customer.Address.Country))));
             return null;
         }
 
@@ -331,7 +329,7 @@ public sealed class VerifactuService : IVerifactuService
             var nif = SpanishTaxId.Normalize(customer.FiscalId);
             if (nif.Length != 9 || !SpanishTaxId.IsValid(nif))
             {
-                issues.Add(new ComplianceIssue(null, "The customer's NIF is not a valid Spanish NIF, NIE or CIF"));
+                issues.Add(new ComplianceIssue(null, _text.Translate("compliance.verifactu.customerNif")));
                 return null;
             }
 
@@ -341,7 +339,7 @@ public sealed class VerifactuService : IVerifactuService
         var id = new string(customer.FiscalId.Where(char.IsLetterOrDigit).ToArray()).ToUpperInvariant();
         if (id.Length is 0 or > 20)
         {
-            issues.Add(new ComplianceIssue(null, "The customer's tax id must have 1 to 20 characters"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.verifactu.customerTaxId")));
             return null;
         }
 

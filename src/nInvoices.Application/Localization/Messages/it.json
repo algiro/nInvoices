@@ -69,7 +69,8 @@
       "syntaxErrors": "Errori di sintassi nel modello: {errors}"
     },
     "verifactu": {
-      "cannotDelete": "La fattura {number} è stata registrata per Verifactu e non può essere eliminata: annullala, così l'annullamento viene registrato."
+      "cannotDelete": "La fattura {number} è stata registrata per Verifactu e non può essere eliminata: annullala, così l'annullamento viene registrato.",
+      "cannotRecord": "Verifactu non può registrare questa fattura: {issues}"
     }
   },
   "preferences": {
@@ -199,5 +200,134 @@
     "recurringExpense": "Spesa ricorrente {id} non trovata",
     "tax": "Imposta {id} non trovata",
     "template": "Modello {id} non trovato"
+  },
+  "compliance": {
+    "common": {
+      "legalNameRequired": "La ragione sociale è obbligatoria",
+      "addressRequired": "L'indirizzo è obbligatorio",
+      "chooseIssuerType": "Indica se l'emittente è una persona fisica o una persona giuridica",
+      "firstNameRequired": "Una persona fisica deve avere un nome",
+      "notEmail": "Questo non è un indirizzo email",
+      "subjectAddress": "L'indirizzo",
+      "subjectCustomerAddress": "Indirizzo del cliente"
+    },
+    "spain": {
+      "nifRequired": "Il NIF è obbligatorio",
+      "nifInvalid": "Questo non è un NIF, NIE o CIF spagnolo valido",
+      "firstSurnameRequired": "Una persona fisica deve avere un primo cognome",
+      "verifactuNotConfigured": "Verifactu non è configurato su questo server: manca {missing} in {section}",
+      "verifactuNifLength": "Verifactu richiede un NIF di nove caratteri",
+      "chooseCustomerType": "Scegli persona fisica o persona giuridica",
+      "dir3AccountingOffice": "Una pubblica amministrazione richiede il codice DIR3 del suo ufficio contabile",
+      "dir3ManagingBody": "Una pubblica amministrazione richiede il codice DIR3 del suo organo gestore",
+      "dir3ProcessingUnit": "Una pubblica amministrazione richiede il codice DIR3 della sua unità tramitatrice",
+      "customerFirstSurnameRequired": "Un cliente persona fisica deve avere un primo cognome",
+      "postalCode": "{subject}: un codice postale spagnolo ha cinque cifre",
+      "provinceRequired": "{subject}: la provincia è obbligatoria"
+    },
+    "italy": {
+      "partitaIvaRequired": "La Partita IVA è obbligatoria",
+      "partitaIvaInvalid": "Questa non è una Partita IVA valida (undici cifre)",
+      "chooseRegime": "Scegli il tuo regime fiscale",
+      "lastNameRequired": "Una persona fisica deve avere un cognome",
+      "fiscalCodeRequired": "Una persona fisica deve indicare il proprio codice fiscale",
+      "fiscalCodeInvalid": "Questo non è un codice fiscale valido",
+      "recipientCodeInvalid": "Il codice destinatario ha 7 lettere o cifre",
+      "postalCode": "{subject}: un CAP italiano ha cinque cifre",
+      "province": "{subject}: la provincia è la sua sigla di due lettere, ad es. MI"
+    },
+    "germany": {
+      "taxIdRequired": "La Steuernummer o la USt-IdNr è obbligatoria su ogni fattura (§ 14 UStG)",
+      "taxIdInvalid": "Questa non è né una Steuernummer (10, 11 o 13 cifre) né una USt-IdNr valida",
+      "vatIdInvalid": "Questa non è una USt-IdNr valida (DE e nove cifre)",
+      "ibanInvalid": "Questo non è un IBAN valido",
+      "postalCode": "{subject}: una Postleitzahl tedesca ha cinque cifre"
+    },
+    "einvoice": {
+      "issuer": "Emittente: {message}",
+      "customer": "Cliente: {message}",
+      "noNumber": "La fattura non ha un numero",
+      "numberTooLong": "I numeri di fattura {format} hanno al massimo {max} caratteri: cambia lo schema di numerazione",
+      "currency": "La valuta della fattura deve essere un codice di tre lettere",
+      "customerNameRequired": "Cliente: il nome è obbligatorio",
+      "customerNameTooLong": "Cliente: il nome ha al massimo {max} caratteri",
+      "customerCountryUnknown": "Cliente: il paese \"{country}\" non è riconosciuto",
+      "noLines": "La fattura non ha righe",
+      "lineQuantity": "Riga \"{line}\": la quantità deve essere positiva",
+      "lineAmount": "Riga \"{line}\": l'importo non può essere negativo",
+      "totalsMismatch": "Righe e imposte non corrispondono al totale della fattura",
+      "alreadySent": "È già stata inviata ({channel}, {reference}) e non può essere generata di nuovo"
+    },
+    "facturae": {
+      "issuerInSpain": "Emittente: l'indirizzo deve essere in Spagna",
+      "issuerNameTooLong": "Emittente: i nomi hanno al massimo {max} caratteri",
+      "issuerLegalNameTooLong": "Emittente: la ragione sociale ha al massimo {max} caratteri",
+      "customerTaxIdRequired": "Cliente: l'identificativo fiscale è obbligatorio",
+      "customerTaxIdTooLong": "Cliente: l'identificativo fiscale ha al massimo {max} caratteri",
+      "customerNifInvalid": "Cliente: questo non è un NIF, NIE o CIF spagnolo valido",
+      "publicAdministrationInSpain": "Cliente: una pubblica amministrazione deve avere un indirizzo in Spagna",
+      "taxRequired": "La fattura richiede almeno un'imposta; per una fattura esente aggiungi un'imposta allo 0%",
+      "taxBase": "L'imposta \"{tax}\" è calcolata su un importo diverso dal totale della fattura prima delle imposte, cosa che Facturae non può esprimere",
+      "taxAmount": "Imposta \"{tax}\": l'importo non corrisponde all'aliquota"
+    },
+    "face": {
+      "emailRequired": "Inserisci l'email per le notifiche di FACe nelle impostazioni spagnole"
+    },
+    "fatturapa": {
+      "issuerInItaly": "Emittente: l'indirizzo deve essere in Italia",
+      "italianCustomerTaxId": "Cliente: un cliente italiano richiede una Partita IVA (l'identificativo fiscale) o un codice fiscale validi",
+      "singleIva": "Una fattura italiana ha un'aliquota IVA per riga: tieni una sola imposta IVA per questo cliente",
+      "ivaRequired": "La fattura deve indicare l'IVA; se non viene addebitata, aggiungi un'imposta IVA allo 0% con il motivo (natura)",
+      "zeroIvaNature": "L'IVA \"{tax}\" è allo 0%: scegli sull'imposta perché non viene addebitata (natura)",
+      "ivaBaseWithContribution": "L'IVA \"{tax}\" deve essere calcolata sul compenso più il contributo: spunta \"Parte dell'imponibile\" sul contributo e dagli un ordine più basso",
+      "ivaBase": "L'IVA \"{tax}\" è calcolata su un importo diverso dal totale della fattura prima delle imposte",
+      "ivaAmount": "IVA \"{tax}\": l'importo non corrisponde all'aliquota",
+      "contributionBase": "Il contributo \"{tax}\" deve essere calcolato sulle righe della fattura"
+    },
+    "xrechnung": {
+      "issuerInGermany": "Emittente: l'indirizzo deve essere in Germania",
+      "contactName": "Emittente: XRechnung richiede un nome di contatto",
+      "contactPhone": "Emittente: XRechnung richiede un telefono di contatto",
+      "contactEmail": "Emittente: XRechnung richiede un'email di contatto",
+      "ibanRequired": "Emittente: XRechnung richiede l'IBAN su cui paga il cliente",
+      "customerAddressRequired": "Cliente: città e codice postale sono obbligatori",
+      "customerEmailRequired": "Cliente: XRechnung richiede l'indirizzo email a cui vanno le sue fatture elettroniche (cliente › E-invoice email)",
+      "noWithholding": "XRechnung non prevede ritenute: rimuovi l'imposta negativa da questo cliente",
+      "singleVat": "Qui una fattura ha una sola aliquota IVA: tieni una sola imposta IVA per questo cliente",
+      "smallBusinessVat": "Un Kleinunternehmer non addebita IVA: rimuovi l'imposta IVA o togli la spunta da Kleinunternehmer",
+      "vatRequired": "La fattura deve indicare l'IVA; se non viene addebitata, aggiungi un'imposta IVA allo 0% e scegli il motivo",
+      "zeroVatReason": "L'IVA \"{tax}\" è allo 0%: scegli sull'imposta perché non viene addebitata",
+      "exemptReason": "L'IVA \"{tax}\" è esente: indica il motivo sull'imposta",
+      "reverseChargeBuyerVatId": "Inversione contabile: serve la partita IVA del cliente (il suo identificativo fiscale)",
+      "intraCommunityVatIds": "Una cessione intracomunitaria richiede la tua USt-IdNr e la partita IVA del cliente",
+      "exportVatId": "Un'esportazione richiede la tua USt-IdNr",
+      "notSubjectTaxNumber": "Non soggetto a IVA: XRechnung richiede allora la tua Steuernummer come identificativo fiscale, perché la USt-IdNr non può comparire",
+      "vatBase": "L'IVA \"{tax}\" è calcolata su un importo diverso dalle righe della fattura",
+      "vatAmount": "IVA \"{tax}\": l'importo non corrisponde all'aliquota",
+      "totalsMismatch": "Righe e IVA non corrispondono al totale della fattura"
+    },
+    "verifactu": {
+      "notConfigured": "Verifactu non è configurato su questo server (manca {missing})",
+      "issuerNif": "Il tuo NIF nelle impostazioni spagnole deve avere nove caratteri",
+      "invoiceNumber": "Il numero della fattura deve avere da 1 a 60 caratteri ASCII stampabili",
+      "vatLineRequired": "La fattura richiede una riga IVA (o IGIC); per una fattura esente aggiungi un'imposta allo 0% e indicane il motivo nelle impostazioni dell'imposta",
+      "singleVatLine": "Verifactu è supportato con una sola riga IVA (o IGIC) per fattura",
+      "taxBase": "L'imposta \"{tax}\" non è calcolata sull'intera fattura, cosa che Verifactu non può esprimere",
+      "zeroRateReason": "Scegli perché l'imposta \"{tax}\" è allo 0% (esente, non soggetta...) in Imposte, sotto Verifactu",
+      "igicOnlyExemption": "Imposta \"{tax}\": le esenzioni E7 ed E8 esistono solo per l'IGIC; imposta il tipo di imposta su IGIC o scegline un'altra",
+      "customerCountry": "Il paese del cliente (\"{country}\") non è riconosciuto",
+      "customerNif": "Il NIF del cliente non è un NIF, NIE o CIF spagnolo valido",
+      "customerTaxId": "L'identificativo fiscale del cliente deve avere da 1 a 20 caratteri"
+    },
+    "certificate": {
+      "required": "Carica il tuo certificato di firma nelle Impostazioni",
+      "expired": "Il certificato di firma è scaduto il {date}",
+      "unreadable": "Il certificato di firma salvato non è più leggibile: caricalo di nuovo"
+    },
+    "taxProfile": {
+      "required": "\"{field}\" è obbligatorio",
+      "notAnOption": "\"{value}\" non è un'opzione di \"{field}\"",
+      "notBoolean": "\"{field}\" si spunta con \"true\" o si omette"
+    }
   }
 }

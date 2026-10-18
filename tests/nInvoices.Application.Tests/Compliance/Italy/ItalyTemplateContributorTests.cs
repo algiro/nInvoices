@@ -21,7 +21,7 @@ public sealed class ItalyTemplateContributorTests
         settings.Update(true, "Mario Rossi", FatturaPaTestData.IssuerVat, null,
             new Dictionary<string, string> { [ItalyComplianceModule.RegimeKey] = regime });
         gate.Setup(g => g.GetActiveAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(italyOn ? [new ActiveCompliance(new ItalyComplianceModule(), settings)] : []);
+            .ReturnsAsync(italyOn ? [new ActiveCompliance(new ItalyComplianceModule(TestText.Instance), settings)] : []);
 
         var repository = new InMemoryRepository<Tax>();
         foreach (var tax in taxes)

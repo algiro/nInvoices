@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Configuration;
 using nInvoices.Countries.Spain.Verifactu;
@@ -51,10 +52,12 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
         new ComplianceFieldOption(LegalEntity, "Legal entity (company)")
     ];
 
+    private readonly IAppText _text;
     private readonly VerifactuOptions _verifactu;
 
-    public SpainComplianceModule(IOptions<VerifactuOptions>? verifactu = null)
+    public SpainComplianceModule(IAppText text, IOptions<VerifactuOptions>? verifactu = null)
     {
+        _text = text;
         _verifactu = verifactu?.Value ?? new VerifactuOptions();
     }
 
@@ -160,38 +163,37 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
         var issues = new List<ComplianceIssue>();
 
         if (string.IsNullOrWhiteSpace(issuer.LegalName))
-            issues.Add(new ComplianceIssue("legalName", "The legal name is required"));
+            issues.Add(new ComplianceIssue("legalName", _text.Translate("compliance.common.legalNameRequired")));
 
         if (string.IsNullOrWhiteSpace(issuer.TaxId))
-            issues.Add(new ComplianceIssue("taxId", "The NIF is required"));
+            issues.Add(new ComplianceIssue("taxId", _text.Translate("compliance.spain.nifRequired")));
         else if (!SpanishTaxId.IsValid(issuer.TaxId))
-            issues.Add(new ComplianceIssue("taxId", "This is not a valid Spanish NIF, NIE or CIF"));
+            issues.Add(new ComplianceIssue("taxId", _text.Translate("compliance.spain.nifInvalid")));
 
         if (issuer.Address is null)
-            issues.Add(new ComplianceIssue("address", "The address is required"));
+            issues.Add(new ComplianceIssue("address", _text.Translate("compliance.common.addressRequired")));
         else
-            issues.AddRange(ValidateSpanishAddress(issuer.Address, "address", "The address"));
+            issues.AddRange(ValidateSpanishAddress(issuer.Address, "address", _text.Translate("compliance.common.subjectAddress")));
 
         if (!issuer.Values.TryGetValue(PersonTypeKey, out var personType) || personType is not (Individual or LegalEntity))
         {
-            issues.Add(new ComplianceIssue(PersonTypeKey, "Choose whether the issuer is an individual or a legal entity"));
+            issues.Add(new ComplianceIssue(PersonTypeKey, _text.Translate("compliance.common.chooseIssuerType")));
         }
         else if (personType == Individual)
         {
             if (!HasValue(issuer.Values, FirstNameKey))
-                issues.Add(new ComplianceIssue(FirstNameKey, "An individual needs a first name"));
+                issues.Add(new ComplianceIssue(FirstNameKey, _text.Translate("compliance.common.firstNameRequired")));
             if (!HasValue(issuer.Values, FirstSurnameKey))
-                issues.Add(new ComplianceIssue(FirstSurnameKey, "An individual needs a first surname"));
+                issues.Add(new ComplianceIssue(FirstSurnameKey, _text.Translate("compliance.spain.firstSurnameRequired")));
         }
 
         if (issuer.Values.GetValueOrDefault(VerifactuKey) == "true")
         {
             var missing = _verifactu.Missing();
             if (missing.Count > 0)
-                issues.Add(new ComplianceIssue(VerifactuKey,
-                    $"Verifactu is not set up on this server: {string.Join(", ", missing)} missing under {VerifactuOptions.SectionName}"));
+                issues.Add(new ComplianceIssue(VerifactuKey, _text.Translate("compliance.spain.verifactuNotConfigured", ("missing", string.Join(", ", missing)), ("section", VerifactuOptions.SectionName))));
             if (!string.IsNullOrWhiteSpace(issuer.TaxId) && SpanishTaxId.Normalize(issuer.TaxId).Length != 9)
-                issues.Add(new ComplianceIssue("taxId", "Verifactu needs a nine-character NIF"));
+                issues.Add(new ComplianceIssue("taxId", _text.Translate("compliance.spain.verifactuNifLength")));
         }
 
         return issues;
@@ -203,24 +205,24 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
         var values = customer.Values;
 
         if (values.TryGetValue(PersonTypeKey, out var type) && type is not (Individual or LegalEntity))
-            issues.Add(new ComplianceIssue(PersonTypeKey, "Choose individual or legal entity"));
+            issues.Add(new ComplianceIssue(PersonTypeKey, _text.Translate("compliance.spain.chooseCustomerType")));
 
         if (IsPublicAdministration(values))
         {
-            foreach (var (key, label) in new[]
+            foreach (var (key, message) in new[]
             {
-                (AccountingOfficeKey, "accounting office"),
-                (ManagingBodyKey, "managing body"),
-                (ProcessingUnitKey, "processing unit")
+                (AccountingOfficeKey, "compliance.spain.dir3AccountingOffice"),
+                (ManagingBodyKey, "compliance.spain.dir3ManagingBody"),
+                (ProcessingUnitKey, "compliance.spain.dir3ProcessingUnit")
             })
             {
                 if (!values.TryGetValue(key, out var code) || !Dir3Code().IsMatch(code))
-                    issues.Add(new ComplianceIssue(key, $"A public administration needs the DIR3 code of its {label}"));
+                    issues.Add(new ComplianceIssue(key, _text.Translate(message)));
             }
         }
 
         if (ResolvePersonType(customer.FiscalId, values) == Individual && !HasValue(values, FirstSurnameKey))
-            issues.Add(new ComplianceIssue(FirstSurnameKey, "An individual customer needs a first surname"));
+            issues.Add(new ComplianceIssue(FirstSurnameKey, _text.Translate("compliance.spain.customerFirstSurnameRequired")));
 
         return issues;
     }
@@ -248,12 +250,12 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
     }
 
     /// <summary>Street, city, province and a five-digit postal code, for an address in Spain.</summary>
-    public static IEnumerable<ComplianceIssue> ValidateSpanishAddress(Core.ValueObjects.Address address, string field, string subject)
+    public IEnumerable<ComplianceIssue> ValidateSpanishAddress(Core.ValueObjects.Address address, string field, string subject)
     {
         if (!PostalCode().IsMatch(address.ZipCode.Trim()))
-            yield return new ComplianceIssue(field, $"{subject}: a Spanish postal code has five digits");
+            yield return new ComplianceIssue(field, _text.Translate("compliance.spain.postalCode", ("subject", subject)));
         if (string.IsNullOrWhiteSpace(address.State))
-            yield return new ComplianceIssue(field, $"{subject}: the province is required");
+            yield return new ComplianceIssue(field, _text.Translate("compliance.spain.provinceRequired", ("subject", subject)));
     }
 
     private static bool HasValue(IReadOnlyDictionary<string, string> values, string key) =>

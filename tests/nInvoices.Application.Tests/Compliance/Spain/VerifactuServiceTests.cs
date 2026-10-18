@@ -110,7 +110,7 @@ public sealed class VerifactuServiceTests
             _settings.Items.Add(settings);
         }
 
-        var module = new SpainComplianceModule(Options.Create(_options));
+        var module = new SpainComplianceModule(TestText.Instance, Options.Create(_options));
         var registry = new ComplianceRegistry([module], [], Options.Create(new ComplianceOptions()));
         return new VerifactuService(
             new ComplianceGate(registry, _settings), _records, _invoices.Object, _taxes, _submissions, Options.Create(_options), _time, TestText.Instance);

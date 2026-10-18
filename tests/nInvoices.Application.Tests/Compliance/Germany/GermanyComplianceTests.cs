@@ -87,7 +87,7 @@ public sealed class GermanTaxIdTests
 [TestFixture]
 public sealed class GermanyComplianceModuleTests
 {
-    private readonly GermanyComplianceModule _module = new();
+    private readonly GermanyComplianceModule _module = new(TestText.Instance);
 
     [Test]
     public void ValidateIssuer_AComplete_IsAccepted() => _module.ValidateIssuer(XRechnungTestData.Issuer()).ShouldBeEmpty();
@@ -120,7 +120,7 @@ public sealed class XRechnungFormatTests
     private static readonly XNamespace Cbc = XRechnungXmlBuilder.Cbc;
     private static readonly XNamespace Cac = XRechnungXmlBuilder.Cac;
 
-    private readonly XRechnungFormat _format = new(new GermanyComplianceModule(), TestText.Instance);
+    private readonly XRechnungFormat _format = new(new GermanyComplianceModule(TestText.Instance), TestText.Instance);
 
     private XElement Build(EInvoiceDocument document)
     {
@@ -267,7 +267,7 @@ public sealed class GermanyTemplateContributorTests
         settings.Update(true, "Anna Schmidt", "21/815/08150", null, new Dictionary<string, string> { [GermanyComplianceModule.SmallBusinessKey] = "true" });
         var gate = new Mock<IComplianceGate>();
         gate.Setup(g => g.GetActiveAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new ActiveCompliance(new GermanyComplianceModule(), settings)]);
+            .ReturnsAsync([new ActiveCompliance(new GermanyComplianceModule(TestText.Instance), settings)]);
         var invoice = new Invoice(1, new InvoiceNumber("2026-042"), InvoiceType.OneTime, new DateOnly(2026, 10, 15), new Money(1000m, "EUR"), "EUR");
 
         var model = (await new GermanyTemplateContributor(gate.Object, new InMemoryRepository<Tax>()).ContributeAsync(invoice, Token))

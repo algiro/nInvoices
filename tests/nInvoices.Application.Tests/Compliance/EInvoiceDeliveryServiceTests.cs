@@ -90,15 +90,15 @@ public sealed class EInvoiceDeliveryServiceTests
 
     private void Rebuild()
     {
-        var spain = new SpainComplianceModule();
+        var spain = new SpainComplianceModule(TestText.Instance);
         var format = new FacturaeFormat(spain, _time, TestText.Instance);
         var registry = new ComplianceRegistry([spain], [format], Options.Create(new ComplianceOptions()));
         var gate = new ComplianceGate(registry, _settings);
-        var channel = new FaceChannel(_face.Object, Options.Create(_options));
+        var channel = new FaceChannel(_face.Object, Options.Create(_options), TestText.Instance);
 
         _service = new EInvoiceDeliveryService(
             gate, [channel], _invoices.Object, _customers, _files, _submissions,
-            new SigningCertificateLoader(new PlainProtector(), _time), _unitOfWork.Object, _time, TestText.Instance);
+            new SigningCertificateLoader(new PlainProtector(), _time, TestText.Instance), _unitOfWork.Object, _time, TestText.Instance);
     }
 
     private static Invoice NewInvoice(InvoiceStatus status)
@@ -436,7 +436,7 @@ public sealed class EInvoiceDeliveryServiceTests
     [Test]
     public void Channel_AppliesOnlyToPublicAdministrations()
     {
-        var channel = new FaceChannel(_face.Object, Options.Create(_options));
+        var channel = new FaceChannel(_face.Object, Options.Create(_options), TestText.Instance);
 
         channel.AppliesTo(FacturaeTestData.PublicAdministration()).ShouldBeTrue();
         channel.AppliesTo(FacturaeTestData.Company()).ShouldBeFalse();
@@ -446,21 +446,21 @@ public sealed class EInvoiceDeliveryServiceTests
     [TestCase("Production", "Production")]
     public void Channel_NamesItsEnvironment(string configured, string expected)
     {
-        new FaceChannel(_face.Object, Options.Create(new FaceOptions { Environment = configured })).EnvironmentName.ShouldBe(expected);
+        new FaceChannel(_face.Object, Options.Create(new FaceOptions { Environment = configured }), TestText.Instance).EnvironmentName.ShouldBe(expected);
     }
 
     [Test]
     public void Channel_WithoutEnvironment_IsUnavailable()
     {
-        new FaceChannel(_face.Object, Options.Create(new FaceOptions())).UnavailableReason.ShouldNotBeNull();
-        new FaceChannel(_face.Object, Options.Create(_options)).UnavailableReason.ShouldBeNull();
+        new FaceChannel(_face.Object, Options.Create(new FaceOptions()), TestText.Instance).UnavailableReason.ShouldNotBeNull();
+        new FaceChannel(_face.Object, Options.Create(_options), TestText.Instance).UnavailableReason.ShouldBeNull();
     }
 
     [TestCase("not-an-email")]
     [TestCase("")]
     public void Channel_InvalidEmail_IsNotReady(string email)
     {
-        var channel = new FaceChannel(_face.Object, Options.Create(_options));
+        var channel = new FaceChannel(_face.Object, Options.Create(_options), TestText.Instance);
         var issuer = FacturaeTestData.Individual() with { Values = new Dictionary<string, string> { [SpainComplianceModule.FaceEmailKey] = email } };
 
         channel.CheckReady(issuer).ShouldHaveSingleItem();

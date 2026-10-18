@@ -81,7 +81,7 @@ public sealed class LifecycleStepTests
     {
         Draft();
         _step.Setup(s => s.OnFinalizingAsync(It.IsAny<Invoice>(), It.IsAny<Customer>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new VerifactuException([new nInvoices.Core.Compliance.ComplianceIssue(null, "no VAT line")]));
+            .ThrowsAsync(new VerifactuException([new nInvoices.Core.Compliance.ComplianceIssue(null, "no VAT line")], TestText.Instance));
 
         await Should.ThrowAsync<VerifactuException>(() => Finalizer().Handle(new FinalizeInvoiceCommand(1), Token).AsTask());
 

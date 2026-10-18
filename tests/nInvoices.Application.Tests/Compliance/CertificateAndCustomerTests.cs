@@ -45,7 +45,7 @@ public sealed class CertificateAndCustomerTests
         _settings = new InMemoryRepository<ComplianceSettings>();
         _unitOfWork = new Mock<IUnitOfWork>();
         _time = new FixedTimeProvider(FacturaeTestData.Now.UtcDateTime);
-        var spain = new SpainComplianceModule();
+        var spain = new SpainComplianceModule(TestText.Instance);
         _registry = new ComplianceRegistry(
             [spain],
             [new nInvoices.Countries.Spain.Facturae.FacturaeFormat(spain, _time, TestText.Instance)],

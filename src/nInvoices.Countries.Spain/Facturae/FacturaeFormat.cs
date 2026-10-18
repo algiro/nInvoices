@@ -46,21 +46,21 @@ public sealed class FacturaeFormat : IEInvoiceFormat
         var issues = new List<ComplianceIssue>();
 
         foreach (var issue in _spain.ValidateIssuer(document.Issuer))
-            issues.Add(issue with { Message = $"Issuer: {issue.Message}" });
+            issues.Add(issue with { Message = _text.Translate("compliance.einvoice.issuer", ("message", issue.Message)) });
         if (document.Issuer.Address is { } issuerAddress && CountryCodes.FromName(issuerAddress.Country) != FacturaeCountries.Spain)
-            issues.Add(new ComplianceIssue("address", "Issuer: the address must be in Spain"));
+            issues.Add(new ComplianceIssue("address", _text.Translate("compliance.facturae.issuerInSpain")));
         ValidateIssuerNames(document, issues);
 
         ValidateBuyer(document.Buyer, issues);
         ValidateLinesAndTaxes(document, issues);
 
         if (string.IsNullOrWhiteSpace(document.Number))
-            issues.Add(new ComplianceIssue(null, "The invoice has no number"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.noNumber")));
         else if (document.Number.Length > 20)
-            issues.Add(new ComplianceIssue(null, "Facturae invoice numbers have at most 20 characters; change the numbering pattern"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.numberTooLong", ("format", "Facturae"), ("max", 20))));
 
         if (document.Currency.Length != 3)
-            issues.Add(new ComplianceIssue(null, "The invoice currency must be a three-letter code"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.currency")));
 
         return issues;
     }
@@ -88,7 +88,7 @@ public sealed class FacturaeFormat : IEInvoiceFormat
         return new EInvoiceArtifact(stream.ToArray(), "application/xml", "xsig");
     }
 
-    private static void ValidateIssuerNames(EInvoiceDocument invoice, List<ComplianceIssue> issues)
+    private void ValidateIssuerNames(EInvoiceDocument invoice, List<ComplianceIssue> issues)
     {
         var values = invoice.Issuer.Values;
         if (values.GetValueOrDefault(SpainComplianceModule.PersonTypeKey) == SpainComplianceModule.Individual)
@@ -96,12 +96,12 @@ public sealed class FacturaeFormat : IEInvoiceFormat
             foreach (var key in new[] { SpainComplianceModule.FirstNameKey, SpainComplianceModule.FirstSurnameKey, SpainComplianceModule.SecondSurnameKey })
             {
                 if (values.GetValueOrDefault(key)?.Length > 40)
-                    issues.Add(new ComplianceIssue(key, "Issuer: names have at most 40 characters"));
+                    issues.Add(new ComplianceIssue(key, _text.Translate("compliance.facturae.issuerNameTooLong", ("max", 40))));
             }
         }
         else if (invoice.Issuer.LegalName?.Length > 80)
         {
-            issues.Add(new ComplianceIssue("legalName", "Issuer: the legal name has at most 80 characters"));
+            issues.Add(new ComplianceIssue("legalName", _text.Translate("compliance.facturae.issuerLegalNameTooLong", ("max", 80))));
         }
     }
 
@@ -113,44 +113,44 @@ public sealed class FacturaeFormat : IEInvoiceFormat
         var isIndividual = !isPublic && SpainComplianceModule.ResolvePersonType(buyer.TaxId, buyer.Values) == SpainComplianceModule.Individual;
 
         if (string.IsNullOrWhiteSpace(buyer.Name))
-            issues.Add(new ComplianceIssue(null, "Customer: the name is required"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.customerNameRequired")));
         else if (buyer.Name.Length > (isIndividual ? 40 : 80))
-            issues.Add(new ComplianceIssue(null, $"Customer: the name has at most {(isIndividual ? 40 : 80)} characters"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.customerNameTooLong", ("max", isIndividual ? 40 : 80))));
 
         if (buyer.TaxId.Trim().Length < 3)
-            issues.Add(new ComplianceIssue(null, "Customer: the tax id is required"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.facturae.customerTaxIdRequired")));
         else if (buyer.TaxId.Trim().Length > 30)
-            issues.Add(new ComplianceIssue(null, "Customer: the tax id has at most 30 characters"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.facturae.customerTaxIdTooLong", ("max", 30))));
         else if (isSpanish && !SpanishTaxId.IsValid(buyer.TaxId))
-            issues.Add(new ComplianceIssue(null, "Customer: this is not a valid Spanish NIF, NIE or CIF"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.facturae.customerNifInvalid")));
 
         if (FacturaeCountries.Alpha3(country) is null)
-            issues.Add(new ComplianceIssue(null, $"Customer: the country \"{buyer.Address.Country}\" is not recognized"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.customerCountryUnknown", ("country", buyer.Address.Country))));
         else if (isSpanish)
-            issues.AddRange(SpainComplianceModule.ValidateSpanishAddress(buyer.Address, null!, "Customer address")
+            issues.AddRange(_spain.ValidateSpanishAddress(buyer.Address, null!, _text.Translate("compliance.common.subjectCustomerAddress"))
                 .Select(i => new ComplianceIssue(null, i.Message)));
 
         if (isPublic && !isSpanish)
-            issues.Add(new ComplianceIssue(null, "Customer: a public administration must have an address in Spain"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.facturae.publicAdministrationInSpain")));
 
         foreach (var issue in _spain.ValidateCustomer(new CustomerProfile(buyer.Name, buyer.TaxId, buyer.Address, buyer.Values)))
-            issues.Add(new ComplianceIssue(null, $"Customer: {issue.Message}"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.customer", ("message", issue.Message))));
     }
 
-    private static void ValidateLinesAndTaxes(EInvoiceDocument invoice, List<ComplianceIssue> issues)
+    private void ValidateLinesAndTaxes(EInvoiceDocument invoice, List<ComplianceIssue> issues)
     {
         if (invoice.Lines.Count == 0)
         {
-            issues.Add(new ComplianceIssue(null, "The invoice has no lines"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.noLines")));
             return;
         }
 
         foreach (var line in invoice.Lines)
         {
             if (line.Quantity <= 0)
-                issues.Add(new ComplianceIssue(null, $"Line \"{line.Description}\": the quantity must be positive"));
+                issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.lineQuantity", ("line", line.Description))));
             if (line.Amount < 0)
-                issues.Add(new ComplianceIssue(null, $"Line \"{line.Description}\": the amount cannot be negative"));
+                issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.lineAmount", ("line", line.Description))));
         }
 
         var gross = invoice.Lines.Sum(l => FacturaeXmlBuilder.Round2(l.Amount));
@@ -158,18 +158,18 @@ public sealed class FacturaeFormat : IEInvoiceFormat
         var withheld = invoice.Taxes.Where(t => t.Kind == EInvoiceTaxKind.Withheld).ToList();
 
         if (added.Count == 0)
-            issues.Add(new ComplianceIssue(null, "The invoice needs at least one tax; for an exempt invoice add a tax at 0%"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.facturae.taxRequired")));
 
         foreach (var tax in invoice.Taxes)
         {
             if (Math.Abs(tax.TaxableBase - gross) > Tolerance)
-                issues.Add(new ComplianceIssue(null, $"Tax \"{tax.Description}\" is calculated on something other than the invoice total before taxes, which Facturae cannot express"));
+                issues.Add(new ComplianceIssue(null, _text.Translate("compliance.facturae.taxBase", ("tax", tax.Description))));
             else if (Math.Abs(tax.Amount - tax.TaxableBase * tax.Rate / 100m) > Tolerance)
-                issues.Add(new ComplianceIssue(null, $"Tax \"{tax.Description}\": the amount does not match the rate"));
+                issues.Add(new ComplianceIssue(null, _text.Translate("compliance.facturae.taxAmount", ("tax", tax.Description))));
         }
 
         var payable = gross + added.Sum(t => t.Amount) - withheld.Sum(t => t.Amount);
         if (Math.Abs(payable - invoice.Total) > Tolerance)
-            issues.Add(new ComplianceIssue(null, "The lines and taxes do not add up to the invoice total"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.totalsMismatch")));
     }
 }

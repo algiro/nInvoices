@@ -46,20 +46,20 @@ public sealed class FatturaPaFormat : IEInvoiceFormat
         var issues = new List<ComplianceIssue>();
 
         foreach (var issue in _italy.ValidateIssuer(document.Issuer))
-            issues.Add(issue with { Message = $"Issuer: {issue.Message}" });
+            issues.Add(issue with { Message = _text.Translate("compliance.einvoice.issuer", ("message", issue.Message)) });
         if (document.Issuer.Address is { } address && CountryCodes.FromName(address.Country) != ItalyComplianceModule.CountryCodeValue)
-            issues.Add(new ComplianceIssue("address", "Issuer: the address must be in Italy"));
+            issues.Add(new ComplianceIssue("address", _text.Translate("compliance.fatturapa.issuerInItaly")));
 
         ValidateBuyer(document.Buyer, issues);
         ValidateLinesAndTaxes(document, issues);
 
         if (string.IsNullOrWhiteSpace(document.Number))
-            issues.Add(new ComplianceIssue(null, "The invoice has no number"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.noNumber")));
         else if (document.Number.Length > 20)
-            issues.Add(new ComplianceIssue(null, "FatturaPA invoice numbers have at most 20 characters; change the numbering pattern"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.numberTooLong", ("format", "FatturaPA"), ("max", 20))));
 
         if (document.Currency.Length != 3)
-            issues.Add(new ComplianceIssue(null, "The invoice currency must be a three-letter code"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.currency")));
 
         return issues;
     }
@@ -84,72 +84,72 @@ public sealed class FatturaPaFormat : IEInvoiceFormat
         var country = CountryCodes.FromName(buyer.Address.Country);
 
         if (string.IsNullOrWhiteSpace(buyer.Name))
-            issues.Add(new ComplianceIssue(null, "Customer: the name is required"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.customerNameRequired")));
         else if (buyer.Name.Length > 80)
-            issues.Add(new ComplianceIssue(null, "Customer: the name has at most 80 characters"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.customerNameTooLong", ("max", 80))));
 
         if (country is null)
         {
-            issues.Add(new ComplianceIssue(null, $"Customer: the country \"{buyer.Address.Country}\" is not recognized"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.customerCountryUnknown", ("country", buyer.Address.Country))));
         }
         else if (country == ItalyComplianceModule.CountryCodeValue)
         {
             var hasVat = ItalianTaxId.IsValidPartitaIva(buyer.TaxId);
             var hasFiscalCode = ItalianTaxId.IsValidCodiceFiscale(FatturaPaXmlBuilder.BuyerFiscalCode(buyer));
             if (!hasVat && !hasFiscalCode)
-                issues.Add(new ComplianceIssue(null, "Customer: an Italian customer needs a valid Partita IVA (the Tax ID) or codice fiscale"));
-            issues.AddRange(ItalyComplianceModule.ValidateItalianAddress(buyer.Address, null, "Customer address"));
+                issues.Add(new ComplianceIssue(null, _text.Translate("compliance.fatturapa.italianCustomerTaxId")));
+            issues.AddRange(_italy.ValidateItalianAddress(buyer.Address, null, _text.Translate("compliance.common.subjectCustomerAddress")));
         }
 
         foreach (var issue in _italy.ValidateCustomer(new CustomerProfile(buyer.Name, buyer.TaxId, buyer.Address, buyer.Values)))
-            issues.Add(new ComplianceIssue(null, $"Customer: {issue.Message}"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.customer", ("message", issue.Message))));
     }
 
-    private static void ValidateLinesAndTaxes(EInvoiceDocument document, List<ComplianceIssue> issues)
+    private void ValidateLinesAndTaxes(EInvoiceDocument document, List<ComplianceIssue> issues)
     {
         if (document.Lines.Count == 0)
         {
-            issues.Add(new ComplianceIssue(null, "The invoice has no lines"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.noLines")));
             return;
         }
 
         foreach (var line in document.Lines)
         {
             if (line.Quantity <= 0)
-                issues.Add(new ComplianceIssue(null, $"Line \"{line.Description}\": the quantity must be positive"));
+                issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.lineQuantity", ("line", line.Description))));
             if (line.Amount < 0)
-                issues.Add(new ComplianceIssue(null, $"Line \"{line.Description}\": the amount cannot be negative"));
+                issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.lineAmount", ("line", line.Description))));
         }
 
         var linesAmount = document.Lines.Sum(l => FatturaPaXmlBuilder.Round2(l.Amount));
         var taxes = ItalianInvoiceTaxes.Of(document.Taxes, linesAmount, document.Issuer.Values);
 
         if (taxes.OtherIva.Count > 0)
-            issues.Add(new ComplianceIssue(null, "An Italian invoice has one IVA rate per line: keep a single IVA tax for this customer"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.fatturapa.singleIva")));
 
         if (taxes.Iva is null && !ItalyComplianceModule.ChargesNoIva(document.Issuer.Values))
-            issues.Add(new ComplianceIssue(null, "The invoice needs its IVA; if none is charged, add an IVA tax at 0% with the reason (natura)"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.fatturapa.ivaRequired")));
         else if (taxes.IvaRate == 0 && taxes.Nature is null)
-            issues.Add(new ComplianceIssue(null, $"IVA \"{taxes.Iva?.Description}\" is 0%: choose why no IVA is charged (natura) on the tax"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.fatturapa.zeroIvaNature", ("tax", taxes.Iva?.Description))));
 
         if (taxes.Iva is { } iva)
         {
             if (Math.Abs(iva.TaxableBase - taxes.TaxableAmount) > Tolerance)
-                issues.Add(new ComplianceIssue(null, taxes.Contributions.Count > 0
-                    ? $"IVA \"{iva.Description}\" must be calculated on the fee plus the contribution: tick \"Part of the taxable amount\" on the contribution and give it a lower order"
-                    : $"IVA \"{iva.Description}\" is calculated on something other than the invoice total before taxes"));
+                issues.Add(new ComplianceIssue(null, _text.Translate(
+                    taxes.Contributions.Count > 0 ? "compliance.fatturapa.ivaBaseWithContribution" : "compliance.fatturapa.ivaBase",
+                    ("tax", iva.Description))));
             else if (Math.Abs(iva.Amount - iva.TaxableBase * iva.Rate / 100m) > Tolerance)
-                issues.Add(new ComplianceIssue(null, $"IVA \"{iva.Description}\": the amount does not match the rate"));
+                issues.Add(new ComplianceIssue(null, _text.Translate("compliance.fatturapa.ivaAmount", ("tax", iva.Description))));
         }
 
         foreach (var contribution in taxes.Contributions)
         {
             if (Math.Abs(contribution.TaxableBase - linesAmount) > Tolerance)
-                issues.Add(new ComplianceIssue(null, $"Contribution \"{contribution.Description}\" must be calculated on the invoice lines"));
+                issues.Add(new ComplianceIssue(null, _text.Translate("compliance.fatturapa.contributionBase", ("tax", contribution.Description))));
         }
 
         var payable = taxes.TaxableAmount + (taxes.Iva?.Amount ?? 0m) - taxes.Withholdings.Sum(w => w.Amount);
         if (Math.Abs(payable - document.Total) > Tolerance)
-            issues.Add(new ComplianceIssue(null, "The lines and taxes do not add up to the invoice total"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.einvoice.totalsMismatch")));
     }
 }
