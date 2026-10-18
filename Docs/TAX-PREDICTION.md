@@ -10,15 +10,21 @@ It is built in for **Spain**, for an autónomo in *estimación directa simplific
 - **Modelo 130**, the quarterly income-tax prepayment (*pago fraccionado del IRPF*);
 - **Modelo 420** (IGIC, Canary Islands) or **Modelo 303** (IVA, mainland and Balearic Islands).
 
+It is also built in for **Italy** (a professional in the Gestione Separata INPS, regime forfettario or
+ordinario semplificato: the substitute tax or IRPEF and INPS in two installments and the balance, and
+the quarterly IVA) and **Germany** (Freiberufler or Gewerbetreibender: Einkommensteuer, Soli,
+Kirchensteuer, Gewerbesteuer, the prepayments the Finanzamt set and the VAT returns, unless a
+Kleinunternehmer). The worked example and the details below are Spain's.
+
 ## Setting it up
 
-1. **Settings → Taxes**: choose the country, the regime and where you pay indirect tax (Canary Islands
-   or elsewhere). The two options below start ticked; untick them to match what your gestor does
+1. **Settings → Country & taxes**: with Spain as *Your country*, choose in *Tax regime* the regime and
+   where you pay indirect tax (Canary Islands or elsewhere). The two options below start ticked; untick them to match what your gestor does
    (see [The settings](#the-settings)). Save.
 2. **Your taxes on invoices need nothing special.** A positive tax counts as the indirect tax of your
    territory (IGIC in the Canary Islands, IVA elsewhere), and a withholding such as IRPF is simply a tax
    with a negative rate (e.g. −15%). Only if you charge both, IVA to some customers and IGIC to others,
-   say which one each tax is: turn on Spain in *Settings → Invoicing rules by country* and choose
+   say which one each tax is: turn on Spain's *Invoicing rules* in *Settings → Country & taxes* and choose
    *Which tax is this?* on the tax (*Customers → the customer → Taxes*). A tax marked as the other one
    is left out of your return, with a warning.
 3. **Record your expenses** in *Expenses* (below), including the social security fee.
@@ -138,6 +144,7 @@ your account.
 A country is an `ITaxPredictionModule` (`src/nInvoices.Core/TaxPrediction`): its regimes and their
 settings (the same field descriptors as the e-invoicing modules), the currency it taxes in, how to tell
 which indirect tax a tax is, and a pure `Predict` from plain income, expenses and payments to periods,
-forms and their lines. Register it in `TaxPredictionExtensions.AddTaxPrediction`; the API and the UI
-need nothing else. The Spanish module, its calculators and `SpainTaxPredictionTests` (under
-`src/nInvoices.Application/TaxPrediction/Spain` and its tests) are the example to follow.
+forms and their lines. It lives in the country's project and is registered by its `ICountryPlugin`
+(`src/nInvoices.Countries.<Name>/TaxPrediction`); the API and the UI need nothing else. The Spanish,
+Italian and German modules and their tests (`tests/nInvoices.Application.Tests/TaxPrediction`) are the
+examples to follow.

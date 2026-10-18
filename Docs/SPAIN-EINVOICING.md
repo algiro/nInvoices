@@ -3,7 +3,7 @@
 nInvoices can issue **Facturae 3.2.2**, the structured invoice Spanish public administrations require
 (sent through FACe), signed with your electronic certificate, and keep the **Verifactu** record of every
 invoice (see [Verifactu](#verifactu)). It is **off by default**: nothing changes for you, or for users in
-other countries, until you turn Spain on in *Settings → Invoicing rules by country*.
+other countries, until you choose Spain in *Settings → Country & taxes* and turn on its *Invoicing rules*.
 
 ## What you need
 
@@ -51,7 +51,7 @@ Keep the file and its password safe: anyone holding them can sign invoices in yo
 
 ### Uploading it
 
-*Settings → Invoicing rules by country → Spain → Signing certificate*: choose the file, type its
+*Settings → Country & taxes → Invoicing rules → Spain → Signing certificate*: choose the file, type its
 password, **Upload**. nInvoices checks it (password, RSA private key, not expired) and stores the file and
 the password **encrypted** (ASP.NET Data Protection); it is never shown again and only used to sign.
 You can replace or remove it at any time.
@@ -198,7 +198,7 @@ reaches the real one. Move to `Production` only after a real invoice has gone th
 
 ### For each user
 
-1. In *Settings → Invoicing rules by country → Spain*, fill in your data, upload your certificate (AEAT
+1. In *Settings → Country & taxes → Invoicing rules → Spain*, fill in your data, upload your certificate (AEAT
    authenticates with it) and tick **Verifactu**. If your certificate is a company *seal* certificate (certificado
    de sello), tick that too; a personal certificate needs nothing.
 2. Every invoice needs **one VAT (or IGIC) line**. If an invoice charges 0% VAT, open that tax (Taxes → edit) and say why:
