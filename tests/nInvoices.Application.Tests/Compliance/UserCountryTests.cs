@@ -36,7 +36,7 @@ public sealed class UserCountryTests
         [new SpainComplianceModule(TestText.Instance), new ItalyComplianceModule(TestText.Instance)], [], Options.Create(new ComplianceOptions()));
 
     private static readonly ITaxPredictionRegistry TaxRegistry = new TaxPredictionRegistry(
-        [new SpainTaxPredictionModule(), new ItalyTaxPredictionModule()]);
+        [new SpainTaxPredictionModule(TestText.Instance), new ItalyTaxPredictionModule(TestText.Instance)]);
 
     [SetUp]
     public void SetUp()

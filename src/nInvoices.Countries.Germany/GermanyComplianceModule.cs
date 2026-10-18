@@ -50,9 +50,16 @@ public sealed partial class GermanyComplianceModule : ICountryComplianceModule
     public const string SmallBusinessNote = "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.";
     public const string ReverseChargeNote = "Steuerschuldnerschaft des Leistungsempfängers (Reverse Charge).";
 
+    private readonly IAppText _text;
+
+    public GermanyComplianceModule(IAppText text)
+    {
+        _text = text;
+    }
+
     public string CountryCode => CountryCodeValue;
 
-    public string DisplayName => "Germany";
+    public string DisplayName => _text.Translate("countries.DE");
 
     public IReadOnlySet<ComplianceCapability> Capabilities { get; } = new HashSet<ComplianceCapability>
     {
@@ -61,63 +68,57 @@ public sealed partial class GermanyComplianceModule : ICountryComplianceModule
         ComplianceCapability.StructuredEInvoice
     };
 
-    public IReadOnlyList<ComplianceField> Fields { get; } =
+    // Built on each read, in the language of the request
+    public IReadOnlyList<ComplianceField> Fields =>
     [
         new ComplianceField(
             SmallBusinessKey,
-            "Kleinunternehmer (§ 19 UStG): I charge no VAT",
+            T("compliance.germany.fields.smallBusiness.label"),
             ComplianceFieldType.Boolean,
-            Help: "Your invoices then carry the § 19 note and no VAT. Only possible below €25,000 of revenue last year and €100,000 this year."),
+            Help: T("compliance.germany.fields.smallBusiness.help")),
         new ComplianceField(
             VatIdKey,
             "USt-IdNr",
-            Help: "DE and nine digits. Needed for customers in other EU countries; leave it empty if the Tax ID above already is it."),
-        new ComplianceField(ContactNameKey, "Contact name", Help: "For XRechnung: who the customer can ask about the invoice."),
-        new ComplianceField(ContactPhoneKey, "Contact phone", Help: "For XRechnung."),
-        new ComplianceField(ContactEmailKey, "Contact email", Help: "For XRechnung: also the address the invoice comes from."),
-        new ComplianceField(IbanKey, "IBAN", Help: "Where the customer pays; XRechnung requires it for a bank transfer."),
-        new ComplianceField(BicKey, "BIC", Help: "Optional.")
+            Help: T("compliance.germany.fields.vatId.help")),
+        new ComplianceField(ContactNameKey, T("compliance.germany.fields.contactName.label"), Help: T("compliance.germany.fields.contactName.help")),
+        new ComplianceField(ContactPhoneKey, T("compliance.germany.fields.contactPhone.label"), Help: T("compliance.germany.fields.contactPhone.help")),
+        new ComplianceField(ContactEmailKey, T("compliance.germany.fields.contactEmail.label"), Help: T("compliance.germany.fields.contactEmail.help")),
+        new ComplianceField(IbanKey, "IBAN", Help: T("compliance.germany.fields.iban.help")),
+        new ComplianceField(BicKey, "BIC", Help: T("compliance.germany.fields.bic.help"))
     ];
 
-    public IReadOnlyList<ComplianceField> CustomerFields { get; } =
+    public IReadOnlyList<ComplianceField> CustomerFields =>
     [
         new ComplianceField(
             BuyerReferenceKey,
-            "Leitweg-ID / buyer reference",
-            Help: "A public administration gives you its Leitweg-ID; a business may give you a reference (a purchase order). Left empty, the invoice number is used."),
-        new ComplianceField(BuyerEmailKey, "E-invoice email", Help: "Where their XRechnung goes. Required for XRechnung.")
+            T("compliance.germany.customerFields.buyerReference.label"),
+            Help: T("compliance.germany.customerFields.buyerReference.help")),
+        new ComplianceField(BuyerEmailKey, T("compliance.germany.customerFields.email.label"), Help: T("compliance.germany.customerFields.email.help"))
     ];
 
-    public IReadOnlyList<ComplianceField> TaxFields { get; } =
+    public IReadOnlyList<ComplianceField> TaxFields =>
     [
         new ComplianceField(
             CategoryKey,
-            "Why no VAT is charged (Germany)",
+            T("compliance.germany.taxFields.category.label"),
             ComplianceFieldType.Choice,
-            Help: "Required by XRechnung for VAT at 0%. For a Kleinunternehmer without any VAT tax, the § 19 note is used.",
+            Help: T("compliance.germany.taxFields.category.help"),
             Options:
             [
-                new ComplianceFieldOption(ReverseCharge, "AE · Reverse charge: the customer owes the VAT (§ 13b UStG, services to an EU business)"),
-                new ComplianceFieldOption(IntraCommunity, "K · Intra-community supply of goods"),
-                new ComplianceFieldOption(Export, "G · Export outside the EU"),
-                new ComplianceFieldOption(NotSubject, "O · Not subject to German VAT (e.g. services to a business outside the EU)"),
-                new ComplianceFieldOption(Exempt, "E · Exempt (§ 4 UStG): give the reason below"),
-                new ComplianceFieldOption(ZeroRated, "Z · Zero rate (§ 12 (3) UStG, e.g. solar panels)")
+                new ComplianceFieldOption(ReverseCharge, T("compliance.germany.taxFields.category.AE")),
+                new ComplianceFieldOption(IntraCommunity, T("compliance.germany.taxFields.category.K")),
+                new ComplianceFieldOption(Export, T("compliance.germany.taxFields.category.G")),
+                new ComplianceFieldOption(NotSubject, T("compliance.germany.taxFields.category.O")),
+                new ComplianceFieldOption(Exempt, T("compliance.germany.taxFields.category.E")),
+                new ComplianceFieldOption(ZeroRated, T("compliance.germany.taxFields.category.Z"))
             ],
             ZeroRateOnly: true),
         new ComplianceField(
             ExemptionNoteKey,
-            "Reason on the invoice",
-            Help: "For an exemption, its legal basis (e.g. \"Steuerfrei nach § 4 Nr. 21 UStG\"). The other categories have a default text.",
+            T("compliance.germany.taxFields.exemptionNote.label"),
+            Help: T("compliance.germany.taxFields.exemptionNote.help"),
             ZeroRateOnly: true)
     ];
-
-    private readonly IAppText _text;
-
-    public GermanyComplianceModule(IAppText text)
-    {
-        _text = text;
-    }
 
     public IReadOnlyList<ComplianceIssue> ValidateIssuer(IssuerProfile issuer)
     {
@@ -184,6 +185,8 @@ public sealed partial class GermanyComplianceModule : ICountryComplianceModule
     /// <summary>The Steuernummer of the issuer: the Tax ID unless it is the USt-IdNr; null if none.</summary>
     public static string? IssuerTaxNumber(string? taxId) =>
         !string.IsNullOrWhiteSpace(taxId) && !GermanTaxId.IsValidVatId(taxId) ? taxId.Trim() : null;
+
+    private string T(string key) => _text.Translate(key);
 
     private static bool HasValue(IReadOnlyDictionary<string, string> values, string key) =>
         values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value);

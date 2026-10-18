@@ -3,13 +3,14 @@ using nInvoices.Countries.Italy;
 using nInvoices.Countries.Italy.TaxPrediction;
 using Shouldly;
 using static nInvoices.Countries.Italy.TaxPrediction.ItalyTaxPredictionModule;
+using nInvoices.Application.Tests.TestDoubles;
 
 namespace nInvoices.Application.Tests.TaxPrediction;
 
 [TestFixture]
 public sealed class ItalyTaxPredictionTests
 {
-    private static readonly ItalyTaxPredictionModule Module = new();
+    private static readonly ItalyTaxPredictionModule Module = new(TestText.Instance);
 
     private static TaxPredictionInput Forfettario(
         Dictionary<string, string>? values = null,

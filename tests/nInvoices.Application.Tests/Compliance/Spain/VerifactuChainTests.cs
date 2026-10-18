@@ -2,6 +2,7 @@ using System.Reflection;
 using nInvoices.Countries.Spain.Verifactu;
 using nInvoices.Core.Entities;
 using Shouldly;
+using nInvoices.Application.Tests.TestDoubles;
 
 namespace nInvoices.Application.Tests.Compliance.Spain;
 
@@ -52,7 +53,7 @@ public sealed class VerifactuChainTests
     [Test]
     public void Verify_AnIntactChain_HasNoProblems()
     {
-        var report = VerifactuChainVerifier.Verify(Chain(5));
+        var report = VerifactuChainVerifier.Verify(TestText.Instance, Chain(5));
 
         report.Records.ShouldBe(5);
         report.IsIntact.ShouldBeTrue();
@@ -60,7 +61,7 @@ public sealed class VerifactuChainTests
 
     [Test]
     public void Verify_EmptyChain_IsIntact() =>
-        VerifactuChainVerifier.Verify([]).IsIntact.ShouldBeTrue();
+        VerifactuChainVerifier.Verify(TestText.Instance, []).IsIntact.ShouldBeTrue();
 
     [Test]
     public void Verify_ARecordWhoseAmountWasChanged_IsCaught()
@@ -68,7 +69,7 @@ public sealed class VerifactuChainTests
         var chain = Chain(4);
         Tamper(chain[1], nameof(VerifactuRecord.TotalAmount), "1.00");
 
-        var report = VerifactuChainVerifier.Verify(chain);
+        var report = VerifactuChainVerifier.Verify(TestText.Instance, chain);
 
         report.IsIntact.ShouldBeFalse();
         report.Problems.ShouldContain(p => p.Sequence == 2 && p.Message.Contains("changed"));
@@ -83,7 +84,7 @@ public sealed class VerifactuChainTests
         Tamper(chain[1], nameof(VerifactuRecord.Hash),
             VerifactuHash.Issued("12345678Z", "26-10-002", "03-10-2026", "F1", "21.00", "1.00", chain[1].PreviousHash, chain[1].GeneratedAt));
 
-        var report = VerifactuChainVerifier.Verify(chain);
+        var report = VerifactuChainVerifier.Verify(TestText.Instance, chain);
 
         report.Problems.ShouldContain(p => p.Sequence == 3 && p.Message.Contains("does not point"));
     }
@@ -94,7 +95,7 @@ public sealed class VerifactuChainTests
         var chain = Chain(4);
         chain.RemoveAt(1);
 
-        var report = VerifactuChainVerifier.Verify(chain);
+        var report = VerifactuChainVerifier.Verify(TestText.Instance, chain);
 
         report.Problems.ShouldContain(p => p.Message.Contains("missing"));
         report.Problems.ShouldContain(p => p.Message.Contains("does not point"));
@@ -106,7 +107,7 @@ public sealed class VerifactuChainTests
         var chain = Chain(2);
         Tamper(chain[0], nameof(VerifactuRecord.Xml), chain[0].Xml.Replace(chain[0].Hash, new string('A', 64)));
 
-        VerifactuChainVerifier.Verify(chain).Problems.ShouldContain(p => p.Sequence == 1 && p.Message.Contains("XML"));
+        VerifactuChainVerifier.Verify(TestText.Instance, chain).Problems.ShouldContain(p => p.Sequence == 1 && p.Message.Contains("XML"));
     }
 
     [Test]
@@ -118,10 +119,10 @@ public sealed class VerifactuChainTests
         Tamper(chain[2], nameof(VerifactuRecord.Hash),
             VerifactuHash.Issued("12345678Z", "26-10-003", "03-10-2026", "F1", "21.00", "121.00", chain[2].PreviousHash, stamp));
 
-        VerifactuChainVerifier.Verify(chain).Problems.ShouldContain(p => p.Sequence == 3 && p.Message.Contains("before"));
+        VerifactuChainVerifier.Verify(TestText.Instance, chain).Problems.ShouldContain(p => p.Sequence == 3 && p.Message.Contains("before"));
     }
 
     [Test]
     public void Verify_RecordsGivenOutOfOrder_AreStillJudgedByTheirPosition() =>
-        VerifactuChainVerifier.Verify(Chain(4).AsEnumerable().Reverse().ToList()).IsIntact.ShouldBeTrue();
+        VerifactuChainVerifier.Verify(TestText.Instance, Chain(4).AsEnumerable().Reverse().ToList()).IsIntact.ShouldBeTrue();
 }

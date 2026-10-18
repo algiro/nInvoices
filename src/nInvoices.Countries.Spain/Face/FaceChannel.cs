@@ -46,7 +46,7 @@ public sealed class FaceChannel : IEInvoiceChannel
             var missing = _options.Missing();
             return missing.Count == 0
                 ? null
-                : $"FACe is not set up on this server ({string.Join(", ", missing)} missing under {FaceOptions.SectionName})";
+                : _text.Translate("compliance.face.notConfigured", ("missing", string.Join(", ", missing)), ("section", FaceOptions.SectionName));
         }
     }
 

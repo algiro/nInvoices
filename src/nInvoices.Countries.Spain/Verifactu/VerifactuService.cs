@@ -169,7 +169,7 @@ public sealed class VerifactuService : IVerifactuService
     }
 
     public async Task<ChainReport> VerifyChainAsync(CancellationToken cancellationToken = default) =>
-        VerifactuChainVerifier.Verify(await _records.GetChainAsync(cancellationToken));
+        VerifactuChainVerifier.Verify(_text, await _records.GetChainAsync(cancellationToken));
 
     public async Task<IReadOnlyList<VerifactuRecord>> GetRecordsAsync(long invoiceId, CancellationToken cancellationToken = default) =>
         await _records.GetByInvoiceAsync(invoiceId, cancellationToken);

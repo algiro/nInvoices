@@ -296,6 +296,8 @@ file and its `Application/Localization/Messages/<lang>.json`, nothing else. `Doc
 API messages (validators, exceptions from Application and the countries) are keys too, in
 `Application/Localization/Messages/en.json`: `.WithText(text, "validation.…")` in a validator,
 `_text.Translate("errors.…", ("name", value))` in a handler (inject `IAppText`; tests pass `TestText.Instance`).
+So is what a country describes (compliance issues and fields, tax regimes and estimates: `compliance.*`,
+`taxPrediction.*`); a module builds its `Fields` / `Regimes` on each read (`=>`), so they follow the request's language.
 
 ### Templates & PDF
 

@@ -116,18 +116,18 @@ public sealed class EInvoiceDeliveryService : IEInvoiceDeliveryService
             return Fail(problem);
 
         if (invoice!.Status is InvoiceStatus.Draft or InvoiceStatus.Cancelled)
-            return Fail(invoice.Status == InvoiceStatus.Draft ? "Finalize the invoice first" : "A cancelled invoice cannot be sent");
+            return Fail(_text.Translate(invoice.Status == InvoiceStatus.Draft ? "compliance.delivery.finalizeFirst" : "compliance.delivery.cancelledCannotBeSent"));
 
         var file = (await _files.FindAsync(f => f.InvoiceId == invoiceId && f.FormatId == channel!.FormatId, cancellationToken)).FirstOrDefault();
         if (file is null)
-            return Fail("Generate the e-invoice first");
+            return Fail(_text.Translate("compliance.delivery.generateFirst"));
 
         var existing = (await _submissions.FindAsync(s => s.InvoiceEInvoiceId == file.Id && s.ChannelId == channel!.ChannelId, cancellationToken)).FirstOrDefault();
         if (existing is not null)
-            return new DeliveryResult(false, $"It was already sent ({existing.Reference})", existing);
+            return new DeliveryResult(false, _text.Translate("compliance.delivery.alreadySent", ("reference", existing.Reference)), existing);
 
         if (!channel!.AppliesTo(Buyer(customer!, active!.Module.CountryCode)))
-            return Fail($"Invoices to this customer do not go through {channel.DisplayName}");
+            return Fail(_text.Translate("compliance.delivery.notThroughChannel", ("channel", channel.DisplayName)));
 
         var notReady = channel.CheckReady(active.Settings.ToIssuerProfile());
         if (notReady.Count > 0)
@@ -179,7 +179,7 @@ public sealed class EInvoiceDeliveryService : IEInvoiceDeliveryService
             ? null
             : (await _submissions.FindAsync(s => s.InvoiceEInvoiceId == file.Id && s.ChannelId == channel!.ChannelId, cancellationToken)).FirstOrDefault();
         if (submission is null)
-            return Fail("It has not been sent");
+            return Fail(_text.Translate("compliance.delivery.notSent"));
 
         var issues = new List<ComplianceIssue>();
         using var certificate = _certificates.Load(active!.Settings, issues);
@@ -209,22 +209,22 @@ public sealed class EInvoiceDeliveryService : IEInvoiceDeliveryService
     {
         var channel = _channels.FirstOrDefault(c => string.Equals(c.ChannelId, channelId, StringComparison.OrdinalIgnoreCase));
         if (channel is null)
-            return (null, null, null, null, $"Unknown channel \"{channelId}\"");
+            return (null, null, null, null, _text.Translate("compliance.delivery.unknownChannel", ("channel", channelId)));
 
         var active = (await _gate.GetActiveAsync(cancellationToken))
             .FirstOrDefault(a => string.Equals(a.Module.CountryCode, channel.CountryCode, StringComparison.OrdinalIgnoreCase));
         if (active is null)
-            return (channel, null, null, null, $"{channel.DisplayName} is not turned on");
+            return (channel, null, null, null, _text.Translate("compliance.delivery.notTurnedOn", ("channel", channel.DisplayName)));
 
         if (channel.UnavailableReason is { } reason)
             return (channel, active, null, null, reason);
 
         var invoice = await _invoices.GetByIdAsync(invoiceId, cancellationToken);
         if (invoice is null)
-            return (channel, active, null, null, $"Invoice {invoiceId} not found");
+            return (channel, active, null, null, _text.Translate("notFound.invoice", ("id", invoiceId)));
 
         var customer = await _customers.GetByIdAsync(invoice.CustomerId, cancellationToken);
-        return (channel, active, invoice, customer, customer is null ? "The customer was not found" : null);
+        return (channel, active, invoice, customer, customer is null ? _text.Translate("compliance.delivery.customerNotFound") : null);
     }
 
     private static EInvoiceParty Buyer(Customer customer, string countryCode) =>

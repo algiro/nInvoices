@@ -72,7 +72,10 @@ import { t } from '@/i18n'                   // in stores, composables, utils
 Keys are grouped by kind: `validation.*` (FluentValidation rules), `errors.*` (a `DomainException` /
 `InvoiceEmailException`: a rule refused), `notFound.*` (`NotFoundException`), `compliance.*` (the per-field
 `ComplianceIssue`s of country rules and e-invoice formats: `compliance.<country or format>.<name>`, with what several
-share under `compliance.common.*` and `compliance.einvoice.*`). Placeholders are named, values passed as tuples:
+share under `compliance.common.*` and `compliance.einvoice.*`; the labels, help and options of their fields under
+`compliance.<country>.fields` / `customerFields` / `taxFields`), `taxPrediction.*` (the tax regimes' settings, the
+estimate's periods, forms, lines and warnings), `countries.<CODE>` (a country's name). Placeholders are named, values
+passed as tuples:
 
 ```csharp
 // a validator: its constructor takes IAppText, and passes it on to the validators it nests
@@ -90,16 +93,20 @@ throw new DomainException(_text.Translate("errors.project.nameExists", ("name", 
   request's language even though validators are built once. Template syntax rules take the key of their
   message: `MustBeValidTemplate(renderer, text, "validation.template.subjectSyntaxError")`.
 - Pure code takes the text as a parameter instead of injecting it (`InvoiceCalculator.EnsureBillable(dto, rates, text)`,
-  `new DayRates(defaultRate, dayRates, text)`).
+  `new DayRates(defaultRate, dayRates, text)`, the tax calculators, `VerifactuChainVerifier.Verify(text, chain)`).
+- What a module describes is built on each read, so it follows the request's language: `Fields`, `Regimes` and
+  `DisplayName` are `=>` properties that translate, never `{ get; } =` lists made once. Proper names stay as they are
+  in every language (Codice fiscale, Kirchensteuer, Modelo 303, the FatturaPA's codes).
 - Pass dates in an invariant form (`yyyy-MM-dd`) and ids, numbers, names as they are; a value is formatted with the
   UI culture.
 - Tests construct classes with `TestText.Instance` (the shipped files) and run in the machine's UI language;
   English where it has no file. `AppTextTests` fails when the code uses a key `en.json` lacks, when a translation
-  has a key English lacks, or when it loses a placeholder.
+  has a key English lacks, or when it loses a placeholder. `CountryTextsTests` reads every country's fields, regimes and
+  a full estimate in each language and fails when a text comes out as its key (keys built at run time, such as a
+  month's, escape `AppTextTests`).
 
 Still English: messages thrown by `Core` entities and value objects (`Invoice` lifecycle refusals, `Money`'s
-currency mismatch, `ArgumentException`s), which can't take services and carry runtime details; what the country
-modules describe rather than refuse (the labels, help and options of their `ComplianceField`s, display names, a
-channel's `UnavailableReason`) and the parts of a message that come from a library (Scriban's syntax errors);
-Infrastructure's internal checks (tax handlers, PDF export guards that the request handlers already check); and the
-signing-certificate checks of the Spanish signers.
+currency mismatch, `ArgumentException`s), which can't take services and carry runtime details; what comes from outside
+(Scriban's syntax errors, the answers of FACe and the Tax Agency) and what runs without a request (the Verifactu
+submitter's notes); Infrastructure's internal checks (tax handlers, PDF export guards that the request handlers already
+check); and the signing-certificate checks of the Spanish signers.

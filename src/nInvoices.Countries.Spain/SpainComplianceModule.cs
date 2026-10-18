@@ -46,12 +46,6 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
     public const string Individual = "individual";
     public const string LegalEntity = "legalEntity";
 
-    private static readonly IReadOnlyList<ComplianceFieldOption> PersonTypes =
-    [
-        new ComplianceFieldOption(Individual, "Individual (autónomo)"),
-        new ComplianceFieldOption(LegalEntity, "Legal entity (company)")
-    ];
-
     private readonly IAppText _text;
     private readonly VerifactuOptions _verifactu;
 
@@ -63,7 +57,7 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
 
     public string CountryCode => CountryCodeValue;
 
-    public string DisplayName => "Spain";
+    public string DisplayName => _text.Translate("countries.ES");
 
     public IReadOnlySet<ComplianceCapability> Capabilities { get; } = new HashSet<ComplianceCapability>
     {
@@ -75,87 +69,94 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
         ComplianceCapability.VerificationMark
     };
 
-    public IReadOnlyList<ComplianceField> Fields { get; } =
+    // Built on each read, in the language of the request
+    public IReadOnlyList<ComplianceField> Fields =>
     [
         new ComplianceField(
             PersonTypeKey,
-            "Issuer type",
+            T("compliance.spain.fields.personType.label"),
             ComplianceFieldType.Choice,
             Required: true,
-            Help: "Facturae distinguishes a natural person (autónomo) from a legal entity.",
+            Help: T("compliance.spain.fields.personType.help"),
             Options: PersonTypes),
-        new ComplianceField(FirstNameKey, "First name", Help: "Individuals only: the legal name is split into first name and surnames."),
-        new ComplianceField(FirstSurnameKey, "First surname", Help: "Individuals only."),
-        new ComplianceField(SecondSurnameKey, "Second surname", Help: "Individuals only, if any."),
+        new ComplianceField(FirstNameKey, T("compliance.spain.fields.firstName.label"), Help: T("compliance.spain.fields.firstName.help")),
+        new ComplianceField(FirstSurnameKey, T("compliance.spain.fields.firstSurname.label"), Help: T("compliance.spain.fields.individualsOnly")),
+        new ComplianceField(SecondSurnameKey, T("compliance.spain.fields.secondSurname.label"), Help: T("compliance.spain.fields.individualsOnlyIfAny")),
         new ComplianceField(
             VerifactuKey,
             "Verifactu",
             ComplianceFieldType.Boolean,
-            Help: "Every invoice you issue is recorded in a tamper-evident chain and reported to the Tax Agency (AEAT), and carries a QR code. Required for autónomos from 1 July 2027."),
+            Help: T("compliance.spain.fields.verifactu.help")),
         new ComplianceField(
             FaceEmailKey,
-            "Email for FACe notifications",
-            Help: "FACe tells you here when an invoice you send to a public administration is registered, rejected or paid. Needed to send invoices to FACe."),
+            T("compliance.spain.fields.faceEmail.label"),
+            Help: T("compliance.spain.fields.faceEmail.help")),
         new ComplianceField(
             SealCertificateKey,
-            "My certificate is a company seal (certificado de sello)",
+            T("compliance.spain.fields.sealCertificate.label"),
             ComplianceFieldType.Boolean,
-            Help: "For Verifactu: tick it only if the certificate you upload is an electronic seal of a company, not a personal certificate.")
+            Help: T("compliance.spain.fields.sealCertificate.help"))
     ];
 
-    public IReadOnlyList<ComplianceField> TaxFields { get; } =
+    public IReadOnlyList<ComplianceField> TaxFields =>
     [
         new ComplianceField(
             TaxTypeKey,
-            "Which tax is this?",
+            T("compliance.spain.taxFields.taxType.label"),
             ComplianceFieldType.Choice,
-            Help: "Left empty it is IVA. Choose IGIC (Impuesto General Indirecto Canario) if you invoice from the Canary Islands. A withholding such as IRPF is not affected: it is the tax with a negative rate.",
+            Help: T("compliance.spain.taxFields.taxType.help"),
             Options:
             [
-                new ComplianceFieldOption(Iva, "IVA (VAT)"),
-                new ComplianceFieldOption(Igic, "IGIC (Canary Islands)")
+                new ComplianceFieldOption(Iva, T("compliance.spain.taxFields.taxType.iva")),
+                new ComplianceFieldOption(Igic, T("compliance.spain.taxFields.taxType.igic"))
             ]),
         new ComplianceField(
             OperationKey,
-            "Verifactu treatment of a 0% tax",
+            T("compliance.spain.taxFields.operation.label"),
             ComplianceFieldType.Choice,
-            Help: "Only used when the rate is 0%: why no tax is charged. A tax above 0% is always taxed. The article of each exemption depends on the tax (E7 and E8 exist for IGIC only).",
+            Help: T("compliance.spain.taxFields.operation.help"),
             Options:
             [
-                new ComplianceFieldOption("S1", "Taxed at 0% (a zero rate, e.g. IGIC tipo cero)"),
-                new ComplianceFieldOption("S2", "Taxable, reverse charge (inversión del sujeto pasivo)"),
-                new ComplianceFieldOption("N2", "Not subject: place-of-supply rules (e.g. services to a business in another country)"),
-                new ComplianceFieldOption("N1", "Not subject: article 7, 14 or other (IGIC: article 9)"),
-                new ComplianceFieldOption("E1", "Exempt: E1 (IVA article 20)"),
-                new ComplianceFieldOption("E2", "Exempt: E2 (IVA article 21, exports; IGIC article 11)"),
-                new ComplianceFieldOption("E3", "Exempt: E3 (IVA article 22; IGIC article 12)"),
-                new ComplianceFieldOption("E4", "Exempt: E4 (IVA articles 23 and 24; IGIC article 13)"),
-                new ComplianceFieldOption("E5", "Exempt: E5 (IVA article 25, intra-community supplies)"),
-                new ComplianceFieldOption("E6", "Exempt: E6 (other reasons)"),
-                new ComplianceFieldOption("E7", "Exempt: E7 (IGIC only: article 90 of the Canary Islands consolidated text)"),
-                new ComplianceFieldOption("E8", "Exempt: E8 (IGIC only: Ley 20/1991)")
+                new ComplianceFieldOption("S1", T("compliance.spain.taxFields.operation.S1")),
+                new ComplianceFieldOption("S2", T("compliance.spain.taxFields.operation.S2")),
+                new ComplianceFieldOption("N2", T("compliance.spain.taxFields.operation.N2")),
+                new ComplianceFieldOption("N1", T("compliance.spain.taxFields.operation.N1")),
+                new ComplianceFieldOption("E1", T("compliance.spain.taxFields.operation.E1")),
+                new ComplianceFieldOption("E2", T("compliance.spain.taxFields.operation.E2")),
+                new ComplianceFieldOption("E3", T("compliance.spain.taxFields.operation.E3")),
+                new ComplianceFieldOption("E4", T("compliance.spain.taxFields.operation.E4")),
+                new ComplianceFieldOption("E5", T("compliance.spain.taxFields.operation.E5")),
+                new ComplianceFieldOption("E6", T("compliance.spain.taxFields.operation.E6")),
+                new ComplianceFieldOption("E7", T("compliance.spain.taxFields.operation.E7")),
+                new ComplianceFieldOption("E8", T("compliance.spain.taxFields.operation.E8"))
             ],
             ZeroRateOnly: true)
     ];
 
-    public IReadOnlyList<ComplianceField> CustomerFields { get; } =
+    public IReadOnlyList<ComplianceField> CustomerFields =>
     [
         new ComplianceField(
             IsPublicAdministrationKey,
-            "Public administration",
+            T("compliance.spain.customerFields.isPublicAdministration.label"),
             ComplianceFieldType.Boolean,
-            Help: "Invoices to public bodies go through FACe and need the three DIR3 codes below."),
-        new ComplianceField(AccountingOfficeKey, "Accounting office (oficina contable)", Help: "DIR3 code. Public administrations only."),
-        new ComplianceField(ManagingBodyKey, "Managing body (órgano gestor)", Help: "DIR3 code. Public administrations only."),
-        new ComplianceField(ProcessingUnitKey, "Processing unit (unidad tramitadora)", Help: "DIR3 code. Public administrations only."),
+            Help: T("compliance.spain.customerFields.isPublicAdministration.help")),
+        new ComplianceField(AccountingOfficeKey, T("compliance.spain.customerFields.accountingOffice.label"), Help: T("compliance.spain.customerFields.dir3Help")),
+        new ComplianceField(ManagingBodyKey, T("compliance.spain.customerFields.managingBody.label"), Help: T("compliance.spain.customerFields.dir3Help")),
+        new ComplianceField(ProcessingUnitKey, T("compliance.spain.customerFields.processingUnit.label"), Help: T("compliance.spain.customerFields.dir3Help")),
         new ComplianceField(
             PersonTypeKey,
-            "Customer type",
+            T("compliance.spain.customerFields.personType.label"),
             ComplianceFieldType.Choice,
-            Help: "Left empty it is worked out from the tax id.",
+            Help: T("compliance.spain.customerFields.personType.help"),
             Options: PersonTypes),
-        new ComplianceField(FirstSurnameKey, "First surname", Help: "Individuals only; the customer name is then the first name."),
-        new ComplianceField(SecondSurnameKey, "Second surname", Help: "Individuals only, if any.")
+        new ComplianceField(FirstSurnameKey, T("compliance.spain.fields.firstSurname.label"), Help: T("compliance.spain.customerFields.firstSurname.help")),
+        new ComplianceField(SecondSurnameKey, T("compliance.spain.fields.secondSurname.label"), Help: T("compliance.spain.fields.individualsOnlyIfAny"))
+    ];
+
+    private IReadOnlyList<ComplianceFieldOption> PersonTypes =>
+    [
+        new ComplianceFieldOption(Individual, T("compliance.spain.personTypes.individual")),
+        new ComplianceFieldOption(LegalEntity, T("compliance.spain.personTypes.legalEntity"))
     ];
 
     public IReadOnlyList<ComplianceIssue> ValidateIssuer(IssuerProfile issuer)
@@ -257,6 +258,8 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
         if (string.IsNullOrWhiteSpace(address.State))
             yield return new ComplianceIssue(field, _text.Translate("compliance.spain.provinceRequired", ("subject", subject)));
     }
+
+    private string T(string key) => _text.Translate(key);
 
     private static bool HasValue(IReadOnlyDictionary<string, string> values, string key) =>
         values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value);

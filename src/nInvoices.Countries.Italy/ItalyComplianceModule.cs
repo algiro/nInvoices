@@ -57,37 +57,6 @@ public sealed partial class ItalyComplianceModule : ICountryComplianceModule
     /// <summary>A forfettario or minimi invoice charges no IVA: "non soggette, altri casi".</summary>
     public const string NotSubjectOther = "N2.2";
 
-    public static readonly IReadOnlyList<ComplianceFieldOption> Natures =
-    [
-        new("N1", "N1 · Excluded (art. 15)"),
-        new("N2.1", "N2.1 · Not subject: arts. 7 to 7-septies (e.g. services to a business abroad)"),
-        new("N2.2", "N2.2 · Not subject: other cases (regime forfettario, minimi)"),
-        new("N3.1", "N3.1 · Non-taxable: exports"),
-        new("N3.2", "N3.2 · Non-taxable: intra-EU supplies"),
-        new("N3.3", "N3.3 · Non-taxable: supplies to San Marino"),
-        new("N3.4", "N3.4 · Non-taxable: treated as exports"),
-        new("N3.5", "N3.5 · Non-taxable: declaration of intent"),
-        new("N3.6", "N3.6 · Non-taxable: other"),
-        new("N4", "N4 · Exempt"),
-        new("N5", "N5 · Margin scheme / IVA not shown"),
-        new("N6.1", "N6.1 · Reverse charge: scrap"),
-        new("N6.2", "N6.2 · Reverse charge: gold and silver"),
-        new("N6.3", "N6.3 · Reverse charge: construction subcontracting"),
-        new("N6.4", "N6.4 · Reverse charge: buildings"),
-        new("N6.5", "N6.5 · Reverse charge: mobile phones"),
-        new("N6.6", "N6.6 · Reverse charge: electronic products"),
-        new("N6.7", "N6.7 · Reverse charge: construction services"),
-        new("N6.8", "N6.8 · Reverse charge: energy"),
-        new("N6.9", "N6.9 · Reverse charge: other cases"),
-        new("N7", "N7 · IVA paid in another EU country")
-    ];
-
-    private static readonly IReadOnlyList<ComplianceFieldOption> PersonTypes =
-    [
-        new(Individual, "Individual (libero professionista, ditta individuale)"),
-        new(LegalEntity, "Legal entity (company)")
-    ];
-
     private readonly IAppText _text;
 
     public ItalyComplianceModule(IAppText text)
@@ -97,7 +66,7 @@ public sealed partial class ItalyComplianceModule : ICountryComplianceModule
 
     public string CountryCode => CountryCodeValue;
 
-    public string DisplayName => "Italy";
+    public string DisplayName => _text.Translate("countries.IT");
 
     public IReadOnlySet<ComplianceCapability> Capabilities { get; } = new HashSet<ComplianceCapability>
     {
@@ -106,56 +75,55 @@ public sealed partial class ItalyComplianceModule : ICountryComplianceModule
         ComplianceCapability.StructuredEInvoice
     };
 
-    public IReadOnlyList<ComplianceField> Fields { get; } =
+    // Built on each read, in the language of the request
+    public IReadOnlyList<ComplianceField> Fields =>
     [
         new ComplianceField(
             RegimeKey,
-            "Tax regime (regime fiscale)",
+            T("compliance.italy.fields.regime.label"),
             ComplianceFieldType.Choice,
             Required: true,
-            Help: "Printed on every FatturaPA. In the regime forfettario no IVA is charged and invoices above €77.47 carry the €2 marca da bollo.",
+            Help: T("compliance.italy.fields.regime.help"),
             Options:
             [
                 new ComplianceFieldOption(Ordinario, "RF01 · Ordinario"),
                 new ComplianceFieldOption(Minimi, "RF02 · Contribuenti minimi"),
                 new ComplianceFieldOption(Forfettario, "RF19 · Forfettario (L. 190/2014)")
             ]),
-        new ComplianceField(PersonTypeKey, "Issuer type", ComplianceFieldType.Choice, Required: true,
-            Help: "An individual is named by first and last name in the FatturaPA, a company by its legal name.", Options: PersonTypes),
-        new ComplianceField(FirstNameKey, "First name (nome)", Help: "Individuals only."),
-        new ComplianceField(LastNameKey, "Last name (cognome)", Help: "Individuals only."),
-        new ComplianceField(FiscalCodeKey, "Codice fiscale",
-            Help: "Required for an individual: the 16-character code. A company's is usually its Partita IVA (the Tax ID above).")
+        new ComplianceField(PersonTypeKey, T("compliance.italy.fields.personType.label"), ComplianceFieldType.Choice, Required: true,
+            Help: T("compliance.italy.fields.personType.help"), Options: PersonTypes),
+        new ComplianceField(FirstNameKey, T("compliance.italy.fields.firstName.label"), Help: T("compliance.italy.fields.individualsOnly")),
+        new ComplianceField(LastNameKey, T("compliance.italy.fields.lastName.label"), Help: T("compliance.italy.fields.individualsOnly")),
+        new ComplianceField(FiscalCodeKey, "Codice fiscale", Help: T("compliance.italy.fields.fiscalCode.help"))
     ];
 
-    public IReadOnlyList<ComplianceField> CustomerFields { get; } =
+    public IReadOnlyList<ComplianceField> CustomerFields =>
     [
-        new ComplianceField(RecipientCodeKey, "Codice destinatario (SDI)",
-            Help: "The 7-character code your customer gave you. Leave it empty for a customer abroad, to send to their PEC, or for a consumer."),
-        new ComplianceField(PecKey, "PEC", Help: "The certified email for their e-invoices, if they have no codice destinatario."),
-        new ComplianceField(FiscalCodeKey, "Codice fiscale", Help: "For a consumer in Italy without a Partita IVA.")
+        new ComplianceField(RecipientCodeKey, "Codice destinatario (SDI)", Help: T("compliance.italy.customerFields.recipientCode.help")),
+        new ComplianceField(PecKey, "PEC", Help: T("compliance.italy.customerFields.pec.help")),
+        new ComplianceField(FiscalCodeKey, "Codice fiscale", Help: T("compliance.italy.customerFields.fiscalCode.help"))
     ];
 
-    public IReadOnlyList<ComplianceField> TaxFields { get; } =
+    public IReadOnlyList<ComplianceField> TaxFields =>
     [
         new ComplianceField(
             TaxKindKey,
-            "What is this tax? (Italy)",
+            T("compliance.italy.taxFields.kind.label"),
             ComplianceFieldType.Choice,
-            Help: "Left empty it is IVA. A pension contribution charged to the customer (rivalsa INPS 4%, cassa professionale) is a contribution: tick \"Part of the taxable amount\" too, so IVA and the ritenuta include it. A ritenuta d'acconto is the tax with a negative rate.",
+            Help: T("compliance.italy.taxFields.kind.help"),
             Options:
             [
                 new ComplianceFieldOption(Iva, "IVA"),
-                new ComplianceFieldOption(Contribution, "Pension contribution (rivalsa INPS, cassa)")
+                new ComplianceFieldOption(Contribution, T("compliance.italy.taxFields.kind.contribution"))
             ]),
         new ComplianceField(
             FundTypeKey,
-            "Pension fund (tipo cassa)",
+            T("compliance.italy.taxFields.fundType.label"),
             ComplianceFieldType.Choice,
-            Help: "For a contribution only. Left empty it is the rivalsa INPS (Gestione Separata).",
+            Help: T("compliance.italy.taxFields.fundType.help"),
             Options:
             [
-                new ComplianceFieldOption(InpsFund, "TC22 · INPS (rivalsa, Gestione Separata)"),
+                new ComplianceFieldOption(InpsFund, T("compliance.italy.taxFields.fundType.TC22")),
                 new ComplianceFieldOption("TC01", "TC01 · Cassa forense"),
                 new ComplianceFieldOption("TC02", "TC02 · Dottori commercialisti"),
                 new ComplianceFieldOption("TC03", "TC03 · Geometri"),
@@ -168,37 +136,68 @@ public sealed partial class ItalyComplianceModule : ICountryComplianceModule
             ]),
         new ComplianceField(
             WithholdingTypeKey,
-            "Ritenuta type",
+            T("compliance.italy.taxFields.withholdingType.label"),
             ComplianceFieldType.Choice,
-            Help: "For a withholding only. Left empty it is RT01, the ritenuta d'acconto of an individual.",
+            Help: T("compliance.italy.taxFields.withholdingType.help"),
             Options:
             [
-                new ComplianceFieldOption("RT01", "RT01 · Ritenuta, individuals"),
-                new ComplianceFieldOption("RT02", "RT02 · Ritenuta, legal entities"),
-                new ComplianceFieldOption("RT03", "RT03 · INPS contribution"),
-                new ComplianceFieldOption("RT04", "RT04 · ENASARCO contribution")
+                new ComplianceFieldOption("RT01", T("compliance.italy.taxFields.withholdingType.RT01")),
+                new ComplianceFieldOption("RT02", T("compliance.italy.taxFields.withholdingType.RT02")),
+                new ComplianceFieldOption("RT03", T("compliance.italy.taxFields.withholdingType.RT03")),
+                new ComplianceFieldOption("RT04", T("compliance.italy.taxFields.withholdingType.RT04"))
             ]),
         new ComplianceField(
             PaymentReasonKey,
-            "Reason of the payment (causale)",
+            T("compliance.italy.taxFields.paymentReason.label"),
             ComplianceFieldType.Choice,
-            Help: "For a withholding only, as in the Certificazione Unica. Left empty it is A, professional self-employment.",
+            Help: T("compliance.italy.taxFields.paymentReason.help"),
             Options:
             [
-                new ComplianceFieldOption("A", "A · Professional self-employment"),
-                new ComplianceFieldOption("B", "B · Copyright and patents"),
-                new ComplianceFieldOption("M", "M · Occasional self-employment"),
-                new ComplianceFieldOption("Q", "Q · Single-firm commercial agent"),
-                new ComplianceFieldOption("R", "R · Multi-firm commercial agent"),
-                new ComplianceFieldOption("ZO", "ZO · Other")
+                new ComplianceFieldOption("A", T("compliance.italy.taxFields.paymentReason.A")),
+                new ComplianceFieldOption("B", T("compliance.italy.taxFields.paymentReason.B")),
+                new ComplianceFieldOption("M", T("compliance.italy.taxFields.paymentReason.M")),
+                new ComplianceFieldOption("Q", T("compliance.italy.taxFields.paymentReason.Q")),
+                new ComplianceFieldOption("R", T("compliance.italy.taxFields.paymentReason.R")),
+                new ComplianceFieldOption("ZO", T("compliance.italy.taxFields.paymentReason.ZO"))
             ]),
         new ComplianceField(
             NatureKey,
-            "Why no IVA is charged (natura)",
+            T("compliance.italy.taxFields.nature.label"),
             ComplianceFieldType.Choice,
-            Help: "Required by the FatturaPA for IVA at 0%. Without an IVA tax at all, a forfettario invoice is N2.2.",
+            Help: T("compliance.italy.taxFields.nature.help"),
             Options: Natures,
             ZeroRateOnly: true)
+    ];
+
+    private IReadOnlyList<ComplianceFieldOption> Natures =>
+    [
+        new ComplianceFieldOption("N1", T("compliance.italy.natures.N1")),
+        new ComplianceFieldOption("N2.1", T("compliance.italy.natures.N2_1")),
+        new ComplianceFieldOption("N2.2", T("compliance.italy.natures.N2_2")),
+        new ComplianceFieldOption("N3.1", T("compliance.italy.natures.N3_1")),
+        new ComplianceFieldOption("N3.2", T("compliance.italy.natures.N3_2")),
+        new ComplianceFieldOption("N3.3", T("compliance.italy.natures.N3_3")),
+        new ComplianceFieldOption("N3.4", T("compliance.italy.natures.N3_4")),
+        new ComplianceFieldOption("N3.5", T("compliance.italy.natures.N3_5")),
+        new ComplianceFieldOption("N3.6", T("compliance.italy.natures.N3_6")),
+        new ComplianceFieldOption("N4", T("compliance.italy.natures.N4")),
+        new ComplianceFieldOption("N5", T("compliance.italy.natures.N5")),
+        new ComplianceFieldOption("N6.1", T("compliance.italy.natures.N6_1")),
+        new ComplianceFieldOption("N6.2", T("compliance.italy.natures.N6_2")),
+        new ComplianceFieldOption("N6.3", T("compliance.italy.natures.N6_3")),
+        new ComplianceFieldOption("N6.4", T("compliance.italy.natures.N6_4")),
+        new ComplianceFieldOption("N6.5", T("compliance.italy.natures.N6_5")),
+        new ComplianceFieldOption("N6.6", T("compliance.italy.natures.N6_6")),
+        new ComplianceFieldOption("N6.7", T("compliance.italy.natures.N6_7")),
+        new ComplianceFieldOption("N6.8", T("compliance.italy.natures.N6_8")),
+        new ComplianceFieldOption("N6.9", T("compliance.italy.natures.N6_9")),
+        new ComplianceFieldOption("N7", T("compliance.italy.natures.N7"))
+    ];
+
+    private IReadOnlyList<ComplianceFieldOption> PersonTypes =>
+    [
+        new ComplianceFieldOption(Individual, T("compliance.italy.personTypes.individual")),
+        new ComplianceFieldOption(LegalEntity, T("compliance.italy.personTypes.legalEntity"))
     ];
 
     public IReadOnlyList<ComplianceIssue> ValidateIssuer(IssuerProfile issuer)
@@ -281,6 +280,8 @@ public sealed partial class ItalyComplianceModule : ICountryComplianceModule
     /// <summary>Whether a tax is a pension contribution, from its Italian values (<see cref="TaxFields"/>).</summary>
     public static bool IsContribution(IReadOnlyDictionary<string, string>? taxValues) =>
         taxValues?.GetValueOrDefault(TaxKindKey) == Contribution;
+
+    private string T(string key) => _text.Translate(key);
 
     private static bool HasValue(IReadOnlyDictionary<string, string> values, string key) =>
         values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value);

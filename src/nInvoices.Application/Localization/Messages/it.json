@@ -71,6 +71,10 @@
     "verifactu": {
       "cannotDelete": "La fattura {number} è stata registrata per Verifactu e non può essere eliminata: annullala, così l'annullamento viene registrato.",
       "cannotRecord": "Verifactu non può registrare questa fattura: {issues}"
+    },
+    "zip": {
+      "notIncluded": "Queste fatture non sono nello zip:",
+      "customerNotFound": "{number}: cliente non trovato"
     }
   },
   "preferences": {
@@ -223,7 +227,87 @@
       "dir3ProcessingUnit": "Una pubblica amministrazione richiede il codice DIR3 della sua unità tramitatrice",
       "customerFirstSurnameRequired": "Un cliente persona fisica deve avere un primo cognome",
       "postalCode": "{subject}: un codice postale spagnolo ha cinque cifre",
-      "provinceRequired": "{subject}: la provincia è obbligatoria"
+      "provinceRequired": "{subject}: la provincia è obbligatoria",
+      "fields": {
+        "personType": {
+          "label": "Tipo di emittente",
+          "help": "Facturae distingue una persona fisica (autónomo) da una persona giuridica."
+        },
+        "firstName": {
+          "label": "Nome",
+          "help": "Solo per le persone fisiche: il nome legale si divide in nome e cognomi."
+        },
+        "firstSurname": {
+          "label": "Primo cognome"
+        },
+        "secondSurname": {
+          "label": "Secondo cognome"
+        },
+        "individualsOnly": "Solo per le persone fisiche.",
+        "individualsOnlyIfAny": "Solo per le persone fisiche, se c'è.",
+        "verifactu": {
+          "help": "Ogni fattura che emetti viene registrata in una catena a prova di manomissione, comunicata all'Agenzia delle Entrate spagnola (AEAT) e riporta un codice QR. Obbligatorio per gli autónomos dal 1° luglio 2027."
+        },
+        "faceEmail": {
+          "label": "Email per le notifiche di FACe",
+          "help": "FACe ti avvisa qui quando una fattura inviata a una pubblica amministrazione viene registrata, rifiutata o pagata. Necessaria per inviare fatture a FACe."
+        },
+        "sealCertificate": {
+          "label": "Il mio certificato è un sigillo aziendale (certificado de sello)",
+          "help": "Per Verifactu: spuntalo solo se il certificato che carichi è il sigillo elettronico di un'azienda, non un certificato personale."
+        }
+      },
+      "taxFields": {
+        "taxType": {
+          "label": "Che imposta è?",
+          "help": "Se lasciato vuoto è IVA. Scegli IGIC (Impuesto General Indirecto Canario) se fatturi dalle Canarie. Una ritenuta come l'IRPF non cambia: è l'imposta con aliquota negativa.",
+          "iva": "IVA",
+          "igic": "IGIC (Canarie)"
+        },
+        "operation": {
+          "label": "Trattamento Verifactu di un'imposta allo 0%",
+          "help": "Usato solo quando l'aliquota è 0%: perché non si addebita l'imposta. Un'imposta sopra lo 0% è sempre imponibile. L'articolo di ogni esenzione dipende dall'imposta (E7 ed E8 esistono solo per l'IGIC).",
+          "S1": "Imponibile allo 0% (aliquota zero, ad es. IGIC tipo cero)",
+          "S2": "Imponibile, inversione contabile (inversión del sujeto pasivo)",
+          "N2": "Non soggetta: regole sul luogo della prestazione (ad es. servizi a un'impresa di un altro paese)",
+          "N1": "Non soggetta: articolo 7, 14 o altro (IGIC: articolo 9)",
+          "E1": "Esente: E1 (IVA articolo 20)",
+          "E2": "Esente: E2 (IVA articolo 21, esportazioni; IGIC articolo 11)",
+          "E3": "Esente: E3 (IVA articolo 22; IGIC articolo 12)",
+          "E4": "Esente: E4 (IVA articoli 23 e 24; IGIC articolo 13)",
+          "E5": "Esente: E5 (IVA articolo 25, cessioni intracomunitarie)",
+          "E6": "Esente: E6 (altri motivi)",
+          "E7": "Esente: E7 (solo IGIC: articolo 90 del testo unico delle Canarie)",
+          "E8": "Esente: E8 (solo IGIC: Ley 20/1991)"
+        }
+      },
+      "customerFields": {
+        "isPublicAdministration": {
+          "label": "Pubblica amministrazione",
+          "help": "Le fatture agli enti pubblici passano per FACe e richiedono i tre codici DIR3 qui sotto."
+        },
+        "accountingOffice": {
+          "label": "Ufficio contabile (oficina contable)"
+        },
+        "managingBody": {
+          "label": "Organo gestore (órgano gestor)"
+        },
+        "processingUnit": {
+          "label": "Unità tramitatrice (unidad tramitadora)"
+        },
+        "dir3Help": "Codice DIR3. Solo per le pubbliche amministrazioni.",
+        "personType": {
+          "label": "Tipo di cliente",
+          "help": "Se lasciato vuoto si ricava dall'identificativo fiscale."
+        },
+        "firstSurname": {
+          "help": "Solo per le persone fisiche; il nome del cliente è allora il nome proprio."
+        }
+      },
+      "personTypes": {
+        "individual": "Persona fisica (autónomo)",
+        "legalEntity": "Persona giuridica (società)"
+      }
     },
     "italy": {
       "partitaIvaRequired": "La Partita IVA è obbligatoria",
@@ -234,14 +318,159 @@
       "fiscalCodeInvalid": "Questo non è un codice fiscale valido",
       "recipientCodeInvalid": "Il codice destinatario ha 7 lettere o cifre",
       "postalCode": "{subject}: un CAP italiano ha cinque cifre",
-      "province": "{subject}: la provincia è la sua sigla di due lettere, ad es. MI"
+      "province": "{subject}: la provincia è la sua sigla di due lettere, ad es. MI",
+      "fields": {
+        "regime": {
+          "label": "Regime fiscale",
+          "help": "Indicato su ogni FatturaPA. Nel regime forfettario non si addebita l'IVA e le fatture sopra 77,47 € portano la marca da bollo da 2 €."
+        },
+        "personType": {
+          "label": "Tipo di emittente",
+          "help": "Nella FatturaPA una persona fisica è indicata con nome e cognome, una società con la sua denominazione."
+        },
+        "firstName": {
+          "label": "Nome"
+        },
+        "lastName": {
+          "label": "Cognome"
+        },
+        "individualsOnly": "Solo per le persone fisiche.",
+        "fiscalCode": {
+          "help": "Obbligatorio per una persona fisica: il codice di 16 caratteri. Quello di una società di solito è la sua Partita IVA (l'identificativo fiscale qui sopra)."
+        }
+      },
+      "customerFields": {
+        "recipientCode": {
+          "help": "Il codice di 7 caratteri che ti ha dato il cliente. Lascialo vuoto per un cliente estero, per inviare alla sua PEC o per un consumatore."
+        },
+        "pec": {
+          "help": "La posta certificata per le sue fatture elettroniche, se non ha un codice destinatario."
+        },
+        "fiscalCode": {
+          "help": "Per un consumatore in Italia senza Partita IVA."
+        }
+      },
+      "taxFields": {
+        "kind": {
+          "label": "Che imposta è? (Italia)",
+          "help": "Se lasciato vuoto è IVA. Un contributo previdenziale addebitato al cliente (rivalsa INPS 4%, cassa professionale) è un contributo: spunta anche \"Parte dell'imponibile\", così IVA e ritenuta lo includono. Una ritenuta d'acconto è l'imposta con aliquota negativa.",
+          "contribution": "Contributo previdenziale (rivalsa INPS, cassa)"
+        },
+        "fundType": {
+          "label": "Tipo cassa",
+          "help": "Solo per un contributo. Se lasciato vuoto è la rivalsa INPS (Gestione Separata).",
+          "TC22": "TC22 · INPS (rivalsa, Gestione Separata)"
+        },
+        "withholdingType": {
+          "label": "Tipo ritenuta",
+          "help": "Solo per una ritenuta. Se lasciato vuoto è RT01, la ritenuta d'acconto di una persona fisica.",
+          "RT01": "RT01 · Ritenuta persone fisiche",
+          "RT02": "RT02 · Ritenuta persone giuridiche",
+          "RT03": "RT03 · Contributo INPS",
+          "RT04": "RT04 · Contributo ENASARCO"
+        },
+        "paymentReason": {
+          "label": "Causale del pagamento",
+          "help": "Solo per una ritenuta, come nella Certificazione Unica. Se lasciato vuoto è A, lavoro autonomo professionale.",
+          "A": "A · Lavoro autonomo professionale",
+          "B": "B · Diritti d'autore e brevetti",
+          "M": "M · Lavoro autonomo occasionale",
+          "Q": "Q · Agente monomandatario",
+          "R": "R · Agente plurimandatario",
+          "ZO": "ZO · Altro"
+        },
+        "nature": {
+          "label": "Perché non si addebita l'IVA (natura)",
+          "help": "Richiesta dalla FatturaPA per l'IVA allo 0%. Senza alcuna imposta IVA, una fattura forfettaria è N2.2."
+        }
+      },
+      "natures": {
+        "N1": "N1 · Escluse (art. 15)",
+        "N2_1": "N2.1 · Non soggette: artt. da 7 a 7-septies (ad es. servizi a un'impresa estera)",
+        "N2_2": "N2.2 · Non soggette: altri casi (regime forfettario, minimi)",
+        "N3_1": "N3.1 · Non imponibili: esportazioni",
+        "N3_2": "N3.2 · Non imponibili: cessioni intracomunitarie",
+        "N3_3": "N3.3 · Non imponibili: cessioni verso San Marino",
+        "N3_4": "N3.4 · Non imponibili: operazioni assimilate alle esportazioni",
+        "N3_5": "N3.5 · Non imponibili: dichiarazione d'intento",
+        "N3_6": "N3.6 · Non imponibili: altre operazioni",
+        "N4": "N4 · Esenti",
+        "N5": "N5 · Regime del margine / IVA non esposta",
+        "N6_1": "N6.1 · Inversione contabile: rottami",
+        "N6_2": "N6.2 · Inversione contabile: oro e argento",
+        "N6_3": "N6.3 · Inversione contabile: subappalto nel settore edile",
+        "N6_4": "N6.4 · Inversione contabile: cessione di fabbricati",
+        "N6_5": "N6.5 · Inversione contabile: telefoni cellulari",
+        "N6_6": "N6.6 · Inversione contabile: prodotti elettronici",
+        "N6_7": "N6.7 · Inversione contabile: prestazioni comparto edile",
+        "N6_8": "N6.8 · Inversione contabile: settore energetico",
+        "N6_9": "N6.9 · Inversione contabile: altri casi",
+        "N7": "N7 · IVA assolta in altro stato UE"
+      },
+      "personTypes": {
+        "individual": "Persona fisica (libero professionista, ditta individuale)",
+        "legalEntity": "Persona giuridica (società)"
+      }
     },
     "germany": {
       "taxIdRequired": "La Steuernummer o la USt-IdNr è obbligatoria su ogni fattura (§ 14 UStG)",
       "taxIdInvalid": "Questa non è né una Steuernummer (10, 11 o 13 cifre) né una USt-IdNr valida",
       "vatIdInvalid": "Questa non è una USt-IdNr valida (DE e nove cifre)",
       "ibanInvalid": "Questo non è un IBAN valido",
-      "postalCode": "{subject}: una Postleitzahl tedesca ha cinque cifre"
+      "postalCode": "{subject}: una Postleitzahl tedesca ha cinque cifre",
+      "fields": {
+        "smallBusiness": {
+          "label": "Kleinunternehmer (§ 19 UStG): non addebito l'IVA",
+          "help": "Le tue fatture riportano allora la nota del § 19 e nessuna IVA. Possibile solo sotto i 25.000 € di ricavi l'anno scorso e i 100.000 € quest'anno."
+        },
+        "vatId": {
+          "help": "DE e nove cifre. Necessaria per i clienti di altri paesi UE; lasciala vuota se l'identificativo fiscale qui sopra lo è già."
+        },
+        "contactName": {
+          "label": "Nome del referente",
+          "help": "Per XRechnung: a chi il cliente può chiedere della fattura."
+        },
+        "contactPhone": {
+          "label": "Telefono del referente",
+          "help": "Per XRechnung."
+        },
+        "contactEmail": {
+          "label": "Email del referente",
+          "help": "Per XRechnung: anche l'indirizzo da cui arriva la fattura."
+        },
+        "iban": {
+          "help": "Dove paga il cliente; XRechnung lo richiede per un bonifico."
+        },
+        "bic": {
+          "help": "Facoltativo."
+        }
+      },
+      "customerFields": {
+        "buyerReference": {
+          "label": "Leitweg-ID / riferimento del cliente",
+          "help": "Una pubblica amministrazione ti dà la sua Leitweg-ID; un'impresa può darti un riferimento (un ordine d'acquisto). Se lasciato vuoto, si usa il numero della fattura."
+        },
+        "email": {
+          "label": "Email per la fattura elettronica",
+          "help": "Dove va la sua XRechnung. Obbligatoria per XRechnung."
+        }
+      },
+      "taxFields": {
+        "category": {
+          "label": "Perché non si addebita l'IVA (Germania)",
+          "help": "Richiesto da XRechnung per l'IVA allo 0%. Per un Kleinunternehmer senza alcuna imposta IVA si usa la nota del § 19.",
+          "AE": "AE · Inversione contabile: l'IVA è dovuta dal cliente (§ 13b UStG, servizi a un'impresa UE)",
+          "K": "K · Cessione intracomunitaria di beni",
+          "G": "G · Esportazione fuori dall'UE",
+          "O": "O · Non soggetto all'IVA tedesca (ad es. servizi a un'impresa fuori dall'UE)",
+          "E": "E · Esente (§ 4 UStG): indica il motivo qui sotto",
+          "Z": "Z · Aliquota zero (§ 12 (3) UStG, ad es. pannelli solari)"
+        },
+        "exemptionNote": {
+          "label": "Motivo in fattura",
+          "help": "Per un'esenzione, la sua base giuridica (ad es. \"Steuerfrei nach § 4 Nr. 21 UStG\"). Le altre categorie hanno un testo predefinito."
+        }
+      }
     },
     "einvoice": {
       "issuer": "Emittente: {message}",
@@ -271,7 +500,8 @@
       "taxAmount": "Imposta \"{tax}\": l'importo non corrisponde all'aliquota"
     },
     "face": {
-      "emailRequired": "Inserisci l'email per le notifiche di FACe nelle impostazioni spagnole"
+      "emailRequired": "Inserisci l'email per le notifiche di FACe nelle impostazioni spagnole",
+      "notConfigured": "FACe non è configurato su questo server (manca {missing} in {section})"
     },
     "fatturapa": {
       "issuerInItaly": "Emittente: l'indirizzo deve essere in Italia",
@@ -291,7 +521,7 @@
       "contactEmail": "Emittente: XRechnung richiede un'email di contatto",
       "ibanRequired": "Emittente: XRechnung richiede l'IBAN su cui paga il cliente",
       "customerAddressRequired": "Cliente: città e codice postale sono obbligatori",
-      "customerEmailRequired": "Cliente: XRechnung richiede l'indirizzo email a cui vanno le sue fatture elettroniche (cliente › E-invoice email)",
+      "customerEmailRequired": "Cliente: XRechnung richiede l'indirizzo email a cui vanno le sue fatture elettroniche (cliente › Email per la fattura elettronica)",
       "noWithholding": "XRechnung non prevede ritenute: rimuovi l'imposta negativa da questo cliente",
       "singleVat": "Qui una fattura ha una sola aliquota IVA: tieni una sola imposta IVA per questo cliente",
       "smallBusinessVat": "Un Kleinunternehmer non addebita IVA: rimuovi l'imposta IVA o togli la spunta da Kleinunternehmer",
@@ -317,7 +547,16 @@
       "igicOnlyExemption": "Imposta \"{tax}\": le esenzioni E7 ed E8 esistono solo per l'IGIC; imposta il tipo di imposta su IGIC o scegline un'altra",
       "customerCountry": "Il paese del cliente (\"{country}\") non è riconosciuto",
       "customerNif": "Il NIF del cliente non è un NIF, NIE o CIF spagnolo valido",
-      "customerTaxId": "L'identificativo fiscale del cliente deve avere da 1 a 20 caratteri"
+      "customerTaxId": "L'identificativo fiscale del cliente deve avere da 1 a 20 caratteri",
+      "chain": {
+        "gap": "La catena salta al record {sequence} dove era atteso il {expected} (manca un record)",
+        "previousHash": "Non punta all'hash del record precedente",
+        "hashMismatch": "Il suo hash non corrisponde al contenuto: il record è stato modificato",
+        "timeBackwards": "Ha una data anteriore a quella del record che lo precede",
+        "timestampInvalid": "La sua marca temporale non è valida",
+        "xmlMismatch": "Il suo XML non riporta ciò che è stato sottoposto a hash",
+        "xmlUnreadable": "Il suo XML non è leggibile"
+      }
     },
     "certificate": {
       "required": "Carica il tuo certificato di firma nelle Impostazioni",
@@ -328,6 +567,299 @@
       "required": "\"{field}\" è obbligatorio",
       "notAnOption": "\"{value}\" non è un'opzione di \"{field}\"",
       "notBoolean": "\"{field}\" si spunta con \"true\" o si omette"
+    },
+    "delivery": {
+      "finalizeFirst": "Finalizza prima la fattura",
+      "cancelledCannotBeSent": "Una fattura annullata non può essere inviata",
+      "generateFirst": "Genera prima la fattura elettronica",
+      "alreadySent": "È già stata inviata ({reference})",
+      "notThroughChannel": "Le fatture a questo cliente non passano per {channel}",
+      "notSent": "Non è stata inviata",
+      "unknownChannel": "Canale \"{channel}\" sconosciuto",
+      "notTurnedOn": "{channel} non è attivo",
+      "customerNotFound": "Il cliente non è stato trovato"
+    }
+  },
+  "countries": {
+    "ES": "Spagna",
+    "IT": "Italia",
+    "DE": "Germania"
+  },
+  "taxPrediction": {
+    "common": {
+      "taxOfTheYear": "Imposta dell'anno",
+      "taxableIncome": "Reddito imponibile",
+      "notANumber": "\"{text}\" non è un numero, quindi {what} resta fuori dal calcolo. Correggilo nelle Impostazioni.",
+      "chargedOnInvoices": "{tax} addebitata in fattura",
+      "deductibleOnExpenses": "{tax} detraibile sugli acquisti",
+      "selfCharged": "Autoliquidata sui servizi dall'estero (inversione contabile)",
+      "creditCarried": "Credito riportato dai trimestri precedenti",
+      "result": "Risultato",
+      "quarter": "{quarter}° trimestre",
+      "months": {
+        "january": "Gennaio",
+        "february": "Febbraio",
+        "march": "Marzo",
+        "april": "Aprile",
+        "may": "Maggio",
+        "june": "Giugno",
+        "july": "Luglio",
+        "august": "Agosto",
+        "september": "Settembre",
+        "october": "Ottobre",
+        "november": "Novembre",
+        "december": "Dicembre"
+      }
+    },
+    "italy": {
+      "fields": {
+        "inpsRate": {
+          "label": "Aliquota contributiva INPS (%)",
+          "help": "26,07 per un professionista iscritto alla Gestione Separata senza altra previdenza. Inserisci l'aliquota della tua cassa se sei iscritto a una cassa professionale."
+        },
+        "previousTax": {
+          "label": "Imposta dell'anno scorso (€, facoltativa)",
+          "help": "Dal Modello Redditi dell'anno scorso: gli acconti si calcolano allora su di essa (metodo storico). Se lasciata vuota, si calcolano sulla stima di quest'anno (metodo previsionale)."
+        },
+        "previousContributions": {
+          "label": "Contributi INPS dell'anno scorso (€, facoltativi)",
+          "help": "Gli acconti INPS sono allora il 40% e il 40% di questi; se lasciati vuoti, della stima di quest'anno."
+        },
+        "coefficient": {
+          "label": "Coefficiente di redditività (per codice ATECO)",
+          "help": "La quota dei ricavi che viene tassata, fissata dal gruppo del tuo codice ATECO.",
+          "c78": "78% · Attività professionali, scientifiche, tecniche, sanitarie, di istruzione, servizi finanziari",
+          "c67": "67% · Altre attività economiche",
+          "c86": "86% · Costruzioni e attività immobiliari",
+          "c62": "62% · Commercio ambulante di altri prodotti, intermediari del commercio",
+          "c54": "54% · Commercio ambulante di prodotti alimentari e bevande",
+          "c40": "40% · Commercio, alloggio e ristorazione"
+        },
+        "startup": {
+          "label": "Nuova attività: 5% invece del 15% (primi cinque anni)",
+          "help": "Per i primi cinque anni di un'attività davvero nuova (art. 1, comma 65, L. 190/2014)."
+        },
+        "regionalRate": {
+          "help": "L'aliquota della tua regione, ad es. 1,23."
+        },
+        "municipalRate": {
+          "help": "L'aliquota del tuo comune, ad es. 0,8."
+        },
+        "workDeduction": {
+          "label": "Applica la detrazione per lavoro autonomo",
+          "help": "Art. 13 TUIR: fino a 1.265 €, che si azzera a 50.000 € di reddito."
+        }
+      },
+      "regimes": {
+        "forfettario": {
+          "help": "Imposta sostitutiva e INPS: due acconti (30 giugno, 30 novembre) e il saldo il giugno successivo. Niente IVA."
+        },
+        "ordinario": {
+          "help": "IVA ogni trimestre; IRPEF e INPS in due acconti (30 giugno, 30 novembre) e il saldo il giugno successivo."
+        }
+      },
+      "what": {
+        "inpsRate": "l'aliquota INPS",
+        "previousTax": "l'imposta dell'anno scorso",
+        "previousContributions": "i contributi INPS dell'anno scorso",
+        "coefficient": "il coefficiente",
+        "regionalRate": "l'addizionale regionale",
+        "municipalRate": "l'addizionale comunale"
+      },
+      "warnings": {
+        "forfettarioCash": "I ricavi contano quando vengono fatturati; il regime forfettario li conta quando vengono incassati (principio di cassa).",
+        "forfettarioImmediateExit": "Ricavi oltre {limit} €: il regime forfettario cessa in corso d'anno e l'IVA è dovuta dalla fattura che supera la soglia.",
+        "forfettarioLimit": "Ricavi oltre {limit} €: l'anno prossimo esci dal regime forfettario.",
+        "forfettarioExpenses": "Nel regime forfettario le spese non si deducono: le rappresenta il coefficiente.",
+        "ordinarioNotEstimated": "Non stimati: l'acconto IVA di dicembre e l'acconto dell'addizionale comunale.",
+        "inpsDeducted": "I contributi INPS si deducono nell'anno in cui si pagano; la stima deduce quelli di quest'anno."
+      },
+      "periods": {
+        "firstInstallment": "1° acconto",
+        "secondInstallment": "2° acconto",
+        "balance": "Saldo"
+      },
+      "installments": {
+        "basisEstimate": "Base: stima di quest'anno (metodo previsionale)",
+        "basisLastYear": "Base: importo dell'anno scorso (metodo storico)",
+        "first": "{name} · 1° acconto",
+        "second": "{name} · 2° acconto",
+        "balance": "{name} · saldo",
+        "fortyPercent": "40% della base",
+        "sixtyPercent": "60% della base",
+        "nothingInJune": "Niente a giugno sotto i 257,52 €",
+        "nothingUpTo": "Niente fino a 51,65 €",
+        "allOfBasis": "Tutta la base",
+        "paidOnAccount": "Versato in acconto",
+        "balanceToPay": "Saldo da versare",
+        "creditNextYear": "Credito per l'anno prossimo"
+      },
+      "lines": {
+        "revenue": "Compensi",
+        "coefficient": "× coefficiente di redditività del {coefficient}%",
+        "inpsContributions": "− Contributi INPS",
+        "withheld": "− Ritenute d'acconto subite",
+        "withheldRitenute": "− Ritenute d'acconto subite",
+        "inpsTaxable": "Imponibile INPS (compensi × coefficiente)",
+        "deductibleExpenses": "− Spese deducibili",
+        "grossIrpef": "IRPEF lorda (per scaglioni)",
+        "workDeduction": "− Detrazione per lavoro autonomo",
+        "surcharges": "+ Addizionali regionale e comunale ({rate}%)",
+        "taxCredit": "Imposta dell'anno (credito: ritenute superiori al dovuto)",
+        "income": "Reddito (compensi − spese)"
+      },
+      "iva": {
+        "lastQuarter": "IVA · 4° trimestre (dichiarazione annuale)",
+        "quarter": "IVA · {quarter}° trimestre",
+        "interest": "Interessi dell'1% (liquidazione trimestrale)"
+      }
+    },
+    "spain": {
+      "fields": {
+        "territory": {
+          "label": "Dove paghi l'imposta indiretta",
+          "help": "Alle Canarie c'è l'IGIC, dichiarata con il Modelo 420; altrove è l'IVA, dichiarata con il Modelo 303.",
+          "canarias": "Canarie (IGIC, Modelo 420)",
+          "mainland": "Penisola e Baleari (IVA, Modelo 303)"
+        },
+        "difficultExpenses": {
+          "label": "Deduci le spese di difficile giustificazione (gastos de difícil justificación)",
+          "help": "Il 5% del reddito netto, al massimo 2.000 € l'anno. La maggior parte degli autónomos e dei gestores la applica."
+        },
+        "deductWithholdings": {
+          "label": "Sottrai nel Modelo 130 le ritenute dei clienti",
+          "help": "La legge permette di sottrarre l'IRPF trattenuto dai clienti (casella 06). Togli la spunta se il tuo gestor non lo fa: lo recuperi allora nella dichiarazione annuale."
+        }
+      },
+      "regimes": {
+        "eds": {
+          "help": "Modelo 130 e Modelo 420 o 303 trimestrali."
+        }
+      },
+      "warnings": {
+        "chooseTerritory": "Scegli dove paghi l'imposta indiretta (Canarie o resto della Spagna) per stimare IGIC o IVA.",
+        "otherTax": "{count} fattura/e addebitano un'imposta diversa da {tax}: non viene conteggiata nel {form}."
+      },
+      "modelo130": {
+        "name": "Modelo 130 · acconto IRPF",
+        "revenue": "Ricavi fatturati dal 1° gennaio",
+        "deductible": "Spese deducibili dal 1° gennaio",
+        "recorded": "di cui spese registrate",
+        "difficult": "di cui spese di difficile giustificazione (gastos de difícil justificación)",
+        "net": "Reddito netto (01 − 02)",
+        "share": "20% del reddito netto",
+        "paidBefore": "Versato nei trimestri precedenti",
+        "withheld": "Trattenuto dai clienti dal 1° gennaio",
+        "withheldNotSubtracted": "Trattenuto dai clienti (non sottratto: vedi impostazioni)",
+        "result": "Risultato (04 − 05 − 06)"
+      }
+    },
+    "germany": {
+      "fields": {
+        "smallBusiness": {
+          "label": "Kleinunternehmer (§ 19 UStG): nessuna dichiarazione IVA",
+          "help": "Sotto i 25.000 € di ricavi l'anno scorso e i 100.000 € quest'anno puoi non addebitare l'IVA."
+        },
+        "vatPeriod": {
+          "label": "Dichiarazioni IVA (Umsatzsteuer-Voranmeldung)",
+          "help": "La regola è trimestrale se l'IVA dell'anno scorso non superava i 9.000 €; mensile sopra.",
+          "quarterly": "Trimestrale",
+          "monthly": "Mensile"
+        },
+        "extension": {
+          "label": "Dauerfristverlängerung: un mese in più per ogni dichiarazione"
+        },
+        "churchTax": {
+          "none": "Nessuna",
+          "rate8": "8% (Baviera, Baden-Württemberg)",
+          "rate9": "9% (altri Länder)"
+        },
+        "insurance": {
+          "label": "Assicurazioni deducibili all'anno (€)",
+          "help": "Contributi sanitari, per l'assistenza e previdenziali che deduci come Vorsorgeaufwendungen (solo la parte deducibile)."
+        },
+        "prepayment": {
+          "label": "Einkommensteuer-Vorauszahlung per trimestre (€)",
+          "help": "Dal tuo Vorauszahlungsbescheid, Soli e Kirchensteuer inclusi. Se lasciato vuoto, ogni trimestre è un quarto della stima di quest'anno."
+        },
+        "hebesatz": {
+          "label": "Hebesatz del tuo comune (%)",
+          "help": "Ad es. 400; Berlino 410, Monaco 490."
+        },
+        "tradeTaxPrepayment": {
+          "label": "Gewerbesteuer-Vorauszahlung per trimestre (€)",
+          "help": "Dal Bescheid del tuo comune. Se lasciato vuoto, un quarto della stima di quest'anno."
+        }
+      },
+      "regimes": {
+        "freiberufler": {
+          "name": "Freiberufler (libera professione)",
+          "help": "Einkommensteuer, Soli e Kirchensteuer: quattro acconti e il saldo; dichiarazioni IVA salvo per un Kleinunternehmer."
+        },
+        "gewerbe": {
+          "name": "Gewerbetreibender (attività commerciale)",
+          "help": "Come un Freiberufler, più la Gewerbesteuer (in parte scomputata dall'Einkommensteuer)."
+        }
+      },
+      "what": {
+        "hebesatz": "l'Hebesatz",
+        "insurance": "le assicurazioni deducibili",
+        "churchTax": "la Kirchensteuer",
+        "prepayment": "la Vorauszahlung",
+        "tradeTaxPrepayment": "la Gewerbesteuer-Vorauszahlung"
+      },
+      "warnings": {
+        "tariffYear": "L'Einkommensteuer del {year} è stimata con la tariffa del {tariffYear}.",
+        "cashBasis": "Ricavi e spese contano quando vengono fatturati; l'Einnahmenüberschussrechnung li conta quando vengono pagati.",
+        "singleAssessment": "Tassazione individuale (Grundtarif): la tassazione congiunta con il coniuge (Splitting) non è stimata.",
+        "smallBusinessExceeded": "Ricavi oltre {limit} €: non sei più un Kleinunternehmer e l'IVA è dovuta dalla fattura che ha superato la soglia.",
+        "tradeTaxAdjustments": "Le maggiorazioni e riduzioni della Gewerbesteuer (Hinzurechnungen, Kürzungen) non sono stimate.",
+        "specialPrepayment": "La Sondervorauszahlung che chi dichiara ogni mese versa per la Dauerfristverlängerung non è stimata.",
+        "balanceDue": "Il saldo è dovuto circa un mese dopo l'accertamento (Bescheid); la data indicata è la scadenza delle dichiarazioni."
+      },
+      "incomePrepayment": {
+        "form": "Einkommensteuer-Vorauszahlung · {quarter}° trimestre",
+        "period": "Acconto ESt {quarter}° trimestre"
+      },
+      "tradePrepayment": {
+        "form": "Gewerbesteuer-Vorauszahlung · {quarter}° trimestre",
+        "period": "Acconto GewSt {quarter}° trimestre"
+      },
+      "periods": {
+        "annualReturns": "Dichiarazioni annuali"
+      },
+      "balance": {
+        "name": "{name} · saldo dell'anno",
+        "paidOnAccount": "Versato in acconto (Vorauszahlungen)",
+        "toPay": "Saldo da versare (Abschlusszahlung)"
+      },
+      "refund": "Rimborso (Erstattung)",
+      "lines": {
+        "quarterOfEstimate": "Un quarto della stima di quest'anno",
+        "asSetInPrepaymentNotice": "Come fissato nel Vorauszahlungsbescheid",
+        "asSetInNotice": "Come fissato nel Bescheid",
+        "tradeProfit": "Utile (Gewerbeertrag), arrotondato per difetto a 100 €",
+        "tradeAllowance": "− Franchigia (Freibetrag)",
+        "tradeTax": "Gewerbesteuer con un Hebesatz del {rate}%",
+        "revenue": "Ricavi (al netto dell'IVA)",
+        "businessExpenses": "− Spese dell'attività",
+        "profit": "Utile (Gewinn)",
+        "insurance": "− Assicurazioni deducibili (Vorsorgeaufwendungen)",
+        "taxable": "Reddito imponibile (zu versteuerndes Einkommen)",
+        "tradeTaxCredit": "− Credito per la Gewerbesteuer (§ 35 EStG)"
+      },
+      "vat": {
+        "charged": "IVA addebitata in fattura",
+        "reverseBase": "Servizi ricevuti dall'estero (§ 13b), imponibile",
+        "reverseTax": "IVA dovuta su di essi",
+        "inputVat": "IVA detraibile sugli acquisti (Vorsteuer)",
+        "reverseInput": "IVA detraibile sui servizi § 13b",
+        "toPay": "Da versare"
+      }
+    },
+    "notSetUp": {
+      "noProfile": "Scegli dove paghi le tasse nelle Impostazioni per vedere una stima.",
+      "otherCountry": "Scegli il tuo regime fiscale in Impostazioni › Paese e imposte per vedere una stima."
     }
   }
 }

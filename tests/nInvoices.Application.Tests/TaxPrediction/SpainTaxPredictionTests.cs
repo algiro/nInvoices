@@ -2,6 +2,7 @@ using nInvoices.Countries.Spain.TaxPrediction;
 using nInvoices.Core.TaxPrediction;
 using Shouldly;
 using static nInvoices.Countries.Spain.TaxPrediction.SpainTaxPredictionModule;
+using nInvoices.Application.Tests.TestDoubles;
 
 namespace nInvoices.Application.Tests.TaxPrediction;
 
@@ -16,7 +17,7 @@ namespace nInvoices.Application.Tests.TaxPrediction;
 [TestFixture]
 public sealed class SpainTaxPredictionTests
 {
-    private static readonly SpainTaxPredictionModule Module = new();
+    private static readonly SpainTaxPredictionModule Module = new(TestText.Instance);
 
     private static TaxableIncome ReverseCharge(int month, int day, decimal amount) =>
         new(new DateOnly(2026, month, day), amount, []);

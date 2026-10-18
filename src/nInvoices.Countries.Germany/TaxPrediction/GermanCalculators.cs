@@ -1,3 +1,4 @@
+using nInvoices.Application.Localization;
 using nInvoices.Core.TaxPrediction;
 using static nInvoices.Countries.Germany.TaxPrediction.GermanTaxRules;
 
@@ -25,10 +26,12 @@ public static class GermanIncomeTaxCalculator
         IReadOnlyList<DeductibleExpense> expenses,
         decimal? hebesatz,
         decimal insurance,
-        decimal churchRate)
+        decimal churchRate,
+        IAppText text)
     {
         ArgumentNullException.ThrowIfNull(income);
         ArgumentNullException.ThrowIfNull(expenses);
+        ArgumentNullException.ThrowIfNull(text);
 
         var revenue = Round(income.Where(i => i.Date.Year == year).Sum(i => i.Base));
         var costs = Round(expenses.Where(e => e.Date.Year == year).Sum(e => e.Base * e.DeductiblePercent / 100m));
@@ -41,10 +44,10 @@ public static class GermanIncomeTaxCalculator
         {
             baseAmount = TradeTaxBase(profit);
             tradeTax = Round(baseAmount * rate / 100m);
-            tradeLines.Add(new(null, "Profit (Gewerbeertrag), rounded down to €100", Math.Floor(Math.Max(0m, profit) / 100m) * 100m));
-            tradeLines.Add(new(null, "− Allowance (Freibetrag)", Math.Min(TradeTaxAllowance, Math.Max(0m, profit))));
+            tradeLines.Add(new(null, text.Translate("taxPrediction.germany.lines.tradeProfit"), Math.Floor(Math.Max(0m, profit) / 100m) * 100m));
+            tradeLines.Add(new(null, text.Translate("taxPrediction.germany.lines.tradeAllowance"), Math.Min(TradeTaxAllowance, Math.Max(0m, profit))));
             tradeLines.Add(new(null, "Steuermessbetrag (3.5%)", baseAmount));
-            tradeLines.Add(new(null, $"Gewerbesteuer at a Hebesatz of {rate}%", tradeTax));
+            tradeLines.Add(new(null, text.Translate("taxPrediction.germany.lines.tradeTax", ("rate", rate)), tradeTax));
         }
 
         var taxable = Math.Max(0m, profit - insurance - SpecialExpensesAllowance);
@@ -58,19 +61,19 @@ public static class GermanIncomeTaxCalculator
 
         var lines = new List<TaxFormLine>
         {
-            new(null, "Revenue (net of VAT)", revenue),
-            new(null, "− Business expenses", costs),
-            new(null, "Profit (Gewinn)", profit),
-            new(null, "− Deductible insurance (Vorsorgeaufwendungen)", insurance),
+            new(null, text.Translate("taxPrediction.germany.lines.revenue"), revenue),
+            new(null, text.Translate("taxPrediction.germany.lines.businessExpenses"), costs),
+            new(null, text.Translate("taxPrediction.germany.lines.profit"), profit),
+            new(null, text.Translate("taxPrediction.germany.lines.insurance"), insurance),
             new(null, "− Sonderausgaben-Pauschbetrag", SpecialExpensesAllowance),
-            new(null, "Taxable income (zu versteuerndes Einkommen)", taxable),
+            new(null, text.Translate("taxPrediction.germany.lines.taxable"), taxable),
             new(null, "Einkommensteuer (Grundtarif)", incomeTax)
         };
         if (hebesatz is not null)
-            lines.Add(new(null, "− Gewerbesteuer credit (§ 35 EStG)", credit));
+            lines.Add(new(null, text.Translate("taxPrediction.germany.lines.tradeTaxCredit"), credit));
         lines.Add(new(null, "Solidaritätszuschlag", solidarity));
         lines.Add(new(null, $"Kirchensteuer ({churchRate}%)", church));
-        lines.Add(new(null, "Tax of the year", total));
+        lines.Add(new(null, text.Translate("taxPrediction.common.taxOfTheYear"), total));
 
         return new GermanIncomeYear(new GermanYearAmount(total, lines), new GermanYearAmount(tradeTax, tradeLines), revenue, profit);
     }
@@ -93,11 +96,13 @@ public static class VatReturnCalculator
         IReadOnlyList<DeductibleExpense> expenses,
         bool monthly,
         bool extension,
-        IReadOnlyDictionary<int, decimal> paid)
+        IReadOnlyDictionary<int, decimal> paid,
+        IAppText text)
     {
         ArgumentNullException.ThrowIfNull(income);
         ArgumentNullException.ThrowIfNull(expenses);
         ArgumentNullException.ThrowIfNull(paid);
+        ArgumentNullException.ThrowIfNull(text);
 
         var count = monthly ? 12 : 4;
         var months = monthly ? 1 : 3;
@@ -107,7 +112,7 @@ public static class VatReturnCalculator
         {
             var start = new DateOnly(year, (period - 1) * months + 1, 1);
             var end = start.AddMonths(months).AddDays(-1);
-            var name = monthly ? start.ToString("MMMM", System.Globalization.CultureInfo.InvariantCulture) : $"Q{period}";
+            var name = monthly ? Month(start.Month, text) : text.Translate("taxPrediction.common.quarter", ("quarter", period));
             var costs = expenses.Where(e => e.Date >= start && e.Date <= end).ToList();
 
             var charged = Round(income
@@ -130,15 +135,31 @@ public static class VatReturnCalculator
                 Math.Max(0m, balance),
                 recorded,
                 [
-                    new(null, "VAT charged on invoices", charged),
-                    new("46", "Services received from abroad (§ 13b), base", reverseBase),
-                    new("47", "VAT owed on them", reverseTax),
-                    new("66", "Input VAT on expenses (Vorsteuer)", inputVat),
-                    new("67", "Input VAT on the § 13b services", reverseInput),
-                    new("83", balance >= 0 ? "To pay" : "Refund (Erstattung)", balance)
+                    new(null, text.Translate("taxPrediction.germany.vat.charged"), charged),
+                    new("46", text.Translate("taxPrediction.germany.vat.reverseBase"), reverseBase),
+                    new("47", text.Translate("taxPrediction.germany.vat.reverseTax"), reverseTax),
+                    new("66", text.Translate("taxPrediction.germany.vat.inputVat"), inputVat),
+                    new("67", text.Translate("taxPrediction.germany.vat.reverseInput"), reverseInput),
+                    new("83", text.Translate(balance >= 0 ? "taxPrediction.germany.vat.toPay" : "taxPrediction.germany.refund"), balance)
                 ])));
         }
 
         return result;
     }
+
+    private static string Month(int month, IAppText text) => month switch
+    {
+        1 => text.Translate("taxPrediction.common.months.january"),
+        2 => text.Translate("taxPrediction.common.months.february"),
+        3 => text.Translate("taxPrediction.common.months.march"),
+        4 => text.Translate("taxPrediction.common.months.april"),
+        5 => text.Translate("taxPrediction.common.months.may"),
+        6 => text.Translate("taxPrediction.common.months.june"),
+        7 => text.Translate("taxPrediction.common.months.july"),
+        8 => text.Translate("taxPrediction.common.months.august"),
+        9 => text.Translate("taxPrediction.common.months.september"),
+        10 => text.Translate("taxPrediction.common.months.october"),
+        11 => text.Translate("taxPrediction.common.months.november"),
+        _ => text.Translate("taxPrediction.common.months.december")
+    };
 }

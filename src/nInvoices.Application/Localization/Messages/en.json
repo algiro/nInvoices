@@ -71,6 +71,10 @@
     "verifactu": {
       "cannotDelete": "Invoice {number} was recorded for Verifactu and cannot be deleted: cancel it instead, which records the cancellation.",
       "cannotRecord": "Verifactu cannot record this invoice: {issues}"
+    },
+    "zip": {
+      "notIncluded": "These invoices are not in the zip:",
+      "customerNotFound": "{number}: customer not found"
     }
   },
   "preferences": {
@@ -223,7 +227,87 @@
       "dir3ProcessingUnit": "A public administration needs the DIR3 code of its processing unit",
       "customerFirstSurnameRequired": "An individual customer needs a first surname",
       "postalCode": "{subject}: a Spanish postal code has five digits",
-      "provinceRequired": "{subject}: the province is required"
+      "provinceRequired": "{subject}: the province is required",
+      "fields": {
+        "personType": {
+          "label": "Issuer type",
+          "help": "Facturae distinguishes a natural person (autónomo) from a legal entity."
+        },
+        "firstName": {
+          "label": "First name",
+          "help": "Individuals only: the legal name is split into first name and surnames."
+        },
+        "firstSurname": {
+          "label": "First surname"
+        },
+        "secondSurname": {
+          "label": "Second surname"
+        },
+        "individualsOnly": "Individuals only.",
+        "individualsOnlyIfAny": "Individuals only, if any.",
+        "verifactu": {
+          "help": "Every invoice you issue is recorded in a tamper-evident chain and reported to the Tax Agency (AEAT), and carries a QR code. Required for autónomos from 1 July 2027."
+        },
+        "faceEmail": {
+          "label": "Email for FACe notifications",
+          "help": "FACe tells you here when an invoice you send to a public administration is registered, rejected or paid. Needed to send invoices to FACe."
+        },
+        "sealCertificate": {
+          "label": "My certificate is a company seal (certificado de sello)",
+          "help": "For Verifactu: tick it only if the certificate you upload is an electronic seal of a company, not a personal certificate."
+        }
+      },
+      "taxFields": {
+        "taxType": {
+          "label": "Which tax is this?",
+          "help": "Left empty it is IVA. Choose IGIC (Impuesto General Indirecto Canario) if you invoice from the Canary Islands. A withholding such as IRPF is not affected: it is the tax with a negative rate.",
+          "iva": "IVA (VAT)",
+          "igic": "IGIC (Canary Islands)"
+        },
+        "operation": {
+          "label": "Verifactu treatment of a 0% tax",
+          "help": "Only used when the rate is 0%: why no tax is charged. A tax above 0% is always taxed. The article of each exemption depends on the tax (E7 and E8 exist for IGIC only).",
+          "S1": "Taxed at 0% (a zero rate, e.g. IGIC tipo cero)",
+          "S2": "Taxable, reverse charge (inversión del sujeto pasivo)",
+          "N2": "Not subject: place-of-supply rules (e.g. services to a business in another country)",
+          "N1": "Not subject: article 7, 14 or other (IGIC: article 9)",
+          "E1": "Exempt: E1 (IVA article 20)",
+          "E2": "Exempt: E2 (IVA article 21, exports; IGIC article 11)",
+          "E3": "Exempt: E3 (IVA article 22; IGIC article 12)",
+          "E4": "Exempt: E4 (IVA articles 23 and 24; IGIC article 13)",
+          "E5": "Exempt: E5 (IVA article 25, intra-community supplies)",
+          "E6": "Exempt: E6 (other reasons)",
+          "E7": "Exempt: E7 (IGIC only: article 90 of the Canary Islands consolidated text)",
+          "E8": "Exempt: E8 (IGIC only: Ley 20/1991)"
+        }
+      },
+      "customerFields": {
+        "isPublicAdministration": {
+          "label": "Public administration",
+          "help": "Invoices to public bodies go through FACe and need the three DIR3 codes below."
+        },
+        "accountingOffice": {
+          "label": "Accounting office (oficina contable)"
+        },
+        "managingBody": {
+          "label": "Managing body (órgano gestor)"
+        },
+        "processingUnit": {
+          "label": "Processing unit (unidad tramitadora)"
+        },
+        "dir3Help": "DIR3 code. Public administrations only.",
+        "personType": {
+          "label": "Customer type",
+          "help": "Left empty it is worked out from the tax id."
+        },
+        "firstSurname": {
+          "help": "Individuals only; the customer name is then the first name."
+        }
+      },
+      "personTypes": {
+        "individual": "Individual (autónomo)",
+        "legalEntity": "Legal entity (company)"
+      }
     },
     "italy": {
       "partitaIvaRequired": "The Partita IVA is required",
@@ -234,14 +318,159 @@
       "fiscalCodeInvalid": "This is not a valid codice fiscale",
       "recipientCodeInvalid": "A codice destinatario has 7 letters or digits",
       "postalCode": "{subject}: an Italian CAP has five digits",
-      "province": "{subject}: the province is its two-letter code, e.g. MI"
+      "province": "{subject}: the province is its two-letter code, e.g. MI",
+      "fields": {
+        "regime": {
+          "label": "Tax regime (regime fiscale)",
+          "help": "Printed on every FatturaPA. In the regime forfettario no IVA is charged and invoices above €77.47 carry the €2 marca da bollo."
+        },
+        "personType": {
+          "label": "Issuer type",
+          "help": "An individual is named by first and last name in the FatturaPA, a company by its legal name."
+        },
+        "firstName": {
+          "label": "First name (nome)"
+        },
+        "lastName": {
+          "label": "Last name (cognome)"
+        },
+        "individualsOnly": "Individuals only.",
+        "fiscalCode": {
+          "help": "Required for an individual: the 16-character code. A company's is usually its Partita IVA (the Tax ID above)."
+        }
+      },
+      "customerFields": {
+        "recipientCode": {
+          "help": "The 7-character code your customer gave you. Leave it empty for a customer abroad, to send to their PEC, or for a consumer."
+        },
+        "pec": {
+          "help": "The certified email for their e-invoices, if they have no codice destinatario."
+        },
+        "fiscalCode": {
+          "help": "For a consumer in Italy without a Partita IVA."
+        }
+      },
+      "taxFields": {
+        "kind": {
+          "label": "What is this tax? (Italy)",
+          "help": "Left empty it is IVA. A pension contribution charged to the customer (rivalsa INPS 4%, cassa professionale) is a contribution: tick \"Part of the taxable amount\" too, so IVA and the ritenuta include it. A ritenuta d'acconto is the tax with a negative rate.",
+          "contribution": "Pension contribution (rivalsa INPS, cassa)"
+        },
+        "fundType": {
+          "label": "Pension fund (tipo cassa)",
+          "help": "For a contribution only. Left empty it is the rivalsa INPS (Gestione Separata).",
+          "TC22": "TC22 · INPS (rivalsa, Gestione Separata)"
+        },
+        "withholdingType": {
+          "label": "Ritenuta type",
+          "help": "For a withholding only. Left empty it is RT01, the ritenuta d'acconto of an individual.",
+          "RT01": "RT01 · Ritenuta, individuals",
+          "RT02": "RT02 · Ritenuta, legal entities",
+          "RT03": "RT03 · INPS contribution",
+          "RT04": "RT04 · ENASARCO contribution"
+        },
+        "paymentReason": {
+          "label": "Reason of the payment (causale)",
+          "help": "For a withholding only, as in the Certificazione Unica. Left empty it is A, professional self-employment.",
+          "A": "A · Professional self-employment",
+          "B": "B · Copyright and patents",
+          "M": "M · Occasional self-employment",
+          "Q": "Q · Single-firm commercial agent",
+          "R": "R · Multi-firm commercial agent",
+          "ZO": "ZO · Other"
+        },
+        "nature": {
+          "label": "Why no IVA is charged (natura)",
+          "help": "Required by the FatturaPA for IVA at 0%. Without an IVA tax at all, a forfettario invoice is N2.2."
+        }
+      },
+      "natures": {
+        "N1": "N1 · Excluded (art. 15)",
+        "N2_1": "N2.1 · Not subject: arts. 7 to 7-septies (e.g. services to a business abroad)",
+        "N2_2": "N2.2 · Not subject: other cases (regime forfettario, minimi)",
+        "N3_1": "N3.1 · Non-taxable: exports",
+        "N3_2": "N3.2 · Non-taxable: intra-EU supplies",
+        "N3_3": "N3.3 · Non-taxable: supplies to San Marino",
+        "N3_4": "N3.4 · Non-taxable: treated as exports",
+        "N3_5": "N3.5 · Non-taxable: declaration of intent",
+        "N3_6": "N3.6 · Non-taxable: other",
+        "N4": "N4 · Exempt",
+        "N5": "N5 · Margin scheme / IVA not shown",
+        "N6_1": "N6.1 · Reverse charge: scrap",
+        "N6_2": "N6.2 · Reverse charge: gold and silver",
+        "N6_3": "N6.3 · Reverse charge: construction subcontracting",
+        "N6_4": "N6.4 · Reverse charge: buildings",
+        "N6_5": "N6.5 · Reverse charge: mobile phones",
+        "N6_6": "N6.6 · Reverse charge: electronic products",
+        "N6_7": "N6.7 · Reverse charge: construction services",
+        "N6_8": "N6.8 · Reverse charge: energy",
+        "N6_9": "N6.9 · Reverse charge: other cases",
+        "N7": "N7 · IVA paid in another EU country"
+      },
+      "personTypes": {
+        "individual": "Individual (libero professionista, ditta individuale)",
+        "legalEntity": "Legal entity (company)"
+      }
     },
     "germany": {
       "taxIdRequired": "The Steuernummer or USt-IdNr is required on every invoice (§ 14 UStG)",
       "taxIdInvalid": "This is neither a Steuernummer (10, 11 or 13 digits) nor a valid USt-IdNr",
       "vatIdInvalid": "This is not a valid USt-IdNr (DE and nine digits)",
       "ibanInvalid": "This is not a valid IBAN",
-      "postalCode": "{subject}: a German Postleitzahl has five digits"
+      "postalCode": "{subject}: a German Postleitzahl has five digits",
+      "fields": {
+        "smallBusiness": {
+          "label": "Kleinunternehmer (§ 19 UStG): I charge no VAT",
+          "help": "Your invoices then carry the § 19 note and no VAT. Only possible below €25,000 of revenue last year and €100,000 this year."
+        },
+        "vatId": {
+          "help": "DE and nine digits. Needed for customers in other EU countries; leave it empty if the Tax ID above already is it."
+        },
+        "contactName": {
+          "label": "Contact name",
+          "help": "For XRechnung: who the customer can ask about the invoice."
+        },
+        "contactPhone": {
+          "label": "Contact phone",
+          "help": "For XRechnung."
+        },
+        "contactEmail": {
+          "label": "Contact email",
+          "help": "For XRechnung: also the address the invoice comes from."
+        },
+        "iban": {
+          "help": "Where the customer pays; XRechnung requires it for a bank transfer."
+        },
+        "bic": {
+          "help": "Optional."
+        }
+      },
+      "customerFields": {
+        "buyerReference": {
+          "label": "Leitweg-ID / buyer reference",
+          "help": "A public administration gives you its Leitweg-ID; a business may give you a reference (a purchase order). Left empty, the invoice number is used."
+        },
+        "email": {
+          "label": "E-invoice email",
+          "help": "Where their XRechnung goes. Required for XRechnung."
+        }
+      },
+      "taxFields": {
+        "category": {
+          "label": "Why no VAT is charged (Germany)",
+          "help": "Required by XRechnung for VAT at 0%. For a Kleinunternehmer without any VAT tax, the § 19 note is used.",
+          "AE": "AE · Reverse charge: the customer owes the VAT (§ 13b UStG, services to an EU business)",
+          "K": "K · Intra-community supply of goods",
+          "G": "G · Export outside the EU",
+          "O": "O · Not subject to German VAT (e.g. services to a business outside the EU)",
+          "E": "E · Exempt (§ 4 UStG): give the reason below",
+          "Z": "Z · Zero rate (§ 12 (3) UStG, e.g. solar panels)"
+        },
+        "exemptionNote": {
+          "label": "Reason on the invoice",
+          "help": "For an exemption, its legal basis (e.g. \"Steuerfrei nach § 4 Nr. 21 UStG\"). The other categories have a default text."
+        }
+      }
     },
     "einvoice": {
       "issuer": "Issuer: {message}",
@@ -271,7 +500,8 @@
       "taxAmount": "Tax \"{tax}\": the amount does not match the rate"
     },
     "face": {
-      "emailRequired": "Fill in the email for FACe notifications in the Spanish settings"
+      "emailRequired": "Fill in the email for FACe notifications in the Spanish settings",
+      "notConfigured": "FACe is not set up on this server ({missing} missing under {section})"
     },
     "fatturapa": {
       "issuerInItaly": "Issuer: the address must be in Italy",
@@ -317,7 +547,16 @@
       "igicOnlyExemption": "Tax \"{tax}\": the exemptions E7 and E8 exist for IGIC only; set the tax type to IGIC or choose another",
       "customerCountry": "The country of the customer (\"{country}\") is not recognized",
       "customerNif": "The customer's NIF is not a valid Spanish NIF, NIE or CIF",
-      "customerTaxId": "The customer's tax id must have 1 to 20 characters"
+      "customerTaxId": "The customer's tax id must have 1 to 20 characters",
+      "chain": {
+        "gap": "The chain jumps to record {sequence} where {expected} was expected (a record is missing)",
+        "previousHash": "It does not point at the hash of the record before it",
+        "hashMismatch": "Its hash does not match its contents: the record was changed",
+        "timeBackwards": "It is dated before the record that precedes it",
+        "timestampInvalid": "Its time stamp is not valid",
+        "xmlMismatch": "Its XML does not say what was hashed",
+        "xmlUnreadable": "Its XML cannot be read"
+      }
     },
     "certificate": {
       "required": "Upload your signing certificate in Settings",
@@ -328,6 +567,299 @@
       "required": "\"{field}\" is required",
       "notAnOption": "\"{value}\" is not an option for \"{field}\"",
       "notBoolean": "\"{field}\" is ticked with \"true\" or left out"
+    },
+    "delivery": {
+      "finalizeFirst": "Finalize the invoice first",
+      "cancelledCannotBeSent": "A cancelled invoice cannot be sent",
+      "generateFirst": "Generate the e-invoice first",
+      "alreadySent": "It was already sent ({reference})",
+      "notThroughChannel": "Invoices to this customer do not go through {channel}",
+      "notSent": "It has not been sent",
+      "unknownChannel": "Unknown channel \"{channel}\"",
+      "notTurnedOn": "{channel} is not turned on",
+      "customerNotFound": "The customer was not found"
+    }
+  },
+  "countries": {
+    "ES": "Spain",
+    "IT": "Italy",
+    "DE": "Germany"
+  },
+  "taxPrediction": {
+    "common": {
+      "taxOfTheYear": "Tax of the year",
+      "taxableIncome": "Taxable income",
+      "notANumber": "\"{text}\" is not a number: {what} is left out. Correct it in Settings.",
+      "chargedOnInvoices": "{tax} charged on invoices",
+      "deductibleOnExpenses": "{tax} deductible on expenses",
+      "selfCharged": "Self-charged on services from abroad (reverse charge)",
+      "creditCarried": "Credit carried from earlier quarters",
+      "result": "Result",
+      "quarter": "Q{quarter}",
+      "months": {
+        "january": "January",
+        "february": "February",
+        "march": "March",
+        "april": "April",
+        "may": "May",
+        "june": "June",
+        "july": "July",
+        "august": "August",
+        "september": "September",
+        "october": "October",
+        "november": "November",
+        "december": "December"
+      }
+    },
+    "italy": {
+      "fields": {
+        "inpsRate": {
+          "label": "INPS contribution rate (%)",
+          "help": "26.07 for a professional in the Gestione Separata without another pension. Enter your fund's rate if you belong to a cassa professionale."
+        },
+        "previousTax": {
+          "label": "Last year's tax (€, optional)",
+          "help": "From last year's Modello Redditi: the installments are then based on it (metodo storico). Left empty, they are based on this year's estimate (metodo previsionale)."
+        },
+        "previousContributions": {
+          "label": "Last year's INPS contributions (€, optional)",
+          "help": "The INPS installments are then 40% and 40% of it; left empty, of this year's estimate."
+        },
+        "coefficient": {
+          "label": "Profitability coefficient (by ATECO code)",
+          "help": "The share of your revenue that is taxed, set by the group of your ATECO activity code.",
+          "c78": "78% · Professional, scientific, technical, health, education, finance",
+          "c67": "67% · Other economic activities",
+          "c86": "86% · Construction and real estate",
+          "c62": "62% · Street trade of other goods, trade intermediaries",
+          "c54": "54% · Street trade of food and drinks",
+          "c40": "40% · Trade, accommodation and food services"
+        },
+        "startup": {
+          "label": "New activity: 5% instead of 15% (first five years)",
+          "help": "For the first five years of an activity that is really new (art. 1, comma 65, L. 190/2014)."
+        },
+        "regionalRate": {
+          "help": "Your region's rate, e.g. 1.23."
+        },
+        "municipalRate": {
+          "help": "Your municipality's rate, e.g. 0.8."
+        },
+        "workDeduction": {
+          "label": "Apply the self-employment deduction (detrazione lavoro autonomo)",
+          "help": "Art. 13 TUIR: up to €1,265, falling to nothing at €50,000 of income."
+        }
+      },
+      "regimes": {
+        "forfettario": {
+          "help": "Imposta sostitutiva and INPS: two installments (30 June, 30 November) and the balance the next June. No IVA."
+        },
+        "ordinario": {
+          "help": "IVA every quarter; IRPEF and INPS in two installments (30 June, 30 November) and the balance the next June."
+        }
+      },
+      "what": {
+        "inpsRate": "the INPS rate",
+        "previousTax": "last year's tax",
+        "previousContributions": "last year's INPS contributions",
+        "coefficient": "the coefficient",
+        "regionalRate": "the addizionale regionale",
+        "municipalRate": "the addizionale comunale"
+      },
+      "warnings": {
+        "forfettarioCash": "Revenue counts when invoiced; the regime forfettario counts it when collected (principio di cassa).",
+        "forfettarioImmediateExit": "Revenue above €{limit}: the regime forfettario stops applying during the year, and IVA is due from the invoice that crosses it.",
+        "forfettarioLimit": "Revenue above €{limit}: next year you leave the regime forfettario.",
+        "forfettarioExpenses": "Expenses are not deducted in the regime forfettario: the coefficient stands for them.",
+        "ordinarioNotEstimated": "Not estimated: the December IVA installment (acconto IVA) and the installment of the addizionale comunale.",
+        "inpsDeducted": "INPS contributions are deducted in the year they are paid; the estimate deducts this year's own."
+      },
+      "periods": {
+        "firstInstallment": "1st installment",
+        "secondInstallment": "2nd installment",
+        "balance": "Balance"
+      },
+      "installments": {
+        "basisEstimate": "Basis: this year's estimate (metodo previsionale)",
+        "basisLastYear": "Basis: last year's amount (metodo storico)",
+        "first": "{name} · 1st installment",
+        "second": "{name} · 2nd installment",
+        "balance": "{name} · balance",
+        "fortyPercent": "40% of the basis",
+        "sixtyPercent": "60% of the basis",
+        "nothingInJune": "Nothing in June below €257.52",
+        "nothingUpTo": "Nothing up to €51.65",
+        "allOfBasis": "All of the basis",
+        "paidOnAccount": "Paid on account (installments)",
+        "balanceToPay": "Balance to pay",
+        "creditNextYear": "Credit for next year"
+      },
+      "lines": {
+        "revenue": "Revenue (compensi)",
+        "coefficient": "× {coefficient}% profitability coefficient",
+        "inpsContributions": "− INPS contributions",
+        "withheld": "− Withheld by customers",
+        "withheldRitenute": "− Withheld by customers (ritenute)",
+        "inpsTaxable": "Taxable income for INPS (revenue × coefficient)",
+        "deductibleExpenses": "− Deductible expenses",
+        "grossIrpef": "Gross IRPEF (by brackets)",
+        "workDeduction": "− Self-employment deduction",
+        "surcharges": "+ Regional and municipal surcharges ({rate}%)",
+        "taxCredit": "Tax of the year (credit: more was withheld)",
+        "income": "Income (revenue − expenses)"
+      },
+      "iva": {
+        "lastQuarter": "IVA · Q4 (annual return)",
+        "quarter": "IVA · Q{quarter}",
+        "interest": "1% interest (quarterly filer)"
+      }
+    },
+    "spain": {
+      "fields": {
+        "territory": {
+          "label": "Where you pay indirect tax",
+          "help": "The Canary Islands have IGIC, filed with Modelo 420; elsewhere it is IVA, filed with Modelo 303.",
+          "canarias": "Canary Islands (IGIC, Modelo 420)",
+          "mainland": "Mainland and Balearic Islands (IVA, Modelo 303)"
+        },
+        "difficultExpenses": {
+          "label": "Deduct hard-to-justify expenses (gastos de difícil justificación)",
+          "help": "5% of the net income, at most €2,000 a year. Most autónomos and gestores apply it."
+        },
+        "deductWithholdings": {
+          "label": "Subtract what customers withheld in Modelo 130",
+          "help": "The law allows subtracting the IRPF your customers withheld (box 06). Untick it if your gestor leaves it out: you then get it back in the annual return."
+        }
+      },
+      "regimes": {
+        "eds": {
+          "help": "Quarterly Modelo 130 and Modelo 420 or 303."
+        }
+      },
+      "warnings": {
+        "chooseTerritory": "Choose where you pay indirect tax (Canary Islands or elsewhere in Spain) to estimate IGIC or IVA.",
+        "otherTax": "{count} invoice(s) charge a tax other than {tax}: it is not counted in {form}."
+      },
+      "modelo130": {
+        "name": "Modelo 130 · IRPF prepayment",
+        "revenue": "Income invoiced since 1 January",
+        "deductible": "Deductible expenses since 1 January",
+        "recorded": "of which recorded expenses",
+        "difficult": "of which hard-to-justify expenses (gastos de difícil justificación)",
+        "net": "Net income (01 − 02)",
+        "share": "20% of the net income",
+        "paidBefore": "Paid in the earlier quarters",
+        "withheld": "Withheld by customers since 1 January",
+        "withheldNotSubtracted": "Withheld by customers (not subtracted: see settings)",
+        "result": "Result (04 − 05 − 06)"
+      }
+    },
+    "germany": {
+      "fields": {
+        "smallBusiness": {
+          "label": "Kleinunternehmer (§ 19 UStG): no VAT returns",
+          "help": "Below €25,000 of revenue last year and €100,000 this year you may charge no VAT."
+        },
+        "vatPeriod": {
+          "label": "VAT returns (Umsatzsteuer-Voranmeldung)",
+          "help": "Quarterly is the rule when last year's VAT was at most €9,000; monthly above.",
+          "quarterly": "Quarterly",
+          "monthly": "Monthly"
+        },
+        "extension": {
+          "label": "Dauerfristverlängerung: one month more for each return"
+        },
+        "churchTax": {
+          "none": "None",
+          "rate8": "8% (Bavaria, Baden-Württemberg)",
+          "rate9": "9% (other Länder)"
+        },
+        "insurance": {
+          "label": "Deductible insurance per year (€)",
+          "help": "Health, care and pension contributions you deduct as Vorsorgeaufwendungen (only the deductible part)."
+        },
+        "prepayment": {
+          "label": "Einkommensteuer-Vorauszahlung per quarter (€)",
+          "help": "From your Vorauszahlungsbescheid, Soli and Kirchensteuer included. Left empty, each quarter is a quarter of this year's estimate."
+        },
+        "hebesatz": {
+          "label": "Hebesatz of your municipality (%)",
+          "help": "E.g. 400; Berlin 410, Munich 490."
+        },
+        "tradeTaxPrepayment": {
+          "label": "Gewerbesteuer-Vorauszahlung per quarter (€)",
+          "help": "From your municipality's Bescheid. Left empty, a quarter of this year's estimate."
+        }
+      },
+      "regimes": {
+        "freiberufler": {
+          "name": "Freiberufler (liberal profession)",
+          "help": "Einkommensteuer, Soli and Kirchensteuer: four prepayments and the balance; VAT returns unless a Kleinunternehmer."
+        },
+        "gewerbe": {
+          "name": "Gewerbetreibender (trade)",
+          "help": "As a Freiberufler, plus the Gewerbesteuer (partly credited against the Einkommensteuer)."
+        }
+      },
+      "what": {
+        "hebesatz": "the Hebesatz",
+        "insurance": "the deductible insurance",
+        "churchTax": "the Kirchensteuer",
+        "prepayment": "the Vorauszahlung",
+        "tradeTaxPrepayment": "the Gewerbesteuer-Vorauszahlung"
+      },
+      "warnings": {
+        "tariffYear": "The Einkommensteuer of {year} is estimated with the tariff of {tariffYear}.",
+        "cashBasis": "Revenue and expenses count when invoiced; the Einnahmenüberschussrechnung counts them when paid.",
+        "singleAssessment": "Single assessment (Grundtarif): a joint assessment with a spouse (Splitting) is not estimated.",
+        "smallBusinessExceeded": "Revenue above €{limit}: you are no longer a Kleinunternehmer, and VAT is due from the invoice that crossed it.",
+        "tradeTaxAdjustments": "Gewerbesteuer additions and deductions (Hinzurechnungen, Kürzungen) are not estimated.",
+        "specialPrepayment": "The Sondervorauszahlung that a monthly filer pays for the Dauerfristverlängerung is not estimated.",
+        "balanceDue": "The balance is due about a month after the assessment (Bescheid); its date is the filing deadline of the returns."
+      },
+      "incomePrepayment": {
+        "form": "Einkommensteuer-Vorauszahlung · Q{quarter}",
+        "period": "ESt prepayment Q{quarter}"
+      },
+      "tradePrepayment": {
+        "form": "Gewerbesteuer-Vorauszahlung · Q{quarter}",
+        "period": "GewSt prepayment Q{quarter}"
+      },
+      "periods": {
+        "annualReturns": "Annual returns"
+      },
+      "balance": {
+        "name": "{name} · balance of the year",
+        "paidOnAccount": "Paid on account (Vorauszahlungen)",
+        "toPay": "Balance to pay (Abschlusszahlung)"
+      },
+      "refund": "Refund (Erstattung)",
+      "lines": {
+        "quarterOfEstimate": "A quarter of this year's estimate",
+        "asSetInPrepaymentNotice": "As set in the Vorauszahlungsbescheid",
+        "asSetInNotice": "As set in the Bescheid",
+        "tradeProfit": "Profit (Gewerbeertrag), rounded down to €100",
+        "tradeAllowance": "− Allowance (Freibetrag)",
+        "tradeTax": "Gewerbesteuer at a Hebesatz of {rate}%",
+        "revenue": "Revenue (net of VAT)",
+        "businessExpenses": "− Business expenses",
+        "profit": "Profit (Gewinn)",
+        "insurance": "− Deductible insurance (Vorsorgeaufwendungen)",
+        "taxable": "Taxable income (zu versteuerndes Einkommen)",
+        "tradeTaxCredit": "− Gewerbesteuer credit (§ 35 EStG)"
+      },
+      "vat": {
+        "charged": "VAT charged on invoices",
+        "reverseBase": "Services received from abroad (§ 13b), base",
+        "reverseTax": "VAT owed on them",
+        "inputVat": "Input VAT on expenses (Vorsteuer)",
+        "reverseInput": "Input VAT on the § 13b services",
+        "toPay": "To pay"
+      }
+    },
+    "notSetUp": {
+      "noProfile": "Choose where you pay taxes in Settings to see an estimate.",
+      "otherCountry": "Choose your tax regime in Settings › Country & taxes to see an estimate."
     }
   }
 }

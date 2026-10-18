@@ -203,7 +203,7 @@ public sealed class VerifactuServiceTests
         next.Sequence.ShouldBe(2);
         next.PreviousHash.ShouldBe(first.Hash);
         next.Xml.ShouldContain(first.Hash);
-        VerifactuChainVerifier.Verify(_records.Items).IsIntact.ShouldBeTrue();
+        VerifactuChainVerifier.Verify(TestText.Instance, _records.Items).IsIntact.ShouldBeTrue();
     }
 
     [Test]
@@ -321,7 +321,7 @@ public sealed class VerifactuServiceTests
         cancelled.PreviousHash.ShouldBe(issued.Hash);
         cancelled.InvoiceNumber.ShouldBe("26-10-001");
         cancelled.Hash.ShouldBe(VerifactuHash.Cancelled("12345678Z", "26-10-001", "03-10-2026", issued.Hash, cancelled.GeneratedAt));
-        VerifactuChainVerifier.Verify(_records.Items).IsIntact.ShouldBeTrue();
+        VerifactuChainVerifier.Verify(TestText.Instance, _records.Items).IsIntact.ShouldBeTrue();
     }
 
     [Test]

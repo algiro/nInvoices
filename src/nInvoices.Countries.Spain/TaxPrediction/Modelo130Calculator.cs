@@ -1,3 +1,4 @@
+using nInvoices.Application.Localization;
 using nInvoices.Core.TaxPrediction;
 using static nInvoices.Countries.Spain.TaxPrediction.SpanishTaxRules;
 
@@ -12,7 +13,6 @@ public static class Modelo130Calculator
 {
     public const string Code = "130";
 
-    public const string Name = "Modelo 130 · IRPF prepayment";
 
     /// <param name="paid">What the user recorded as paid, by quarter. A recorded payment replaces the
     /// estimate of its quarter as the "paid in earlier quarters" of the next ones.</param>
@@ -24,11 +24,15 @@ public static class Modelo130Calculator
         IReadOnlyList<DeductibleExpense> expenses,
         IReadOnlyDictionary<int, decimal> paid,
         bool difficultExpenses,
-        bool deductWithholdings)
+        bool deductWithholdings,
+        IAppText text)
     {
         ArgumentNullException.ThrowIfNull(income);
         ArgumentNullException.ThrowIfNull(expenses);
         ArgumentNullException.ThrowIfNull(paid);
+        ArgumentNullException.ThrowIfNull(text);
+
+        var name = text.Translate("taxPrediction.spain.modelo130.name");
 
         var forms = new List<TaxFormPrediction>();
         var paidBefore = 0m;
@@ -55,20 +59,20 @@ public static class Modelo130Calculator
 
             var lines = new List<TaxFormLine>
             {
-                new("01", "Income invoiced since 1 January", revenue),
-                new("02", "Deductible expenses since 1 January", deductible),
-                new(null, "of which recorded expenses", recorded)
+                new("01", text.Translate("taxPrediction.spain.modelo130.revenue"), revenue),
+                new("02", text.Translate("taxPrediction.spain.modelo130.deductible"), deductible),
+                new(null, text.Translate("taxPrediction.spain.modelo130.recorded"), recorded)
             };
             if (difficultExpenses)
-                lines.Add(new(null, "of which hard-to-justify expenses (gastos de difícil justificación)", difficult));
-            lines.Add(new("03", "Net income (01 − 02)", net));
-            lines.Add(new("04", "20% of the net income", share));
-            lines.Add(new("05", "Paid in the earlier quarters", paidBefore));
-            lines.Add(new("06", deductWithholdings ? "Withheld by customers since 1 January" : "Withheld by customers (not subtracted: see settings)", withheld));
-            lines.Add(new("07", "Result (04 − 05 − 06)", result));
+                lines.Add(new(null, text.Translate("taxPrediction.spain.modelo130.difficult"), difficult));
+            lines.Add(new("03", text.Translate("taxPrediction.spain.modelo130.net"), net));
+            lines.Add(new("04", text.Translate("taxPrediction.spain.modelo130.share"), share));
+            lines.Add(new("05", text.Translate("taxPrediction.spain.modelo130.paidBefore"), paidBefore));
+            lines.Add(new("06", text.Translate(deductWithholdings ? "taxPrediction.spain.modelo130.withheld" : "taxPrediction.spain.modelo130.withheldNotSubtracted"), withheld));
+            lines.Add(new("07", text.Translate("taxPrediction.spain.modelo130.result"), result));
 
             decimal? recordedPayment = paid.TryGetValue(quarter, out var amount) ? amount : null;
-            forms.Add(new TaxFormPrediction(Code, Name, Deadline(year, quarter), estimated, recordedPayment, lines));
+            forms.Add(new TaxFormPrediction(Code, name, Deadline(year, quarter), estimated, recordedPayment, lines));
 
             // Box 05 adds up the positive results of the earlier quarters: what was really paid when known
             paidBefore += recordedPayment ?? estimated;

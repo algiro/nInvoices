@@ -26,7 +26,7 @@ public sealed class TaxPredictionHandlerTests
     private const long EuClient = 1;
     private const long CanarianClient = 2;
 
-    private static readonly ITaxPredictionRegistry Registry = new TaxPredictionRegistry([new SpainTaxPredictionModule()]);
+    private static readonly ITaxPredictionRegistry Registry = new TaxPredictionRegistry([new SpainTaxPredictionModule(TestText.Instance)]);
 
     private InMemoryRepository<TaxProfile> _profiles = null!;
     private InMemoryRepository<Tax> _taxes = null!;
@@ -117,7 +117,7 @@ public sealed class TaxPredictionHandlerTests
     }
 
     private Task<TaxPredictionDto> PredictAsync(int year = 2026) =>
-        new GetTaxPredictionQueryHandler(Registry, _profiles, _invoiceRepository.Object, _taxes, _expenses, _recurring, _payments)
+        new GetTaxPredictionQueryHandler(Registry, _profiles, _invoiceRepository.Object, _taxes, _expenses, _recurring, _payments, TestText.Instance)
             .Handle(new GetTaxPredictionQuery(year), Token).AsTask();
 
     private static TaxFormDto Form(TaxPredictionDto prediction, int quarter, string code) =>

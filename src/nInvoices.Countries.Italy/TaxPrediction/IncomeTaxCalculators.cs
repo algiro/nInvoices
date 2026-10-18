@@ -1,3 +1,4 @@
+using nInvoices.Application.Localization;
 using nInvoices.Core.TaxPrediction;
 using static nInvoices.Countries.Italy.TaxPrediction.ItalianTaxRules;
 
@@ -18,9 +19,10 @@ public static class ForfettarioCalculator
 {
     /// <param name="coefficient">Percentage, e.g. 78.</param>
     /// <param name="inpsRate">Percentage, e.g. 26.07.</param>
-    public static IncomeTaxYear Calculate(int year, IReadOnlyList<TaxableIncome> income, decimal coefficient, bool startup, decimal inpsRate)
+    public static IncomeTaxYear Calculate(int year, IReadOnlyList<TaxableIncome> income, decimal coefficient, bool startup, decimal inpsRate, IAppText text)
     {
         ArgumentNullException.ThrowIfNull(income);
+        ArgumentNullException.ThrowIfNull(text);
 
         var invoiced = income.Where(i => i.Date.Year == year).ToList();
         var revenue = Round(invoiced.Sum(Revenue));
@@ -34,17 +36,17 @@ public static class ForfettarioCalculator
         return new IncomeTaxYear(
             new YearAmount(Math.Max(0m, tax - withheld),
             [
-                new("LM22", "Revenue (compensi)", revenue),
-                new(null, $"× {coefficient}% profitability coefficient", gross),
-                new("LM35", "− INPS contributions", contributions),
-                new("LM36", "Taxable income", taxable),
+                new("LM22", text.Translate("taxPrediction.italy.lines.revenue"), revenue),
+                new(null, text.Translate("taxPrediction.italy.lines.coefficient", ("coefficient", coefficient)), gross),
+                new("LM35", text.Translate("taxPrediction.italy.lines.inpsContributions"), contributions),
+                new("LM36", text.Translate("taxPrediction.common.taxableIncome"), taxable),
                 new("LM39", $"Imposta sostitutiva ({rate * 100m:0}%)", tax),
-                new(null, "− Withheld by customers", withheld),
-                new(null, "Tax of the year", Math.Max(0m, tax - withheld))
+                new(null, text.Translate("taxPrediction.italy.lines.withheld"), withheld),
+                new(null, text.Translate("taxPrediction.common.taxOfTheYear"), Math.Max(0m, tax - withheld))
             ]),
             new YearAmount(contributions,
             [
-                new(null, "Taxable income for INPS (revenue × coefficient)", gross),
+                new(null, text.Translate("taxPrediction.italy.lines.inpsTaxable"), gross),
                 new(null, $"Gestione Separata ({inpsRate}%)", contributions)
             ]),
             revenue);
@@ -71,10 +73,12 @@ public static class OrdinarioCalculator
         IReadOnlyList<DeductibleExpense> expenses,
         decimal inpsRate,
         decimal surcharges,
-        bool workDeduction)
+        bool workDeduction,
+        IAppText text)
     {
         ArgumentNullException.ThrowIfNull(income);
         ArgumentNullException.ThrowIfNull(expenses);
+        ArgumentNullException.ThrowIfNull(text);
 
         var invoiced = income.Where(i => i.Date.Year == year).ToList();
         var revenue = Round(invoiced.Sum(ForfettarioCalculator.Revenue));
@@ -92,19 +96,19 @@ public static class OrdinarioCalculator
         return new IncomeTaxYear(
             new YearAmount(Math.Max(0m, due),
             [
-                new("RE2", "Revenue (compensi)", revenue),
-                new(null, "− Deductible expenses", costs),
-                new(null, "− INPS contributions", contributions),
-                new("RN1", "Taxable income", taxable),
-                new("RN5", "Gross IRPEF (by brackets)", gross),
-                new("RN7", "− Self-employment deduction", deduction),
-                new(null, $"+ Regional and municipal surcharges ({surcharges}%)", surcharge),
-                new("RN33", "− Withheld by customers (ritenute)", withheld),
-                new(null, due >= 0 ? "Tax of the year" : "Tax of the year (credit: more was withheld)", due)
+                new("RE2", text.Translate("taxPrediction.italy.lines.revenue"), revenue),
+                new(null, text.Translate("taxPrediction.italy.lines.deductibleExpenses"), costs),
+                new(null, text.Translate("taxPrediction.italy.lines.inpsContributions"), contributions),
+                new("RN1", text.Translate("taxPrediction.common.taxableIncome"), taxable),
+                new("RN5", text.Translate("taxPrediction.italy.lines.grossIrpef"), gross),
+                new("RN7", text.Translate("taxPrediction.italy.lines.workDeduction"), deduction),
+                new(null, text.Translate("taxPrediction.italy.lines.surcharges", ("rate", surcharges)), surcharge),
+                new("RN33", text.Translate("taxPrediction.italy.lines.withheldRitenute"), withheld),
+                new(null, text.Translate(due >= 0 ? "taxPrediction.common.taxOfTheYear" : "taxPrediction.italy.lines.taxCredit"), due)
             ]),
             new YearAmount(contributions,
             [
-                new(null, "Income (revenue − expenses)", net),
+                new(null, text.Translate("taxPrediction.italy.lines.income"), net),
                 new(null, $"Gestione Separata ({inpsRate}%)", contributions)
             ]),
             revenue);
@@ -124,11 +128,13 @@ public static class IvaLiquidationCalculator
         int year,
         IReadOnlyList<TaxableIncome> income,
         IReadOnlyList<DeductibleExpense> expenses,
-        IReadOnlyDictionary<int, decimal> paid)
+        IReadOnlyDictionary<int, decimal> paid,
+        IAppText text)
     {
         ArgumentNullException.ThrowIfNull(income);
         ArgumentNullException.ThrowIfNull(expenses);
         ArgumentNullException.ThrowIfNull(paid);
+        ArgumentNullException.ThrowIfNull(text);
 
         var forms = new List<TaxFormPrediction>();
         var credit = 0m;
@@ -156,17 +162,17 @@ public static class IvaLiquidationCalculator
             decimal? recorded = paid.TryGetValue(quarter, out var amount) ? amount : null;
             forms.Add(new TaxFormPrediction(
                 Code,
-                quarter == 4 ? "IVA · Q4 (annual return)" : $"IVA · Q{quarter}",
+                quarter == 4 ? text.Translate("taxPrediction.italy.iva.lastQuarter") : text.Translate("taxPrediction.italy.iva.quarter", ("quarter", quarter)),
                 IvaDeadline(year, quarter),
                 estimated,
                 recorded,
                 [
-                    new("VP4", "IVA charged on invoices", charged),
-                    new(null, "Self-charged on services from abroad (reverse charge)", selfCharged),
-                    new("VP5", "IVA deductible on expenses", deductible),
-                    new("VP8", "Credit carried from earlier quarters", credit),
-                    new("VP12", "1% interest (quarterly filer)", interest),
-                    new("VP14", "Result", result + interest)
+                    new("VP4", text.Translate("taxPrediction.common.chargedOnInvoices", ("tax", "IVA")), charged),
+                    new(null, text.Translate("taxPrediction.common.selfCharged"), selfCharged),
+                    new("VP5", text.Translate("taxPrediction.common.deductibleOnExpenses", ("tax", "IVA")), deductible),
+                    new("VP8", text.Translate("taxPrediction.common.creditCarried"), credit),
+                    new("VP12", text.Translate("taxPrediction.italy.iva.interest"), interest),
+                    new("VP14", text.Translate("taxPrediction.common.result"), result + interest)
                 ]));
 
             credit = Math.Max(0m, -result);

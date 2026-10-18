@@ -2,13 +2,14 @@ using nInvoices.Core.TaxPrediction;
 using nInvoices.Countries.Germany.TaxPrediction;
 using Shouldly;
 using static nInvoices.Countries.Germany.TaxPrediction.GermanyTaxPredictionModule;
+using nInvoices.Application.Tests.TestDoubles;
 
 namespace nInvoices.Application.Tests.TaxPrediction;
 
 [TestFixture]
 public sealed class GermanyTaxPredictionTests
 {
-    private static readonly GermanyTaxPredictionModule Module = new();
+    private static readonly GermanyTaxPredictionModule Module = new(TestText.Instance);
 
     // 60,000 invoiced in February with 19% VAT; 10,000 of expenses in April with 1,900 of input VAT
     private static TaxPredictionInput Input(string regime, Dictionary<string, string>? values = null, IReadOnlyList<RecordedTaxPayment>? payments = null) => new(

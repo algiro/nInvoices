@@ -1,4 +1,5 @@
 using System.Globalization;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.TaxPrediction;
 using static nInvoices.Countries.Germany.TaxPrediction.GermanTaxRules;
@@ -37,36 +38,43 @@ public sealed class GermanyTaxPredictionModule : ITaxPredictionModule
     private const int TradeTaxPeriod = 17;
     private const int BalancePeriod = 21;
 
+    private readonly IAppText _text;
+
+    public GermanyTaxPredictionModule(IAppText text)
+    {
+        _text = text;
+    }
+
     public string CountryCode => "DE";
 
-    public string DisplayName => "Germany";
+    public string DisplayName => _text.Translate("countries.DE");
 
     public string Currency => "EUR";
 
     public string IndirectTaxName => "USt (MwSt)";
 
-    private static IReadOnlyList<ComplianceField> CommonFields(bool trade)
+    private List<ComplianceField> CommonFields(bool trade)
     {
         var fields = new List<ComplianceField>
         {
-            new(SmallBusinessKey, "Kleinunternehmer (§ 19 UStG): no VAT returns", ComplianceFieldType.Boolean,
-                Help: "Below €25,000 of revenue last year and €100,000 this year you may charge no VAT."),
-            new(VatPeriodKey, "VAT returns (Umsatzsteuer-Voranmeldung)", ComplianceFieldType.Choice,
-                Help: "Quarterly is the rule when last year's VAT was at most €9,000; monthly above.",
-                Options: [new(Quarterly, "Quarterly"), new(Monthly, "Monthly")]),
-            new(ExtensionKey, "Dauerfristverlängerung: one month more for each return", ComplianceFieldType.Boolean),
+            new(SmallBusinessKey, T("taxPrediction.germany.fields.smallBusiness.label"), ComplianceFieldType.Boolean,
+                Help: T("taxPrediction.germany.fields.smallBusiness.help")),
+            new(VatPeriodKey, T("taxPrediction.germany.fields.vatPeriod.label"), ComplianceFieldType.Choice,
+                Help: T("taxPrediction.germany.fields.vatPeriod.help"),
+                Options: [new(Quarterly, T("taxPrediction.germany.fields.vatPeriod.quarterly")), new(Monthly, T("taxPrediction.germany.fields.vatPeriod.monthly"))]),
+            new(ExtensionKey, T("taxPrediction.germany.fields.extension.label"), ComplianceFieldType.Boolean),
             new(ChurchTaxKey, "Kirchensteuer", ComplianceFieldType.Choice,
-                Options: [new("0", "None"), new("8", "8% (Bavaria, Baden-Württemberg)"), new("9", "9% (other Länder)")]),
-            new(InsuranceKey, "Deductible insurance per year (€)",
-                Help: "Health, care and pension contributions you deduct as Vorsorgeaufwendungen (only the deductible part)."),
-            new(PrepaymentKey, "Einkommensteuer-Vorauszahlung per quarter (€)",
-                Help: "From your Vorauszahlungsbescheid, Soli and Kirchensteuer included. Left empty, each quarter is a quarter of this year's estimate.")
+                Options: [new("0", T("taxPrediction.germany.fields.churchTax.none")), new("8", T("taxPrediction.germany.fields.churchTax.rate8")), new("9", T("taxPrediction.germany.fields.churchTax.rate9"))]),
+            new(InsuranceKey, T("taxPrediction.germany.fields.insurance.label"),
+                Help: T("taxPrediction.germany.fields.insurance.help")),
+            new(PrepaymentKey, T("taxPrediction.germany.fields.prepayment.label"),
+                Help: T("taxPrediction.germany.fields.prepayment.help"))
         };
         if (trade)
         {
-            fields.Add(new(HebesatzKey, "Hebesatz of your municipality (%)", Required: true, Help: "E.g. 400; Berlin 410, Munich 490."));
-            fields.Add(new(TradeTaxPrepaymentKey, "Gewerbesteuer-Vorauszahlung per quarter (€)",
-                Help: "From your municipality's Bescheid. Left empty, a quarter of this year's estimate."));
+            fields.Add(new(HebesatzKey, T("taxPrediction.germany.fields.hebesatz.label"), Required: true, Help: T("taxPrediction.germany.fields.hebesatz.help")));
+            fields.Add(new(TradeTaxPrepaymentKey, T("taxPrediction.germany.fields.tradeTaxPrepayment.label"),
+                Help: T("taxPrediction.germany.fields.tradeTaxPrepayment.help")));
         }
         return fields;
     }
@@ -77,13 +85,14 @@ public sealed class GermanyTaxPredictionModule : ITaxPredictionModule
         [ChurchTaxKey] = "0"
     };
 
-    public IReadOnlyList<TaxRegime> Regimes { get; } =
+    // Built on each read, in the language of the request
+    public IReadOnlyList<TaxRegime> Regimes =>
     [
-        new TaxRegime(FreelancerRegime, "Freiberufler (liberal profession)", CommonFields(trade: false),
-            "Einkommensteuer, Soli and Kirchensteuer: four prepayments and the balance; VAT returns unless a Kleinunternehmer.",
+        new TaxRegime(FreelancerRegime, T("taxPrediction.germany.regimes.freiberufler.name"), CommonFields(trade: false),
+            T("taxPrediction.germany.regimes.freiberufler.help"),
             Defaults),
-        new TaxRegime(TradeRegime, "Gewerbetreibender (trade)", CommonFields(trade: true),
-            "As a Freiberufler, plus the Gewerbesteuer (partly credited against the Einkommensteuer).",
+        new TaxRegime(TradeRegime, T("taxPrediction.germany.regimes.gewerbe.name"), CommonFields(trade: true),
+            T("taxPrediction.germany.regimes.gewerbe.help"),
             new Dictionary<string, string>(Defaults) { [HebesatzKey] = "400" })
     ];
 
@@ -105,23 +114,23 @@ public sealed class GermanyTaxPredictionModule : ITaxPredictionModule
         var isTrade = input.RegimeId == TradeRegime;
         var isSmallBusiness = values.GetValueOrDefault(SmallBusinessKey) == "true";
 
-        var hebesatz = isTrade ? Number(values, HebesatzKey, "the Hebesatz", warnings) ?? 400m : (decimal?)null;
-        var insurance = Number(values, InsuranceKey, "the deductible insurance", warnings) ?? 0m;
-        var church = Number(values, ChurchTaxKey, "the Kirchensteuer", warnings) ?? 0m;
-        var prepayment = Number(values, PrepaymentKey, "the Vorauszahlung", warnings);
-        var tradePrepayment = isTrade ? Number(values, TradeTaxPrepaymentKey, "the Gewerbesteuer-Vorauszahlung", warnings) : null;
+        var hebesatz = isTrade ? Number(values, HebesatzKey, "taxPrediction.germany.what.hebesatz", warnings) ?? 400m : (decimal?)null;
+        var insurance = Number(values, InsuranceKey, "taxPrediction.germany.what.insurance", warnings) ?? 0m;
+        var church = Number(values, ChurchTaxKey, "taxPrediction.germany.what.churchTax", warnings) ?? 0m;
+        var prepayment = Number(values, PrepaymentKey, "taxPrediction.germany.what.prepayment", warnings);
+        var tradePrepayment = isTrade ? Number(values, TradeTaxPrepaymentKey, "taxPrediction.germany.what.tradeTaxPrepayment", warnings) : null;
 
         if (year < FirstKnownYear || year > LastKnownYear)
-            warnings.Add($"The Einkommensteuer of {year} is estimated with the tariff of {Math.Clamp(year, FirstKnownYear, LastKnownYear)}.");
-        warnings.Add("Revenue and expenses count when invoiced; the Einnahmenüberschussrechnung counts them when paid.");
-        warnings.Add("Single assessment (Grundtarif): a joint assessment with a spouse (Splitting) is not estimated.");
+            warnings.Add(_text.Translate("taxPrediction.germany.warnings.tariffYear", ("year", year), ("tariffYear", Math.Clamp(year, FirstKnownYear, LastKnownYear))));
+        warnings.Add(T("taxPrediction.germany.warnings.cashBasis"));
+        warnings.Add(T("taxPrediction.germany.warnings.singleAssessment"));
 
-        var taxes = GermanIncomeTaxCalculator.Calculate(year, input.Income, input.Expenses, hebesatz, insurance, church);
+        var taxes = GermanIncomeTaxCalculator.Calculate(year, input.Income, input.Expenses, hebesatz, insurance, church, _text);
 
         if (isSmallBusiness && taxes.Revenue > SmallBusinessCurrentYearLimit)
-            warnings.Add($"Revenue above €{SmallBusinessCurrentYearLimit:N0}: you are no longer a Kleinunternehmer, and VAT is due from the invoice that crossed it.");
+            warnings.Add(_text.Translate("taxPrediction.germany.warnings.smallBusinessExceeded", ("limit", SmallBusinessCurrentYearLimit.ToString("N0", CultureInfo.CurrentCulture))));
         if (isTrade)
-            warnings.Add("Gewerbesteuer additions and deductions (Hinzurechnungen, Kürzungen) are not estimated.");
+            warnings.Add(T("taxPrediction.germany.warnings.tradeTaxAdjustments"));
 
         var periods = new List<(DateOnly Deadline, TaxPeriodPrediction Period)>();
 
@@ -131,9 +140,9 @@ public sealed class GermanyTaxPredictionModule : ITaxPredictionModule
             var monthly = values.GetValueOrDefault(VatPeriodKey) == Monthly;
             var extension = values.GetValueOrDefault(ExtensionKey) == "true";
             if (monthly && extension)
-                warnings.Add("The Sondervorauszahlung that a monthly filer pays for the Dauerfristverlängerung is not estimated.");
+                warnings.Add(T("taxPrediction.germany.warnings.specialPrepayment"));
             foreach (var (period, name, start, end, form) in VatReturnCalculator.Calculate(
-                         year, input.Income, input.Expenses, monthly, extension, Paid(input.Payments, VatReturnCalculator.Code)))
+                         year, input.Income, input.Expenses, monthly, extension, Paid(input.Payments, VatReturnCalculator.Code), _text))
                 periods.Add((form.Deadline, new TaxPeriodPrediction(period, name, start, end, [form])));
         }
 
@@ -150,14 +159,14 @@ public sealed class GermanyTaxPredictionModule : ITaxPredictionModule
             onAccountIncome += incomePaid ?? incomeAmount;
 
             // The window ends with the month before the deadline's: the payment is then due until the 10th
-            var incomeForm = new TaxFormPrediction(IncomeTaxCode, $"Einkommensteuer-Vorauszahlung · Q{quarter}", incomeDeadline, incomeAmount, incomePaid,
+            var incomeForm = new TaxFormPrediction(IncomeTaxCode, _text.Translate("taxPrediction.germany.incomePrepayment.form", ("quarter", quarter)), incomeDeadline, incomeAmount, incomePaid,
             [
                 prepayment is null
-                    ? new TaxFormLine(null, "A quarter of this year's estimate", incomeAmount)
-                    : new TaxFormLine(null, "As set in the Vorauszahlungsbescheid", incomeAmount)
+                    ? new TaxFormLine(null, T("taxPrediction.germany.lines.quarterOfEstimate"), incomeAmount)
+                    : new TaxFormLine(null, T("taxPrediction.germany.lines.asSetInPrepaymentNotice"), incomeAmount)
             ]);
             periods.Add((incomeDeadline, new TaxPeriodPrediction(
-                IncomeTaxPeriod + quarter - 1, $"ESt prepayment Q{quarter}", WindowStart(year, quarter, 3, 10), new DateOnly(year, quarter * 3, 1).AddDays(-1), [incomeForm])));
+                IncomeTaxPeriod + quarter - 1, _text.Translate("taxPrediction.germany.incomePrepayment.period", ("quarter", quarter)), WindowStart(year, quarter, 3, 10), new DateOnly(year, quarter * 3, 1).AddDays(-1), [incomeForm])));
 
             if (isTrade)
             {
@@ -166,14 +175,14 @@ public sealed class GermanyTaxPredictionModule : ITaxPredictionModule
                 decimal? tradePaid = paidTradeTax.TryGetValue(TradeTaxPeriod + quarter - 1, out var b) ? b : null;
                 onAccountTrade += tradePaid ?? tradeAmount;
 
-                var tradeForm = new TaxFormPrediction(TradeTaxCode, $"Gewerbesteuer-Vorauszahlung · Q{quarter}", tradeDeadline, tradeAmount, tradePaid,
+                var tradeForm = new TaxFormPrediction(TradeTaxCode, _text.Translate("taxPrediction.germany.tradePrepayment.form", ("quarter", quarter)), tradeDeadline, tradeAmount, tradePaid,
                 [
                     tradePrepayment is null
-                        ? new TaxFormLine(null, "A quarter of this year's estimate", tradeAmount)
-                        : new TaxFormLine(null, "As set in the Bescheid", tradeAmount)
+                        ? new TaxFormLine(null, T("taxPrediction.germany.lines.quarterOfEstimate"), tradeAmount)
+                        : new TaxFormLine(null, T("taxPrediction.germany.lines.asSetInNotice"), tradeAmount)
                 ]);
                 periods.Add((tradeDeadline, new TaxPeriodPrediction(
-                    TradeTaxPeriod + quarter - 1, $"GewSt prepayment Q{quarter}", WindowStart(year, quarter, 2, 15), new DateOnly(year, quarter * 3 - 1, 1).AddDays(-1), [tradeForm])));
+                    TradeTaxPeriod + quarter - 1, _text.Translate("taxPrediction.germany.tradePrepayment.period", ("quarter", quarter)), WindowStart(year, quarter, 2, 15), new DateOnly(year, quarter * 3 - 1, 1).AddDays(-1), [tradeForm])));
             }
         }
 
@@ -181,35 +190,38 @@ public sealed class GermanyTaxPredictionModule : ITaxPredictionModule
         var balanceForms = new List<TaxFormPrediction> { Balance(IncomeTaxCode, "Einkommensteuer", year, taxes.IncomeTax, onAccountIncome, paidIncomeTax) };
         if (isTrade)
             balanceForms.Add(Balance(TradeTaxCode, "Gewerbesteuer", year, taxes.TradeTax, onAccountTrade, paidTradeTax));
-        warnings.Add("The balance is due about a month after the assessment (Bescheid); its date is the filing deadline of the returns.");
+        warnings.Add(T("taxPrediction.germany.warnings.balanceDue"));
         periods.Add((AnnualReturnDeadline(year), new TaxPeriodPrediction(
-            BalancePeriod, "Annual returns", new DateOnly(year, 1, 1), new DateOnly(year, 12, 31), balanceForms)));
+            BalancePeriod, T("taxPrediction.germany.periods.annualReturns"), new DateOnly(year, 1, 1), new DateOnly(year, 12, 31), balanceForms)));
 
         return new TaxYearPrediction(year, periods.OrderBy(p => p.Deadline).ThenBy(p => p.Period.Period).Select(p => p.Period).ToList(), warnings);
     }
 
-    private static TaxFormPrediction Balance(string code, string name, int year, GermanYearAmount due, decimal onAccount, IReadOnlyDictionary<int, decimal> paid)
+    private TaxFormPrediction Balance(string code, string name, int year, GermanYearAmount due, decimal onAccount, IReadOnlyDictionary<int, decimal> paid)
     {
         var balance = due.Amount - onAccount;
         var lines = due.Lines.ToList();
-        lines.Add(new TaxFormLine(null, "Paid on account (Vorauszahlungen)", onAccount));
-        lines.Add(new TaxFormLine(null, balance >= 0 ? "Balance to pay (Abschlusszahlung)" : "Refund (Erstattung)", balance));
+        lines.Add(new TaxFormLine(null, T("taxPrediction.germany.balance.paidOnAccount"), onAccount));
+        lines.Add(new TaxFormLine(null, T(balance >= 0 ? "taxPrediction.germany.balance.toPay" : "taxPrediction.germany.refund"), balance));
         decimal? recorded = paid.TryGetValue(BalancePeriod, out var amount) ? amount : null;
-        return new TaxFormPrediction(code, $"{name} · balance of the year", AnnualReturnDeadline(year), Math.Max(0m, balance), recorded, lines);
+        return new TaxFormPrediction(code, _text.Translate("taxPrediction.germany.balance.name", ("name", name)), AnnualReturnDeadline(year), Math.Max(0m, balance), recorded, lines);
     }
 
     // The day after the previous prepayment of the same kind (the year's first starts on 1 January)
     private static DateOnly WindowStart(int year, int quarter, int monthInQuarter, int day) =>
         quarter == 1 ? new DateOnly(year, 1, 1) : new DateOnly(year, (quarter - 1) * 3 - (3 - monthInQuarter), day).AddDays(1);
 
-    private static decimal? Number(IReadOnlyDictionary<string, string> values, string key, string what, List<string> warnings)
+    /// <param name="what">The key of what the value is ("the Hebesatz"), for the warning when it is not a number.</param>
+    private decimal? Number(IReadOnlyDictionary<string, string> values, string key, string what, List<string> warnings)
     {
         var text = values.GetValueOrDefault(key);
         var number = ParseAmount(text);
         if (number is null && !string.IsNullOrWhiteSpace(text))
-            warnings.Add($"\"{text}\" is not a number: {what} is left out. Correct it in Settings.");
+            warnings.Add(_text.Translate("taxPrediction.common.notANumber", ("text", text), ("what", T(what))));
         return number;
     }
+
+    private string T(string key) => _text.Translate(key);
 
     private static IReadOnlyDictionary<int, decimal> Paid(IReadOnlyList<RecordedTaxPayment> payments, string form) =>
         payments

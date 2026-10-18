@@ -168,7 +168,7 @@ public sealed partial class AppTextTests
     }
 
     // "errors.invoice.onlyDraftUpdated", "validation.customer.nameRequired", "compliance.spain.nifInvalid"…: the text keys written in the code
-    [GeneratedRegex(@"""((?:compliance|errors|notFound|preferences|validation)\.[A-Za-z0-9.]+)""")]
+    [GeneratedRegex(@"""((?:compliance|countries|errors|notFound|preferences|taxPrediction|validation)\.[A-Za-z0-9.]+)""")]
     private static partial Regex KeyLiteral();
 
     private static List<string> Placeholders(string text) =>

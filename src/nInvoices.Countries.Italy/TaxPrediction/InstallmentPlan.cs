@@ -1,3 +1,4 @@
+using nInvoices.Application.Localization;
 using nInvoices.Core.TaxPrediction;
 using static nInvoices.Countries.Italy.TaxPrediction.ItalianTaxRules;
 
@@ -29,16 +30,18 @@ public static class InstallmentPlan
         decimal? previousYear,
         bool isInps,
         IReadOnlyDictionary<int, decimal> paid,
-        InstallmentPeriods periods)
+        InstallmentPeriods periods,
+        IAppText text)
     {
         ArgumentNullException.ThrowIfNull(dueLines);
+        ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(paid);
         ArgumentNullException.ThrowIfNull(periods);
 
         var basis = Math.Max(0m, previousYear ?? due);
         var basisLine = previousYear is null
-            ? new TaxFormLine(null, "Basis: this year's estimate (metodo previsionale)", basis)
-            : new TaxFormLine(null, "Basis: last year's amount (metodo storico)", basis);
+            ? new TaxFormLine(null, text.Translate("taxPrediction.italy.installments.basisEstimate"), basis)
+            : new TaxFormLine(null, text.Translate("taxPrediction.italy.installments.basisLastYear"), basis);
 
         var (first, second) = isInps
             ? (Round(basis * InpsInstallmentShare), Round(basis * InpsInstallmentShare))
@@ -48,25 +51,25 @@ public static class InstallmentPlan
         decimal? paidSecond = paid.TryGetValue(periods.Second, out var b) ? b : null;
         decimal? paidBalance = paid.TryGetValue(periods.Balance, out var c) ? c : null;
 
-        var firstForm = new TaxFormPrediction(code, $"{name} · 1st installment", JuneDeadline(year), first, paidFirst,
+        var firstForm = new TaxFormPrediction(code, text.Translate("taxPrediction.italy.installments.first", ("name", name)), JuneDeadline(year), first, paidFirst,
         [
             basisLine,
-            new(null, isInps ? "40% of the basis" : basis <= SingleInstallmentLimit ? "Nothing in June below €257.52" : "40% of the basis", first)
+            new(null, text.Translate(isInps ? "taxPrediction.italy.installments.fortyPercent" : basis <= SingleInstallmentLimit ? "taxPrediction.italy.installments.nothingInJune" : "taxPrediction.italy.installments.fortyPercent"), first)
         ]);
 
-        var secondForm = new TaxFormPrediction(code, $"{name} · 2nd installment", NovemberDeadline(year), second, paidSecond,
+        var secondForm = new TaxFormPrediction(code, text.Translate("taxPrediction.italy.installments.second", ("name", name)), NovemberDeadline(year), second, paidSecond,
         [
             basisLine,
-            new(null, isInps ? "40% of the basis" : basis <= NoInstallmentLimit ? "Nothing up to €51.65" : basis <= SingleInstallmentLimit ? "All of the basis" : "60% of the basis", second)
+            new(null, text.Translate(isInps ? "taxPrediction.italy.installments.fortyPercent" : basis <= NoInstallmentLimit ? "taxPrediction.italy.installments.nothingUpTo" : basis <= SingleInstallmentLimit ? "taxPrediction.italy.installments.allOfBasis" : "taxPrediction.italy.installments.sixtyPercent"), second)
         ]);
 
         var onAccount = (paidFirst ?? first) + (paidSecond ?? second);
         var balance = due - onAccount;
         var balanceLines = dueLines.ToList();
-        balanceLines.Add(new TaxFormLine(null, "Paid on account (installments)", onAccount));
-        balanceLines.Add(new TaxFormLine(null, balance >= 0 ? "Balance to pay" : "Credit for next year", balance));
+        balanceLines.Add(new TaxFormLine(null, text.Translate("taxPrediction.italy.installments.paidOnAccount"), onAccount));
+        balanceLines.Add(new TaxFormLine(null, text.Translate(balance >= 0 ? "taxPrediction.italy.installments.balanceToPay" : "taxPrediction.italy.installments.creditNextYear"), balance));
 
-        var balanceForm = new TaxFormPrediction(code, $"{name} · balance", JuneDeadline(year + 1), Math.Max(0m, balance), paidBalance, balanceLines);
+        var balanceForm = new TaxFormPrediction(code, text.Translate("taxPrediction.italy.installments.balance", ("name", name)), JuneDeadline(year + 1), Math.Max(0m, balance), paidBalance, balanceLines);
 
         return new InstallmentForms(firstForm, secondForm, balanceForm);
     }

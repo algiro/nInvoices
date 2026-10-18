@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Text;
 using Mediator;
 using Microsoft.Extensions.Logging;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services.Email;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
@@ -20,14 +21,17 @@ public sealed class GetInvoiceDocumentsZipQueryHandler : IRequestHandler<GetInvo
     private readonly IInvoiceEmailComposer _documents;
     private readonly ILogger<GetInvoiceDocumentsZipQueryHandler> _logger;
     private readonly TimeProvider _timeProvider;
+    private readonly IAppText _text;
 
     public GetInvoiceDocumentsZipQueryHandler(
         IInvoiceRepository invoiceRepository,
         IRepository<Customer> customerRepository,
         IInvoiceEmailComposer documents,
         ILogger<GetInvoiceDocumentsZipQueryHandler> logger,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IAppText text)
     {
+        _text = text;
         _invoiceRepository = invoiceRepository;
         _customerRepository = customerRepository;
         _documents = documents;
@@ -64,7 +68,7 @@ public sealed class GetInvoiceDocumentsZipQueryHandler : IRequestHandler<GetInvo
             {
                 if (!customers.TryGetValue(invoice.CustomerId, out var customer))
                 {
-                    problems.Add($"{invoice.Number}: customer not found");
+                    problems.Add(_text.Translate("errors.zip.customerNotFound", ("number", invoice.Number)));
                     continue;
                 }
 
@@ -83,7 +87,7 @@ public sealed class GetInvoiceDocumentsZipQueryHandler : IRequestHandler<GetInvo
 
             if (problems.Count > 0)
             {
-                var text = "These invoices are not in the zip:" + Environment.NewLine + string.Join(Environment.NewLine, problems);
+                var text = _text.Translate("errors.zip.notIncluded") + Environment.NewLine + string.Join(Environment.NewLine, problems);
                 await AddAsync(zip, ProblemsFileName, Encoding.UTF8.GetBytes(text), cancellationToken);
             }
         }

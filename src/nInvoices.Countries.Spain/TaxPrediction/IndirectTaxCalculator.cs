@@ -1,3 +1,4 @@
+using nInvoices.Application.Localization;
 using nInvoices.Countries.Spain;
 using nInvoices.Core.TaxPrediction;
 using static nInvoices.Countries.Spain.TaxPrediction.SpanishTaxRules;
@@ -29,9 +30,11 @@ public static class IndirectTaxCalculator
         int year,
         IReadOnlyList<TaxableIncome> income,
         IReadOnlyList<DeductibleExpense> expenses,
-        IReadOnlyDictionary<int, decimal> paid)
+        IReadOnlyDictionary<int, decimal> paid,
+        IAppText text)
     {
         ArgumentNullException.ThrowIfNull(form);
+        ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(income);
         ArgumentNullException.ThrowIfNull(expenses);
         ArgumentNullException.ThrowIfNull(paid);
@@ -61,11 +64,11 @@ public static class IndirectTaxCalculator
 
             var lines = new List<TaxFormLine>
             {
-                new(null, $"{form.Kind} charged on invoices", charged),
-                new(null, "Self-charged on services from abroad (reverse charge)", selfCharged),
-                new(null, $"{form.Kind} deductible on expenses", deductible),
-                new(null, "Credit carried from earlier quarters", credit),
-                new(null, "Result", result)
+                new(null, text.Translate("taxPrediction.common.chargedOnInvoices", ("tax", form.Kind)), charged),
+                new(null, text.Translate("taxPrediction.common.selfCharged"), selfCharged),
+                new(null, text.Translate("taxPrediction.common.deductibleOnExpenses", ("tax", form.Kind)), deductible),
+                new(null, text.Translate("taxPrediction.common.creditCarried"), credit),
+                new(null, text.Translate("taxPrediction.common.result"), result)
             };
 
             decimal? recordedPayment = paid.TryGetValue(quarter, out var amount) ? amount : null;

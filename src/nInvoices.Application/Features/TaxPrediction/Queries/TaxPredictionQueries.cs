@@ -3,6 +3,7 @@ using nInvoices.Application.Countries;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Application.TaxPrediction;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
@@ -25,6 +26,7 @@ public sealed class GetTaxPredictionQueryHandler : IRequestHandler<GetTaxPredict
     private readonly IRepository<RecurringExpense> _recurring;
     private readonly IRepository<TaxPayment> _payments;
     private readonly IUserCountry? _country;
+    private readonly IAppText _text;
 
     public GetTaxPredictionQueryHandler(
         ITaxPredictionRegistry registry,
@@ -34,8 +36,10 @@ public sealed class GetTaxPredictionQueryHandler : IRequestHandler<GetTaxPredict
         IRepository<BusinessExpense> expenses,
         IRepository<RecurringExpense> recurring,
         IRepository<TaxPayment> payments,
+        IAppText text,
         IUserCountry? country = null)
     {
+        _text = text;
         _country = country;
         _registry = registry;
         _profiles = profiles;
@@ -53,12 +57,12 @@ public sealed class GetTaxPredictionQueryHandler : IRequestHandler<GetTaxPredict
         // The query filter returns only the current user's rows
         var profile = (await _profiles.GetAllAsync(cancellationToken)).FirstOrDefault();
         if (profile is null)
-            return TaxPredictionMapper.NotSetUp(year, "Choose where you pay taxes in Settings to see an estimate.");
+            return TaxPredictionMapper.NotSetUp(year, _text.Translate("taxPrediction.notSetUp.noProfile"));
 
         // A profile of a country the user no longer works from doesn't apply
         var country = _country is null ? null : await _country.GetAsync(cancellationToken);
         if (country is not null && !string.Equals(country, profile.CountryCode, StringComparison.OrdinalIgnoreCase))
-            return TaxPredictionMapper.NotSetUp(year, "Choose your tax regime in Settings › Country & taxes to see an estimate.");
+            return TaxPredictionMapper.NotSetUp(year, _text.Translate("taxPrediction.notSetUp.otherCountry"));
 
         var module = _registry.Find(profile.CountryCode);
         if (module is null || module.Regimes.All(r => r.Id != profile.RegimeId))

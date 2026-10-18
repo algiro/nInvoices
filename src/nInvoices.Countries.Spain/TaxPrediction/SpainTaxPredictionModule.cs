@@ -1,3 +1,4 @@
+using nInvoices.Application.Localization;
 using nInvoices.Countries.Spain;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.TaxPrediction;
@@ -25,15 +26,23 @@ public sealed class SpainTaxPredictionModule : ITaxPredictionModule
     /// <summary>Setting: subtract the customers' withholdings in Modelo 130 ("true"; on for a new profile).</summary>
     public const string DeductWithholdingsKey = "deductWithholdings";
 
+    private readonly IAppText _text;
+
+    public SpainTaxPredictionModule(IAppText text)
+    {
+        _text = text;
+    }
+
     public string CountryCode => CountryCodeValue;
 
-    public string DisplayName => "Spain";
+    public string DisplayName => _text.Translate("countries.ES");
 
     public string Currency => "EUR";
 
     public string IndirectTaxName => "IVA / IGIC";
 
-    public IReadOnlyList<TaxRegime> Regimes { get; } =
+    // Built on each read, in the language of the request
+    public IReadOnlyList<TaxRegime> Regimes =>
     [
         new TaxRegime(
             SimplifiedDirectEstimation,
@@ -41,27 +50,27 @@ public sealed class SpainTaxPredictionModule : ITaxPredictionModule
             [
                 new ComplianceField(
                     TerritoryKey,
-                    "Where you pay indirect tax",
+                    T("taxPrediction.spain.fields.territory.label"),
                     ComplianceFieldType.Choice,
                     Required: true,
-                    Help: "The Canary Islands have IGIC, filed with Modelo 420; elsewhere it is IVA, filed with Modelo 303.",
+                    Help: T("taxPrediction.spain.fields.territory.help"),
                     Options:
                     [
-                        new ComplianceFieldOption(CanaryIslands, "Canary Islands (IGIC, Modelo 420)"),
-                        new ComplianceFieldOption(Mainland, "Mainland and Balearic Islands (IVA, Modelo 303)")
+                        new ComplianceFieldOption(CanaryIslands, T("taxPrediction.spain.fields.territory.canarias")),
+                        new ComplianceFieldOption(Mainland, T("taxPrediction.spain.fields.territory.mainland"))
                     ]),
                 new ComplianceField(
                     DifficultExpensesKey,
-                    "Deduct hard-to-justify expenses (gastos de difícil justificación)",
+                    T("taxPrediction.spain.fields.difficultExpenses.label"),
                     ComplianceFieldType.Boolean,
-                    Help: "5% of the net income, at most €2,000 a year. Most autónomos and gestores apply it."),
+                    Help: T("taxPrediction.spain.fields.difficultExpenses.help")),
                 new ComplianceField(
                     DeductWithholdingsKey,
-                    "Subtract what customers withheld in Modelo 130",
+                    T("taxPrediction.spain.fields.deductWithholdings.label"),
                     ComplianceFieldType.Boolean,
-                    Help: "The law allows subtracting the IRPF your customers withheld (box 06). Untick it if your gestor leaves it out: you then get it back in the annual return.")
+                    Help: T("taxPrediction.spain.fields.deductWithholdings.help"))
             ],
-            "Quarterly Modelo 130 and Modelo 420 or 303.",
+            T("taxPrediction.spain.regimes.eds.help"),
             new Dictionary<string, string>
             {
                 [DifficultExpensesKey] = "true",
@@ -100,7 +109,7 @@ public sealed class SpainTaxPredictionModule : ITaxPredictionModule
 
         if (indirect is null)
         {
-            warnings.Add("Choose where you pay indirect tax (Canary Islands or elsewhere in Spain) to estimate IGIC or IVA.");
+            warnings.Add(T("taxPrediction.spain.warnings.chooseTerritory"));
         }
         else
         {
@@ -108,7 +117,7 @@ public sealed class SpainTaxPredictionModule : ITaxPredictionModule
                 .Where(i => i.Date.Year == input.Year)
                 .Count(i => i.Taxes.Any(t => t.Kind is not null && t.Kind != indirect.Kind && t.Amount != 0));
             if (other > 0)
-                warnings.Add($"{other} invoice(s) charge a tax other than {indirect.Kind}: it is not counted in {indirect.Name}.");
+                warnings.Add(_text.Translate("taxPrediction.spain.warnings.otherTax", ("count", other), ("tax", indirect.Kind), ("form", indirect.Name)));
         }
 
         var form130 = Modelo130Calculator.Calculate(
@@ -117,16 +126,17 @@ public sealed class SpainTaxPredictionModule : ITaxPredictionModule
             input.Expenses,
             Paid(input.Payments, Modelo130Calculator.Code),
             Flag(input.Values, DifficultExpensesKey),
-            Flag(input.Values, DeductWithholdingsKey));
+            Flag(input.Values, DeductWithholdingsKey),
+            _text);
 
         var indirectForms = indirect is null
             ? null
-            : IndirectTaxCalculator.Calculate(indirect, input.Year, input.Income, input.Expenses, Paid(input.Payments, indirect.Code));
+            : IndirectTaxCalculator.Calculate(indirect, input.Year, input.Income, input.Expenses, Paid(input.Payments, indirect.Code), _text);
 
         var periods = Enumerable.Range(1, 4)
             .Select(quarter => new TaxPeriodPrediction(
                 quarter,
-                $"Q{quarter}",
+                _text.Translate("taxPrediction.common.quarter", ("quarter", quarter)),
                 SpanishTaxRules.QuarterStart(input.Year, quarter),
                 SpanishTaxRules.QuarterEnd(input.Year, quarter),
                 indirectForms is null ? [form130[quarter - 1]] : [form130[quarter - 1], indirectForms[quarter - 1]]))
@@ -140,6 +150,8 @@ public sealed class SpainTaxPredictionModule : ITaxPredictionModule
             .Where(p => p.Form == form)
             .GroupBy(p => p.Period)
             .ToDictionary(g => g.Key, g => g.Sum(p => p.Amount));
+
+    private string T(string key) => _text.Translate(key);
 
     private static bool Flag(IReadOnlyDictionary<string, string> values, string key) =>
         values.GetValueOrDefault(key) == "true";
