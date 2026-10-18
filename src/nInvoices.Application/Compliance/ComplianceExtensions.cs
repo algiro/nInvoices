@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using nInvoices.Application.Compliance.EInvoice;
+using nInvoices.Application.Countries;
 using nInvoices.Application.Features.Invoices;
 
 namespace nInvoices.Application.Compliance;
@@ -18,6 +19,7 @@ public static class ComplianceExtensions
         services.TryAddSingleton(TimeProvider.System);
 
         services.AddSingleton<IComplianceRegistry, ComplianceRegistry>();
+        services.AddScoped<IUserCountry, UserCountryService>();
         services.AddScoped<IComplianceGate, ComplianceGate>();
         services.AddScoped<ICustomerCompliance, CustomerCompliance>();
         services.AddScoped<ITaxCompliance, TaxCompliance>();

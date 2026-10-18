@@ -1,9 +1,11 @@
 using Mediator;
 using nInvoices.Application.Compliance;
+using nInvoices.Application.Countries;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Entities;
+using nInvoices.Core.Exceptions;
 using nInvoices.Core.Interfaces;
 
 namespace nInvoices.Application.Features.Compliance.Commands;
@@ -14,17 +16,23 @@ public sealed class UpdateComplianceSettingsCommandHandler : IRequestHandler<Upd
     private readonly IRepository<ComplianceSettings> _settings;
     private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _timeProvider;
+    private readonly IUserCountry? _country;
+    private readonly IRepository<UserCountry>? _countries;
 
     public UpdateComplianceSettingsCommandHandler(
         IComplianceRegistry registry,
         IRepository<ComplianceSettings> settings,
         IUnitOfWork unitOfWork,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IUserCountry? country = null,
+        IRepository<UserCountry>? countries = null)
     {
         _registry = registry;
         _settings = settings;
         _unitOfWork = unitOfWork;
         _timeProvider = timeProvider;
+        _country = country;
+        _countries = countries;
     }
 
     /// <exception cref="ComplianceValidationException">The regime is being turned on and the settings break its rules.</exception>
@@ -46,6 +54,8 @@ public sealed class UpdateComplianceSettingsCommandHandler : IRequestHandler<Upd
 
         if (dto.IsEnabled)
         {
+            await EnsureUserCountryAsync(module.CountryCode, module.DisplayName, cancellationToken);
+
             var issues = module.ValidateIssuer(new IssuerProfile(dto.LegalName, dto.TaxId, address, values));
             if (issues.Count > 0)
                 throw new ComplianceValidationException(issues);
@@ -70,5 +80,22 @@ public sealed class UpdateComplianceSettingsCommandHandler : IRequestHandler<Upd
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ComplianceMapper.ToDto(module, settings, _registry.RequiresSigningCertificate(module.CountryCode), _timeProvider.GetUtcNow().UtcDateTime);
+    }
+
+    /// <summary>
+    /// Only the rules of the country the user works from can be on. Without a country yet, turning one on
+    /// makes it theirs.
+    /// </summary>
+    /// <exception cref="DomainException">The user works from another country.</exception>
+    private async Task EnsureUserCountryAsync(string countryCode, string name, CancellationToken cancellationToken)
+    {
+        if (_country is null || _countries is null)
+            return;
+
+        var current = await _country.GetAsync(cancellationToken);
+        if (current is not null && !string.Equals(current, countryCode, StringComparison.OrdinalIgnoreCase))
+            throw new DomainException($"You work from {current}: choose {name} as your country in Settings › Country & taxes to turn its rules on.");
+        if (!await _country.IsChosenAsync(cancellationToken))
+            await _countries.AddAsync(new UserCountry(countryCode), cancellationToken);
     }
 }

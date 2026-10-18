@@ -150,11 +150,13 @@ public sealed record UserSettingsExportDto(
     TaxRecordsExportDto? Taxes = null);
 
 /// <summary>The tax prediction's data: where the user pays taxes, their business expenses and the tax payments they recorded.</summary>
+/// <param name="CountryCode">The country the user works from (absent from older exports).</param>
 public sealed record TaxRecordsExportDto(
     TaxProfileExportDto? Profile,
     IReadOnlyList<BusinessExpenseExportDto> Expenses,
     IReadOnlyList<RecurringExpenseExportDto> RecurringExpenses,
-    IReadOnlyList<TaxPaymentExportDto> Payments);
+    IReadOnlyList<TaxPaymentExportDto> Payments,
+    string? CountryCode = null);
 
 public sealed record TaxProfileExportDto(string CountryCode, string RegimeId, IReadOnlyDictionary<string, string> Values);
 

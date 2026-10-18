@@ -657,6 +657,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/country": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserCountryDto"];
+                        "application/json": components["schemas"]["UserCountryDto"];
+                        "text/json": components["schemas"]["UserCountryDto"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SetUserCountryDto"];
+                    "text/json": components["schemas"]["SetUserCountryDto"];
+                    "application/*+json": components["schemas"]["SetUserCountryDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserCountryDto"];
+                        "application/json": components["schemas"]["UserCountryDto"];
+                        "text/json": components["schemas"]["UserCountryDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/Customers": {
         parameters: {
             query?: never;
@@ -6779,6 +6854,12 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        OfferedCountryDto: {
+            countryCode: string;
+            name: string;
+            hasInvoicingRules: boolean;
+            hasTaxPrediction: boolean;
+        };
         PreviewEmailTemplateDto: {
             subject: string;
             body: string;
@@ -6923,6 +7004,9 @@ export interface components {
             /** Format: date */
             toMonth?: null | string;
             category?: components["schemas"]["ExpenseCategory"];
+        };
+        SetUserCountryDto: {
+            countryCode: string;
         };
         SharedTemplatesExportDto: {
             invoiceTemplates: components["schemas"]["InvoiceTemplateExportDto"][];
@@ -7076,6 +7160,7 @@ export interface components {
             expenses: components["schemas"]["BusinessExpenseExportDto"][];
             recurringExpenses: components["schemas"]["RecurringExpenseExportDto"][];
             payments: components["schemas"]["TaxPaymentExportDto"][];
+            countryCode?: null | string;
         };
         TaxRegimeDto: {
             id: string;
@@ -7184,6 +7269,11 @@ export interface components {
         UploadCertificateDto: {
             pfx: string;
             password: string;
+        };
+        UserCountryDto: {
+            countryCode: null | string;
+            isChosen: boolean;
+            offered: components["schemas"]["OfferedCountryDto"][];
         };
         UserSettingsExportDto: {
             invoiceNumbering: null | components["schemas"]["InvoiceNumberingExportDto"];

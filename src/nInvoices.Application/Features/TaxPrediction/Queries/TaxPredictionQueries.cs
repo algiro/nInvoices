@@ -1,4 +1,5 @@
 using Mediator;
+using nInvoices.Application.Countries;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Mappings;
 using nInvoices.Application.TaxPrediction;
@@ -23,6 +24,7 @@ public sealed class GetTaxPredictionQueryHandler : IRequestHandler<GetTaxPredict
     private readonly IRepository<BusinessExpense> _expenses;
     private readonly IRepository<RecurringExpense> _recurring;
     private readonly IRepository<TaxPayment> _payments;
+    private readonly IUserCountry? _country;
 
     public GetTaxPredictionQueryHandler(
         ITaxPredictionRegistry registry,
@@ -31,8 +33,10 @@ public sealed class GetTaxPredictionQueryHandler : IRequestHandler<GetTaxPredict
         IRepository<Tax> taxes,
         IRepository<BusinessExpense> expenses,
         IRepository<RecurringExpense> recurring,
-        IRepository<TaxPayment> payments)
+        IRepository<TaxPayment> payments,
+        IUserCountry? country = null)
     {
+        _country = country;
         _registry = registry;
         _profiles = profiles;
         _invoices = invoices;
@@ -50,6 +54,11 @@ public sealed class GetTaxPredictionQueryHandler : IRequestHandler<GetTaxPredict
         var profile = (await _profiles.GetAllAsync(cancellationToken)).FirstOrDefault();
         if (profile is null)
             return TaxPredictionMapper.NotSetUp(year, "Choose where you pay taxes in Settings to see an estimate.");
+
+        // A profile of a country the user no longer works from doesn't apply
+        var country = _country is null ? null : await _country.GetAsync(cancellationToken);
+        if (country is not null && !string.Equals(country, profile.CountryCode, StringComparison.OrdinalIgnoreCase))
+            return TaxPredictionMapper.NotSetUp(year, "Choose your tax regime in Settings › Country & taxes to see an estimate.");
 
         var module = _registry.Find(profile.CountryCode);
         if (module is null || module.Regimes.All(r => r.Id != profile.RegimeId))

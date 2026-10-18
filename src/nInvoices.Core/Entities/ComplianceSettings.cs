@@ -54,6 +54,12 @@ public sealed class ComplianceSettings : OwnedEntityBase
         return code;
     }
 
+    /// <summary>Turns the rules off, keeping the settings: the user now works from another country.</summary>
+    public void TurnOff()
+    {
+        IsEnabled = false;
+    }
+
     public void Update(bool isEnabled, string? legalName, string? taxId, Address? address, IReadOnlyDictionary<string, string>? values)
     {
         IsEnabled = isEnabled;

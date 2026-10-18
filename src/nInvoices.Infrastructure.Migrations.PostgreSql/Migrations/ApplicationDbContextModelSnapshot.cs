@@ -1371,6 +1371,38 @@ namespace nInvoices.Infrastructure.Migrations.PostgreSql.Migrations
                     b.ToTable("TaxProfiles", (string)null);
                 });
 
+            modelBuilder.Entity("nInvoices.Core.Entities.UserCountry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId")
+                        .IsUnique();
+
+                    b.ToTable("UserCountries", (string)null);
+                });
+
             modelBuilder.Entity("nInvoices.Core.Entities.WorkDay", b =>
                 {
                     b.Property<long>("Id")
