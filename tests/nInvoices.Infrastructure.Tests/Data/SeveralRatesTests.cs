@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using nInvoices.Infrastructure.Countries;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.ValueObjects;
@@ -43,7 +44,7 @@ public sealed class SeveralRatesTests
     private ApplicationDbContext ContextFor(string? userId)
     {
         var context = new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options,
+            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).UseCountryModels(TestCountries.All).Options,
             TestEncryption.Encryptor, new TestUserContext(userId));
         _contexts.Add(context);
         return context;
@@ -106,7 +107,7 @@ public sealed class SeveralRatesTests
         await using var connection = new SqliteConnection("DataSource=:memory:");
         await connection.OpenAsync(Token);
         await using var context = new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).Options, TestEncryption.Encryptor);
+            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).UseCountryModels(TestCountries.All).Options, TestEncryption.Encryptor);
         await context.Database.MigrateAsync(Token);
 
         await context.Database.ExecuteSqlRawAsync("""

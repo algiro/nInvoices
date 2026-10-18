@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using nInvoices.Infrastructure.Countries;
 using nInvoices.Core.Entities;
 using nInvoices.Core.ValueObjects;
 using nInvoices.Infrastructure.Data;
@@ -37,7 +38,7 @@ public sealed class UnitOfWorkTests
     }
 
     private ApplicationDbContext NewContext() =>
-        new(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options, TestEncryption.Encryptor, new TestUserContext(Alice));
+        new(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).UseCountryModels(TestCountries.All).Options, TestEncryption.Encryptor, new TestUserContext(Alice));
 
     private static Customer NewCustomer(string name) =>
         new(name, name.ToUpperInvariant(), new Address("Main", "1", "Town", "12345", "Italy"));

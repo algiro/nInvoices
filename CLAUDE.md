@@ -117,7 +117,7 @@ tests; check a UI change in the browser against the fast loop above. Past incide
 
 ### Layer dependency direction
 
-`Core` ← `Application` ← `Infrastructure` ← `Api`. `Core` has no project dependencies.
+`Core` ← `Application` ← `Infrastructure` ← `Countries.*` ← `Api`. `Core` has no project dependencies.
 `Web` talks to `Api` only over HTTP.
 
 - **nInvoices.Core** — entities (`Entities/`), value objects (`ValueObjects/`, e.g. `Address`,
@@ -177,6 +177,23 @@ tests; check a UI change in the browser against the fast loop above. Past incide
   `Api/Infrastructure/OtlpLogExtensions`, which also keeps the console and file sinks); `Docs/OBSERVABILITY.md`
   has the Grafana Cloud setup and the application metrics (`Application/Telemetry/AppMetrics`: every Mediator request is timed by
   `MetricsBehavior`; keep tags to small fixed sets, never customers or ids) (`HealthController` at `/api/health` is kept for the nginx-routed check).
+- **nInvoices.Countries.\*** (`Countries.Spain`) — one project per country, everything that country adds: its
+  invoicing rules (`ICountryComplianceModule`: issuer/customer/tax fields and checks, e-invoice formats and
+  channels such as Facturae and FACe, Verifactu), its tax prediction (`ITaxPredictionModule`: regimes, forms,
+  `IndirectTaxName`), and what those need (entities and EF configurations, repositories, HTTP clients, workers,
+  options, Mediator requests, controllers). Each exposes an `ICountryPlugin` (`SpainCountry`: `AddServices`).
+  Core/Application/Infrastructure never name a country (`ArchitectureTests`); they offer the hooks:
+  `IInvoiceLifecycleStep`, `IInvoiceTemplateModelContributor` (`Key`, `Empty`, `Sample`, under
+  `compliance.<key>` in templates), `IEInvoiceFormat`, `IEInvoiceChannel`, `IAppendOnlyEntity` (rows the
+  DbContext refuses to change or delete), and `UseCountryModels` (the DbContext model includes every listed
+  country's entities, offered or not, so migrations are the same everywhere). Whether an installation offers a
+  country is `Compliance:Countries:<CODE>:Enabled`; whether it applies to a user is their settings.
+  **Adding a country**: a `src/nInvoices.Countries.<Name>` project (references Application + Infrastructure),
+  its plugin in `Api/Infrastructure/SupportedCountries.All`, its assembly in the Mediator `Assemblies` there,
+  its plugin in `PostgreSqlDesignTimeFactory.Countries`, the project in `nInvoices.slnx`, `docker/Dockerfile.api`, the Api and the
+  PostgreSQL migrations project (`SupportedCountriesTests` fails when a list is missed); a migration per
+  provider if it brings entities; on the web side, a `src/countries/<code>/` folder if it has screens of its own.
+  Its tests sit in the existing test projects under a folder named after the country.
 - **nInvoices.AppHost** — dev-only Aspire orchestrator (`aspire run`): PostgreSQL + Keycloak +
   API + Vite. Not referenced by any deployable project, never published. Production deploy is
   unchanged (Docker Hub + compose + SSH); Aspire is not used for deployment. Full walkthrough
@@ -193,7 +210,10 @@ tests; check a UI change in the browser against the fast loop above. Past incide
   `apiStatus`, `apiErrorCode`, `apiErrorData` (`composables/useToast.ts`) or `toast.failure(title, error)`,
   never `error: any`. No `alert()`/`confirm()`: use `useToast` / `useConfirm`. `v-html` only for
   server-generated markup (lint warns); user-authored HTML goes in a sandboxed `<iframe srcdoc>` without
-  `allow-scripts`.
+  `allow-scripts`. **Countries**: the shared screens are built from what the API describes (fields, regimes,
+  formats); what a country shows beyond that lives in `src/countries/<code>/` (its components, API module and
+  types) and is listed in `src/countries/index.ts` (`CountryUi`: `complianceSettings`, `invoicePanels`).
+  Nothing outside that folder names a country.
 
 ### Persistence conventions
 

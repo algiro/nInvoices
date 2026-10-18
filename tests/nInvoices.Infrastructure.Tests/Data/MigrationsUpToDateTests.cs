@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using nInvoices.Infrastructure.Countries;
 using nInvoices.Infrastructure.Data;
 using Shouldly;
 
@@ -33,7 +34,7 @@ public sealed class MigrationsUpToDateTests
 
     private static ApplicationDbContext Context(Action<DbContextOptionsBuilder<ApplicationDbContext>> provider)
     {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>();
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>().UseCountryModels(TestCountries.All);
         provider(options);
         return new ApplicationDbContext(options.Options, TestEncryption.Encryptor, new TestUserContext(null));
     }

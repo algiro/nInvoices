@@ -2,7 +2,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using System.Text;
 using System.Xml;
-using nInvoices.Application.Compliance.Spain;
+using nInvoices.Countries.Spain;
 using nInvoices.Core.Compliance.EInvoice;
 using nInvoices.Core.ValueObjects;
 using Shouldly;

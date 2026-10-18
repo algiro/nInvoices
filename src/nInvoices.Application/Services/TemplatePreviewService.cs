@@ -1,4 +1,3 @@
-using nInvoices.Application.Compliance.Spain.Verifactu;
 using nInvoices.Application.Models;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
@@ -32,14 +31,17 @@ public sealed class TemplatePreviewService : ITemplatePreviewService
     private readonly IRepository<Rate> _rateRepository;
     private readonly IRepository<Tax> _taxRepository;
     private readonly TimeProvider _timeProvider;
+    private readonly IReadOnlyList<IInvoiceTemplateModelContributor> _contributors;
 
     public TemplatePreviewService(
         ITemplateRenderer renderer,
         IRepository<Customer> customerRepository,
         IRepository<Rate> rateRepository,
         IRepository<Tax> taxRepository,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IEnumerable<IInvoiceTemplateModelContributor>? contributors = null)
     {
+        _contributors = contributors?.ToList() ?? [];
         _renderer = renderer;
         _customerRepository = customerRepository;
         _rateRepository = rateRepository;
@@ -50,7 +52,9 @@ public sealed class TemplatePreviewService : ITemplatePreviewService
     public async Task<TemplatePreviewResult> PreviewInvoiceAsync(string content, long? customerId, CancellationToken cancellationToken = default)
     {
         var sample = await LoadSampleContextAsync(customerId, cancellationToken);
-        return await RenderAsync(content, BuildInvoiceModel(sample), cancellationToken);
+        // A sample of what country rules add (a QR code, say), so its layout can be designed before any invoice has one
+        var model = BuildInvoiceModel(sample) with { Compliance = _contributors.ToDictionary(c => c.Key, c => c.Sample) };
+        return await RenderAsync(content, model, cancellationToken);
     }
 
     public async Task<TemplatePreviewResult> PreviewMonthlyReportAsync(string content, long? customerId, CancellationToken cancellationToken = default)
@@ -210,20 +214,6 @@ public sealed class TemplatePreviewService : ITemplatePreviewService
             .OrderBy(p => p.Name)
             .ToList();
 
-    private static VerifactuTemplateModel SampleVerifactu()
-    {
-        var url = VerifactuQr.Url(false, "12345678Z", "26-10-001", "03-10-2026", "1210.00");
-        return new VerifactuTemplateModel
-        {
-            IsRecorded = true,
-            QrUrl = url,
-            QrSvg = VerifactuQr.Svg(url),
-            QrDataUri = VerifactuQr.SvgDataUri(url),
-            Sequence = 1,
-            Hash = new string('A', 64)
-        };
-    }
-
     private static InvoiceTemplateModel BuildInvoiceModel(SampleContext sample)
     {
         var days = BuildSampleDays(sample.Month);
@@ -249,8 +239,6 @@ public sealed class TemplatePreviewService : ITemplatePreviewService
 
         return new InvoiceTemplateModel
         {
-            // A sample QR code, so the layout of the Verifactu block can be designed before any invoice has one
-            Compliance = new Dictionary<string, object> { [VerifactuTemplateContributor.Key] = SampleVerifactu() },
             InvoiceNumber = $"{sample.Month:yy-MM}-001",
             InvoiceType = nameof(InvoiceType.Monthly),
             Date = sample.Month.AddMonths(1).AddDays(-1),

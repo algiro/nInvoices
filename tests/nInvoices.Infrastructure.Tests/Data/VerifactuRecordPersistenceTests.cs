@@ -1,6 +1,8 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using nInvoices.Infrastructure.Countries;
 using nInvoices.Core.Entities;
+using nInvoices.Countries.Spain.Verifactu;
 using nInvoices.Core.Enums;
 using nInvoices.Core.ValueObjects;
 using nInvoices.Infrastructure.Data;
@@ -30,7 +32,7 @@ public sealed class VerifactuRecordPersistenceTests
     private ApplicationDbContext ContextFor(string? userId)
     {
         var context = new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options, TestEncryption.Encryptor, new TestUserContext(userId));
+            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).UseCountryModels(TestCountries.All).Options, TestEncryption.Encryptor, new TestUserContext(userId));
         // SQLite does not enforce foreign keys unless asked, and the chain relies on them
         context.Database.ExecuteSqlRaw("PRAGMA foreign_keys = ON;");
         return context;
@@ -60,10 +62,10 @@ public sealed class VerifactuRecordPersistenceTests
     {
         var invoiceId = await AddInvoiceAsync("alice");
         var context = ContextFor("alice");
-        context.VerifactuRecords.Add(Record(1, invoiceId));
+        context.Set<VerifactuRecord>().Add(Record(1, invoiceId));
         await context.SaveChangesAsync(Token);
 
-        var loaded = await ContextFor("alice").VerifactuRecords.SingleAsync(Token);
+        var loaded = await ContextFor("alice").Set<VerifactuRecord>().SingleAsync(Token);
 
         loaded.Sequence.ShouldBe(1);
         loaded.Kind.ShouldBe(VerifactuRecordKind.Issued);
@@ -79,16 +81,16 @@ public sealed class VerifactuRecordPersistenceTests
     {
         var invoiceId = await AddInvoiceAsync("alice");
         var context = ContextFor("alice");
-        context.VerifactuRecords.Add(Record(1, invoiceId));
+        context.Set<VerifactuRecord>().Add(Record(1, invoiceId));
         await context.SaveChangesAsync(Token);
 
         var edit = ContextFor("alice");
-        var record = await edit.VerifactuRecords.SingleAsync(Token);
+        var record = await edit.Set<VerifactuRecord>().SingleAsync(Token);
         edit.Entry(record).Property(r => r.TotalAmount).CurrentValue = "1.00";
 
         var ex = await Should.ThrowAsync<InvalidOperationException>(() => edit.SaveChangesAsync(Token));
         ex.Message.ShouldContain("append-only");
-        (await ContextFor("alice").VerifactuRecords.SingleAsync(Token)).TotalAmount.ShouldBe("121.00");
+        (await ContextFor("alice").Set<VerifactuRecord>().SingleAsync(Token)).TotalAmount.ShouldBe("121.00");
     }
 
     [Test]
@@ -96,14 +98,14 @@ public sealed class VerifactuRecordPersistenceTests
     {
         var invoiceId = await AddInvoiceAsync("alice");
         var context = ContextFor("alice");
-        context.VerifactuRecords.Add(Record(1, invoiceId));
+        context.Set<VerifactuRecord>().Add(Record(1, invoiceId));
         await context.SaveChangesAsync(Token);
 
         var edit = ContextFor("alice");
-        edit.VerifactuRecords.Remove(await edit.VerifactuRecords.SingleAsync(Token));
+        edit.Set<VerifactuRecord>().Remove(await edit.Set<VerifactuRecord>().SingleAsync(Token));
 
         await Should.ThrowAsync<InvalidOperationException>(() => edit.SaveChangesAsync(Token));
-        (await ContextFor("alice").VerifactuRecords.CountAsync(Token)).ShouldBe(1);
+        (await ContextFor("alice").Set<VerifactuRecord>().CountAsync(Token)).ShouldBe(1);
     }
 
     [Test]
@@ -111,7 +113,7 @@ public sealed class VerifactuRecordPersistenceTests
     {
         var invoiceId = await AddInvoiceAsync("alice");
         var context = ContextFor("alice");
-        context.VerifactuRecords.Add(Record(1, invoiceId));
+        context.Set<VerifactuRecord>().Add(Record(1, invoiceId));
         await context.SaveChangesAsync(Token);
 
         var edit = ContextFor("alice");
@@ -125,11 +127,11 @@ public sealed class VerifactuRecordPersistenceTests
     {
         var invoiceId = await AddInvoiceAsync("alice");
         var context = ContextFor("alice");
-        context.VerifactuRecords.Add(Record(1, invoiceId));
+        context.Set<VerifactuRecord>().Add(Record(1, invoiceId));
         await context.SaveChangesAsync(Token);
 
         var second = ContextFor("alice");
-        second.VerifactuRecords.Add(Record(1, invoiceId));
+        second.Set<VerifactuRecord>().Add(Record(1, invoiceId));
 
         await Should.ThrowAsync<DbUpdateException>(() => second.SaveChangesAsync(Token));
     }
@@ -141,14 +143,14 @@ public sealed class VerifactuRecordPersistenceTests
         var bob = await AddInvoiceAsync("bob");
 
         var a = ContextFor("alice");
-        a.VerifactuRecords.Add(Record(1, alice));
+        a.Set<VerifactuRecord>().Add(Record(1, alice));
         await a.SaveChangesAsync(Token);
         var b = ContextFor("bob");
-        b.VerifactuRecords.Add(Record(1, bob));
+        b.Set<VerifactuRecord>().Add(Record(1, bob));
         await b.SaveChangesAsync(Token);
 
-        (await ContextFor("alice").VerifactuRecords.CountAsync(Token)).ShouldBe(1);
-        (await ContextFor("bob").VerifactuRecords.CountAsync(Token)).ShouldBe(1);
+        (await ContextFor("alice").Set<VerifactuRecord>().CountAsync(Token)).ShouldBe(1);
+        (await ContextFor("bob").Set<VerifactuRecord>().CountAsync(Token)).ShouldBe(1);
     }
 
     [Test]
@@ -157,7 +159,7 @@ public sealed class VerifactuRecordPersistenceTests
         var invoiceId = await AddInvoiceAsync("alice");
         var other = await AddInvoiceAsync("alice");
         var context = ContextFor("alice");
-        context.VerifactuRecords.AddRange(Record(2, other, "HASH1"), Record(1, invoiceId), Record(3, invoiceId, "HASH2"));
+        context.Set<VerifactuRecord>().AddRange(Record(2, other, "HASH1"), Record(1, invoiceId), Record(3, invoiceId, "HASH2"));
         await context.SaveChangesAsync(Token);
 
         var repository = new VerifactuRecordRepository(ContextFor("alice"));

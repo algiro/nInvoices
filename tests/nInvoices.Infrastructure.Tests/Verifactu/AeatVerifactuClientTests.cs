@@ -7,8 +7,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml.Linq;
-using nInvoices.Application.Compliance.Spain.Verifactu;
-using nInvoices.Infrastructure.Verifactu;
+using nInvoices.Countries.Spain.Verifactu;
 using Shouldly;
 
 namespace nInvoices.Infrastructure.Tests.Verifactu;

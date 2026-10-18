@@ -6940,6 +6940,7 @@ export interface components {
             countryCode: string;
             name: string;
             currency: string;
+            indirectTaxName: string;
             regimes: components["schemas"]["TaxRegimeDto"][];
         };
         TaxDto: {

@@ -4,9 +4,8 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml.Linq;
 using Microsoft.Extensions.Options;
-using nInvoices.Application.Compliance.Spain.Face;
+using nInvoices.Countries.Spain.Face;
 using nInvoices.Core.Configuration;
-using nInvoices.Infrastructure.Face;
 using Shouldly;
 
 namespace nInvoices.Infrastructure.Tests.Face;

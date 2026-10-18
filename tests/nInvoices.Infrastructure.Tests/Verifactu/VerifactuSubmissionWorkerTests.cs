@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using nInvoices.Application.Compliance.Spain.Verifactu;
+using nInvoices.Infrastructure.Countries;
+using nInvoices.Infrastructure.Tests.Data;
+using nInvoices.Countries.Spain.Verifactu;
 using nInvoices.Core.Configuration;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
@@ -12,7 +14,6 @@ using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
 using nInvoices.Infrastructure.Data;
 using nInvoices.Infrastructure.Services;
-using nInvoices.Infrastructure.Verifactu;
 using Shouldly;
 
 namespace nInvoices.Infrastructure.Tests.Verifactu;
@@ -45,7 +46,7 @@ public sealed class VerifactuSubmissionWorkerTests
         {
             ranAs.Add(user.UserId);
             // The usual per-user filter applies: only this user's submissions are visible
-            var visible = await db.VerifactuSubmissions.CountAsync(cancellationToken);
+            var visible = await db.Set<VerifactuSubmission>().CountAsync(cancellationToken);
             visibleTo[user.UserId!] = visible;
             return new SubmissionRun(visible, 0, 0, 0, null);
         }
@@ -69,7 +70,7 @@ public sealed class VerifactuSubmissionWorkerTests
         services.AddSingleton<IHttpContextAccessor, NoHttp>();
         services.AddScoped<IUserContext, UserContext>();
         services.AddSingleton(nInvoices.Infrastructure.Tests.Data.TestEncryption.Encryptor);
-        services.AddDbContext<ApplicationDbContext>(o => o.UseSqlite(_connection));
+        services.AddDbContext<ApplicationDbContext>(o => o.UseSqlite(_connection).UseCountryModels(TestCountries.All));
         services.AddScoped<IVerifactuSubmitter>(sp => new RecordingSubmitter(
             sp.GetRequiredService<IUserContext>(), _ranAs, _visible, sp.GetRequiredService<ApplicationDbContext>()));
         _provider = services.BuildServiceProvider();
@@ -108,13 +109,13 @@ public sealed class VerifactuSubmissionWorkerTests
 
         var record = new VerifactuRecord(1, VerifactuRecordKind.Issued, invoice.Id, "12345678Z", "26-10-001", "03-10-2026", "F1",
             "0.00", "100.00", "", "2026-10-03T11:30:00+02:00", "H", "<x/>");
-        db.VerifactuRecords.Add(record);
+        db.Set<VerifactuRecord>().Add(record);
         await db.SaveChangesAsync(Token);
 
         var submission = new VerifactuSubmission(record.Id, 1, _now.AddMinutes(nextInMinutes));
         if (status != VerifactuSubmissionStatus.Pending)
             submission.Answered(status, "A", null, null, _now);
-        db.VerifactuSubmissions.Add(submission);
+        db.Set<VerifactuSubmission>().Add(submission);
         await db.SaveChangesAsync(Token);
     }
 

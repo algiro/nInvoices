@@ -223,7 +223,10 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
     private async Task<InvoiceDraft> RenderAsync(BuiltInvoice built, ICollection<WorkDayDto>? workDays, CancellationToken cancellationToken)
     {
-        var model = InvoiceTemplateModelBuilder.Build(built.Invoice, built.Customer, built.Rates, workDays);
+        var model = InvoiceTemplateModelBuilder.Build(built.Invoice, built.Customer, built.Rates, workDays) with
+        {
+            Compliance = _contributors.ToDictionary(c => c.Key, c => c.Empty)
+        };
         built.Invoice.SetRenderedContent(await _templateRenderer.RenderAsync(built.Template.Content, model, cancellationToken));
 
         return new InvoiceDraft(built.Invoice, built.Customer, workDays?.ToList() ?? []);
@@ -247,10 +250,10 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             : null;
 
         var rates = await _rates.ResolveAsync(invoice.CustomerId, invoice.Type, invoice.RateId, workDays, cancellationToken);
-        var templateModel = InvoiceTemplateModelBuilder.Build(invoice, customer, rates, workDays);
+        var compliance = new Dictionary<string, object>();
         foreach (var contributor in _contributors)
-            templateModel = await contributor.ContributeAsync(invoice, templateModel, cancellationToken);
-        return (invoice, templateModel);
+            compliance[contributor.Key] = await contributor.ContributeAsync(invoice, cancellationToken) ?? contributor.Empty;
+        return (invoice, InvoiceTemplateModelBuilder.Build(invoice, customer, rates, workDays) with { Compliance = compliance });
     }
 
     private async Task<InvoiceTemplate> GetTemplateAsync(

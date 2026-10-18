@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.Compliance.EInvoice;
-using nInvoices.Application.Compliance.Spain;
+using nInvoices.Countries.Spain;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Compliance.Commands;
 using nInvoices.Application.Models;
@@ -48,7 +48,7 @@ public sealed class CertificateAndCustomerTests
         var spain = new SpainComplianceModule();
         _registry = new ComplianceRegistry(
             [spain],
-            [new nInvoices.Application.Compliance.Spain.Facturae.FacturaeFormat(spain, _time)],
+            [new nInvoices.Countries.Spain.Facturae.FacturaeFormat(spain, _time)],
             Options.Create(new ComplianceOptions()));
     }
 

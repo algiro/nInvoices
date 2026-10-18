@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using nInvoices.Api.Controllers;
+using nInvoices.Api.Infrastructure;
 using nInvoices.Application;
 using nInvoices.Core.Interfaces;
 using nInvoices.Infrastructure.Data;
@@ -9,7 +10,7 @@ using Shouldly;
 namespace nInvoices.Api.Tests;
 
 /// <summary>
-/// The layering the project is built on (Core ← Application ← Infrastructure ← Api), checked so it
+/// The layering the project is built on (Core ← Application ← Infrastructure ← Countries ← Api), checked so it
 /// can't erode one shortcut at a time.
 /// </summary>
 [TestFixture]
@@ -20,8 +21,13 @@ public sealed class ArchitectureTests
     private static readonly Assembly Infrastructure = typeof(ApplicationDbContext).Assembly;
     private static readonly Assembly Api = typeof(InvoicesController).Assembly;
 
+    private static IReadOnlyList<Assembly> CountryAssemblies => SupportedCountries.All.Select(c => c.GetType().Assembly).ToList();
+
+    // The Api's controllers and those the countries bring
     private static IEnumerable<Type> Controllers() =>
-        Api.GetTypes().Where(t => !t.IsAbstract && typeof(ControllerBase).IsAssignableFrom(t));
+        CountryAssemblies.Prepend(Api)
+            .SelectMany(a => a.GetTypes())
+            .Where(t => !t.IsAbstract && typeof(ControllerBase).IsAssignableFrom(t));
 
     [Test]
     public void Controllers_DoNotReachTheDatabase()
@@ -43,6 +49,22 @@ public sealed class ArchitectureTests
         References(Core).ShouldBeEmpty();
         References(ApplicationLayer).ShouldBe([Core.GetName().Name!]);
         References(Infrastructure).ShouldNotContain(Api.GetName().Name!);
+    }
+
+    [Test]
+    public void SharedLayers_KnowNoCountry()
+    {
+        // A country is a plugin: the layers it plugs into never name it
+        foreach (var layer in new[] { Core, ApplicationLayer, Infrastructure })
+            References(layer).ShouldNotContain(name => name.StartsWith("nInvoices.Countries.", StringComparison.Ordinal), layer.GetName().Name);
+    }
+
+    [Test]
+    public void Countries_DependOnlyOnTheSharedLayers()
+    {
+        // Not on the Api, nor on each other
+        foreach (var country in CountryAssemblies)
+            References(country).ShouldBeSubsetOf([Core.GetName().Name!, ApplicationLayer.GetName().Name!, Infrastructure.GetName().Name!], country.GetName().Name);
     }
 
     private static bool IsDataAccess(Type type) =>

@@ -1,7 +1,4 @@
-using FluentValidation;
-using Mediator;
 using Microsoft.Extensions.DependencyInjection;
-using nInvoices.Application.Behaviors;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.Services;
 using nInvoices.Application.TaxPrediction;
@@ -33,25 +30,6 @@ public static class ApplicationServicesExtensions
         services.AddScoped<Services.Email.IInvoiceEmailComposer, Services.Email.InvoiceEmailComposer>();
         services.AddCompliance();
         services.AddTaxPrediction();
-        return services;
-    }
-
-    /// <summary>
-    /// Registers the mediator with this assembly's handlers (wired at compile time by the Mediator
-    /// source generator) and the FluentValidation validators, with the pipeline that runs a
-    /// request's validators before its handler.
-    /// </summary>
-    public static IServiceCollection AddApplicationRequests(this IServiceCollection services)
-    {
-        services.AddMediator((MediatorOptions options) =>
-        {
-            options.Assemblies = [typeof(ApplicationAssemblyMarker)];
-            // Handlers use the request's DbContext and user: never the generator's default, Singleton
-            options.ServiceLifetime = ServiceLifetime.Scoped;
-            // The first one wraps the rest: metrics see the whole request, validation included
-            options.PipelineBehaviors = [typeof(MetricsBehavior<,>), typeof(ValidationBehavior<,>)];
-        });
-        services.AddValidatorsFromAssembly(typeof(ApplicationAssemblyMarker).Assembly);
         return services;
     }
 }

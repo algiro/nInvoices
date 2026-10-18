@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using nInvoices.Infrastructure.Countries;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
@@ -29,7 +30,7 @@ public sealed class InvoiceRepositorySearchTests
         _connection = new SqliteConnection("DataSource=:memory:");
         await _connection.OpenAsync();
         _context = new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options,
+            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).UseCountryModels(TestCountries.All).Options,
             TestEncryption.Encryptor, new TestUserContext("user-1"));
         await _context.Database.EnsureCreatedAsync();
 

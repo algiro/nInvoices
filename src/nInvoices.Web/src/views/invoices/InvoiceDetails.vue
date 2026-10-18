@@ -96,7 +96,8 @@
             </dl>
           </BasePanel>
 
-          <InvoiceVerifactuPanel :invoice-id="invoice.id" :status="status.name" />
+          <!-- What country rules show for the invoice (countries/<code>), e.g. Spain's Verifactu record and QR code -->
+          <component :is="panel" v-for="(panel, index) in countryInvoicePanels" :key="index" :invoice-id="invoice.id" :status="status.name" />
 
           <InvoiceEInvoicePanel :invoice-id="invoice.id" :status="status.name" />
 
@@ -150,7 +151,7 @@ import ActionMenu, { type ActionMenuItem } from '@/components/ui/ActionMenu.vue'
 import TemplatePreviewPane from '@/components/templates/editor/TemplatePreviewPane.vue'
 import InvoiceEmailDialog from '@/components/invoices/InvoiceEmailDialog.vue'
 import InvoiceEInvoicePanel from '@/components/invoices/InvoiceEInvoicePanel.vue'
-import InvoiceVerifactuPanel from '@/components/invoices/InvoiceVerifactuPanel.vue'
+import { countryInvoicePanels } from '@/countries'
 import { invoicesApi } from '@/api/invoices'
 import { useInvoiceActions, actionsFor, isMonthly, type InvoiceActionId } from '@/composables/useInvoiceActions'
 import { setPageTitle } from '@/composables/usePageTitle'

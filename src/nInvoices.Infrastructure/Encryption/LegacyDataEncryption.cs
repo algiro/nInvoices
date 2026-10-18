@@ -49,7 +49,7 @@ public static class LegacyDataEncryption
                 using var scope = services.CreateScope();
                 scope.ServiceProvider.GetRequiredService<OwnerOverride>().OwnerId = owner;
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                context.AllowRewritingVerifactuRecords = true;
+                context.AllowRewritingAppendOnlyRows = true;
                 context.KeepAuditTimes = true;
                 encrypted += await (Task<int>)EncryptTypeMethod.MakeGenericMethod(type).Invoke(null, [context, cancellationToken])!;
             }

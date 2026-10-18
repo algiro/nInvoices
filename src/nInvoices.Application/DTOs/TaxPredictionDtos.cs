@@ -39,7 +39,8 @@ public sealed record RecordTaxPaymentDto(int Year, int Period, string Form, deci
 /// <summary>The countries whose taxes can be estimated, and the user's choice among them (null if none yet).</summary>
 public sealed record TaxPredictionSettingsDto(IReadOnlyList<TaxCountryDto> Countries, TaxProfileDto? Profile);
 
-public sealed record TaxCountryDto(string CountryCode, string Name, string Currency, IReadOnlyList<TaxRegimeDto> Regimes);
+/// <param name="IndirectTaxName">What the country's VAT is called, for the expenses ("IVA / IGIC").</param>
+public sealed record TaxCountryDto(string CountryCode, string Name, string Currency, string IndirectTaxName, IReadOnlyList<TaxRegimeDto> Regimes);
 
 /// <param name="Defaults">The values a new profile starts with: the form shows them until the user saves.</param>
 public sealed record TaxRegimeDto(

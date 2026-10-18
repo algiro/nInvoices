@@ -61,7 +61,8 @@ public static class AppMetrics
 
     /// <summary>
     /// What came of handing an e-invoice record to a tax authority or a portal. Tags: <c>system</c>
-    /// (<see cref="Systems"/>) and <c>result</c> (<see cref="SubmissionResult"/>).
+    /// (the remote system, named by the country plugin that calls it, e.g. <c>verifactu</c>; one fixed value per
+    /// system) and <c>result</c> (<see cref="SubmissionResult"/>).
     /// </summary>
     public static readonly Counter<long> EInvoiceSubmissions = Meter.CreateCounter<long>(
         "ninvoices.einvoice.submissions",
@@ -90,16 +91,6 @@ public static class AppMetrics
         "ninvoices.email.drafts",
         unit: "{draft}",
         description: "Gmail drafts created for invoices, by outcome.");
-
-    /// <summary>The values of the <c>system</c> tag.</summary>
-    public static class Systems
-    {
-        /// <summary>The Spanish Tax Agency (AEAT), through Verifactu.</summary>
-        public const string Verifactu = "verifactu";
-
-        /// <summary>FACe, the Spanish portal for invoices to public administrations.</summary>
-        public const string Face = "face";
-    }
 
     /// <summary>The values of the <c>result</c> tag of <see cref="EInvoiceSubmissions"/>.</summary>
     public static class SubmissionResult

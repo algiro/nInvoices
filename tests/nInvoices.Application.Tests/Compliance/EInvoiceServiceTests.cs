@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.Compliance.EInvoice;
-using nInvoices.Application.Compliance.Spain;
+using nInvoices.Countries.Spain;
 using nInvoices.Application.Features.Invoices.Notifications;
 using nInvoices.Application.Services.Email;
 using nInvoices.Application.Tests.Compliance.Spain;
@@ -69,7 +69,7 @@ public sealed class EInvoiceServiceTests
             .ReturnsAsync(() => FacturaeTestData.Invoice(buyer: _buyer));
 
         var spain = new SpainComplianceModule();
-        var format = new nInvoices.Application.Compliance.Spain.Facturae.FacturaeFormat(spain, _time);
+        var format = new nInvoices.Countries.Spain.Facturae.FacturaeFormat(spain, _time);
         var registry = new ComplianceRegistry([spain], [format], Options.Create(new ComplianceOptions()));
         var gate = new ComplianceGate(registry, _settings);
 

@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 using Moq;
 using nInvoices.Application.Compliance;
-using nInvoices.Application.Compliance.Spain;
+using nInvoices.Countries.Spain;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Compliance.Commands;
 using nInvoices.Application.Features.Compliance.Queries;

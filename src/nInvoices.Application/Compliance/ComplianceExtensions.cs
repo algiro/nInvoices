@@ -1,29 +1,20 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using nInvoices.Application.Compliance.Spain.Face;
-using nInvoices.Application.Compliance.Spain.Facturae;
-using nInvoices.Application.Compliance.Spain.Verifactu;
-using nInvoices.Application.Features.Invoices;
-using nInvoices.Application.Services;
 using nInvoices.Application.Compliance.EInvoice;
-using nInvoices.Core.Compliance.EInvoice;
-using nInvoices.Application.Compliance.Spain;
-using nInvoices.Core.Compliance;
+using nInvoices.Application.Features.Invoices;
 
 namespace nInvoices.Application.Compliance;
 
 public static class ComplianceExtensions
 {
     /// <summary>
-    /// Registers the country modules, the registry and the gate. A new country is one more
-    /// <c>AddSingleton&lt;ICountryComplianceModule, ...&gt;</c> line here. The host binds
-    /// <c>ComplianceOptions</c> from the "Compliance" section.
+    /// Registers what every country's invoicing rules share: the registry, the gate, customer and tax data,
+    /// e-invoice generation and delivery. The countries themselves (<c>ICountryComplianceModule</c>,
+    /// <c>IEInvoiceFormat</c>, <c>IEInvoiceChannel</c>...) are registered by their plugins
+    /// (<c>nInvoices.Countries.*</c>). The host binds <c>ComplianceOptions</c> from the "Compliance" section.
     /// </summary>
     public static IServiceCollection AddCompliance(this IServiceCollection services)
     {
-        services.AddSingleton<SpainComplianceModule>();
-        services.AddSingleton<ICountryComplianceModule>(sp => sp.GetRequiredService<SpainComplianceModule>());
-        services.AddSingleton<IEInvoiceFormat, FacturaeFormat>();
         services.TryAddSingleton(TimeProvider.System);
 
         services.AddSingleton<IComplianceRegistry, ComplianceRegistry>();
@@ -34,13 +25,7 @@ public static class ComplianceExtensions
         services.AddScoped<SigningCertificateLoader>();
         services.AddScoped<IEInvoiceService, EInvoiceService>();
         services.AddScoped<IEInvoiceDeliveryService, EInvoiceDeliveryService>();
-        services.AddSingleton<IEInvoiceChannel, FaceChannel>();
-
-        services.AddScoped<IVerifactuService, VerifactuService>();
-        services.AddScoped<IVerifactuSubmitter, VerifactuSubmitter>();
-        services.AddScoped<IInvoiceLifecycleStep, VerifactuLifecycleStep>();
         services.AddScoped<IInvoiceLifecycleStep, EInvoiceDeliveryLifecycleStep>();
-        services.AddScoped<IInvoiceTemplateModelContributor, VerifactuTemplateContributor>();
         return services;
     }
 }

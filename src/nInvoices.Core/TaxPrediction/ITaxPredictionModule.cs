@@ -18,6 +18,12 @@ public interface ITaxPredictionModule
     /// <summary>The currency the country taxes in (ISO 4217); amounts in another one are not counted.</summary>
     string Currency { get; }
 
+    /// <summary>
+    /// What the country's indirect tax (VAT) is called, as the user knows it: the label of the tax paid on an
+    /// expense (<see cref="DeductibleExpense.IndirectTax"/>), e.g. "IVA / IGIC".
+    /// </summary>
+    string IndirectTaxName { get; }
+
     /// <summary>The tax regimes the user can choose from, each with its own settings.</summary>
     IReadOnlyList<TaxRegime> Regimes { get; }
 

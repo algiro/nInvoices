@@ -11,6 +11,6 @@ internal sealed class EncryptorModelCacheKeyFactory : IModelCacheKeyFactory
 {
     public object Create(DbContext context, bool designTime) =>
         context is ApplicationDbContext app
-            ? (context.GetType(), app.Encryptor, designTime)
+            ? (context.GetType(), app.Encryptor, app.CountryModels?.Key, designTime)
             : (context.GetType(), designTime);
 }

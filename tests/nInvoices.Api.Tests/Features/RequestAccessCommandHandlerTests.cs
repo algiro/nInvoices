@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using nInvoices.Infrastructure.Countries;
 using nInvoices.Api.Infrastructure;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Account;
@@ -79,7 +80,7 @@ public sealed class RequestAccessCommandHandlerTests
     private ApplicationDbContext Context(IUserContext user)
     {
         var context = new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options, Encryptor, user);
+            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).UseCountryModels(SupportedCountries.All).Options, Encryptor, user);
         _contexts.Add(context);
         return context;
     }

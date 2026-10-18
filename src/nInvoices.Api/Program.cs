@@ -7,8 +7,6 @@ using nInvoices.Infrastructure.Data;
 using nInvoices.Infrastructure.TaxHandlers;
 using nInvoices.Infrastructure.PdfExport;
 using nInvoices.Infrastructure.Gmail;
-using nInvoices.Infrastructure.Face;
-using nInvoices.Infrastructure.Verifactu;
 using nInvoices.Api.Infrastructure;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -51,6 +49,7 @@ builder.Services.AddControllers(options =>
         // Exceptions become ProblemDetails responses in one place (404, 400, 409, 500): actions do not catch to translate
         options.Filters.Add<ApiExceptionFilter>();
     })
+    .AddCountryControllers()
     .AddApiJson();
 builder.Services.AddEndpointsApiExplorer();
 // Every ProblemDetails (ApiExceptionFilter's, a plain NotFound(), a body that fails model binding...)
@@ -62,8 +61,6 @@ builder.Services.AddApiDocument();
 // Add Configuration
 builder.Services.Configure<InvoiceSettings>(builder.Configuration.GetSection(InvoiceSettings.SectionName));
 builder.Services.Configure<ComplianceOptions>(builder.Configuration.GetSection(ComplianceOptions.SectionName));
-builder.Services.Configure<VerifactuOptions>(builder.Configuration.GetSection(VerifactuOptions.SectionName));
-builder.Services.Configure<FaceOptions>(builder.Configuration.GetSection(FaceOptions.SectionName));
 
 // Add HttpContextAccessor for user context
 builder.Services.AddHttpContextAccessor();
@@ -91,11 +88,8 @@ builder.Services.AddGmail(builder.Configuration);
 // Add Application Services
 builder.Services.AddApplicationServices();
 
-// Verifactu: the Tax Agency client and the worker that sends the waiting records (idle until set up)
-builder.Services.AddVerifactuSubmission();
-
-// FACe: the client that delivers invoices to public administrations (used when the user sends one)
-builder.Services.AddFace();
+// The supported countries (Infrastructure/SupportedCountries): their invoicing rules, tax prediction, clients and workers
+builder.Services.AddCountries(builder.Configuration);
 
 // Telegram messages to the administrator, e.g. a new account waiting for approval (off until configured)
 builder.Services.AddAdminNotifications(builder.Configuration);

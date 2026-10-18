@@ -3,6 +3,7 @@ using FluentValidation;
 using Mediator;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using nInvoices.Api.Infrastructure;
 using nInvoices.Application;
 using nInvoices.Application.Features.BusinessExpenses;
 using nInvoices.Application.Telemetry;
