@@ -17,6 +17,8 @@
     <None Update="Localization\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <!-- The API's texts, one file per language (AppText): a new file is a new language -->
+    <EmbeddedResource Include="Localization\Messages\*.json" LogicalName="nInvoices.Messages.%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

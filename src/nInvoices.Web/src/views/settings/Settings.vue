@@ -1,9 +1,9 @@
 <template>
   <div class="settings-page">
-    <PageHeader title="Settings" />
+    <PageHeader :title="t('nav.settings')" />
 
     <div class="layout">
-      <nav class="sub-nav" aria-label="Settings sections">
+      <nav class="sub-nav" :aria-label="t('settings.sections')">
         <router-link
           v-for="section in sections"
           :key="section.name"
@@ -13,8 +13,8 @@
         >
           <AppIcon :name="section.icon" />
           <span class="sub-text">
-            <span class="sub-label">{{ section.label }}</span>
-            <small>{{ section.hint }}</small>
+            <span class="sub-label">{{ t(section.label) }}</span>
+            <small>{{ t(section.hint) }}</small>
           </span>
         </router-link>
       </nav>
@@ -29,20 +29,24 @@
 <script setup lang="ts">
 import PageHeader from '@/components/ui/PageHeader.vue'
 import AppIcon, { type IconName } from '@/components/ui/AppIcon.vue'
+import type { MessageKey } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Section {
   name: string
-  label: string
-  hint: string
+  label: MessageKey
+  hint: MessageKey
   icon: IconName
 }
 
 const sections: Section[] = [
-  { name: 'settings-general', label: 'General', hint: 'Appearance, calendar, holidays', icon: 'monitor' },
-  { name: 'settings-invoices', label: 'Invoices', hint: 'Numbering, images', icon: 'invoices' },
-  { name: 'settings-country', label: 'Country & taxes', hint: 'Invoicing rules, tax regime', icon: 'landmark' },
-  { name: 'settings-email', label: 'Email', hint: 'Gmail', icon: 'send' },
-  { name: 'settings-data', label: 'Data & account', hint: 'Backup, delete account', icon: 'download' }
+  { name: 'settings-general', label: 'settings.nav.general', hint: 'settings.nav.generalHint', icon: 'monitor' },
+  { name: 'settings-invoices', label: 'settings.nav.invoices', hint: 'settings.nav.invoicesHint', icon: 'invoices' },
+  { name: 'settings-country', label: 'settings.nav.country', hint: 'settings.nav.countryHint', icon: 'landmark' },
+  { name: 'settings-email', label: 'settings.nav.email', hint: 'settings.nav.emailHint', icon: 'send' },
+  { name: 'settings-data', label: 'settings.nav.data', hint: 'settings.nav.dataHint', icon: 'download' }
 ]
 </script>
 

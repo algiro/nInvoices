@@ -30,7 +30,7 @@ export const useCustomersStore = defineStore('customers', () => {
     try {
       customers.value = await customersApi.getAll();
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to fetch customers');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -44,7 +44,7 @@ export const useCustomersStore = defineStore('customers', () => {
       selectedCustomer.value = await customersApi.getById(id);
       return selectedCustomer.value;
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to fetch customer');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -59,7 +59,7 @@ export const useCustomersStore = defineStore('customers', () => {
       customers.value.push(newCustomer);
       return newCustomer;
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to create customer');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -76,7 +76,7 @@ export const useCustomersStore = defineStore('customers', () => {
         await fetchById(id); // Refresh the customer data
       }
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to update customer');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -93,7 +93,7 @@ export const useCustomersStore = defineStore('customers', () => {
         selectedCustomer.value = null;
       }
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to delete customer');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;

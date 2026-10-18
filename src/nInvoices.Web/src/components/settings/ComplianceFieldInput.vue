@@ -9,7 +9,7 @@
 
   <BaseField v-else :label="field.label" :for="id" :help="field.help ?? undefined" :error="error">
     <select v-if="field.type === 'Choice'" :id="id" class="control" :value="value" @change="emit('update', ($event.target as HTMLSelectElement).value)">
-      <option value="">Select…</option>
+      <option value="">{{ t('common.select') }}</option>
       <option v-for="option in field.options ?? []" :key="option.value" :value="option.value">{{ option.label }}</option>
     </select>
     <input v-else :id="id" type="text" class="control" :value="value" @input="emit('update', ($event.target as HTMLInputElement).value)" />
@@ -19,6 +19,9 @@
 <script setup lang="ts">
 import type { ComplianceFieldDto } from '@/types'
 import BaseField from '@/components/ui/BaseField.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 /**
  * One country-specific field, drawn from what the country module declares (text, choice or

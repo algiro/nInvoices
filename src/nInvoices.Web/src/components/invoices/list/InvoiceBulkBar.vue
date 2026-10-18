@@ -1,29 +1,29 @@
 <template>
-  <div class="bulk-bar" role="region" aria-label="Selected invoices">
+  <div class="bulk-bar" role="region" :aria-label="t('invoices.bulk.region')">
     <div class="bulk-info">
-      <strong>{{ selected.size }} selected</strong>
+      <strong>{{ t('invoices.bulk.selected', { n: selected.size }) }}</strong>
       <button v-if="selection.canSelectAllMatching.value" type="button" class="link" :disabled="selection.selectingAll.value" @click="selection.selectAllMatching">
-        {{ selection.selectingAll.value ? 'Selecting…' : `Select all ${totalCount} matching` }}
+        {{ selection.selectingAll.value ? t('invoices.bulk.selecting') : t('invoices.bulk.selectAllMatching', { n: totalCount }) }}
       </button>
-      <button type="button" class="link" @click="selected.clear()">Clear selection</button>
+      <button type="button" class="link" @click="selected.clear()">{{ t('invoices.bulk.clearSelection') }}</button>
     </div>
     <div class="bulk-actions">
       <BaseButton size="sm" icon="lock" :disabled="!!bulkBusy || eligible('finalize') === 0" :loading="bulkBusy === 'finalize'" @click="runBulk('finalize')">
-        Finalize ({{ eligible('finalize') }})
+        {{ t('invoices.bulk.finalize.button', { n: eligible('finalize') }) }}
       </BaseButton>
       <BaseButton size="sm" icon="send" :disabled="!!bulkBusy || eligible('mark-as-sent') === 0" :loading="bulkBusy === 'mark-as-sent'" @click="runBulk('mark-as-sent')">
-        Mark as sent ({{ eligible('mark-as-sent') }})
+        {{ t('invoices.bulk.markAsSent.button', { n: eligible('mark-as-sent') }) }}
       </BaseButton>
       <BaseButton size="sm" icon="paid" :disabled="!!bulkBusy || eligible('mark-as-paid') === 0" :loading="bulkBusy === 'mark-as-paid'" @click="runBulk('mark-as-paid')">
-        Mark as paid ({{ eligible('mark-as-paid') }})
+        {{ t('invoices.bulk.markAsPaid.button', { n: eligible('mark-as-paid') }) }}
       </BaseButton>
       <span class="bulk-divider" aria-hidden="true"></span>
       <label class="check">
         <input v-model="includeTimesheets" type="checkbox" />
-        With timesheets
+        {{ t('invoices.bulk.withTimesheets') }}
       </label>
       <BaseButton size="sm" variant="primary" icon="download" :disabled="!!bulkBusy" :loading="bulkBusy === 'download'" @click="downloadSelected">
-        Download PDFs
+        {{ t('invoices.bulk.downloadPdfs') }}
       </BaseButton>
     </div>
   </div>
@@ -38,6 +38,9 @@ import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import type { InvoiceSelection } from '@/composables/useInvoiceSelection'
 import { invoiceStatus } from '@/utils/format'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   selection: InvoiceSelection
@@ -51,10 +54,11 @@ const toast = useToast()
 const { confirm } = useConfirm()
 const selected = props.selection.selected
 
-const BULK_RULES: Record<BulkInvoiceChange, { statuses: string[]; verb: string; done: string }> = {
-  finalize: { statuses: ['Draft'], verb: 'Finalize', done: 'finalized' },
-  'mark-as-sent': { statuses: ['Finalized'], verb: 'Mark as sent', done: 'marked as sent' },
-  'mark-as-paid': { statuses: ['Finalized', 'Sent'], verb: 'Mark as paid', done: 'marked as paid' }
+// texts: invoices.bulk.<key>.*
+const BULK_RULES: Record<BulkInvoiceChange, { statuses: string[]; key: 'finalize' | 'markAsSent' | 'markAsPaid' }> = {
+  finalize: { statuses: ['Draft'], key: 'finalize' },
+  'mark-as-sent': { statuses: ['Finalized'], key: 'markAsSent' },
+  'mark-as-paid': { statuses: ['Finalized', 'Sent'], key: 'markAsPaid' }
 }
 
 /** How many selected invoices the change applies to (the server checks again). */
@@ -65,37 +69,31 @@ function eligible(change: BulkInvoiceChange): number {
 const bulkBusy = ref<BulkInvoiceChange | 'download' | null>(null)
 const includeTimesheets = ref(false)
 
-function plural(n: number) {
-  return `${n} ${n === 1 ? 'invoice' : 'invoices'}`
-}
-
 async function runBulk(change: BulkInvoiceChange) {
   const rule = BULK_RULES[change]
   const count = eligible(change)
   const others = selected.size - count
   const confirmed = await confirm({
-    title: `${rule.verb} ${plural(count)}?`,
-    message: others > 0
-      ? `${plural(others)} of the selection can't be ${rule.done} in ${others === 1 ? 'its' : 'their'} current status and will be left as ${others === 1 ? 'it is' : 'they are'}.`
-      : undefined,
-    confirmLabel: rule.verb
+    title: t(`invoices.bulk.${rule.key}.title`, count),
+    message: others > 0 ? t(`invoices.bulk.${rule.key}.othersLeft`, others) : undefined,
+    confirmLabel: t(`invoices.bulk.${rule.key}.verb`)
   })
   if (!confirmed) return
 
   bulkBusy.value = change
   try {
     const result = await invoicesApi.bulkChange(change, [...selected.keys()])
-    if (result.succeeded.length) toast.success(`${plural(result.succeeded.length)} ${rule.done}`)
+    if (result.succeeded.length) toast.success(t(`invoices.bulk.${rule.key}.done`, result.succeeded.length))
     if (result.skipped.length) {
       const examples = result.skipped.slice(0, 3).map(s => `${s.invoiceNumber ?? s.id}: ${s.reason}`).join('; ')
-      toast.warning(`${plural(result.skipped.length)} left unchanged`, {
+      toast.warning(t('invoices.bulk.leftUnchanged', result.skipped.length), {
         message: examples + (result.skipped.length > 3 ? '; …' : '')
       })
     }
     selected.clear()
     await props.refresh()
   } catch (error) {
-    toast.failure(`Could not ${rule.verb.toLowerCase()} the invoices`, error)
+    toast.failure(t(`invoices.bulk.${rule.key}.failed`), error)
   } finally {
     bulkBusy.value = null
   }
@@ -105,7 +103,7 @@ const MAX_DOWNLOAD = 100
 
 async function downloadSelected() {
   if (selected.size > MAX_DOWNLOAD) {
-    toast.warning(`Select at most ${MAX_DOWNLOAD} invoices to download`, { message: 'The PDFs are rendered one by one; split larger downloads.' })
+    toast.warning(t('invoices.bulk.maxDownload', { max: MAX_DOWNLOAD }), { message: t('invoices.bulk.maxDownloadHelp') })
     return
   }
 
@@ -115,13 +113,13 @@ async function downloadSelected() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = fileName ?? 'Invoices.zip'
+    link.download = fileName ?? `${t('nav.invoices')}.zip`
     document.body.appendChild(link)
     link.click()
     link.remove()
     URL.revokeObjectURL(url)
   } catch (error) {
-    toast.failure('Could not download the PDFs', error)
+    toast.failure(t('invoices.bulk.downloadFailed'), error)
   } finally {
     bulkBusy.value = null
   }

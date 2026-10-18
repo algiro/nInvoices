@@ -1,8 +1,8 @@
 <template>
   <div class="invoice-generate">
-    <PageHeader title="New invoice" subtitle="Choose the customer and period, enter the time and expenses, then check the invoice before generating it." />
+    <PageHeader :title="t('layout.newInvoice')" :subtitle="t('invoiceWizard.subtitle')" />
 
-    <nav class="stepper" aria-label="Steps">
+    <nav class="stepper" :aria-label="t('invoiceWizard.steps')">
       <ol>
         <li v-for="(step, index) in steps" :key="step.id">
           <button
@@ -31,23 +31,23 @@
     <div class="summary-bar">
       <dl class="summary">
         <template v-if="isMonthly">
-          <div><dt>Period</dt><dd>{{ periodLabel }}</dd></div>
+          <div><dt>{{ t('invoices.columns.period') }}</dt><dd>{{ periodLabel }}</dd></div>
           <template v-if="showTimeTotals">
-            <div><dt>Worked days</dt><dd>{{ totals.workedDays }}</dd></div>
-            <div><dt>Hours</dt><dd>{{ totals.totalHours.toFixed(1) }}</dd></div>
+            <div><dt>{{ t('invoiceWizard.workedDays') }}</dt><dd>{{ totals.workedDays }}</dd></div>
+            <div><dt>{{ t('invoiceWizard.hours') }}</dt><dd>{{ totals.totalHours.toFixed(1) }}</dd></div>
           </template>
         </template>
-        <div v-if="expensesTotal"><dt>Expenses</dt><dd>{{ expensesTotal }}</dd></div>
-        <div v-if="showTimeTotals" class="estimate"><dt>Estimated subtotal</dt><dd>{{ estimatedAmount }}</dd></div>
+        <div v-if="expensesTotal"><dt>{{ t('nav.expenses') }}</dt><dd>{{ expensesTotal }}</dd></div>
+        <div v-if="showTimeTotals" class="estimate"><dt>{{ t('invoiceWizard.estimatedSubtotal') }}</dt><dd>{{ estimatedAmount }}</dd></div>
       </dl>
       <div class="summary-actions">
         <span v-if="currentBlocker" class="blocker">{{ currentBlocker }}</span>
-        <BaseButton v-if="currentIndex === 0" :disabled="loading" @click="handleCancel">Cancel</BaseButton>
-        <BaseButton v-else icon="arrowLeft" :disabled="loading" @click="goTo(currentIndex - 1)">Back</BaseButton>
+        <BaseButton v-if="currentIndex === 0" :disabled="loading" @click="handleCancel">{{ t('common.cancel') }}</BaseButton>
+        <BaseButton v-else icon="arrowLeft" :disabled="loading" @click="goTo(currentIndex - 1)">{{ t('common.back') }}</BaseButton>
         <BaseButton v-if="currentId !== 'review'" variant="primary" @click="next">
-          Next: {{ steps[currentIndex + 1]?.label }}
+          {{ t('invoiceWizard.next', { step: steps[currentIndex + 1]?.label ?? '' }) }}
         </BaseButton>
-        <BaseButton v-else variant="primary" :loading="loading" :disabled="!!currentBlocker" @click="handleGenerate">Generate invoice</BaseButton>
+        <BaseButton v-else variant="primary" :loading="loading" :disabled="!!currentBlocker" @click="handleGenerate">{{ t('invoiceWizard.generate') }}</BaseButton>
       </div>
     </div>
   </div>
@@ -66,6 +66,9 @@ import StepReview from '@/components/invoices/wizard/StepReview.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import AppIcon from '@/components/ui/AppIcon.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const router = useRouter()
 const route = useRoute()
@@ -96,10 +99,10 @@ const previewBlocker = ref<string | null>(null)
 
 // A one-time invoice bills no time, so it has no Time step
 const steps = computed(() => [
-  { id: 'customer' as const, label: 'Customer & period', blocker: customerBlocker.value },
-  ...(isMonthly.value ? [{ id: 'time' as const, label: 'Time', blocker: timeBlocker.value }] : []),
-  { id: 'expenses' as const, label: 'Expenses', blocker: expensesBlocker.value },
-  { id: 'review' as const, label: 'Review & generate', blocker: previewBlocker.value }
+  { id: 'customer' as const, label: t('invoiceWizard.stepCustomer'), blocker: customerBlocker.value },
+  ...(isMonthly.value ? [{ id: 'time' as const, label: t('invoiceWizard.stepTime'), blocker: timeBlocker.value }] : []),
+  { id: 'expenses' as const, label: t('nav.expenses'), blocker: expensesBlocker.value },
+  { id: 'review' as const, label: t('invoiceWizard.stepReview'), blocker: previewBlocker.value }
 ])
 
 const currentIndex = computed(() => Math.max(0, steps.value.findIndex(s => s.id === currentId.value)))
@@ -142,7 +145,7 @@ async function handleGenerate() {
     const invoice = await invoicesStore.generate(buildPayload())
     router.push(`/invoices/${invoice.id}`)
   } catch (error) {
-    toast.failure('Failed to generate invoice', error)
+    toast.failure(t('invoiceWizard.generateFailed'), error)
   } finally {
     loading.value = false
   }

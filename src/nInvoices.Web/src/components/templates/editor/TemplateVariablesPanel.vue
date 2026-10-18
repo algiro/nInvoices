@@ -1,14 +1,14 @@
 <template>
-  <aside class="variables" aria-label="Template variables">
+  <aside class="variables" :aria-label="t('templates.variables.label')">
     <div class="head">
-      <span class="title">Insert</span>
+      <span class="title">{{ t('templates.variables.insert') }}</span>
       <input
         id="template-variable-search"
         v-model="query"
         type="search"
         class="search"
-        placeholder="Search variables…"
-        aria-label="Search variables"
+        :placeholder="t('templates.variables.searchPlaceholder')"
+        :aria-label="t('templates.variables.search')"
       />
     </div>
     <div class="groups">
@@ -19,22 +19,25 @@
           :key="item.label"
           type="button"
           class="item"
-          :title="`Insert ${item.insert.replace('$0', '')}`"
+          :title="t('templates.variables.insertNamed', { text: item.insert.replace('$0', '') })"
           @click="emit('insert', item.insert)"
         >
           <code>{{ item.label }}</code>
           <span>{{ item.description }}</span>
         </button>
       </section>
-      <p v-if="filtered.length === 0" class="none">No variable matches “{{ query }}”.</p>
+      <p v-if="filtered.length === 0" class="none">{{ t('templates.variables.noMatch', { query }) }}</p>
     </div>
-    <p class="hint">Type <code>[[</code> in the editor for suggestions.</p>
+    <i18n-t keypath="templates.variables.hint" tag="p" class="hint"><template #code><code>[[</code></template></i18n-t>
   </aside>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { VariableGroup } from './templateVariables'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{ groups: VariableGroup[] }>()
 const emit = defineEmits<{ (e: 'insert', text: string): void }>()

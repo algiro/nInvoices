@@ -1,21 +1,21 @@
 <template>
-  <LoadingState v-if="loadingRate" label="Loading rate…" />
+  <LoadingState v-if="loadingRate" :label="t('rates.loadingOne')" />
 
   <form v-else class="rate-form" novalidate @submit.prevent="handleSubmit">
-    <BaseField label="Name" for="rate-name" help="Optional. Tells rates apart when there are several, e.g. “Senior developer”.">
-      <input id="rate-name" v-model="form.name" type="text" maxlength="100" class="control" placeholder="e.g. Senior developer" :disabled="disabled" />
+    <BaseField :label="t('customers.name')" for="rate-name" :help="t('rates.nameHelp')">
+      <input id="rate-name" v-model="form.name" type="text" maxlength="100" class="control" :placeholder="t('rates.namePlaceholder')" :disabled="disabled" />
     </BaseField>
 
-    <BaseField label="Billed" for="rate-type" required>
+    <BaseField :label="t('rates.billed')" for="rate-type" required>
       <select id="rate-type" v-model.number="form.type" class="control" :disabled="disabled">
-        <option :value="RateType.Daily">Per day</option>
-        <option :value="RateType.Hourly">Per hour</option>
-        <option :value="RateType.Monthly">Per month</option>
+        <option :value="RateType.Daily">{{ t('rates.perDayOption') }}</option>
+        <option :value="RateType.Hourly">{{ t('rates.perHourOption') }}</option>
+        <option :value="RateType.Monthly">{{ t('rates.perMonthOption') }}</option>
       </select>
     </BaseField>
 
     <div class="price-row">
-      <BaseField label="Price" for="rate-amount" required :error="errors.amount" class="amount">
+      <BaseField :label="t('rates.price')" for="rate-amount" required :error="errors.amount" class="amount">
         <input
           id="rate-amount"
           v-model.number="form.price.amount"
@@ -27,7 +27,7 @@
           :disabled="disabled"
         />
       </BaseField>
-      <BaseField label="Currency" for="rate-currency" required>
+      <BaseField :label="t('common.currency')" for="rate-currency" required>
         <select id="rate-currency" v-model="form.price.currency" class="control" :disabled="disabled">
           <option v-for="code in currencies" :key="code" :value="code">{{ code }}</option>
         </select>
@@ -37,9 +37,9 @@
     <p v-if="errors.form" class="form-error" role="alert">{{ errors.form }}</p>
 
     <div class="form-actions">
-      <BaseButton :disabled="saving" @click="emit('cancel')">Cancel</BaseButton>
+      <BaseButton :disabled="saving" @click="emit('cancel')">{{ t('common.cancel') }}</BaseButton>
       <BaseButton type="submit" variant="primary" :loading="saving" :disabled="disabled">
-        {{ rateId ? 'Save changes' : 'Add rate' }}
+        {{ rateId ? t('common.saveChanges') : t('rates.add') }}
       </BaseButton>
     </div>
   </form>
@@ -54,6 +54,9 @@ import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import { errorMessage } from '@/composables/useToast'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   customerId: number
@@ -108,7 +111,7 @@ async function loadRate(id: number) {
       form.name = rate.name ?? ''
     }
   } catch (error) {
-    errors.form = `The rate could not be loaded: ${errorMessage(error)}`
+    errors.form = t('rates.loadFailedDetail', { error: errorMessage(error) })
   } finally {
     loadingRate.value = false
   }
@@ -117,7 +120,7 @@ async function loadRate(id: number) {
 function validateForm(): boolean {
   Object.keys(errors).forEach(key => delete errors[key])
   if (!(Number(form.price.amount) > 0)) {
-    errors.amount = 'Enter a price greater than 0.'
+    errors.amount = t('rates.enterPrice')
     document.getElementById('rate-amount')?.focus()
   }
   return Object.keys(errors).length === 0
@@ -136,7 +139,7 @@ async function handleSubmit() {
     }
     emit('success')
   } catch (error) {
-    errors.form = `The rate could not be saved: ${errorMessage(error)}`
+    errors.form = t('rates.saveFailedDetail', { error: errorMessage(error) })
   } finally {
     saving.value = false
   }

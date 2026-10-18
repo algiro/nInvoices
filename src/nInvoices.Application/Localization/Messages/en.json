@@ -1,0 +1,9 @@
+{
+  "errors": {
+    "unexpected": "Something went wrong on the server. The error was logged; please try again."
+  },
+  "preferences": {
+    "chooseLanguage": "Choose a language",
+    "unsupportedLanguage": "{language} is not one of the languages of this app ({languages})"
+  }
+}

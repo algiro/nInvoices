@@ -24,6 +24,7 @@ public static class ApplicationServicesExtensions
         services.AddScoped<IMonthlyReportGenerationService, MonthlyReportGenerationService>();
         services.AddScoped<ITemplateRenderer, ScribanTemplateRenderer>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
+        services.AddSingleton<Localization.IAppText>(_ => new Localization.AppText());
         services.AddScoped<ITemplatePreviewService, TemplatePreviewService>();
         services.AddScoped<IProjectResolver, ProjectResolver>();
         services.AddScoped<Services.Holidays.IHolidayCalendarService, Services.Holidays.HolidayCalendarService>();

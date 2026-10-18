@@ -1,26 +1,25 @@
 <template>
   <fieldset v-if="isOn" class="chain">
-    <legend>Record chain</legend>
+    <legend>{{ t('countries.es.chain.title') }}</legend>
     <p class="intro">
-      Every invoice you issue is added to a chain in which each record holds the hash of the one before. Check it any time: a record
-      changed or removed afterwards shows up here.
+      {{ t('countries.es.chain.intro') }}
     </p>
     <div v-if="sendStatus" class="row">
       <StatusPill :tone="sendStatus.rejected > 0 ? 'danger' : sendStatus.pending > 0 ? 'neutral' : 'success'">
-        {{ sendStatus.pending }} waiting · {{ sendStatus.accepted + sendStatus.acceptedWithErrors }} registered · {{ sendStatus.rejected }} rejected
+        {{ t('countries.es.chain.status', { pending: sendStatus.pending, registered: sendStatus.accepted + sendStatus.acceptedWithErrors, rejected: sendStatus.rejected }) }}
       </StatusPill>
-      <BaseButton :loading="sendBusy" :disabled="sendBusy || sendStatus.pending === 0" @click="sendNow">Send now</BaseButton>
+      <BaseButton :loading="sendBusy" :disabled="sendBusy || sendStatus.pending === 0" @click="sendNow">{{ t('countries.es.chain.sendNow') }}</BaseButton>
       <p v-if="sendStatus.firstProblem" class="problems">{{ sendStatus.firstProblem }}</p>
     </div>
     <div class="row">
-      <BaseButton :loading="chainBusy" :disabled="chainBusy" @click="verifyChain">Check the chain</BaseButton>
+      <BaseButton :loading="chainBusy" :disabled="chainBusy" @click="verifyChain">{{ t('countries.es.chain.verify') }}</BaseButton>
       <StatusPill v-if="chainReport" :tone="chainReport.isIntact ? 'success' : 'danger'">
-        {{ chainReport.isIntact ? `Intact: ${chainReport.records} record${chainReport.records === 1 ? '' : 's'}` : 'Problems found' }}
+        {{ chainReport.isIntact ? t('countries.es.chain.intact', chainReport.records) : t('countries.es.chain.problems') }}
       </StatusPill>
     </div>
     <ul v-if="chainReport && !chainReport.isIntact" class="problems">
       <li v-for="problem in chainReport.problems" :key="`${problem.sequence}-${problem.message}`">
-        <strong>Record {{ problem.sequence }}:</strong> {{ problem.message }}
+        <strong>{{ t('countries.es.chain.recordN', { n: problem.sequence }) }}</strong> {{ problem.message }}
       </li>
     </ul>
   </fieldset>
@@ -34,6 +33,9 @@ import { verifactuApi } from './verifactuApi'
 import { useToast } from '@/composables/useToast'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import StatusPill from '@/components/ui/StatusPill.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   /** Spain's rules and the user's saved settings */
@@ -61,11 +63,11 @@ async function sendNow() {
   sendBusy.value = true
   try {
     const run = await verifactuApi.submit()
-    if (run.problem) toast.failure('Not everything could be sent', new Error(run.problem))
-    else if (run.sent > 0) toast.success(`Sent ${run.sent} record${run.sent === 1 ? '' : 's'} to the Tax Agency`)
-    else toast.success('Nothing to send right now', { message: 'The Tax Agency asks for a pause between submissions.' })
+    if (run.problem) toast.failure(t('countries.es.chain.notAllSent'), new Error(run.problem))
+    else if (run.sent > 0) toast.success(t('countries.es.chain.sent', run.sent))
+    else toast.success(t('countries.es.chain.nothingToSend'), { message: t('countries.es.chain.pause') })
   } catch (err) {
-    toast.failure('Could not send the records', err)
+    toast.failure(t('countries.es.chain.sendFailed'), err)
   } finally {
     sendBusy.value = false
     await loadSendStatus()
@@ -81,7 +83,7 @@ async function verifyChain() {
   try {
     chainReport.value = await verifactuApi.verifyChain()
   } catch (err) {
-    toast.failure('Could not check the chain', err)
+    toast.failure(t('countries.es.chain.verifyFailed'), err)
   } finally {
     chainBusy.value = false
   }

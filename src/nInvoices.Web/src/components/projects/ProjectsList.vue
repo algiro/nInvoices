@@ -2,52 +2,52 @@
   <section class="section">
     <header class="section-header">
       <div>
-        <h3>Projects</h3>
-        <p class="help">Used to split worked days on invoices and monthly reports. New names typed while generating an invoice are added here automatically.</p>
+        <h3>{{ t('customers.tabs.projects') }}</h3>
+        <p class="help">{{ t('projects.help') }}</p>
       </div>
-      <BaseButton variant="primary" icon="plus" @click="handleAdd">New project</BaseButton>
+      <BaseButton variant="primary" icon="plus" @click="handleAdd">{{ t('projects.new') }}</BaseButton>
     </header>
 
-    <LoadingState v-if="loading && projects.length === 0" label="Loading projects…" />
+    <LoadingState v-if="loading && projects.length === 0" :label="t('projects.loading')" />
 
-    <EmptyState v-else-if="error" icon="alert" title="Projects could not be loaded" :description="error" compact>
-      <BaseButton @click="loadProjects">Try again</BaseButton>
+    <EmptyState v-else-if="error" icon="alert" :title="t('projects.loadFailed')" :description="error" compact>
+      <BaseButton @click="loadProjects">{{ t('common.tryAgain') }}</BaseButton>
     </EmptyState>
 
     <EmptyState
       v-else-if="projects.length === 0"
       icon="folder"
-      title="No projects"
-      description="Projects are optional. Without them, each worked day is billed as a single line."
+      :title="t('projects.emptyTitle')"
+      :description="t('projects.emptyDescription')"
       compact
     >
-      <BaseButton variant="primary" icon="plus" @click="handleAdd">Add a project</BaseButton>
+      <BaseButton variant="primary" icon="plus" @click="handleAdd">{{ t('projects.addOne') }}</BaseButton>
     </EmptyState>
 
     <div v-else class="table-wrap">
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">Project</th>
-            <th scope="col">Status</th>
-            <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+            <th scope="col">{{ t('projects.project') }}</th>
+            <th scope="col">{{ t('invoices.columns.status') }}</th>
+            <th scope="col" class="actions"><span class="sr-only">{{ t('common.actions') }}</span></th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="project in projects" :key="project.id" :class="{ inactive: !project.isActive }">
             <td class="primary-cell">{{ project.name }}</td>
             <td>
-              <StatusPill :tone="project.isActive ? 'success' : 'neutral'">{{ project.isActive ? 'Active' : 'Inactive' }}</StatusPill>
+              <StatusPill :tone="project.isActive ? 'success' : 'neutral'">{{ project.isActive ? t('common.active') : t('common.inactive') }}</StatusPill>
             </td>
             <td class="actions">
-              <BaseButton size="sm" variant="ghost" icon="edit" @click="handleEdit(project)">Edit</BaseButton>
+              <BaseButton size="sm" variant="ghost" icon="edit" @click="handleEdit(project)">{{ t('common.edit') }}</BaseButton>
               <BaseButton
                 size="sm"
                 variant="ghost-danger"
                 icon="trash"
                 icon-only
-                title="Delete"
-                :aria-label="`Delete ${project.name}`"
+                :title="t('common.delete')"
+                :aria-label="t('common.deleteNamed', { name: project.name })"
                 @click="handleDelete(project)"
               />
             </td>
@@ -58,7 +58,7 @@
 
     <BaseDialog
       :open="showForm"
-      :title="editingProject ? 'Edit project' : 'New project'"
+      :title="editingProject ? t('projects.edit') : t('projects.new')"
       size="sm"
       :close-on-overlay="false"
       @close="handleCloseForm"
@@ -86,6 +86,9 @@ import BaseDialog from '@/components/ui/BaseDialog.vue'
 import StatusPill from '@/components/ui/StatusPill.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   customerId: number
@@ -129,24 +132,24 @@ function handleEdit(project: ProjectDto) {
 }
 
 async function handleDelete(project: ProjectDto) {
-  if (!(await confirm({ title: 'Delete project?', message: `"${project.name}" will be deleted. If it is used on any work day it is deactivated instead.`, confirmLabel: 'Delete', tone: 'danger' }))) {
+  if (!(await confirm({ title: t('projects.deleteTitle'), message: t('projects.deleteMessage', { name: project.name }), confirmLabel: t('common.delete'), tone: 'danger' }))) {
     return
   }
 
   try {
     const result = await projectsStore.remove(project.id)
     if (result.deactivated) {
-      toast.info('Project deactivated', { message: `"${project.name}" is used on existing work days, so it was deactivated instead of deleted.` })
+      toast.info(t('projects.deactivated'), { message: t('projects.deactivatedMessage', { name: project.name }) })
     } else {
-      toast.success('Project deleted')
+      toast.success(t('projects.deleted'))
     }
   } catch (error) {
-    toast.failure('Failed to delete project', error)
+    toast.failure(t('projects.deleteFailed'), error)
   }
 }
 
 function handleFormSuccess() {
-  toast.success(editingProject.value ? 'Project updated' : 'Project added')
+  toast.success(editingProject.value ? t('projects.updated') : t('projects.added'))
   showForm.value = false
   editingProject.value = null
   loadProjects()

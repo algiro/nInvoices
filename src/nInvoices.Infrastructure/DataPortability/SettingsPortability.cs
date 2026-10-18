@@ -9,8 +9,8 @@ using nInvoices.Infrastructure.Data;
 namespace nInvoices.Infrastructure.DataPortability;
 
 /// <summary>
-/// Settings and assets: invoice numbering, images used by templates, changed holiday calendars and
-/// e-invoicing settings (without the signing certificate).
+/// Settings and assets: invoice numbering, images used by templates, changed holiday calendars,
+/// e-invoicing settings (without the signing certificate) and the user's preferences.
 /// </summary>
 internal sealed class SettingsPortability
 {
@@ -39,6 +39,7 @@ internal sealed class SettingsPortability
             .OrderBy(c => c.CountryCode).ToListAsync(cancellationToken);
         var compliance = await _context.ComplianceSettings.AsNoTracking()
             .OrderBy(c => c.CountryCode).ToListAsync(cancellationToken);
+        var preferences = await _context.UserPreferences.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
 
         var settings = new UserSettingsExportDto(
             sequence is null ? null : new InvoiceNumberingExportDto(sequence.CurrentValue, sequence.NumberFormat),
@@ -52,14 +53,15 @@ internal sealed class SettingsPortability
                 c.LegalName,
                 c.TaxId,
                 c.Address is { } a ? new AddressDto(a.Street, a.HouseNumber, a.City, a.ZipCode, a.Country, a.State) : null,
-                c.Values)).ToList());
+                c.Values)).ToList(),
+            Preferences: preferences is null ? null : new UserPreferencesExportDto(preferences.UiLanguage));
 
         return new DataExportDto("1.0", _timeProvider.GetUtcNow().UtcDateTime, null, null, Settings: settings);
     }
 
     /// <summary>
     /// Import settings and assets. What the user already has is kept: an image with the same name, a
-    /// calendar for the same country, e-invoicing settings for the same country. The invoice sequence
+    /// calendar for the same country, e-invoicing settings for the same country, preferences they set. The invoice sequence
     /// only moves forward, so restoring never hands out a number twice.
     /// </summary>
     public async Task<ImportResultDto> ImportAsync(
@@ -147,6 +149,18 @@ internal sealed class SettingsPortability
                 var enabled = complianceData.IsEnabled && _compliance.Find(compliance.CountryCode) is not null;
                 compliance.Update(enabled, complianceData.LegalName, complianceData.TaxId, address, complianceData.Values);
                 await _context.ComplianceSettings.AddAsync(compliance, cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
+                return true;
+            });
+        }
+
+        if (settings.Preferences is { } preferencesData)
+        {
+            await Try("Preferences", async () =>
+            {
+                if (await _context.UserPreferences.AnyAsync(cancellationToken))
+                    return false;
+                await _context.UserPreferences.AddAsync(new UserPreferences(preferencesData.UiLanguage), cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
                 return true;
             });

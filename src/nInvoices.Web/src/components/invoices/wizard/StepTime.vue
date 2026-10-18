@@ -1,24 +1,23 @@
 <template>
   <BasePanel>
     <template #header>
-      <h2 class="panel-heading">Worked days · {{ periodLabel }}</h2>
+      <h2 class="panel-heading">{{ t('invoiceWizard.timeStep.heading', { period: periodLabel }) }}</h2>
       <p class="panel-help">
-        <template v-if="timeView === 'calendar'">Weekdays start as full days. Select the days that differ and edit them on the right.</template>
-        <template v-else>Edit any day in its row. Click a day number to select it (Shift for a range) and split it across projects on the right.</template>
+        <template v-if="timeView === 'calendar'">{{ t('invoiceWizard.timeStep.calendarHelp') }}</template>
+        <template v-else>{{ t('invoiceWizard.timeStep.listHelp') }}</template>
       </p>
       <p v-if="holidayCountryName" class="panel-help holidays">
         <AppIcon name="calendar" />
-        <span v-if="holidays.length">
-          Public holidays in {{ holidayCountryName }}:
-          <template v-for="(holiday, index) in holidays" :key="holiday.date">{{ index ? ', ' : '' }}<strong>{{ dayLabel(holiday.date) }}</strong> {{ holiday.name }}</template>.
-          Weekdays among them are marked as holidays.
-        </span>
-        <span v-else>No public holidays in {{ holidayCountryName }} this month.</span>
-        <router-link to="/settings/general">Edit holidays</router-link>
+        <i18n-t v-if="holidays.length" keypath="invoiceWizard.timeStep.holidays" tag="span">
+          <template #country>{{ holidayCountryName }}</template>
+          <template #list><template v-for="(holiday, index) in holidays" :key="holiday.date">{{ index ? ', ' : '' }}<strong>{{ dayLabel(holiday.date) }}</strong> {{ holiday.name }}</template></template>
+        </i18n-t>
+        <span v-else>{{ t('invoiceWizard.timeStep.noHolidays', { country: holidayCountryName }) }}</span>
+        <router-link to="/settings/general">{{ t('invoiceWizard.timeStep.editHolidays') }}</router-link>
       </p>
     </template>
     <template #actions>
-      <div class="view-switch" role="group" aria-label="View">
+      <div class="view-switch" role="group" :aria-label="t('invoiceWizard.timeStep.view')">
         <button
           v-for="view in timeViews"
           :key="view.value"
@@ -27,24 +26,24 @@
           :aria-pressed="timeView === view.value"
           @click="timeView = view.value"
         >
-          {{ view.label }}
+          {{ t(view.label) }}
         </button>
       </div>
-      <BaseButton size="sm" @click="fillWeekdays">Fill weekdays</BaseButton>
-      <BaseButton size="sm" variant="ghost" @click="workMonth.clearMonth">Clear</BaseButton>
+      <BaseButton size="sm" @click="fillWeekdays">{{ t('invoiceWizard.timeStep.fillWeekdays') }}</BaseButton>
+      <BaseButton size="sm" variant="ghost" @click="workMonth.clearMonth">{{ t('common.clear') }}</BaseButton>
     </template>
 
     <div v-if="customerRates.length > 1" class="rate-picker">
-      <label for="time-rate" class="rate-label">Rate</label>
+      <label for="time-rate" class="rate-label">{{ t('rates.rate') }}</label>
       <select id="time-rate" v-model="form.rateId" class="control">
         <option v-for="rate in customerRates" :key="rate.id" :value="rate.id">{{ rateLabel(rate) }}</option>
       </select>
       <span class="rate-help">
         <template v-if="canChooseDayRate">
-          The invoice's rate: days without a rate of their own are billed at it. To bill a day at another rate, select it and pick the rate in the day panel<template v-if="timeView === 'list'"> or in the Rate column</template>.
+          {{ timeView === 'list' ? t('invoiceWizard.timeStep.dayRateHelpList') : t('invoiceWizard.timeStep.dayRateHelp') }}
         </template>
-        <template v-else-if="selectedRate?.type === RateType.Monthly">A fixed monthly price: days aren't billed one by one.</template>
-        <template v-else>The rate every worked day is billed at.</template>
+        <template v-else-if="selectedRate?.type === RateType.Monthly">{{ t('invoiceWizard.timeStep.monthlyRateHelp') }}</template>
+        <template v-else>{{ t('invoiceWizard.timeStep.rateHelp') }}</template>
       </span>
     </div>
 
@@ -80,6 +79,10 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import AppIcon from '@/components/ui/AppIcon.vue'
 import { RateType } from '@/types'
 import { rateLabel, rateShortLabel } from '@/utils/rates'
+import { currentLanguage, type MessageKey } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{ draft: InvoiceDraft }>()
 
@@ -97,15 +100,15 @@ function rateBadge(date: string): string {
 }
 
 function dayLabel(date: string) {
-  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })
+  return new Date(`${date}T00:00:00`).toLocaleDateString(currentLanguage(), { weekday: 'short', day: 'numeric' })
 }
 
 // Calendar and List edit the same data; the chosen view is remembered per browser
 type TimeView = 'calendar' | 'list'
 const TIME_VIEW_KEY = 'ninvoices.timeView'
-const timeViews: { value: TimeView; label: string }[] = [
-  { value: 'calendar', label: 'Calendar' },
-  { value: 'list', label: 'List' }
+const timeViews: { value: TimeView; label: MessageKey }[] = [
+  { value: 'calendar', label: 'invoiceWizard.timeStep.calendar' },
+  { value: 'list', label: 'invoiceWizard.timeStep.list' }
 ]
 const timeView = ref<TimeView>(readTimeView())
 

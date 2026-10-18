@@ -1,55 +1,55 @@
 <template>
   <div class="expenses-page">
     <PageHeader
-      title="Expenses"
-      subtitle="The costs of your business, deducted from your income in the tax prediction. Costs you bill to a customer belong on their invoice instead."
+      :title="t('nav.expenses')"
+      :subtitle="t('expenses.subtitle')"
     >
       <template #actions>
         <BaseButton variant="primary" icon="plus" @click="openNew">
-          {{ tab === 'recurring' ? 'New recurring expense' : 'New expense' }}
+          {{ tab === 'recurring' ? t('expenses.newRecurring') : t('expenses.new') }}
         </BaseButton>
       </template>
     </PageHeader>
 
-    <BaseTabs v-model="tab" :tabs="tabs" label="Kinds of expense" />
+    <BaseTabs v-model="tab" :tabs="tabs" :label="t('expenses.kinds')" />
 
     <BasePanel v-if="tab === 'one-off'" flush>
       <template #header>
         <div class="panel-head">
-          <h2 class="panel-title">Expenses of</h2>
-          <select v-model.number="year" class="control year" aria-label="Year">
+          <h2 class="panel-title">{{ t('expenses.of') }}</h2>
+          <select v-model.number="year" class="control year" :aria-label="t('common.year')">
             <option v-for="option in years" :key="option" :value="option">{{ option }}</option>
           </select>
         </div>
       </template>
 
-      <LoadingState v-if="loading" label="Loading expenses…" />
+      <LoadingState v-if="loading" :label="t('expenses.loading')" />
 
-      <EmptyState v-else-if="loadError" icon="alert" title="The expenses could not be loaded" :description="loadError" compact>
-        <BaseButton @click="loadExpenses">Try again</BaseButton>
+      <EmptyState v-else-if="loadError" icon="alert" :title="t('expenses.loadFailed')" :description="loadError" compact>
+        <BaseButton @click="loadExpenses">{{ t('common.tryAgain') }}</BaseButton>
       </EmptyState>
 
       <EmptyState
         v-else-if="expenses.length === 0"
         icon="receipt"
-        :title="`No expenses in ${year}`"
-        description="Add what your business pays for: accountant, software, equipment, travel…"
+        :title="t('expenses.noneIn', { year })"
+        :description="t('expenses.emptyDescription')"
         compact
       >
-        <BaseButton variant="primary" icon="plus" @click="openNew">Add an expense</BaseButton>
+        <BaseButton variant="primary" icon="plus" @click="openNew">{{ t('expenses.addOne') }}</BaseButton>
       </EmptyState>
 
       <div v-else class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th scope="col">Date</th>
-              <th scope="col">Description</th>
-              <th scope="col">Category</th>
-              <th scope="col" class="num">Amount</th>
+              <th scope="col">{{ t('expenses.date') }}</th>
+              <th scope="col">{{ t('expenses.description') }}</th>
+              <th scope="col">{{ t('expenses.category') }}</th>
+              <th scope="col" class="num">{{ t('taxes.amount') }}</th>
               <th scope="col" class="num">{{ taxName }}</th>
-              <th scope="col" class="num">Business use</th>
-              <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+              <th scope="col" class="num">{{ t('expenses.businessUse') }}</th>
+              <th scope="col" class="actions"><span class="sr-only">{{ t('common.actions') }}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -59,22 +59,22 @@
                 {{ expense.description }}
                 <span v-if="expense.supplier" class="sub">{{ expense.supplier }}</span>
               </td>
-              <td class="muted">{{ ExpenseCategoryNames[expense.category] }}</td>
+              <td class="muted">{{ expenseCategoryLabel(expense.category) }}</td>
               <td class="num primary-cell">{{ formatMoney(expense.amount.amount, expense.amount.currency) }}</td>
               <td class="num">
-                <span v-if="expense.reverseCharge" class="muted" title="The supplier charged none: self-charged and deducted">reverse charge</span>
+                <span v-if="expense.reverseCharge" class="muted" :title="t('expenses.reverseChargeHint')">{{ t('expenses.reverseCharge') }}</span>
                 <template v-else>{{ formatMoney(expense.indirectTax, expense.amount.currency) }}</template>
               </td>
               <td class="num">{{ expense.deductiblePercent }}%</td>
               <td class="actions">
-                <BaseButton size="sm" variant="ghost" icon="edit" @click="openEdit(expense)">Edit</BaseButton>
+                <BaseButton size="sm" variant="ghost" icon="edit" @click="openEdit(expense)">{{ t('common.edit') }}</BaseButton>
                 <BaseButton
                   size="sm"
                   variant="ghost-danger"
                   icon="trash"
                   icon-only
-                  title="Delete"
-                  :aria-label="`Delete ${expense.description}`"
+                  :title="t('common.delete')"
+                  :aria-label="t('common.deleteNamed', { name: expense.description })"
                   @click="remove(expense)"
                 />
               </td>
@@ -82,7 +82,7 @@
           </tbody>
           <tfoot>
             <tr v-for="total in totals" :key="total.currency">
-              <th scope="row" colspan="3">Total {{ year }}</th>
+              <th scope="row" colspan="3">{{ t('expenses.totalYear', { year }) }}</th>
               <td class="num primary-cell">{{ formatMoney(total.amount, total.currency) }}</td>
               <td class="num">{{ formatMoney(total.tax, total.currency) }}</td>
               <td colspan="2"></td>
@@ -95,53 +95,53 @@
     <BasePanel
       v-else
       flush
-      title="Paid every month"
-      description="Counted in every month they run, without adding them one by one. The social security fee goes here."
+      :title="t('expenses.recurringTitle')"
+      :description="t('expenses.recurringDescription')"
     >
-      <LoadingState v-if="loading" label="Loading recurring expenses…" />
+      <LoadingState v-if="loading" :label="t('expenses.loadingRecurring')" />
 
-      <EmptyState v-else-if="loadError" icon="alert" title="The recurring expenses could not be loaded" :description="loadError" compact>
-        <BaseButton @click="loadRecurring">Try again</BaseButton>
+      <EmptyState v-else-if="loadError" icon="alert" :title="t('expenses.loadRecurringFailed')" :description="loadError" compact>
+        <BaseButton @click="loadRecurring">{{ t('common.tryAgain') }}</BaseButton>
       </EmptyState>
 
       <EmptyState
         v-else-if="recurring.length === 0"
         icon="refresh"
-        title="No recurring expenses"
-        description="Add the social security fee and anything else you pay every month."
+        :title="t('expenses.noRecurring')"
+        :description="t('expenses.noRecurringDescription')"
         compact
       >
-        <BaseButton variant="primary" icon="plus" @click="openNew">Add a recurring expense</BaseButton>
+        <BaseButton variant="primary" icon="plus" @click="openNew">{{ t('expenses.addRecurring') }}</BaseButton>
       </EmptyState>
 
       <div v-else class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th scope="col">Description</th>
-              <th scope="col">Category</th>
-              <th scope="col" class="num">Each month</th>
-              <th scope="col">From</th>
-              <th scope="col">Until</th>
-              <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+              <th scope="col">{{ t('expenses.description') }}</th>
+              <th scope="col">{{ t('expenses.category') }}</th>
+              <th scope="col" class="num">{{ t('expenses.eachMonth') }}</th>
+              <th scope="col">{{ t('expenses.from') }}</th>
+              <th scope="col">{{ t('expenses.until') }}</th>
+              <th scope="col" class="actions"><span class="sr-only">{{ t('common.actions') }}</span></th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="expense in recurring" :key="expense.id">
               <td class="primary-cell">{{ expense.description }}</td>
-              <td class="muted">{{ ExpenseCategoryNames[expense.category] }}</td>
+              <td class="muted">{{ expenseCategoryLabel(expense.category) }}</td>
               <td class="num primary-cell">{{ formatMoney(expense.amount.amount, expense.amount.currency) }}</td>
               <td>{{ formatMonth(expense.fromMonth) }}</td>
-              <td>{{ expense.toMonth ? formatMonth(expense.toMonth) : 'ongoing' }}</td>
+              <td>{{ expense.toMonth ? formatMonth(expense.toMonth) : t('expenses.ongoing') }}</td>
               <td class="actions">
-                <BaseButton size="sm" variant="ghost" icon="edit" @click="openEdit(expense)">Edit</BaseButton>
+                <BaseButton size="sm" variant="ghost" icon="edit" @click="openEdit(expense)">{{ t('common.edit') }}</BaseButton>
                 <BaseButton
                   size="sm"
                   variant="ghost-danger"
                   icon="trash"
                   icon-only
-                  title="Delete"
-                  :aria-label="`Delete ${expense.description}`"
+                  :title="t('common.delete')"
+                  :aria-label="t('common.deleteNamed', { name: expense.description })"
                   @click="remove(expense)"
                 />
               </td>
@@ -178,7 +178,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { businessExpensesApi } from '@/api'
-import { ExpenseCategoryNames } from '@/types'
 import type { BusinessExpenseDto, RecurringExpenseDto } from '@/types'
 import { useToast, errorMessage } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
@@ -192,7 +191,10 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import BusinessExpenseForm from '@/components/expenses/BusinessExpenseForm.vue'
 import RecurringExpenseForm from '@/components/expenses/RecurringExpenseForm.vue'
-import { formatDate, formatMoney } from '@/utils/format'
+import { expenseCategoryLabel, formatDate, formatMoney } from '@/utils/format'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 type Dialog =
   | { kind: 'one-off'; expense: BusinessExpenseDto | null }
@@ -214,14 +216,14 @@ const loadError = ref<string | null>(null)
 const dialog = ref<Dialog | null>(null)
 
 const tabs = computed(() => [
-  { id: 'one-off', label: 'One-off' },
-  { id: 'recurring', label: 'Recurring', count: recurring.value.length || undefined }
+  { id: 'one-off', label: t('expenses.oneOff') },
+  { id: 'recurring', label: t('expenses.recurring'), count: recurring.value.length || undefined }
 ])
 
 const dialogTitle = computed(() => {
   if (!dialog.value) return ''
-  const kind = dialog.value.kind === 'recurring' ? 'recurring expense' : 'expense'
-  return dialog.value.expense ? `Edit ${kind}` : `New ${kind}`
+  if (dialog.value.kind === 'recurring') return dialog.value.expense ? t('expenses.editRecurring') : t('expenses.newRecurring')
+  return dialog.value.expense ? t('expenses.edit') : t('expenses.new')
 })
 
 /** Per currency: the amounts and the tax paid */
@@ -246,7 +248,7 @@ async function loadExpenses() {
   try {
     expenses.value = await businessExpensesApi.getByYear(year.value)
   } catch (err) {
-    loadError.value = errorMessage(err, 'Failed to load the expenses')
+    loadError.value = errorMessage(err, t('expenses.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -258,7 +260,7 @@ async function loadRecurring() {
   try {
     recurring.value = await businessExpensesApi.getRecurring()
   } catch (err) {
-    loadError.value = errorMessage(err, 'Failed to load the recurring expenses')
+    loadError.value = errorMessage(err, t('expenses.loadRecurringFailed'))
   } finally {
     loading.value = false
   }
@@ -276,7 +278,7 @@ function onSaved() {
   const editing = !!dialog.value?.expense
   const recurringKind = dialog.value?.kind === 'recurring'
   dialog.value = null
-  toast.success(editing ? 'Expense updated' : 'Expense added')
+  toast.success(editing ? t('expenses.updated') : t('expenses.added'))
   if (recurringKind) loadRecurring()
   else loadExpenses()
 }
@@ -284,9 +286,9 @@ function onSaved() {
 async function remove(expense: BusinessExpenseDto | RecurringExpenseDto) {
   const isRecurring = 'fromMonth' in expense
   if (!(await confirm({
-    title: 'Delete expense?',
-    message: `“${expense.description}” will be deleted and no longer deducted in the tax prediction.`,
-    confirmLabel: 'Delete',
+    title: t('expenses.deleteTitle'),
+    message: t('expenses.deleteMessage', { name: expense.description }),
+    confirmLabel: t('common.delete'),
     tone: 'danger'
   }))) {
     return
@@ -300,9 +302,9 @@ async function remove(expense: BusinessExpenseDto | RecurringExpenseDto) {
       await businessExpensesApi.delete(expense.id)
       await loadExpenses()
     }
-    toast.success('Expense deleted')
+    toast.success(t('expenses.deleted'))
   } catch (err) {
-    toast.failure('Failed to delete the expense', err)
+    toast.failure(t('expenses.deleteFailed'), err)
   }
 }
 

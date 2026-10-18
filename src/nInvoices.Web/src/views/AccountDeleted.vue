@@ -3,24 +3,18 @@
     <section class="card" aria-labelledby="account-deleted-title">
       <span class="brand-mark" aria-hidden="true">nI</span>
       <template v-if="signInKept">
-        <h1 id="account-deleted-title">Your data has been deleted</h1>
-        <p>
-          Everything you had on this nInvoices server is gone. Your sign-in account was kept: signing in
-          again gives you an empty workspace.
-        </p>
-        <p class="muted">You can delete the sign-in account later from Settings, or ask the administrator to.</p>
+        <h1 id="account-deleted-title">{{ t('accountDeleted.dataDeletedTitle') }}</h1>
+        <p>{{ t('accountDeleted.dataDeleted') }}</p>
+        <p class="muted">{{ t('accountDeleted.deleteSignInLater') }}</p>
         <div class="actions">
-          <BaseButton variant="primary" @click="authStore.logout()">Sign out</BaseButton>
-          <BaseButton variant="ghost" to="/">Open nInvoices</BaseButton>
+          <BaseButton variant="primary" @click="authStore.logout()">{{ t('layout.signOut') }}</BaseButton>
+          <BaseButton variant="ghost" to="/">{{ t('accountDeleted.openApp') }}</BaseButton>
         </div>
       </template>
       <template v-else>
-        <h1 id="account-deleted-title">Your account has been deleted</h1>
-        <p>
-          Your data and your sign-in account are gone from this nInvoices server. Copies in the server's
-          backups can no longer be read.
-        </p>
-        <p class="muted">Thank you for using nInvoices. Keep the backup you downloaded: it opens without nInvoices too.</p>
+        <h1 id="account-deleted-title">{{ t('accountDeleted.accountDeletedTitle') }}</h1>
+        <p>{{ t('accountDeleted.accountDeleted') }}</p>
+        <p class="muted">{{ t('accountDeleted.thankYou') }}</p>
       </template>
     </section>
   </main>
@@ -31,6 +25,9 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import BaseButton from '../components/ui/BaseButton.vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const route = useRoute();
 const authStore = useAuthStore();

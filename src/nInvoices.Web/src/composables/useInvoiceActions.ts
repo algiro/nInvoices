@@ -2,7 +2,8 @@ import { ref } from 'vue'
 import { useInvoicesStore } from '@/stores/invoices'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
-import { invoiceStatus, invoiceTypeLabel } from '@/utils/format'
+import { invoiceStatus } from '@/utils/format'
+import { t, type MessageKey } from '@/i18n'
 import type { InvoiceDto } from '@/types'
 import type { IconName } from '@/components/ui/icons'
 
@@ -18,21 +19,29 @@ export interface InvoiceAction {
   danger?: boolean
 }
 
-const ACTIONS: Record<InvoiceActionId, InvoiceAction> = {
-  finalize: { id: 'finalize', label: 'Finalize', icon: 'lock' },
-  markSent: { id: 'markSent', label: 'Mark as sent', icon: 'send' },
-  markPaid: { id: 'markPaid', label: 'Mark as paid', icon: 'paid' },
-  cancel: { id: 'cancel', label: 'Cancel invoice', icon: 'ban' },
-  downloadPdf: { id: 'downloadPdf', label: 'Download PDF', icon: 'download' },
-  downloadReport: { id: 'downloadReport', label: 'Download monthly report', icon: 'calendar' },
-  regenerate: { id: 'regenerate', label: 'Regenerate PDF from template', icon: 'refresh' },
-  verifyReport: { id: 'verifyReport', label: 'Check monthly report', icon: 'check' },
-  delete: { id: 'delete', label: 'Delete draft', icon: 'trash', danger: true },
-  forceDelete: { id: 'forceDelete', label: 'Force delete…', icon: 'trash', danger: true }
+const ACTION_DEFS: Record<InvoiceActionId, Omit<InvoiceAction, 'label'> & { label: MessageKey }> = {
+  finalize: { id: 'finalize', label: 'invoices.actions.finalize', icon: 'lock' },
+  markSent: { id: 'markSent', label: 'invoices.actions.markSent', icon: 'send' },
+  markPaid: { id: 'markPaid', label: 'invoices.actions.markPaid', icon: 'paid' },
+  cancel: { id: 'cancel', label: 'invoices.actions.cancel', icon: 'ban' },
+  downloadPdf: { id: 'downloadPdf', label: 'invoices.actions.downloadPdf', icon: 'download' },
+  downloadReport: { id: 'downloadReport', label: 'invoices.actions.downloadReport', icon: 'calendar' },
+  regenerate: { id: 'regenerate', label: 'invoices.actions.regenerate', icon: 'refresh' },
+  verifyReport: { id: 'verifyReport', label: 'invoices.actions.verifyReport', icon: 'check' },
+  delete: { id: 'delete', label: 'invoices.actions.delete', icon: 'trash', danger: true },
+  forceDelete: { id: 'forceDelete', label: 'invoices.actions.forceDelete', icon: 'trash', danger: true }
 }
 
+// Labels in the current language, read each time so they follow a language change
+const ACTIONS = new Proxy({} as Record<InvoiceActionId, InvoiceAction>, {
+  get: (_, id: string) => {
+    const def = ACTION_DEFS[id as InvoiceActionId]
+    return { ...def, label: t(def.label) }
+  }
+})
+
 export function isMonthly(invoice: InvoiceDto): boolean {
-  return invoiceTypeLabel(invoice.type) === 'Monthly'
+  return String(invoice.type) === 'Monthly'
 }
 
 /**
@@ -87,70 +96,70 @@ export function useInvoiceActions() {
     const number = invoice.invoiceNumber
     switch (action) {
       case 'finalize':
-        if (!(await confirm({ title: `Finalize ${number}?`, message: 'A finalized invoice is locked and can no longer be edited or deleted normally.', confirmLabel: 'Finalize' }))) return false
+        if (!(await confirm({ title: t('invoices.actions.finalizeTitle', { number }), message: t('invoices.actions.finalizeMessage'), confirmLabel: t('invoices.actions.finalize') }))) return false
         return guarded(invoice, action, async () => {
           await store.finalize(invoice.id)
-          toast.success(`${number} finalized`)
-        }, 'Could not finalize the invoice')
+          toast.success(t('invoices.actions.finalized', { number }))
+        }, t('invoices.actions.finalizeFailed'))
 
       case 'markSent':
-        if (!(await confirm({ title: `Mark ${number} as sent?`, message: 'Record that the invoice was sent to the customer.', confirmLabel: 'Mark as sent' }))) return false
+        if (!(await confirm({ title: t('invoices.actions.markSentTitle', { number }), message: t('invoices.actions.markSentMessage'), confirmLabel: t('invoices.actions.markSent') }))) return false
         return guarded(invoice, action, async () => {
           await store.markAsSent(invoice.id)
-          toast.success(`${number} marked as sent`)
-        }, 'Could not mark the invoice as sent')
+          toast.success(t('invoices.actions.markedSent', { number }))
+        }, t('invoices.actions.markSentFailed'))
 
       case 'markPaid':
-        if (!(await confirm({ title: `Mark ${number} as paid?`, message: 'Record that the customer has paid this invoice.', confirmLabel: 'Mark as paid' }))) return false
+        if (!(await confirm({ title: t('invoices.actions.markPaidTitle', { number }), message: t('invoices.actions.markPaidMessage'), confirmLabel: t('invoices.actions.markPaid') }))) return false
         return guarded(invoice, action, async () => {
           await store.markAsPaid(invoice.id)
-          toast.success(`${number} marked as paid`)
-        }, 'Could not mark the invoice as paid')
+          toast.success(t('invoices.actions.markedPaid', { number }))
+        }, t('invoices.actions.markPaidFailed'))
 
       case 'cancel':
-        if (!(await confirm({ title: `Cancel ${number}?`, message: 'The invoice stays on record as cancelled.', confirmLabel: 'Cancel invoice', cancelLabel: 'Keep invoice', tone: 'danger' }))) return false
+        if (!(await confirm({ title: t('invoices.actions.cancelTitle', { number }), message: t('invoices.actions.cancelMessage'), confirmLabel: t('invoices.actions.cancel'), cancelLabel: t('invoices.actions.keep'), tone: 'danger' }))) return false
         return guarded(invoice, action, async () => {
           await store.cancelInvoice(invoice.id)
-          toast.success(`${number} cancelled`)
-        }, 'Could not cancel the invoice')
+          toast.success(t('invoices.actions.cancelled', { number }))
+        }, t('invoices.actions.cancelFailed'))
 
       case 'downloadPdf':
-        return guarded(invoice, action, () => store.downloadPdf(invoice.id, number), 'Could not download the PDF')
+        return guarded(invoice, action, () => store.downloadPdf(invoice.id, number), t('invoices.actions.downloadPdfFailed'))
 
       case 'downloadReport':
-        return guarded(invoice, action, () => store.downloadMonthlyReportPdf(invoice.id, number), 'Could not download the monthly report')
+        return guarded(invoice, action, () => store.downloadMonthlyReportPdf(invoice.id, number), t('invoices.actions.downloadReportFailed'))
 
       case 'regenerate':
-        if (!(await confirm({ title: `Regenerate ${number}?`, message: 'The PDF is rebuilt with the customer’s current active invoice template. Amounts don’t change.', confirmLabel: 'Regenerate' }))) return false
+        if (!(await confirm({ title: t('invoices.actions.regenerateTitle', { number }), message: t('invoices.actions.regenerateMessage'), confirmLabel: t('invoices.actions.regenerateConfirm') }))) return false
         return guarded(invoice, action, async () => {
           const result = await store.regenerateInvoicePdf(invoice.id)
-          toast.success('PDF regenerated', { message: result?.message })
-        }, 'Could not regenerate the PDF')
+          toast.success(t('invoices.actions.regenerated'), { message: result?.message })
+        }, t('invoices.actions.regenerateFailed'))
 
       case 'verifyReport':
         return guarded(invoice, action, async () => {
           const result = await store.regenerateMonthlyReportPdf(invoice.id)
-          toast.success('Monthly report renders correctly', { message: result?.message })
-        }, 'The monthly report has a problem')
+          toast.success(t('invoices.actions.reportOk'), { message: result?.message })
+        }, t('invoices.actions.reportProblem'))
 
       case 'delete':
-        if (!(await confirm({ title: `Delete ${number}?`, message: 'This draft will be permanently deleted.', confirmLabel: 'Delete', tone: 'danger' }))) return false
+        if (!(await confirm({ title: t('invoices.actions.deleteTitle', { number }), message: t('invoices.actions.deleteMessage'), confirmLabel: t('common.delete'), tone: 'danger' }))) return false
         return guarded(invoice, action, async () => {
           await store.remove(invoice.id, false)
-          toast.success(`${number} deleted`)
-        }, 'Could not delete the invoice')
+          toast.success(t('invoices.actions.deleted', { number }))
+        }, t('invoices.actions.deleteFailed'))
 
       case 'forceDelete':
         if (!(await confirm({
-          title: `Force delete ${number}?`,
-          message: `This invoice is ${invoiceStatus(invoice.status).label.toLowerCase()} and normally can't be deleted. Only force delete to clean up a failed or mistaken invoice. This can't be undone.`,
-          confirmLabel: 'Force delete',
+          title: t('invoices.actions.forceDeleteTitle', { number }),
+          message: t('invoices.actions.forceDeleteMessage', { status: invoiceStatus(invoice.status).label }),
+          confirmLabel: t('invoices.actions.forceDeleteConfirm'),
           tone: 'danger'
         }))) return false
         return guarded(invoice, action, async () => {
           await store.remove(invoice.id, true)
-          toast.success(`${number} deleted`)
-        }, 'Could not delete the invoice')
+          toast.success(t('invoices.actions.deleted', { number }))
+        }, t('invoices.actions.deleteFailed'))
     }
   }
 

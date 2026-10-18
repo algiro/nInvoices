@@ -1,50 +1,50 @@
 <template>
   <BasePanel
-    title="Backup and transfer"
-    description="One file with your customers (rates, taxes, projects, worked days, templates), invoices, images, holiday calendars and settings: keep it as a backup, or restore it on another nInvoices server."
+    :title="t('backup.title')"
+    :description="t('backup.description')"
   >
     <div class="transfer">
       <section aria-labelledby="backup-export-title">
-        <h3 id="backup-export-title">Download a backup</h3>
+        <h3 id="backup-export-title">{{ t('backup.exportTitle') }}</h3>
         <template v-if="!plainExport">
-          <BaseField label="Passphrase" for="backupPassphrase" :help="passphraseHelp">
+          <BaseField :label="t('backup.passphrase')" for="backupPassphrase" :help="passphraseHelp">
             <input id="backupPassphrase" v-model="exportPassphrase" type="password" class="control" autocomplete="new-password" />
           </BaseField>
-          <BaseField label="Repeat the passphrase" for="backupPassphraseRepeat" :error="exportPassphraseError">
+          <BaseField :label="t('backup.repeatPassphrase')" for="backupPassphraseRepeat" :error="exportPassphraseError">
             <input id="backupPassphraseRepeat" v-model="exportPassphraseRepeat" type="password" class="control" autocomplete="new-password" />
           </BaseField>
-          <p class="note warning">Keep the passphrase safe: without it nobody can open the backup, and it can't be recovered.</p>
+          <p class="note warning">{{ t('backup.keepSafe') }}</p>
         </template>
-        <p v-else class="note warning">Anyone who gets this file can read your customers and invoices.</p>
+        <p v-else class="note warning">{{ t('backup.plainWarning') }}</p>
         <label class="toggle" for="backupPlain">
           <input id="backupPlain" v-model="plainExport" type="checkbox" />
-          <span>Download without a passphrase (not recommended)</span>
+          <span>{{ t('backup.plain') }}</span>
         </label>
         <div class="buttons">
           <BaseButton icon="download" variant="primary" :loading="exporting" :disabled="!canExport || importing" @click="handleExport">
-            Download backup
+            {{ t('backup.download') }}
           </BaseButton>
         </div>
       </section>
 
       <section aria-labelledby="backup-import-title">
-        <h3 id="backup-import-title">Restore a backup</h3>
-        <p class="note">Records that already exist (same VAT number, or same invoice number) are skipped, so restoring twice is harmless.</p>
+        <h3 id="backup-import-title">{{ t('backup.importTitle') }}</h3>
+        <p class="note">{{ t('backup.importNote') }}</p>
         <input
           id="importFile"
           ref="importFileInput"
           type="file"
           accept=".json,application/json"
           class="control file"
-          aria-label="Backup file"
+          :aria-label="t('backup.file')"
           @change="handleFileSelected"
         />
-        <BaseField v-if="importEncrypted" label="Passphrase of this backup" for="importPassphrase" :error="importPassphraseError">
+        <BaseField v-if="importEncrypted" :label="t('backup.importPassphrase')" for="importPassphrase" :error="importPassphraseError">
           <input id="importPassphrase" v-model="importPassphrase" type="password" class="control" autocomplete="off" @keydown.enter="handleImport" />
         </BaseField>
         <div v-if="importFile" class="buttons">
           <BaseButton variant="primary" :loading="importing" :disabled="exporting || (importEncrypted && !importPassphrase)" @click="handleImport">
-            Restore
+            {{ t('backup.restore') }}
           </BaseButton>
         </div>
       </section>
@@ -69,6 +69,9 @@ import { useConfirm } from '@/composables/useConfirm'
 import BasePanel from '@/components/ui/BasePanel.vue'
 import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const { confirm } = useConfirm()
 
@@ -88,11 +91,11 @@ const importExportMessage = ref<string | null>(null)
 const importExportError = ref(false)
 const importErrors = ref<string[]>([])
 
-const passphraseHelp = `At least ${MIN_PASSPHRASE_LENGTH} characters. The backup is encrypted in this browser: the passphrase never leaves it.`
+const passphraseHelp = computed(() => t('backup.passphraseHelp', { min: MIN_PASSPHRASE_LENGTH }))
 
 const exportPassphraseError = computed(() =>
   exportPassphraseRepeat.value && exportPassphrase.value !== exportPassphraseRepeat.value
-    ? 'The two passphrases differ.'
+    ? t('backup.passphrasesDiffer')
     : null)
 
 const canExport = computed(() =>
@@ -144,11 +147,10 @@ async function handleExport() {
       downloadFile(json, `ninvoices-backup-${date}.json`)
     }
     showResult(
-      `Backup downloaded: ${backup.customers?.length ?? 0} customer(s) and ${backup.invoices?.length ?? 0} invoice(s), ` +
-        (encrypted ? 'encrypted with your passphrase.' : 'not encrypted.'),
+      t(encrypted ? 'backup.downloadedEncrypted' : 'backup.downloadedPlain', { customers: backup.customers?.length ?? 0, invoices: backup.invoices?.length ?? 0 }),
       false)
   } catch (error) {
-    showResult(errorMessage(error, 'The backup could not be created.'), true)
+    showResult(errorMessage(error, t('backup.createFailed')), true)
   } finally {
     exporting.value = false
   }
@@ -166,7 +168,7 @@ async function handleFileSelected(event: Event) {
   try {
     importEncrypted.value = isEncryptedBackup(JSON.parse(await importFile.value.text()))
   } catch {
-    showResult('This file is not an nInvoices backup.', true)
+    showResult(t('backup.notABackup'), true)
   }
 }
 
@@ -195,7 +197,7 @@ async function handleImport() {
         content = JSON.parse(await decryptBackup(content, importPassphrase.value))
       } catch (error) {
         if (!(error instanceof WrongPassphraseError)) throw error
-        importPassphraseError.value = error.message
+        importPassphraseError.value = t('backup.wrongPassphrase')
         return
       }
     }
@@ -207,17 +209,18 @@ async function handleImport() {
     const shared = hasSharedTemplates(data)
     const settings = data.settings ?? null
     if (customerCount === 0 && invoiceCount === 0 && !shared && !settings) {
-      showResult('There is nothing to restore in this file.', true)
+      showResult(t('backup.nothingToRestore'), true)
       return
     }
 
     const ok = await confirm({
-      title: 'Restore this backup?',
-      message: `It holds ${customerCount} customer(s) and ${invoiceCount} invoice(s)` +
-        (shared ? ', shared templates' : '') +
-        (settings ? ', your images, holiday calendars and settings' : '') +
-        '. They are added to your data; what already exists is kept as it is.',
-      confirmLabel: 'Restore',
+      title: t('backup.restoreTitle'),
+      message: t('backup.restoreMessage', {
+        customers: customerCount,
+        invoices: invoiceCount,
+        extras: [shared ? t('backup.extraShared') : '', settings ? t('backup.extraSettings') : ''].filter(Boolean).map(extra => `, ${extra}`).join('')
+      }),
+      confirmLabel: t('backup.restore'),
     })
     if (!ok) return
 
@@ -226,24 +229,24 @@ async function handleImport() {
     const errors: string[] = []
     if (settings) {
       const result = await importExportApi.importSettings(data)
-      parts.push(`settings and images: ${result.imported} added, ${result.skipped} kept as they were`)
+      parts.push(t('backup.partSettings', { added: result.imported, kept: result.skipped }))
       errors.push(...(result.errors ?? []))
     }
     if (customerCount > 0 || shared) {
       const result = await importExportApi.importCustomers(data)
-      parts.push(`customers: ${result.imported} added, ${result.skipped} already there`)
+      parts.push(t('backup.partCustomers', { added: result.imported, kept: result.skipped }))
       errors.push(...(result.errors ?? []))
     }
     if (invoiceCount > 0) {
       const result = await importExportApi.importInvoices(data)
-      parts.push(`invoices: ${result.imported} added, ${result.skipped} already there`)
+      parts.push(t('backup.partInvoices', { added: result.imported, kept: result.skipped }))
       errors.push(...(result.errors ?? []))
     }
 
-    showResult(`Restore complete. ${parts.join('; ')}.`, errors.length > 0, errors)
+    showResult(t('backup.restoreComplete', { parts: parts.join('; ') }), errors.length > 0, errors)
     resetImport()
   } catch (error) {
-    showResult(error instanceof SyntaxError ? 'This file is not an nInvoices backup.' : errorMessage(error, 'Restore failed'), true)
+    showResult(error instanceof SyntaxError ? t('backup.notABackup') : errorMessage(error, t('backup.restoreFailed')), true)
   } finally {
     importing.value = false
   }

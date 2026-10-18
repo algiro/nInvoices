@@ -24,7 +24,7 @@ export const useTaxesStore = defineStore('taxes', () => {
       error.value = null
       taxes.value = await taxesApi.getAll()
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to fetch taxes')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -38,7 +38,7 @@ export const useTaxesStore = defineStore('taxes', () => {
       selectedTax.value = await taxesApi.getById(id)
       return selectedTax.value
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to fetch tax')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -58,7 +58,7 @@ export const useTaxesStore = defineStore('taxes', () => {
       
       return customerTaxes
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to fetch customer taxes')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -73,7 +73,7 @@ export const useTaxesStore = defineStore('taxes', () => {
       taxes.value.push(newTax)
       return newTax
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to create tax')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -91,7 +91,7 @@ export const useTaxesStore = defineStore('taxes', () => {
         taxes.value[index] = { ...taxes.value[index], ...data }
       }
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to update tax')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -105,7 +105,7 @@ export const useTaxesStore = defineStore('taxes', () => {
       await taxesApi.delete(id)
       taxes.value = taxes.value.filter(t => t.id !== id)
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to delete tax')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false

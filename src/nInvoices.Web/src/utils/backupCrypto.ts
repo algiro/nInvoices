@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 /**
  * Passphrase protection for backup files, done in the browser: the passphrase never leaves it.
  *
@@ -28,7 +29,7 @@ export interface EncryptedBackup {
 /** Thrown when the passphrase is wrong or the file was altered: AES-GCM can't tell the two apart. */
 export class WrongPassphraseError extends Error {
   constructor() {
-    super('Wrong passphrase, or the file is damaged.')
+    super(t('backup.wrongPassphrase'))
     this.name = 'WrongPassphraseError'
   }
 }
@@ -57,7 +58,7 @@ export async function encryptBackup(json: string, passphrase: string): Promise<E
 
 export async function decryptBackup(backup: EncryptedBackup, passphrase: string): Promise<string> {
   if (backup.version !== VERSION || backup.kdf?.name !== 'PBKDF2' || backup.kdf.hash !== 'SHA-256' || backup.cipher?.name !== 'AES-GCM')
-    throw new Error('This encrypted backup was made by a newer version of nInvoices.')
+    throw new Error(t('backup.newerVersion'))
 
   const key = await deriveKey(passphrase, fromBase64(backup.kdf.salt), backup.kdf.iterations)
   try {

@@ -288,6 +288,8 @@ app.UseHttpsRedirection();
 app.UseCors("AllowVueApp");
 app.UseAuthentication();
 app.UseAuthorization();
+// Messages in the language the user chose (Accept-Language), English by default
+app.UseUiLanguage();
 
 // "/health" (all checks incl. database) and "/alive" (liveness only).
 // Anonymous; used by the container healthchecks.

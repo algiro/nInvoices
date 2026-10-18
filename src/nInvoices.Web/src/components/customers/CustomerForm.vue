@@ -1,25 +1,25 @@
 <template>
   <div class="customer-form">
     <PageHeader
-      :title="isEditMode ? (loadedName ? `Edit ${loadedName}` : 'Edit customer') : 'New customer'"
-      :subtitle="isEditMode ? 'Changes apply to invoices generated from now on.' : 'Who you bill, and where invoices are addressed.'"
+      :title="isEditMode ? (loadedName ? t('customers.form.editNamed', { name: loadedName }) : t('routes.editCustomer')) : t('customers.new')"
+      :subtitle="isEditMode ? t('customers.form.editSubtitle') : t('customers.form.newSubtitle')"
     />
 
-    <LoadingState v-if="loadingCustomer" label="Loading customer…" />
+    <LoadingState v-if="loadingCustomer" :label="t('customers.loadingOne')" />
 
     <form v-else class="form" novalidate @submit.prevent="handleSubmit">
-      <BasePanel title="Customer" description="Shown in the “Bill to” block of every invoice.">
+      <BasePanel :title="t('customers.customer')" :description="t('customers.form.customerDescription')">
         <div class="grid">
-          <BaseField label="Name" for="customer-name" required :error="errors.name" class="span-2">
+          <BaseField :label="t('customers.name')" for="customer-name" required :error="errors.name" class="span-2">
             <input id="customer-name" v-model="form.name" type="text" class="control" autocomplete="organization" />
           </BaseField>
-          <BaseField label="VAT number / fiscal ID" for="customer-fiscal-id" required :error="errors.fiscalId">
+          <BaseField :label="t('customers.fiscalId')" for="customer-fiscal-id" required :error="errors.fiscalId">
             <input id="customer-fiscal-id" v-model="form.fiscalId" type="text" class="control" />
           </BaseField>
           <BaseField
-            label="Document language"
+            :label="t('customers.documentLanguage')"
             for="customer-locale"
-            help="Used for dates and for month and day names in templates."
+            :help="t('customers.form.documentLanguageHelp')"
           >
             <select id="customer-locale" v-model="form.locale" class="control">
               <option v-for="option in localeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -28,24 +28,24 @@
         </div>
       </BasePanel>
 
-      <BasePanel title="Billing address">
+      <BasePanel :title="t('customers.billingAddress')">
         <div class="grid address-grid">
-          <BaseField label="Street" for="customer-street" required :error="errors.street" class="span-3">
+          <BaseField :label="t('address.street')" for="customer-street" required :error="errors.street" class="span-3">
             <input id="customer-street" v-model="form.address.street" type="text" class="control" autocomplete="address-line1" />
           </BaseField>
-          <BaseField label="Number" for="customer-house-number" required :error="errors.houseNumber">
+          <BaseField :label="t('address.number')" for="customer-house-number" required :error="errors.houseNumber">
             <input id="customer-house-number" v-model="form.address.houseNumber" type="text" class="control" />
           </BaseField>
-          <BaseField label="Postal code" for="customer-zip" required :error="errors.zipCode">
+          <BaseField :label="t('address.postalCode')" for="customer-zip" required :error="errors.zipCode">
             <input id="customer-zip" v-model="form.address.zipCode" type="text" class="control" autocomplete="postal-code" />
           </BaseField>
-          <BaseField label="City" for="customer-city" required :error="errors.city" class="span-3">
+          <BaseField :label="t('address.city')" for="customer-city" required :error="errors.city" class="span-3">
             <input id="customer-city" v-model="form.address.city" type="text" class="control" autocomplete="address-level2" />
           </BaseField>
-          <BaseField label="State / province" for="customer-state" optional class="span-2">
+          <BaseField :label="t('address.state')" for="customer-state" optional class="span-2">
             <input id="customer-state" v-model="stateValue" type="text" class="control" autocomplete="address-level1" />
           </BaseField>
-          <BaseField label="Country" for="customer-country" required :error="errors.country" class="span-2">
+          <BaseField :label="t('address.country')" for="customer-country" required :error="errors.country" class="span-2">
             <input id="customer-country" v-model="form.address.country" type="text" class="control" autocomplete="country-name" />
           </BaseField>
         </div>
@@ -54,8 +54,8 @@
       <BasePanel
         v-for="country in complianceCountries"
         :key="country.countryCode"
-        :title="`${country.name} invoicing`"
-        description="Extra data the rules of this country ask for when invoicing this customer."
+        :title="t('customers.form.countryInvoicing', { country: country.name })"
+        :description="t('customers.form.countryInvoicingDescription')"
       >
         <div class="grid">
           <ComplianceFieldInput
@@ -71,11 +71,11 @@
         </div>
       </BasePanel>
 
-      <BasePanel title="Public holidays" description="On time sheets, these days are marked as public holidays when a month is filled in.">
+      <BasePanel :title="t('customers.form.publicHolidays')" :description="t('customers.form.publicHolidaysDescription')">
         <div class="grid">
-          <BaseField label="Holiday calendar" for="customer-holiday-country" :help="holidayHelp">
+          <BaseField :label="t('customers.form.holidayCalendar')" for="customer-holiday-country" :help="holidayHelp">
             <select id="customer-holiday-country" v-model="holidayCountryValue" class="control">
-              <option value="">Country of the billing address</option>
+              <option value="">{{ t('customers.form.addressCountry') }}</option>
               <option v-for="country in holidayCountries" :key="country.countryCode" :value="country.countryCode">
                 {{ country.countryName }} ({{ country.countryCode }})
               </option>
@@ -84,9 +84,9 @@
         </div>
       </BasePanel>
 
-      <BasePanel title="Invoice emails" description="Who receives the invoice when you create the email from the invoice page.">
+      <BasePanel :title="t('customers.form.invoiceEmails')" :description="t('customers.form.invoiceEmailsDescription')">
         <div class="grid">
-          <BaseField label="Email" for="customer-email" optional :error="errors.email">
+          <BaseField :label="t('customers.form.email')" for="customer-email" optional :error="errors.email">
             <input
               id="customer-email"
               v-model="emailValue"
@@ -96,16 +96,16 @@
               placeholder="accounts@example.com"
             />
           </BaseField>
-          <BaseField label="CC" for="customer-cc" optional :error="errors.ccEmails" help="Several addresses separated by commas.">
+          <BaseField :label="t('customers.form.ccLabel')" for="customer-cc" optional :error="errors.ccEmails" :help="t('customers.form.ccHelp')">
             <input id="customer-cc" v-model="ccValue" type="text" class="control" placeholder="manager@example.com" />
           </BaseField>
         </div>
       </BasePanel>
 
       <div class="form-actions">
-        <BaseButton :disabled="saving" @click="handleCancel">Cancel</BaseButton>
+        <BaseButton :disabled="saving" @click="handleCancel">{{ t('common.cancel') }}</BaseButton>
         <BaseButton type="submit" variant="primary" :loading="saving">
-          {{ isEditMode ? 'Save changes' : 'Create customer' }}
+          {{ isEditMode ? t('common.saveChanges') : t('customers.form.create') }}
         </BaseButton>
       </div>
     </form>
@@ -128,6 +128,9 @@ import LoadingState from '@/components/ui/LoadingState.vue'
 import { useToast, apiErrorData, apiStatus } from '@/composables/useToast'
 import { setPageTitle } from '@/composables/usePageTitle'
 import { localeLabel } from '@/utils/format'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   customerId?: number
@@ -186,9 +189,9 @@ const holidayCountries = ref<HolidayCountryDto[]>([])
 const addressHolidayCountry = ref<string | null>(null)
 
 const holidayHelp = computed(() => {
-  if (form.holidayCountry) return 'Holidays are edited in Settings → General → Public holidays.'
-  if (addressHolidayCountry.value) return `The address country resolves to ${addressHolidayCountry.value}. Holidays are edited in Settings → General → Public holidays.`
-  return 'The country name of the address is matched to a country code; pick one if it isn’t recognized.'
+  if (form.holidayCountry) return t('customers.form.holidaysEditedIn')
+  if (addressHolidayCountry.value) return t('customers.form.addressResolvesTo', { country: addressHolidayCountry.value })
+  return t('customers.form.addressMatched')
 })
 
 const ccValue = computed({
@@ -210,7 +213,7 @@ const localeOptions = computed(() => {
   // keep a customer's existing locale selectable even if it isn't in the usual list
   const values = !form.locale || baseLocales.includes(form.locale) ? baseLocales : [form.locale, ...baseLocales]
   const options = values.map(value => ({ value, label: `${localeLabel(value)} (${value})` }))
-  return form.locale ? options : [{ value: '', label: 'Not set, choose a language' }, ...options]
+  return form.locale ? options : [{ value: '', label: t('customers.form.localeNotSet') }, ...options]
 })
 
 const errors = reactive<Record<string, string>>({})
@@ -242,10 +245,10 @@ async function loadCustomer(id: number) {
       form.complianceValues = { ...(customer.complianceValues ?? {}) }
       addressHolidayCountry.value = customer.holidayCountry ? null : customer.effectiveHolidayCountry ?? null
       loadedName.value = customer.name
-      setPageTitle(`Edit ${customer.name}`)
+      setPageTitle(t('customers.form.editNamed', { name: customer.name }))
     }
   } catch (error) {
-    toast.failure('Could not load the customer', error)
+    toast.failure(t('customers.loadOneFailed'), error)
   } finally {
     loadingCustomer.value = false
   }
@@ -254,20 +257,20 @@ async function loadCustomer(id: number) {
 function validateForm(): boolean {
   Object.keys(errors).forEach(key => delete errors[key])
   const required: [keyof typeof errors | string, string, string][] = [
-    ['name', form.name, 'Enter the customer’s name.'],
-    ['fiscalId', form.fiscalId, 'Enter the VAT number or fiscal ID.'],
-    ['street', form.address.street, 'Enter the street.'],
-    ['houseNumber', form.address.houseNumber, 'Enter the number.'],
-    ['zipCode', form.address.zipCode, 'Enter the postal code.'],
-    ['city', form.address.city, 'Enter the city.'],
-    ['country', form.address.country, 'Enter the country.']
+    ['name', form.name, t('customers.form.enterName')],
+    ['fiscalId', form.fiscalId, t('customers.form.enterFiscalId')],
+    ['street', form.address.street, t('address.enterStreet')],
+    ['houseNumber', form.address.houseNumber, t('address.enterNumber')],
+    ['zipCode', form.address.zipCode, t('address.enterPostalCode')],
+    ['city', form.address.city, t('address.enterCity')],
+    ['country', form.address.country, t('address.enterCountry')]
   ]
   for (const [key, value, message] of required) {
     if (!String(value ?? '').trim()) errors[key as string] = message
   }
-  if (form.email && !EMAIL_PATTERN.test(form.email)) errors.email = 'Enter an address like accounts@example.com.'
+  if (form.email && !EMAIL_PATTERN.test(form.email)) errors.email = t('customers.form.enterEmail')
   const badCc = (form.ccEmails ?? '').split(/[,;\s]+/).filter(Boolean).find(a => !EMAIL_PATTERN.test(a))
-  if (badCc) errors.ccEmails = `“${badCc}” is not a valid address.`
+  if (badCc) errors.ccEmails = t('customers.form.invalidAddress', { address: badCc })
   const first = Object.keys(errors)[0]
   if (first) {
     const ids: Record<string, string> = {
@@ -287,11 +290,11 @@ async function handleSubmit() {
     saving.value = true
     if (isEditMode.value && props.customerId) {
       await customersStore.update(props.customerId, form as UpdateCustomerDto)
-      toast.success('Customer updated')
+      toast.success(t('customers.updated'))
       router.push(`/customers/${props.customerId}`)
     } else {
       const created = await customersStore.create(form as CreateCustomerDto)
-      toast.success('Customer created', { message: 'Next, add a rate so you can invoice them.' })
+      toast.success(t('customers.created'), { message: t('customers.createdNext') })
       router.push(created?.id ? { path: `/customers/${created.id}`, query: { tab: 'rates' } } : '/customers')
     }
   } catch (error) {
@@ -299,9 +302,9 @@ async function handleSubmit() {
     Object.keys(complianceErrors).forEach(key => delete complianceErrors[key])
     if (apiStatus(error) === 400 && issues?.length) {
       for (const issue of issues) complianceErrors[issue.field ?? 'general'] = issue.message
-      toast.failure('Some invoicing details are missing', error)
+      toast.failure(t('customers.form.invoicingDetailsMissing'), error)
     } else {
-      toast.failure('Could not save the customer', error)
+      toast.failure(t('customers.saveFailed'), error)
     }
   } finally {
     saving.value = false

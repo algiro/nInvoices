@@ -2,49 +2,49 @@
   <div class="dashboard">
     <PageHeader :title="greeting" :subtitle="today">
       <template #actions>
-        <BaseButton icon="plus" to="/customers/new">New customer</BaseButton>
-        <BaseButton variant="primary" icon="plus" to="/invoices/new">New invoice</BaseButton>
+        <BaseButton icon="plus" to="/customers/new">{{ t('customers.new') }}</BaseButton>
+        <BaseButton variant="primary" icon="plus" to="/invoices/new">{{ t('layout.newInvoice') }}</BaseButton>
       </template>
     </PageHeader>
 
-    <LoadingState v-if="loading && !loaded" label="Loading your figures…" />
+    <LoadingState v-if="loading && !loaded" :label="t('dashboard.loading')" />
 
     <EmptyState
       v-else-if="loaded && customersStore.customers.length === 0"
       icon="customers"
-      title="Welcome to nInvoices"
-      description="Start by adding a customer with their rate. Then pick a month, mark the days you worked, and the invoice and timesheet are generated for you."
+      :title="t('dashboard.welcome')"
+      :description="t('dashboard.welcomeDescription')"
     >
-      <BaseButton variant="primary" icon="plus" to="/customers/new">Add your first customer</BaseButton>
+      <BaseButton variant="primary" icon="plus" to="/customers/new">{{ t('dashboard.addFirstCustomer') }}</BaseButton>
     </EmptyState>
 
     <template v-else-if="loaded">
       <div class="tiles">
         <!-- the headline figure: the theme's hero gradient -->
         <router-link class="stat-tile hero" to="/invoices">
-          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="coins" /></span><span class="stat-tile-label">Outstanding</span></span>
+          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="coins" /></span><span class="stat-tile-label">{{ t('invoices.summary.outstanding') }}</span></span>
           <span class="stat-tile-value">{{ formatTotals(outstanding.totals) }}</span>
-          <span class="stat-tile-note">{{ outstanding.count }} finalized or sent</span>
+          <span class="stat-tile-note">{{ t('invoices.summary.finalizedOrSent', { n: outstanding.count }) }}</span>
         </router-link>
         <router-link class="stat-tile" :style="{ '--accent': 'var(--kpi-2)' }" :to="{ path: '/invoices', query: { status: 'Paid' } }">
-          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="paid" /></span><span class="stat-tile-label">Paid in {{ year }}</span></span>
+          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="paid" /></span><span class="stat-tile-label">{{ t('invoices.summary.paidIn', { year }) }}</span></span>
           <span class="stat-tile-value">{{ formatTotals(paidThisYear.totals) }}</span>
-          <span class="stat-tile-note">{{ paidThisYear.count }} {{ paidThisYear.count === 1 ? 'invoice' : 'invoices' }}</span>
+          <span class="stat-tile-note">{{ t('invoices.count', paidThisYear.count) }}</span>
         </router-link>
         <router-link class="stat-tile" :style="{ '--accent': 'var(--kpi-3)' }" to="/invoices">
-          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="invoices" /></span><span class="stat-tile-label">Invoiced in {{ year }}</span></span>
+          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="invoices" /></span><span class="stat-tile-label">{{ t('dashboard.invoicedIn', { year }) }}</span></span>
           <span class="stat-tile-value">{{ formatTotals(invoicedThisYear.totals) }}</span>
-          <span class="stat-tile-note">excluding cancelled</span>
+          <span class="stat-tile-note">{{ t('dashboard.excludingCancelled') }}</span>
         </router-link>
         <router-link class="stat-tile" :style="{ '--accent': 'var(--kpi-4)' }" to="/customers">
-          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="customers" /></span><span class="stat-tile-label">Customers</span></span>
+          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="customers" /></span><span class="stat-tile-label">{{ t('nav.customers') }}</span></span>
           <span class="stat-tile-value">{{ customersStore.customers.length }}</span>
-          <span class="stat-tile-note">{{ billedCustomers }} billed this year</span>
+          <span class="stat-tile-note">{{ t('dashboard.billedThisYear', { n: billedCustomers }) }}</span>
         </router-link>
       </div>
 
       <div class="columns">
-        <BasePanel title="Needs your attention" class="attention">
+        <BasePanel :title="t('dashboard.attention')" class="attention">
           <ul v-if="attention.length" class="attention-list">
             <li v-for="item in attention" :key="item.key">
               <span class="attention-icon" :class="item.tone"><AppIcon :name="item.icon" /></span>
@@ -57,31 +57,31 @@
           </ul>
           <p v-else class="all-clear">
             <AppIcon name="success" />
-            Nothing waiting: every customer is invoiced for {{ lastMonthLabel }} and nothing is left in draft.
+            {{ t('dashboard.allClear', { month: lastMonthLabel }) }}
           </p>
         </BasePanel>
 
-        <BasePanel :title="`Invoiced per month${chartCurrency ? ` · ${chartCurrency}` : ''}`" description="Issued invoices, excluding cancelled ones. Hover a month for details.">
+        <BasePanel :title="chartCurrency ? t('dashboard.perMonthIn', { currency: chartCurrency }) : t('dashboard.perMonth')" :description="t('dashboard.chartDescription')">
           <MonthlyBarChart
             :points="monthlyPoints"
             :format="value => formatMoney(value, chartCurrency || 'EUR')"
-            :label="`Amount invoiced per month over the last 12 months, in ${chartCurrency || 'EUR'}`"
+            :label="t('dashboard.chartLabel', { currency: chartCurrency || 'EUR' })"
           />
           <p v-if="otherCurrencies.length" class="chart-note">
-            Invoices in {{ otherCurrencies.join(', ') }} aren't included in this chart.
+            {{ t('dashboard.otherCurrencies', { currencies: otherCurrencies.join(', ') }) }}
           </p>
         </BasePanel>
       </div>
 
-      <BasePanel title="Recent invoices" flush>
+      <BasePanel :title="t('dashboard.recent')" flush>
         <template #actions>
-          <BaseButton size="sm" variant="ghost" to="/invoices">All invoices</BaseButton>
+          <BaseButton size="sm" variant="ghost" to="/invoices">{{ t('dashboard.allInvoices') }}</BaseButton>
         </template>
         <EmptyState
           v-if="recent.length === 0"
           icon="invoices"
-          title="No invoices yet"
-          description="Your latest invoices will show up here."
+          :title="t('invoices.emptyTitle')"
+          :description="t('dashboard.recentEmpty')"
           compact
           class="flush-empty"
         />
@@ -89,11 +89,11 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th scope="col">Invoice</th>
-                <th scope="col">Customer</th>
-                <th scope="col">Issued</th>
-                <th scope="col">Status</th>
-                <th scope="col" class="num">Total</th>
+                <th scope="col">{{ t('invoices.columns.invoice') }}</th>
+                <th scope="col">{{ t('customers.customer') }}</th>
+                <th scope="col">{{ t('invoices.columns.issued') }}</th>
+                <th scope="col">{{ t('invoices.columns.status') }}</th>
+                <th scope="col" class="num">{{ t('invoices.columns.total') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -132,6 +132,10 @@ import LoadingState from '@/components/ui/LoadingState.vue'
 import MonthlyBarChart, { type MonthPoint } from '@/components/dashboard/MonthlyBarChart.vue'
 import { useToast } from '@/composables/useToast'
 import { formatMoney, formatDate, formatPeriod, invoiceStatus, invoiceTypeLabel } from '@/utils/format'
+import { currentLanguage } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const router = useRouter()
 const customersStore = useCustomersStore()
@@ -146,12 +150,12 @@ const year = now.getFullYear()
 
 const greeting = computed(() => {
   const hour = now.getHours()
-  const part = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  const part = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening'
   const first = (authStore.username || '').split(/[\s@.]/)[0]
-  return first ? `${part}, ${first}` : part
+  return first ? t(`dashboard.greeting.${part}Named`, { name: first }) : t(`dashboard.greeting.${part}`)
 })
 
-const today = now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+const today = computed(() => now.toLocaleDateString(currentLanguage(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
 
 onMounted(async () => {
   loading.value = true
@@ -159,7 +163,7 @@ onMounted(async () => {
     await Promise.all([customersStore.fetchAll(), invoicesStore.fetchAll()])
     loaded.value = true
   } catch (error) {
-    toast.failure('The dashboard could not load', error)
+    toast.failure(t('dashboard.loadFailed'), error)
   } finally {
     loading.value = false
   }
@@ -170,7 +174,7 @@ const statusOf = (invoice: InvoiceDto) => invoiceStatus(invoice.status).name
 const live = computed(() => invoices.value.filter(i => statusOf(i) !== 'Cancelled'))
 
 function customerName(customerId: number): string {
-  return customersStore.getCustomerById(customerId)?.name ?? 'Unknown customer'
+  return customersStore.getCustomerById(customerId)?.name ?? t('invoices.details.unknownCustomer')
 }
 
 // ---------- totals (kept per currency) ----------
@@ -213,8 +217,8 @@ const monthlyPoints = computed((): MonthPoint[] => {
     const inMonth = live.value.filter(inv => inv.issueDate.startsWith(key) && inv.total.currency === chartCurrency.value)
     return {
       key,
-      label: date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }),
-      short: date.toLocaleDateString(undefined, { month: 'short' }),
+      label: date.toLocaleDateString(currentLanguage(), { month: 'long', year: 'numeric' }),
+      short: date.toLocaleDateString(currentLanguage(), { month: 'short' }),
       value: inMonth.reduce((sum, inv) => sum + inv.total.amount, 0),
       count: inMonth.length
     }
@@ -224,7 +228,7 @@ const monthlyPoints = computed((): MonthPoint[] => {
 // ---------- what needs doing ----------
 
 const lastMonth = new Date(year, now.getMonth() - 1, 1)
-const lastMonthLabel = lastMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+const lastMonthLabel = computed(() => lastMonth.toLocaleDateString(currentLanguage(), { month: 'long', year: 'numeric' }))
 
 interface AttentionItem {
   key: string
@@ -242,7 +246,7 @@ const attention = computed((): AttentionItem[] => {
 
   // Customers billed monthly before but without an invoice for last month
   const monthlyCustomers = new Set(
-    live.value.filter(i => invoiceTypeLabel(i.type) === 'Monthly').map(i => i.customerId)
+    live.value.filter(i => String(i.type) === 'Monthly').map(i => i.customerId)
   )
   for (const customerId of monthlyCustomers) {
     const invoiced = live.value.some(i =>
@@ -252,9 +256,9 @@ const attention = computed((): AttentionItem[] => {
         key: `missing-${customerId}`,
         icon: 'calendar',
         tone: 'info',
-        title: `${customerName(customerId)}: ${lastMonthLabel} not invoiced`,
-        detail: 'Monthly customer with no invoice for last month yet.',
-        action: 'Create invoice',
+        title: t('dashboard.notInvoiced', { customer: customerName(customerId), month: lastMonthLabel.value }),
+        detail: t('dashboard.notInvoicedDetail'),
+        action: t('dashboard.createInvoice'),
         to: { path: '/invoices/new', query: { customerId } },
         primary: true
       })
@@ -267,9 +271,9 @@ const attention = computed((): AttentionItem[] => {
       key: 'drafts',
       icon: 'lock',
       tone: 'neutral',
-      title: drafts.length === 1 ? `${drafts[0].invoiceNumber} is still a draft` : `${drafts.length} invoices are still drafts`,
-      detail: 'Finalize them once the amounts are right.',
-      action: drafts.length === 1 ? 'Open' : 'Review',
+      title: drafts.length === 1 ? t('dashboard.stillDraft', { number: drafts[0].invoiceNumber }) : t('dashboard.stillDrafts', { n: drafts.length }),
+      detail: t('dashboard.stillDraftDetail'),
+      action: drafts.length === 1 ? t('dashboard.open') : t('dashboard.review'),
       to: drafts.length === 1 ? `/invoices/${drafts[0].id}` : { path: '/invoices', query: { status: 'Draft' } }
     })
   }
@@ -280,9 +284,9 @@ const attention = computed((): AttentionItem[] => {
       key: 'to-send',
       icon: 'send',
       tone: 'info',
-      title: toSend.length === 1 ? `${toSend[0].invoiceNumber} is ready to send` : `${toSend.length} invoices are ready to send`,
-      detail: 'Finalized but not marked as sent.',
-      action: 'Review',
+      title: toSend.length === 1 ? t('dashboard.readyToSend', { number: toSend[0].invoiceNumber }) : t('dashboard.readyToSendMany', { n: toSend.length }),
+      detail: t('dashboard.readyToSendDetail'),
+      action: t('dashboard.review'),
       to: { path: '/invoices', query: { status: 'Finalized' } }
     })
   }
@@ -295,9 +299,9 @@ const attention = computed((): AttentionItem[] => {
       key: 'awaiting',
       icon: 'paid',
       tone: days > 30 ? 'warning' : 'neutral',
-      title: `${waiting.length} awaiting payment: ${formatTotals(summarize(waiting).totals)}`,
-      detail: `Oldest issued ${days} ${days === 1 ? 'day' : 'days'} ago (${oldest.invoiceNumber}).`,
-      action: 'Review',
+      title: t('dashboard.awaiting', { n: waiting.length, total: formatTotals(summarize(waiting).totals) }),
+      detail: t('dashboard.oldestIssued', { number: oldest.invoiceNumber }, days),
+      action: t('dashboard.review'),
       to: { path: '/invoices', query: { status: 'Sent' } }
     })
   }

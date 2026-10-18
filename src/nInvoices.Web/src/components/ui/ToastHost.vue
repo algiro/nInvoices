@@ -13,7 +13,7 @@
           <strong>{{ toast.title }}</strong>
           <span v-if="toast.message">{{ toast.message }}</span>
         </div>
-        <button type="button" class="toast-close" aria-label="Dismiss" @click="dismiss(toast.id)">
+        <button type="button" class="toast-close" :aria-label="t('common.dismiss')" @click="dismiss(toast.id)">
           <AppIcon name="close" />
         </button>
       </div>
@@ -24,6 +24,9 @@
 <script setup lang="ts">
 import AppIcon, { type IconName } from './AppIcon.vue'
 import { useToast, type ToastTone } from '@/composables/useToast'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const { toasts, dismiss } = useToast()
 

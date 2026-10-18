@@ -58,14 +58,14 @@
       >
         <strong>{{ points[hover].label }}</strong>
         <span>{{ format(points[hover].value) }}</span>
-        <small v-if="points[hover].count">{{ points[hover].count }} {{ points[hover].count === 1 ? 'invoice' : 'invoices' }}</small>
+        <small v-if="points[hover].count">{{ t('invoices.count', points[hover].count ?? 0) }}</small>
       </div>
     </div>
 
     <!-- the same numbers for screen readers -->
     <table class="sr-only">
       <caption>{{ label }}</caption>
-      <thead><tr><th scope="col">Month</th><th scope="col">Invoiced</th></tr></thead>
+      <thead><tr><th scope="col">{{ t('common.month') }}</th><th scope="col">{{ t('dashboard.invoiced') }}</th></tr></thead>
       <tbody>
         <tr v-for="point in points" :key="point.key"><td>{{ point.label }}</td><td>{{ format(point.value) }}</td></tr>
       </tbody>
@@ -75,6 +75,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, useId } from 'vue'
+import { currentLanguage } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 export interface MonthPoint {
   key: string
@@ -136,7 +140,7 @@ function columnPath(index: number, value: number): string {
 }
 
 function compact(value: number): string {
-  return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+  return new Intl.NumberFormat(currentLanguage(), { notation: 'compact', maximumFractionDigits: 1 }).format(value)
 }
 
 let observer: ResizeObserver | null = null

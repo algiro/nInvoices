@@ -2,8 +2,8 @@
   <div class="theme-picker">
     <div class="mode-row">
       <div>
-        <strong>Mode</strong>
-        <p class="muted">“System” follows your operating system and switches with it.</p>
+        <strong>{{ t('theme.mode') }}</strong>
+        <p class="muted">{{ t('theme.modeHelp') }}</p>
       </div>
       <ThemeSwitch />
     </div>
@@ -11,7 +11,7 @@
     <section v-for="group in groups" :key="group.mode" class="group" :aria-labelledby="`theme-group-${group.mode}`">
       <h3 :id="`theme-group-${group.mode}`">
         {{ group.title }}
-        <span v-if="mode === group.mode" class="in-use">shown now</span>
+        <span v-if="mode === group.mode" class="in-use">{{ t('theme.shownNow') }}</span>
       </h3>
       <div class="options" role="radiogroup" :aria-labelledby="`theme-group-${group.mode}`">
         <button
@@ -48,7 +48,7 @@
               {{ option.name }}
               <AppIcon v-if="selectedFor(group.mode) === option.id" name="check" class="check" />
             </span>
-            <span class="option-description">{{ option.description }}</span>
+            <span class="option-description">{{ t(`theme.descriptions.${option.id}`) }}</span>
           </span>
         </button>
       </div>
@@ -61,14 +61,17 @@ import { computed } from 'vue'
 import AppIcon from '@/components/ui/AppIcon.vue'
 import ThemeSwitch from '@/components/ui/ThemeSwitch.vue'
 import { THEMES, useTheme, type ThemeMode } from '@/composables/useTheme'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const { mode, lightTheme, darkTheme, setTheme } = useTheme()
 
 const bars = [45, 70, 55, 90, 65, 80]
 
 const groups = computed(() => [
-  { mode: 'light' as ThemeMode, title: 'Light theme', themes: THEMES.filter(t => t.mode === 'light') },
-  { mode: 'dark' as ThemeMode, title: 'Dark theme', themes: THEMES.filter(t => t.mode === 'dark') }
+  { mode: 'light' as ThemeMode, title: t('layout.lightTheme'), themes: THEMES.filter(theme => theme.mode === 'light') },
+  { mode: 'dark' as ThemeMode, title: t('layout.darkTheme'), themes: THEMES.filter(theme => theme.mode === 'dark') }
 ])
 
 function selectedFor(groupMode: ThemeMode) {

@@ -1,8 +1,8 @@
 <template>
   <div class="invoices-page">
-    <PageHeader title="Invoices" :subtitle="subtitle">
+    <PageHeader :title="t('nav.invoices')" :subtitle="subtitle">
       <template #actions>
-        <BaseButton variant="primary" icon="plus" to="/invoices/new">New invoice</BaseButton>
+        <BaseButton variant="primary" icon="plus" to="/invoices/new">{{ t('layout.newInvoice') }}</BaseButton>
       </template>
     </PageHeader>
 
@@ -12,23 +12,23 @@
 
     <InvoiceBulkBar v-if="selected.size > 0" :selection="selection" :total-count="page?.totalCount ?? 0" :refresh="refresh" />
 
-    <LoadingState v-if="!page && loading" label="Loading invoices…" />
+    <LoadingState v-if="!page && loading" :label="t('invoices.loading')" />
 
-    <EmptyState v-else-if="loadError" icon="alert" title="Invoices could not be loaded" :description="loadError">
-      <BaseButton @click="refresh">Try again</BaseButton>
+    <EmptyState v-else-if="loadError" icon="alert" :title="t('invoices.loadFailed')" :description="loadError">
+      <BaseButton @click="refresh">{{ t('common.tryAgain') }}</BaseButton>
     </EmptyState>
 
     <EmptyState
       v-else-if="summary && summary.totalCount === 0"
       icon="invoices"
-      title="No invoices yet"
-      description="Pick a customer and a month, mark the worked days, and the invoice and timesheet PDFs are generated for you."
+      :title="t('invoices.emptyTitle')"
+      :description="t('invoices.emptyDescription')"
     >
-      <BaseButton variant="primary" icon="plus" to="/invoices/new">New invoice</BaseButton>
+      <BaseButton variant="primary" icon="plus" to="/invoices/new">{{ t('layout.newInvoice') }}</BaseButton>
     </EmptyState>
 
-    <EmptyState v-else-if="page && page.totalCount === 0" icon="search" title="No invoice matches these filters" compact>
-      <BaseButton @click="clearFilters">Clear filters</BaseButton>
+    <EmptyState v-else-if="page && page.totalCount === 0" icon="search" :title="t('invoices.noMatch')" compact>
+      <BaseButton @click="clearFilters">{{ t('common.clearFilters') }}</BaseButton>
     </EmptyState>
 
     <template v-else-if="page">
@@ -41,7 +41,7 @@
                   type="checkbox"
                   :checked="pageAllSelected"
                   :indeterminate.prop="pageSomeSelected && !pageAllSelected"
-                  aria-label="Select the invoices on this page"
+                  :aria-label="t('invoices.selectPage')"
                   @change="togglePage"
                 />
               </th>
@@ -51,7 +51,7 @@
                   <span class="sort-arrow" aria-hidden="true">{{ sortArrow(column.field) }}</span>
                 </button>
               </th>
-              <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+              <th scope="col" class="actions"><span class="sr-only">{{ t('common.actions') }}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -66,7 +66,7 @@
                 <input
                   type="checkbox"
                   :checked="selected.has(invoice.id)"
-                  :aria-label="`Select ${invoice.invoiceNumber}`"
+                  :aria-label="t('invoices.selectOne', { number: invoice.invoiceNumber })"
                   @change="toggle(invoice)"
                 />
               </td>
@@ -90,7 +90,7 @@
                 >
                   {{ actionsFor(invoice).primary!.label }}
                 </BaseButton>
-                <ActionMenu :items="menuItems(invoice)" :label="`More actions for ${invoice.invoiceNumber}`" />
+                <ActionMenu :items="menuItems(invoice)" :label="t('invoices.moreActionsFor', { number: invoice.invoiceNumber })" />
               </td>
             </tr>
           </tbody>
@@ -123,6 +123,9 @@ import { useInvoiceListQuery } from '@/composables/useInvoiceListQuery'
 import { useInvoiceSelection } from '@/composables/useInvoiceSelection'
 import { errorMessage, useToast } from '@/composables/useToast'
 import { formatMoney, formatDate, formatPeriod, invoiceStatus, invoiceTypeLabel } from '@/utils/format'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const router = useRouter()
 const customersStore = useCustomersStore()
@@ -150,7 +153,7 @@ async function loadPage() {
     // The server moves a page past the end back to the last one; keep the URL in step
     if (result.page !== params.value.page) setQuery({ page: result.page === 1 ? undefined : result.page })
   } catch (error) {
-    if (id === requestId) loadError.value = errorMessage(error, 'Unknown error')
+    if (id === requestId) loadError.value = errorMessage(error)
   } finally {
     if (id === requestId) loading.value = false
   }
@@ -171,7 +174,7 @@ function refresh() {
 watch(params, loadPage, { deep: true })
 
 onMounted(() => {
-  customersStore.fetchAll().catch(error => toast.failure('Could not load the customers', error))
+  customersStore.fetchAll().catch(error => toast.failure(t('customers.loadFailed'), error))
   refresh()
 })
 
@@ -188,21 +191,21 @@ function customerName(customerId: number): string {
 const subtitle = computed(() => {
   if (!summary.value) return ''
   const total = summary.value.totalCount
-  if (total === 0) return 'Nothing invoiced yet'
+  if (total === 0) return t('invoices.nothingInvoiced')
   const matching = page.value?.totalCount ?? total
-  return matching === total ? `${total} ${total === 1 ? 'invoice' : 'invoices'}` : `${matching} of ${total} match`
+  return matching === total ? t('invoices.count', total) : t('invoices.matchOf', { matching, total })
 })
 
 // ---------- sorting ----------
 
-const columns: { field: InvoiceSortField; label: string; class?: string }[] = [
-  { field: 'Number', label: 'Invoice' },
-  { field: 'Customer', label: 'Customer' },
-  { field: 'Period', label: 'Period' },
-  { field: 'IssueDate', label: 'Issued' },
-  { field: 'Status', label: 'Status' },
-  { field: 'Total', label: 'Total', class: 'num' }
-]
+const columns = computed<{ field: InvoiceSortField; label: string; class?: string }[]>(() => [
+  { field: 'Number', label: t('invoices.columns.invoice') },
+  { field: 'Customer', label: t('customers.customer') },
+  { field: 'Period', label: t('invoices.columns.period') },
+  { field: 'IssueDate', label: t('invoices.columns.issued') },
+  { field: 'Status', label: t('invoices.columns.status') },
+  { field: 'Total', label: t('invoices.columns.total'), class: 'num' }
+])
 
 // Dates and amounts read best newest / largest first; names and states A→Z / in lifecycle order
 const DESCENDING_FIRST: InvoiceSortField[] = ['IssueDate', 'Period', 'Total']

@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance, AxiosError } from 'axios';
 import { useAuthStore } from '../stores/auth';
+import { currentLanguage } from '@/i18n';
 
 /**
  * API Client configuration
@@ -36,6 +37,9 @@ class ApiClient {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+
+        // The API answers (error messages) in the user's language
+        config.headers['Accept-Language'] = currentLanguage();
         
         return config;
       },

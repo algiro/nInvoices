@@ -3,18 +3,18 @@
     <div class="summary">
       <div class="title">
         <h3>{{ form.name }}</h3>
-        <span class="deadline muted">by {{ formatDate(form.deadline) }}</span>
+        <span class="deadline muted">{{ t('tax.row.by', { date: formatDate(form.deadline) }) }}</span>
       </div>
 
       <StatusPill :tone="status.tone">{{ status.label }}</StatusPill>
 
       <dl class="amounts">
         <div>
-          <dt>Estimated</dt>
+          <dt>{{ t('tax.row.estimated') }}</dt>
           <dd class="num">{{ formatMoney(form.estimated, currency) }}</dd>
         </div>
         <div v-if="form.payment">
-          <dt>Paid {{ formatDate(form.payment.paidOn, { day: 'numeric', month: 'short' }) }}</dt>
+          <dt>{{ t('tax.row.paidOn', { date: formatDate(form.payment.paidOn, { day: 'numeric', month: 'short' }) }) }}</dt>
           <dd class="num">
             {{ formatMoney(form.payment.amount, form.payment.currency) }}
             <small v-if="difference !== 0" class="difference" :class="difference > 0 ? 'over' : 'under'">
@@ -26,16 +26,16 @@
 
       <div class="buttons">
         <BaseButton size="sm" variant="ghost" :icon="expanded ? 'chevronDown' : 'chevronRight'" :aria-expanded="expanded" @click="expanded = !expanded">
-          How
+          {{ t('tax.row.how') }}
         </BaseButton>
         <BaseButton size="sm" :icon="form.payment ? 'edit' : 'paid'" @click="emit('record', form)">
-          {{ form.payment ? 'Payment' : 'Record payment' }}
+          {{ form.payment ? t('tax.row.payment') : t('tax.row.recordPayment') }}
         </BaseButton>
       </div>
     </div>
 
     <table v-if="expanded" class="lines">
-      <caption class="sr-only">How the estimate of {{ form.name }} is worked out</caption>
+      <caption class="sr-only">{{ t('tax.row.caption', { form: form.name }) }}</caption>
       <tbody>
         <tr v-for="(line, index) in form.lines" :key="index" :class="{ detail: !line.box }">
           <th scope="row">
@@ -56,6 +56,9 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import StatusPill from '@/components/ui/StatusPill.vue'
 import { formatDate, formatMoney } from '@/utils/format'
 import { formStatus } from '@/utils/taxPrediction'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   form: TaxFormDto

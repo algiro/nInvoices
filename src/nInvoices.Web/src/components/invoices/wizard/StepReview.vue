@@ -1,62 +1,62 @@
 <template>
   <div class="review">
-    <BasePanel title="Summary" class="summary-panel">
+    <BasePanel :title="t('invoiceWizard.review.summary')" class="summary-panel">
       <dl class="facts">
-        <div><dt>Invoice number</dt><dd>{{ preview?.invoiceNumber ?? '…' }}</dd></div>
-        <div><dt>Customer</dt><dd>{{ customer?.name ?? '-' }}</dd></div>
-        <div><dt>Issue date</dt><dd>{{ issueDateLabel }}</dd></div>
-        <div v-if="isMonthly"><dt>Period</dt><dd>{{ periodLabel }}</dd></div>
+        <div><dt>{{ t('invoiceWizard.review.invoiceNumber') }}</dt><dd>{{ preview?.invoiceNumber ?? '…' }}</dd></div>
+        <div><dt>{{ t('customers.customer') }}</dt><dd>{{ customer?.name ?? '-' }}</dd></div>
+        <div><dt>{{ t('invoiceWizard.issueDate') }}</dt><dd>{{ issueDateLabel }}</dd></div>
+        <div v-if="isMonthly"><dt>{{ t('invoices.columns.period') }}</dt><dd>{{ periodLabel }}</dd></div>
         <template v-if="isMonthly">
-          <div><dt>Worked days</dt><dd>{{ totals.workedDays }}</dd></div>
-          <div v-if="isDailyRate"><dt>Billable days</dt><dd>{{ totals.effectiveDays.toFixed(2) }}</dd></div>
-          <div><dt>Hours</dt><dd>{{ totals.totalHours.toFixed(1) }}</dd></div>
-          <div v-if="totals.publicHolidays || totals.unpaidLeave"><dt>Holiday · leave</dt><dd>{{ totals.publicHolidays }} · {{ totals.unpaidLeave }}</dd></div>
+          <div><dt>{{ t('invoiceWizard.workedDays') }}</dt><dd>{{ totals.workedDays }}</dd></div>
+          <div v-if="isDailyRate"><dt>{{ t('invoiceWizard.review.billableDays') }}</dt><dd>{{ totals.effectiveDays.toFixed(2) }}</dd></div>
+          <div><dt>{{ t('invoiceWizard.hours') }}</dt><dd>{{ totals.totalHours.toFixed(1) }}</dd></div>
+          <div v-if="totals.publicHolidays || totals.unpaidLeave"><dt>{{ t('invoiceWizard.review.holidayLeave') }}</dt><dd>{{ totals.publicHolidays }} · {{ totals.unpaidLeave }}</dd></div>
         </template>
       </dl>
 
       <dl v-if="preview?.total" class="amounts">
-        <div><dt>Subtotal</dt><dd>{{ money(preview.subtotal) }}</dd></div>
-        <div v-if="preview.totalExpenses?.amount"><dt>Expenses</dt><dd>{{ money(preview.totalExpenses) }}</dd></div>
+        <div><dt>{{ t('invoiceWizard.review.subtotal') }}</dt><dd>{{ money(preview.subtotal) }}</dd></div>
+        <div v-if="preview.totalExpenses?.amount"><dt>{{ t('nav.expenses') }}</dt><dd>{{ money(preview.totalExpenses) }}</dd></div>
         <div v-for="tax in preview.taxes" :key="tax.description">
           <dt>{{ tax.description }} ({{ tax.rate }}%)</dt><dd>{{ money(tax.amount) }}</dd>
         </div>
-        <div class="total"><dt>Total</dt><dd>{{ money(preview.total) }}</dd></div>
+        <div class="total"><dt>{{ t('invoices.columns.total') }}</dt><dd>{{ money(preview.total) }}</dd></div>
       </dl>
 
-      <p class="note muted">Nothing is saved until you generate. The invoice starts as a draft showing the next number; it only takes the number when you finalize it.</p>
+      <p class="note muted">{{ t('invoiceWizard.review.note') }}</p>
     </BasePanel>
 
     <BasePanel flush class="preview-panel">
       <template #header>
-        <BaseTabs v-model="tab" :tabs="tabs" label="Document" />
+        <BaseTabs v-model="tab" :tabs="tabs" :label="t('invoiceWizard.review.document')" />
       </template>
       <template #actions>
-        <BaseButton size="sm" variant="ghost" icon="refresh" :loading="loading" @click="refresh">Refresh</BaseButton>
+        <BaseButton size="sm" variant="ghost" icon="refresh" :loading="loading" @click="refresh">{{ t('common.refresh') }}</BaseButton>
       </template>
 
       <div v-if="preview && preview.errors.length && tab === 'invoice'" class="problem" role="alert">
         <AppIcon name="error" />
         <div>
-          <strong>The invoice can’t be generated yet</strong>
+          <strong>{{ t('invoiceWizard.review.cannotGenerate') }}</strong>
           <ul><li v-for="error in preview.errors" :key="error">{{ error }}</li></ul>
-          <router-link :to="{ path: `/customers/${form.customerId}`, query: { tab: 'templates' } }">Check the customer’s templates and rates</router-link>
+          <router-link :to="{ path: `/customers/${form.customerId}`, query: { tab: 'templates' } }">{{ t('invoiceWizard.review.checkTemplates') }}</router-link>
         </div>
       </div>
       <div v-else-if="preview?.timesheetError && tab === 'timesheet'" class="problem warning" role="status">
         <AppIcon name="alert" />
         <div>
-          <strong>The timesheet can’t be rendered</strong>
+          <strong>{{ t('invoiceWizard.review.timesheetCannotRender') }}</strong>
           <p>{{ preview.timesheetError }}</p>
-          <p class="muted">The invoice can still be generated; the timesheet PDF won’t be available until this is fixed.</p>
+          <p class="muted">{{ t('invoiceWizard.review.timesheetStillGenerate') }}</p>
         </div>
       </div>
       <div v-else class="preview-frame">
         <TemplatePreviewPane
-          :title="tab === 'invoice' ? 'Invoice' : 'Timesheet'"
+          :title="tab === 'invoice' ? t('invoiceWizard.review.invoice') : t('invoiceWizard.review.timesheet')"
           :html="tab === 'invoice' ? preview?.invoiceHtml ?? null : preview?.timesheetHtml ?? null"
           :loading="loading"
           :stale="false"
-          :caption="`${customer?.name ?? ''} · real data, not saved`"
+          :caption="t('invoiceWizard.review.caption', { customer: customer?.name ?? '' })"
         />
       </div>
     </BasePanel>
@@ -75,6 +75,10 @@ import BaseTabs, { type TabItem } from '@/components/ui/BaseTabs.vue'
 import AppIcon from '@/components/ui/AppIcon.vue'
 import TemplatePreviewPane from '@/components/templates/editor/TemplatePreviewPane.vue'
 import { formatMoney } from '@/utils/format'
+import { currentLanguage } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{ draft: InvoiceDraft }>()
 const emit = defineEmits<{
@@ -91,12 +95,12 @@ const tab = ref('invoice')
 
 const tabs = computed((): TabItem[] =>
   isMonthly.value
-    ? [{ id: 'invoice', label: 'Invoice' }, { id: 'timesheet', label: 'Timesheet' }]
-    : [{ id: 'invoice', label: 'Invoice' }]
+    ? [{ id: 'invoice', label: t('invoiceWizard.review.invoice') }, { id: 'timesheet', label: t('invoiceWizard.review.timesheet') }]
+    : [{ id: 'invoice', label: t('invoiceWizard.review.invoice') }]
 )
 
 const issueDateLabel = computed(() =>
-  form.issueDate ? new Date(`${form.issueDate}T00:00:00`).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '-'
+  form.issueDate ? new Date(`${form.issueDate}T00:00:00`).toLocaleDateString(currentLanguage(), { dateStyle: 'medium' }) : '-'
 )
 
 function money(value: MoneyDto | null) {
@@ -109,7 +113,7 @@ let requestId = 0
 async function refresh() {
   const id = ++requestId
   loading.value = true
-  emit('blocker', 'Rendering the preview…')
+  emit('blocker', t('invoiceWizard.review.rendering'))
   try {
     const result = await invoicesApi.previewDraft(buildPayload())
     if (id !== requestId) return
@@ -118,8 +122,8 @@ async function refresh() {
   } catch (error) {
     if (id !== requestId) return
     preview.value = null
-    emit('blocker', 'The preview could not be rendered.')
-    toast.failure('Could not render the preview', error)
+    emit('blocker', t('invoiceWizard.review.previewFailed'))
+    toast.failure(t('invoiceWizard.review.previewFailedTitle'), error)
   } finally {
     if (id === requestId) loading.value = false
   }

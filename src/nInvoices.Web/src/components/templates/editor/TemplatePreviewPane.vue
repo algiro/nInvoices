@@ -1,21 +1,21 @@
 <template>
   <div class="preview-pane">
     <div class="preview-toolbar">
-      <span class="preview-title">{{ title ?? 'Preview' }}</span>
-      <span v-if="loading" class="status muted">Rendering…</span>
-      <span v-else-if="stale" class="status warn">Showing the last version that rendered</span>
-      <span v-else-if="html" class="status muted">{{ caption ?? `Sample data${customerName ? ` for ${customerName}` : ''}` }}</span>
+      <span class="preview-title">{{ title ?? t('invoiceEmail.preview') }}</span>
+      <span v-if="loading" class="status muted">{{ t('templates.preview.rendering') }}</span>
+      <span v-else-if="stale" class="status warn">{{ t('templates.preview.stale') }}</span>
+      <span v-else-if="html" class="status muted">{{ caption ?? (customerName ? t('templates.preview.sampleDataFor', { customer: customerName }) : t('templates.preview.sampleData')) }}</span>
       <span class="spacer"></span>
-      <div class="zoom" role="group" aria-label="Zoom">
-        <button type="button" :class="{ active: zoom === 'fit' }" @click="zoom = 'fit'">Fit</button>
+      <div class="zoom" role="group" :aria-label="t('templates.preview.zoom')">
+        <button type="button" :class="{ active: zoom === 'fit' }" @click="zoom = 'fit'">{{ t('templates.preview.fit') }}</button>
         <button type="button" :class="{ active: zoom === 'actual' }" @click="zoom = 'actual'">100%</button>
       </div>
     </div>
 
     <div ref="viewport" class="viewport">
       <div v-if="!html" class="empty">
-        <strong>{{ loading ? 'Rendering preview…' : 'Nothing to preview yet' }}</strong>
-        <span v-if="!loading">Write some HTML, or load the sample, and the rendered page appears here.</span>
+        <strong>{{ loading ? t('templates.preview.renderingPreview') : t('templates.preview.nothing') }}</strong>
+        <span v-if="!loading">{{ t('templates.preview.nothingHelp') }}</span>
       </div>
       <div
         v-else
@@ -26,7 +26,7 @@
         <iframe
           ref="frame"
           class="page"
-          title="Template preview"
+          :title="t('templates.preview.title')"
           sandbox="allow-same-origin"
           :srcdoc="html"
           :style="{ width: `${PAGE_WIDTH}px`, height: `${pageHeight}px`, transform: `scale(${scale})` }"
@@ -39,6 +39,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 defineProps<{
   html: string | null

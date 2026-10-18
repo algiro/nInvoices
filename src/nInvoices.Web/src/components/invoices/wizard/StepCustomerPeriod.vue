@@ -1,50 +1,50 @@
 <template>
-  <BasePanel title="Customer &amp; period" description="Who the invoice is for and which month it bills.">
+  <BasePanel :title="t('invoiceWizard.stepCustomer')" :description="t('invoiceWizard.customerStep.description')">
     <div class="grid">
-      <BaseField label="Customer" for="customer" required class="span-2">
+      <BaseField :label="t('customers.customer')" for="customer" required class="span-2">
         <select id="customer" v-model="form.customerId" class="control">
-          <option :value="0" disabled>Select a customer</option>
+          <option :value="0" disabled>{{ t('invoiceWizard.customerStep.selectCustomer') }}</option>
           <option v-for="c in sortedCustomers" :key="c.id" :value="c.id">
             {{ c.name }}
           </option>
         </select>
       </BaseField>
 
-      <BaseField label="Invoice type" for="type" required>
+      <BaseField :label="t('invoiceWizard.customerStep.invoiceType')" for="type" required>
         <select id="type" v-model="form.invoiceType" class="control">
-          <option :value="InvoiceType.Monthly">Monthly</option>
-          <option :value="InvoiceType.OneTime">One-time</option>
+          <option :value="InvoiceType.Monthly">{{ t('invoiceType.Monthly') }}</option>
+          <option :value="InvoiceType.OneTime">{{ t('invoiceType.OneTime') }}</option>
         </select>
       </BaseField>
 
-      <BaseField label="Issue date" for="issueDate" required>
+      <BaseField :label="t('invoiceWizard.issueDate')" for="issueDate" required>
         <input id="issueDate" v-model="form.issueDate" type="date" class="control" />
       </BaseField>
 
-      <BaseField v-if="isMonthly" label="Billing period" for="period-month" required class="span-2">
+      <BaseField v-if="isMonthly" :label="t('invoiceWizard.customerStep.billingPeriod')" for="period-month" required class="span-2">
         <div class="period">
-          <BaseButton icon="arrowLeft" icon-only variant="secondary" aria-label="Previous month" title="Previous month" @click="shiftMonth(-1)" />
-          <select id="period-month" v-model="selectedMonth" class="control" aria-label="Month">
+          <BaseButton icon="arrowLeft" icon-only variant="secondary" :aria-label="t('common.previousMonth')" :title="t('common.previousMonth')" @click="shiftMonth(-1)" />
+          <select id="period-month" v-model="selectedMonth" class="control" :aria-label="t('common.month')">
             <option v-for="month in months" :key="month.value" :value="month.value">{{ month.label }}</option>
           </select>
-          <select id="period-year" v-model="selectedYear" class="control year" aria-label="Year">
+          <select id="period-year" v-model="selectedYear" class="control year" :aria-label="t('common.year')">
             <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
           </select>
-          <BaseButton icon="chevronRight" icon-only variant="secondary" aria-label="Next month" title="Next month" @click="shiftMonth(1)" />
+          <BaseButton icon="chevronRight" icon-only variant="secondary" :aria-label="t('common.nextMonth')" :title="t('common.nextMonth')" @click="shiftMonth(1)" />
         </div>
       </BaseField>
 
       <BaseField
         v-if="isMonthly && availableTemplates.length > 0"
-        label="Timesheet template"
+        :label="t('invoiceWizard.customerStep.timesheetTemplate')"
         for="monthlyReportTemplate"
         class="span-2"
-        help="Layout of the monthly report PDF."
+        :help="t('invoiceWizard.customerStep.timesheetTemplateHelp')"
       >
         <select id="monthlyReportTemplate" v-model="form.monthlyReportTemplateId" class="control">
-          <option :value="undefined">Active template{{ activeTemplateName ? ` (${activeTemplateName})` : '' }}</option>
+          <option :value="undefined">{{ activeTemplateName ? t('invoiceWizard.customerStep.activeTemplateNamed', { name: activeTemplateName }) : t('invoiceWizard.customerStep.activeTemplate') }}</option>
           <option v-for="template in availableTemplates" :key="template.id" :value="template.id">
-            {{ template.name }}{{ template.customerId === null ? ' (shared)' : '' }}{{ template.isActive ? ' (active)' : '' }}
+            {{ template.name }}{{ template.customerId === null ? ` (${t('templates.sharedSuffix')})` : '' }}{{ template.isActive ? ` (${t('templates.activeSuffix')})` : '' }}
           </option>
         </select>
       </BaseField>
@@ -53,11 +53,11 @@
     <div v-if="form.customerId && customerRates.length > 0" class="grid rate-fields">
       <BaseField
         v-if="customerRates.length > 1 && !isMonthly"
-        label="Rate"
+        :label="t('rates.rate')"
         for="rate"
         required
         :class="{ 'span-2': !showHours }"
-        help="The rate this invoice bills with."
+        :help="t('invoiceWizard.customerStep.rateHelp')"
       >
         <select id="rate" v-model="form.rateId" class="control">
           <option v-for="rate in customerRates" :key="rate.id" :value="rate.id">
@@ -68,7 +68,7 @@
 
       <BaseField
         v-if="showHours"
-        label="Hours"
+        :label="t('invoiceWizard.hours')"
         for="hours"
         required
         :class="{ 'span-2': customerRates.length <= 1 }"
@@ -81,16 +81,16 @@
     <div v-if="form.customerId" class="rate-line" :class="{ missing: noRate }">
       <template v-if="isMonthly && customerRates.length > 1">
         <AppIcon name="coins" />
-        <span>This customer has {{ customerRates.length }} rates. You choose the invoice's rate, and the rate of single days, in the Time step.</span>
+        <span>{{ t('invoiceWizard.customerStep.severalRates', { n: customerRates.length }) }}</span>
       </template>
       <template v-else-if="selectedRate">
         <AppIcon name="coins" />
-        <span>Billed at <strong>{{ formatMoney(selectedRate.price.amount, selectedRate.price.currency) }}</strong> {{ rateUnit }}</span>
+        <i18n-t keypath="invoiceWizard.customerStep.billedAt" tag="span"><template #price><strong>{{ formatMoney(selectedRate.price.amount, selectedRate.price.currency) }}</strong></template><template #unit>{{ rateUnit }}</template></i18n-t>
       </template>
       <template v-else-if="noRate">
         <AppIcon name="alert" />
-        <span>This customer has no rate yet, so nothing can be billed.</span>
-        <router-link :to="{ path: `/customers/${form.customerId}`, query: { tab: 'rates' } }">Add a rate</router-link>
+        <span>{{ t('invoiceWizard.customerStep.noRate') }}</span>
+        <router-link :to="{ path: `/customers/${form.customerId}`, query: { tab: 'rates' } }">{{ t('invoiceWizard.customerStep.addRate') }}</router-link>
       </template>
     </div>
   </BasePanel>
@@ -106,6 +106,10 @@ import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import AppIcon from '@/components/ui/AppIcon.vue'
 import { formatMoney } from '@/utils/format'
+import { currentLanguage } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{ draft: InvoiceDraft }>()
 
@@ -132,18 +136,18 @@ const showHours = computed(() => !isMonthly.value && isHourlyRate.value)
 const hoursHelp = computed(() => {
   const rate = selectedRate.value
   const hours = Number(form.hours)
-  return rate && hours > 0 ? `${hours}h × ${formatMoney(rate.price.amount, rate.price.currency)} = ${formatMoney(hours * rate.price.amount, rate.price.currency)}` : 'Hours to bill at the hourly rate.'
+  return rate && hours > 0 ? `${hours}h × ${formatMoney(rate.price.amount, rate.price.currency)} = ${formatMoney(hours * rate.price.amount, rate.price.currency)}` : t('invoiceWizard.customerStep.hoursHelp')
 })
 
 function rateLabel(rate: RateDto): string {
-  const unit = rate.type === RateType.Hourly ? 'per hour' : rate.type === RateType.Monthly ? 'per month' : 'per day'
+  const unit = rate.type === RateType.Hourly ? t('rates.perHour') : rate.type === RateType.Monthly ? t('rates.perMonth') : t('rates.perDay')
   return `${formatMoney(rate.price.amount, rate.price.currency)} ${unit}`
 }
 
-const months = Array.from({ length: 12 }, (_, i) => ({
+const months = computed(() => Array.from({ length: 12 }, (_, i) => ({
   value: i + 1,
-  label: new Date(2000, i, 1).toLocaleDateString('en-US', { month: 'long' })
-}))
+  label: new Date(2000, i, 1).toLocaleDateString(currentLanguage(), { month: 'long' })
+})))
 </script>
 
 <style scoped>

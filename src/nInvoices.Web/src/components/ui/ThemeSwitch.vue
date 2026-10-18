@@ -1,5 +1,5 @@
 <template>
-  <div class="theme-switch" :class="{ compact }" role="radiogroup" aria-label="Theme">
+  <div class="theme-switch" :class="{ compact }" role="radiogroup" :aria-label="t('layout.theme')">
     <button
       v-for="option in options"
       :key="option.value"
@@ -8,11 +8,11 @@
       class="option"
       :class="{ active: preference === option.value }"
       :aria-checked="preference === option.value"
-      :title="option.hint"
+      :title="t(option.hint)"
       @click="setPreference(option.value)"
     >
       <AppIcon :name="option.icon" />
-      <span>{{ option.label }}</span>
+      <span>{{ t(option.label) }}</span>
     </button>
   </div>
 </template>
@@ -21,6 +21,10 @@
 import AppIcon from './AppIcon.vue'
 import type { IconName } from './icons'
 import { useTheme, type ThemePreference } from '@/composables/useTheme'
+import type { MessageKey } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 withDefaults(defineProps<{
   /** Smaller variant for menus. */
@@ -31,10 +35,10 @@ withDefaults(defineProps<{
 
 const { preference, setPreference } = useTheme()
 
-const options: { value: ThemePreference; label: string; icon: IconName; hint: string }[] = [
-  { value: 'system', label: 'System', icon: 'monitor', hint: 'Follow the operating system setting' },
-  { value: 'light', label: 'Light', icon: 'sun', hint: 'Always light' },
-  { value: 'dark', label: 'Dark', icon: 'moon', hint: 'Always dark' }
+const options: { value: ThemePreference; label: MessageKey; icon: IconName; hint: MessageKey }[] = [
+  { value: 'system', label: 'theme.system', icon: 'monitor', hint: 'theme.systemHint' },
+  { value: 'light', label: 'theme.light', icon: 'sun', hint: 'theme.lightHint' },
+  { value: 'dark', label: 'theme.dark', icon: 'moon', hint: 'theme.darkHint' }
 ]
 </script>
 

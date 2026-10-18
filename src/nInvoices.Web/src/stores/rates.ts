@@ -24,7 +24,7 @@ export const useRatesStore = defineStore('rates', () => {
       error.value = null
       rates.value = await ratesApi.getAll()
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to fetch rates')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -38,7 +38,7 @@ export const useRatesStore = defineStore('rates', () => {
       selectedRate.value = await ratesApi.getById(id)
       return selectedRate.value
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to fetch rate')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -58,7 +58,7 @@ export const useRatesStore = defineStore('rates', () => {
       
       return customerRates
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to fetch customer rates')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -73,7 +73,7 @@ export const useRatesStore = defineStore('rates', () => {
       rates.value.push(newRate)
       return newRate
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to create rate')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -91,7 +91,7 @@ export const useRatesStore = defineStore('rates', () => {
         rates.value[index] = updatedRate
       }
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to update rate')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -105,7 +105,7 @@ export const useRatesStore = defineStore('rates', () => {
       await ratesApi.delete(id)
       rates.value = rates.value.filter(r => r.id !== id)
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to delete rate')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false

@@ -1,11 +1,14 @@
 import { ref, watch } from 'vue'
 
+import type { MessageKey } from '@/i18n'
+
 export type EditorLayout = 'split' | 'code' | 'preview'
 
-export const LAYOUT_MODES: { value: EditorLayout; label: string }[] = [
-  { value: 'code', label: 'Code' },
-  { value: 'split', label: 'Split' },
-  { value: 'preview', label: 'Preview' }
+/** `label` is a message key */
+export const LAYOUT_MODES: { value: EditorLayout; label: MessageKey }[] = [
+  { value: 'code', label: 'templates.editor.layoutCode' },
+  { value: 'split', label: 'templates.editor.layoutSplit' },
+  { value: 'preview', label: 'templates.editor.layoutPreview' }
 ]
 
 const LAYOUT_KEY = 'ninvoices.templateEditor.layout'

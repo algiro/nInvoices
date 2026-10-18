@@ -1,14 +1,14 @@
 <template>
-  <nav class="pager" aria-label="Pages">
+  <nav class="pager" :aria-label="t('pager.pages')">
     <span class="muted">{{ rangeLabel }}</span>
     <div class="pager-controls">
       <label class="page-size">
-        Rows
+        {{ t('pager.rows') }}
         <select class="control" :value="params.pageSize" @change="setPageSize(selectValue($event))">
           <option v-for="size in PAGE_SIZES" :key="size" :value="size">{{ size }}</option>
         </select>
       </label>
-      <BaseButton size="sm" icon="arrowLeft" icon-only aria-label="Previous page" :disabled="page.page <= 1" @click="goToPage(page.page - 1)" />
+      <BaseButton size="sm" icon="arrowLeft" icon-only :aria-label="t('pager.previous')" :disabled="page.page <= 1" @click="goToPage(page.page - 1)" />
       <template v-for="item in pageItems" :key="item.key">
         <span v-if="item.gap" class="gap" aria-hidden="true">…</span>
         <button
@@ -22,7 +22,7 @@
           {{ item.page }}
         </button>
       </template>
-      <BaseButton size="sm" icon="chevronRight" icon-only aria-label="Next page" :disabled="page.page >= lastPage" @click="goToPage(page.page + 1)" />
+      <BaseButton size="sm" icon="chevronRight" icon-only :aria-label="t('pager.next')" :disabled="page.page >= lastPage" @click="goToPage(page.page + 1)" />
     </div>
   </nav>
 </template>
@@ -32,6 +32,9 @@ import { computed } from 'vue'
 import type { InvoicePageDto } from '@/types'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { useInvoiceListQuery, selectValue, PAGE_SIZES, DEFAULT_PAGE_SIZE } from '@/composables/useInvoiceListQuery'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{ page: InvoicePageDto }>()
 
@@ -43,7 +46,7 @@ const rangeLabel = computed(() => {
   if (props.page.totalCount === 0) return ''
   const first = (props.page.page - 1) * props.page.pageSize + 1
   const last = first + props.page.items.length - 1
-  return `${first}–${last} of ${props.page.totalCount}`
+  return t('pager.range', { first, last, total: props.page.totalCount })
 })
 
 /** Page numbers around the current one, with the first and last always shown. */

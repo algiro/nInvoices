@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { invoicesApi } from '../api';
 import type { InvoiceDto, GenerateInvoiceDto, UpdateInvoiceDto } from '../types';
 import { errorMessage } from '@/composables/useToast';
+import { t } from '@/i18n';
 
 /**
  * Invoices Store
@@ -22,7 +23,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
     try {
       invoices.value = await invoicesApi.getAll();
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to fetch invoices');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -36,7 +37,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
       selectedInvoice.value = await invoicesApi.getById(id);
       return selectedInvoice.value;
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to fetch invoice');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -49,7 +50,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
     try {
       invoices.value = await invoicesApi.getByCustomer(customerId);
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to fetch customer invoices');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -73,7 +74,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
       invoices.value.push(newInvoice);
       return newInvoice;
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to generate invoice');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -87,7 +88,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
       await invoicesApi.update(id, data);
       await reload(id);
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to update invoice');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -101,7 +102,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
       await invoicesApi.finalize(id);
       await reload(id);
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to finalize invoice');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -115,7 +116,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
       await invoicesApi.markAsSent(id);
       await reload(id);
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to mark invoice as sent');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -129,7 +130,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
       await invoicesApi.markAsPaid(id);
       await reload(id);
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to mark invoice as paid');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -143,7 +144,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
       await invoicesApi.cancel(id);
       await reload(id);
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to cancel invoice');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -160,7 +161,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
         selectedInvoice.value = null;
       }
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to delete invoice');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -181,7 +182,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to download PDF');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -198,7 +199,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
       if (blob.type === 'application/json') {
         const text = await blob.text();
         const errorData = JSON.parse(text);
-        throw new Error(errorData.error || 'Failed to download monthly report');
+        throw new Error(errorData.error || t('invoices.actions.downloadReportFailed'));
       }
       
       const url = window.URL.createObjectURL(blob);
@@ -210,7 +211,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to download monthly report');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -225,7 +226,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
       await reload(id);
       return result;
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to regenerate invoice PDF');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;
@@ -239,7 +240,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
       const result = await invoicesApi.regenerateMonthlyReportPdf(id);
       return result;
     } catch (e) {
-      error.value = errorMessage(e, 'Failed to regenerate monthly report PDF');
+      error.value = errorMessage(e);
       throw e;
     } finally {
       loading.value = false;

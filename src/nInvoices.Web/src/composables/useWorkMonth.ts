@@ -1,6 +1,7 @@
 import { ref, computed, type Ref } from 'vue'
 import { DayType } from '@/types'
 import type { WorkDayDto } from '@/types'
+import { currentLanguage } from '@/i18n'
 
 export const FULL_DAY_HOURS = 8
 
@@ -104,7 +105,9 @@ export function useWorkMonth(options: {
   })
 
   const dayHeaders = computed(() => {
-    const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    // Sunday first, in the app's language (1 January 2023 was a Sunday)
+    const names = Array.from({ length: 7 }, (_, i) =>
+      new Date(2023, 0, 1 + i).toLocaleDateString(currentLanguage(), { weekday: 'short' }))
     const f = firstDayOfWeek()
     return [...names.slice(f), ...names.slice(0, f)]
   })

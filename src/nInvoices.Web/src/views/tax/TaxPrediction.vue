@@ -1,50 +1,50 @@
 <template>
   <div class="tax-page">
-    <PageHeader title="Tax prediction" subtitle="An estimate of the taxes you pay in the year, from your invoices and expenses. It doesn't file or pay anything.">
+    <PageHeader :title="t('nav.taxPrediction')" :subtitle="t('tax.subtitle')">
       <template #actions>
-        <BaseButton icon="receipt" to="/expenses">Expenses</BaseButton>
-        <select v-model.number="year" class="control year" aria-label="Year">
+        <BaseButton icon="receipt" to="/expenses">{{ t('nav.expenses') }}</BaseButton>
+        <select v-model.number="year" class="control year" :aria-label="t('common.year')">
           <option v-for="option in years" :key="option" :value="option">{{ option }}</option>
         </select>
       </template>
     </PageHeader>
 
-    <LoadingState v-if="loading && !prediction" label="Working out the estimate…" />
+    <LoadingState v-if="loading && !prediction" :label="t('tax.loading')" />
 
-    <EmptyState v-else-if="loadError" icon="alert" title="The estimate could not be loaded" :description="loadError">
-      <BaseButton @click="load">Try again</BaseButton>
+    <EmptyState v-else-if="loadError" icon="alert" :title="t('tax.loadFailed')" :description="loadError">
+      <BaseButton @click="load">{{ t('common.tryAgain') }}</BaseButton>
     </EmptyState>
 
     <EmptyState
       v-else-if="prediction && !prediction.isSetUp"
       icon="landmark"
-      title="Tell us where you pay taxes"
-      :description="prediction.warnings[0] ?? 'Choose your country and tax regime in Settings › Country & taxes.'"
+      :title="t('tax.setUpTitle')"
+      :description="prediction.warnings[0] ?? t('tax.setUpDescription')"
     >
-      <BaseButton variant="primary" icon="settings" to="/settings/country">Open Settings</BaseButton>
+      <BaseButton variant="primary" icon="settings" to="/settings/country">{{ t('invoiceEmail.openSettings') }}</BaseButton>
     </EmptyState>
 
     <template v-else-if="prediction">
       <div class="stat-tiles">
         <div class="stat-tile hero">
-          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="landmark" /></span><span class="stat-tile-label">Estimated for {{ year }}</span></span>
+          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="landmark" /></span><span class="stat-tile-label">{{ t('tax.estimatedFor', { year }) }}</span></span>
           <span class="stat-tile-value">{{ formatMoney(totals.estimated, currency) }}</span>
-          <span class="stat-tile-note">all periods, as things stand</span>
+          <span class="stat-tile-note">{{ t('tax.allPeriods') }}</span>
         </div>
         <div class="stat-tile" :style="{ '--accent': 'var(--kpi-2)' }">
-          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="paid" /></span><span class="stat-tile-label">Paid so far</span></span>
+          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="paid" /></span><span class="stat-tile-label">{{ t('tax.paidSoFar') }}</span></span>
           <span class="stat-tile-value">{{ formatMoney(totals.paid, currency) }}</span>
-          <span class="stat-tile-note">recorded payments</span>
+          <span class="stat-tile-note">{{ t('tax.recordedPayments') }}</span>
         </div>
         <div class="stat-tile" :style="{ '--accent': 'var(--kpi-3)' }">
-          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="calendar" /></span><span class="stat-tile-label">Next to pay</span></span>
+          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="calendar" /></span><span class="stat-tile-label">{{ t('tax.nextToPay') }}</span></span>
           <template v-if="due">
             <span class="stat-tile-value">{{ formatMoney(due.form.estimated, currency) }}</span>
-            <span class="stat-tile-note">{{ due.form.name }}, {{ due.period.name }} · by {{ formatDate(due.form.deadline) }}</span>
+            <span class="stat-tile-note">{{ t('tax.dueNote', { form: due.form.name, period: due.period.name, date: formatDate(due.form.deadline) }) }}</span>
           </template>
           <template v-else>
             <span class="stat-tile-value">—</span>
-            <span class="stat-tile-note">nothing pending</span>
+            <span class="stat-tile-note">{{ t('tax.nothingPending') }}</span>
           </template>
         </div>
       </div>
@@ -75,8 +75,7 @@
       </BasePanel>
 
       <p class="disclaimer">
-        An estimate from what is recorded in nInvoices, to plan ahead: it is not tax advice, and your gestor's figures may differ
-        (expenses not recorded here, other income). The rules applied are in Settings → Country & taxes.
+        {{ t('tax.disclaimer') }}
       </p>
     </template>
 
@@ -87,8 +86,8 @@
         :period="payment.period"
         :year="year"
         :currency="currency"
-        @saved="onPaymentChanged('Payment recorded')"
-        @deleted="onPaymentChanged('Payment record deleted')"
+        @saved="onPaymentChanged(t('tax.paymentRecorded'))"
+        @deleted="onPaymentChanged(t('tax.paymentDeleted'))"
         @cancel="payment = null"
       />
     </BaseDialog>
@@ -111,6 +110,9 @@ import TaxFormRow from '@/components/tax/TaxFormRow.vue'
 import RecordPaymentForm from '@/components/tax/RecordPaymentForm.vue'
 import { formatDate, formatMoney } from '@/utils/format'
 import { nextDue, todayIso, yearTotals } from '@/utils/taxPrediction'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const toast = useToast()
 
@@ -134,7 +136,7 @@ async function load() {
   try {
     prediction.value = await taxPredictionApi.get(year.value)
   } catch (err) {
-    loadError.value = errorMessage(err, 'Failed to load the estimate')
+    loadError.value = errorMessage(err, t('tax.loadFailed'))
   } finally {
     loading.value = false
   }

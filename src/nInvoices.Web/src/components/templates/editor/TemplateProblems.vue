@@ -2,7 +2,7 @@
   <div class="problems" role="alert">
     <div class="problems-title">
       <AppIcon name="error" />
-      {{ errors.length === 1 ? '1 problem' : `${errors.length} problems` }}: {{ hasSyntaxErrors ? 'fix before saving' : 'the preview can’t render with sample data' }}
+      {{ t('templates.problems.count', errors.length) }}: {{ hasSyntaxErrors ? t('templates.problems.fixBeforeSaving') : t('templates.problems.cannotRender') }}
     </div>
     <button
       v-for="(error, index) in errors"
@@ -12,7 +12,7 @@
       :disabled="!error.line"
       @click="error.line && emit('go-to', error.line, error.column)"
     >
-      <span v-if="error.line" class="where">Line {{ error.line }}</span>
+      <span v-if="error.line" class="where">{{ t('templates.problems.line', { line: error.line }) }}</span>
       <span class="what">{{ error.message }}</span>
     </button>
   </div>
@@ -21,6 +21,9 @@
 <script setup lang="ts">
 import AppIcon from '@/components/ui/AppIcon.vue'
 import type { TemplateError } from './useTemplatePreview'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 defineProps<{ errors: TemplateError[]; hasSyntaxErrors: boolean }>()
 

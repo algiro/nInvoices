@@ -1,16 +1,20 @@
 <template>
-  <BasePanel title="Appearance" description="Pick a light and a dark theme; the mode decides which one is shown. Saved in this browser.">
+  <LanguagePanel />
+
+  <BasePanel :title="t('settings.general.appearance')" :description="t('settings.general.appearanceDescription')">
     <ThemePicker />
   </BasePanel>
 
-  <BasePanel title="Calendar" description="How the worked-days calendar lays out weeks.">
+  <BasePanel :title="t('settings.general.calendar')" :description="t('settings.general.calendarDescription')">
     <dl class="facts">
       <div>
-        <dt>Weeks start on</dt>
+        <dt>{{ t('settings.general.weeksStartOn') }}</dt>
         <dd>{{ firstDayOfWeekName }}</dd>
       </div>
     </dl>
-    <p class="note">Set by <code>Invoice.FirstDayOfWeek</code> in the API's appsettings.json (0 = Sunday, 1 = Monday … 6 = Saturday); restart the API after changing it.</p>
+    <i18n-t keypath="settings.general.weeksStartOnNote" tag="p" class="note">
+      <template #setting><code>Invoice.FirstDayOfWeek</code></template>
+    </i18n-t>
   </BasePanel>
 
   <HolidayCalendarsPanel />
@@ -22,13 +26,18 @@ import { useSettingsStore } from '@/stores/settings'
 import BasePanel from '@/components/ui/BasePanel.vue'
 import ThemePicker from '@/components/settings/ThemePicker.vue'
 import HolidayCalendarsPanel from '@/components/settings/HolidayCalendarsPanel.vue'
+import LanguagePanel from '@/components/settings/LanguagePanel.vue'
+import { currentLanguage } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const settingsStore = useSettingsStore()
 
 const firstDayOfWeekName = computed(() => {
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   const firstDay = settingsStore.invoiceSettings?.firstDayOfWeek ?? 1
-  return dayNames[firstDay] || 'Monday'
+  // 1 January 2023 was a Sunday
+  return new Date(2023, 0, 1 + (firstDay % 7)).toLocaleDateString(currentLanguage(), { weekday: 'long' })
 })
 
 onMounted(() => {

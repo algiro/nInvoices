@@ -4,8 +4,8 @@
     type="button"
     class="menu-trigger"
     :class="{ open }"
-    :aria-label="label"
-    :title="label"
+    :aria-label="label ?? t('common.moreActions')"
+    :title="label ?? t('common.moreActions')"
     aria-haspopup="menu"
     :aria-expanded="open"
     @click.stop="toggle"
@@ -44,6 +44,9 @@
 <script setup lang="ts">
 import { ref, nextTick, onBeforeUnmount } from 'vue'
 import AppIcon, { type IconName } from './AppIcon.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 export interface ActionMenuItem {
   label?: string
@@ -54,12 +57,11 @@ export interface ActionMenuItem {
   run?: () => void
 }
 
-withDefaults(defineProps<{
+defineProps<{
   items: ActionMenuItem[]
+  /** Defaults to "More actions" */
   label?: string
-}>(), {
-  label: 'More actions'
-})
+}>()
 
 const open = ref(false)
 const trigger = ref<HTMLElement | null>(null)

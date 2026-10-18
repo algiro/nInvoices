@@ -1346,6 +1346,36 @@ namespace nInvoices.Infrastructure.Data.Migrations
                     b.ToTable("UserCountries", (string)null);
                 });
 
+            modelBuilder.Entity("nInvoices.Core.Entities.UserPreferences", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UiLanguage")
+                        .IsRequired()
+                        .HasMaxLength(35)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId")
+                        .IsUnique();
+
+                    b.ToTable("UserPreferences", (string)null);
+                });
+
             modelBuilder.Entity("nInvoices.Core.Entities.WorkDay", b =>
                 {
                     b.Property<long>("Id")

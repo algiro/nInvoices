@@ -4,47 +4,37 @@
       <div>
         <h3>{{ heading }}</h3>
         <p class="help">
-          <template v-if="isShared">
-            Shared by all your customers: one is used for every customer that has no active template of its own.
-          </template>
-          <template v-else-if="kind === 'invoice'">
-            The active template for each invoice type is used when an invoice is generated. Without one, the shared template is used.
-          </template>
-          <template v-else-if="kind === 'email'">
-            Subject and text of the email created in Gmail from an invoice. The active one is preselected; without one, the shared template or a built-in text is used.
-          </template>
-          <template v-else>
-            The active template is used for the monthly timesheet PDF unless you pick another when generating. Without one, the shared template is used.
-          </template>
+          <template v-if="isShared">{{ t('templates.list.helpShared') }}</template>
+          <template v-else-if="kind === 'invoice'">{{ t('templates.list.helpInvoice') }}</template>
+          <template v-else-if="kind === 'email'">{{ t('templates.list.helpEmail') }}</template>
+          <template v-else>{{ t('templates.list.helpMonthlyReport') }}</template>
         </p>
       </div>
-      <BaseButton variant="primary" icon="plus" :to="editorLink('new')">New template</BaseButton>
+      <BaseButton variant="primary" icon="plus" :to="editorLink('new')">{{ t('templates.list.new') }}</BaseButton>
     </header>
 
-    <ul v-if="!isShared && !loading && !loadError && applies.length" class="applies" aria-label="Template in use">
+    <ul v-if="!isShared && !loading && !loadError && applies.length" class="applies" :aria-label="t('templates.list.inUse')">
       <li v-for="item in applies" :key="item.label" :class="item.tone">
         <AppIcon :name="item.tone === 'warn' ? 'alert' : 'template'" />
         <span><strong v-if="item.label">{{ item.label }}:</strong> {{ item.text }}</span>
       </li>
     </ul>
 
-    <LoadingState v-if="loading" label="Loading templates…" />
+    <LoadingState v-if="loading" :label="t('templates.list.loading')" />
 
-    <EmptyState v-else-if="loadError" icon="alert" title="Templates could not be loaded" :description="loadError" compact>
-      <BaseButton @click="load">Try again</BaseButton>
+    <EmptyState v-else-if="loadError" icon="alert" :title="t('templates.list.loadFailed')" :description="loadError" compact>
+      <BaseButton @click="load">{{ t('common.tryAgain') }}</BaseButton>
     </EmptyState>
 
     <EmptyState
       v-else-if="rows.length === 0"
       icon="template"
-      :title="!isShared && sharedRows.length ? 'No templates of its own' : 'No templates yet'"
-      :description="!isShared && sharedRows.length
-        ? 'This customer uses the shared templates below. Create its own only if it needs a different layout.'
-        : 'Start from the sample and adjust it to your layout; the preview updates as you type.'"
+      :title="!isShared && sharedRows.length ? t('templates.list.noneOwn') : t('templates.list.none')"
+      :description="!isShared && sharedRows.length ? t('templates.list.noneOwnDescription') : t('templates.list.noneDescription')"
       compact
     >
       <BaseButton variant="primary" icon="plus" :to="editorLink('new')">
-        {{ !isShared && sharedRows.length ? 'Create its own template' : 'Create the first template' }}
+        {{ !isShared && sharedRows.length ? t('templates.list.createOwn') : t('templates.list.createFirst') }}
       </BaseButton>
     </EmptyState>
 
@@ -52,28 +42,28 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">Name</th>
-            <th v-if="kind === 'invoice'" scope="col">Invoice type</th>
-            <th scope="col">Status</th>
-            <th scope="col">Last changed</th>
-            <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+            <th scope="col">{{ t('customers.name') }}</th>
+            <th v-if="kind === 'invoice'" scope="col">{{ t('invoiceWizard.customerStep.invoiceType') }}</th>
+            <th scope="col">{{ t('invoices.columns.status') }}</th>
+            <th scope="col">{{ t('invoices.details.lastChanged') }}</th>
+            <th scope="col" class="actions"><span class="sr-only">{{ t('common.actions') }}</span></th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="row in rows" :key="row.id">
             <td>
               <router-link :to="editorLink(row.id)" class="primary-cell name">
-                {{ row.name || `Untitled ${typeLabel(row.invoiceType).toLowerCase()} template` }}
+                {{ row.name || t('templates.untitled', { type: typeLabel(row.invoiceType) }) }}
               </router-link>
             </td>
             <td v-if="kind === 'invoice'">{{ typeLabel(row.invoiceType) }}</td>
             <td>
-              <StatusPill :tone="row.isActive ? 'success' : 'neutral'">{{ row.isActive ? 'Active' : 'Inactive' }}</StatusPill>
-              <span v-if="overridesShared(row)" class="override-note">overrides the shared one</span>
+              <StatusPill :tone="row.isActive ? 'success' : 'neutral'">{{ row.isActive ? t('common.active') : t('common.inactive') }}</StatusPill>
+              <span v-if="overridesShared(row)" class="override-note">{{ t('templates.list.overridesShared') }}</span>
             </td>
             <td class="muted">{{ formatDate(row.updatedAt ?? row.createdAt) }}</td>
             <td class="actions">
-              <BaseButton size="sm" variant="ghost" icon="edit" :to="editorLink(row.id)">Edit</BaseButton>
+              <BaseButton size="sm" variant="ghost" icon="edit" :to="editorLink(row.id)">{{ t('common.edit') }}</BaseButton>
               <BaseButton
                 v-if="row.isActive"
                 size="sm"
@@ -81,7 +71,7 @@
                 :loading="busyId === row.id"
                 @click="setActive(row, false)"
               >
-                Deactivate
+                {{ t('templates.list.deactivate') }}
               </BaseButton>
               <BaseButton
                 v-else
@@ -91,15 +81,15 @@
                 :loading="busyId === row.id"
                 @click="setActive(row, true)"
               >
-                Activate
+                {{ t('templates.list.activate') }}
               </BaseButton>
               <BaseButton
                 size="sm"
                 variant="ghost-danger"
                 icon="trash"
                 icon-only
-                :aria-label="`Delete ${row.name || 'template'}`"
-                title="Delete"
+                :aria-label="t('common.deleteNamed', { name: row.name || t('templates.list.template') })"
+                :title="t('common.delete')"
                 @click="remove(row)"
               />
             </td>
@@ -109,43 +99,42 @@
     </div>
 
     <div v-if="!isShared && !loading && !loadError && sharedRows.length" class="shared-block">
-      <h4>Shared templates</h4>
+      <h4>{{ t('routes.sharedTemplates') }}</h4>
       <p class="help">
-        Shared by all your customers; they apply here while this customer has no active template of its own.
-        To change the layout for this customer only, override one.
+        {{ t('templates.list.sharedHelp') }}
       </p>
       <div class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th scope="col">Name</th>
-              <th v-if="kind === 'invoice'" scope="col">Invoice type</th>
-              <th scope="col">Status</th>
-              <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+              <th scope="col">{{ t('customers.name') }}</th>
+              <th v-if="kind === 'invoice'" scope="col">{{ t('invoiceWizard.customerStep.invoiceType') }}</th>
+              <th scope="col">{{ t('invoices.columns.status') }}</th>
+              <th scope="col" class="actions"><span class="sr-only">{{ t('common.actions') }}</span></th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="row in sharedRows" :key="row.id">
               <td>
                 <router-link :to="editorLink(row.id, true)" class="primary-cell name">
-                  {{ row.name || `Untitled ${typeLabel(row.invoiceType).toLowerCase()} template` }}
+                  {{ row.name || t('templates.untitled', { type: typeLabel(row.invoiceType) }) }}
                 </router-link>
               </td>
               <td v-if="kind === 'invoice'">{{ typeLabel(row.invoiceType) }}</td>
               <td>
-                <StatusPill :tone="row.isActive ? 'success' : 'neutral'">{{ row.isActive ? 'Active' : 'Inactive' }}</StatusPill>
+                <StatusPill :tone="row.isActive ? 'success' : 'neutral'">{{ row.isActive ? t('common.active') : t('common.inactive') }}</StatusPill>
               </td>
               <td class="actions">
-                <BaseButton size="sm" variant="ghost" icon="edit" :to="editorLink(row.id, true)">Edit shared</BaseButton>
+                <BaseButton size="sm" variant="ghost" icon="edit" :to="editorLink(row.id, true)">{{ t('templates.list.editShared') }}</BaseButton>
                 <BaseButton
                   size="sm"
                   variant="secondary"
                   icon="plus"
                   :loading="busyId === row.id"
-                  title="Copy it for this customer and use the copy"
+                  :title="t('templates.list.overrideHint')"
                   @click="override(row)"
                 >
-                  Override for this customer
+                  {{ t('templates.list.override') }}
                 </BaseButton>
               </td>
             </tr>
@@ -170,7 +159,10 @@ import { emailTemplatesApi } from '@/api/emailTemplates'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import type { TemplateKind } from './editor/templateVariables'
-import { formatDate } from '@/utils/format'
+import { formatDate, invoiceTypeLabel } from '@/utils/format'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface TemplateRow {
   id: number
@@ -210,8 +202,9 @@ const busyId = ref<number | null>(null)
 const isShared = computed(() => props.customerId === null)
 
 const heading = computed(() => {
-  const name = props.kind === 'invoice' ? 'Invoice templates' : props.kind === 'email' ? 'Email templates' : 'Monthly report templates'
-  return isShared.value ? `Shared ${name.toLowerCase()}` : name
+  if (props.kind === 'invoice') return isShared.value ? t('templates.list.sharedInvoice') : t('customers.tabs.templates')
+  if (props.kind === 'email') return isShared.value ? t('templates.list.sharedEmail') : t('customers.tabs.emails')
+  return isShared.value ? t('templates.list.sharedMonthlyReport') : t('templates.list.monthlyReport')
 })
 
 function editorLink(id: number | 'new', shared = false) {
@@ -225,9 +218,14 @@ function apiFor(kind: TemplateKind) {
   return kind === 'invoice' ? templatesApi : kind === 'email' ? emailTemplatesApi : monthlyReportTemplatesApi
 }
 
-function typeLabel(type: unknown): string {
+/** The invoice type's name, e.g. 'OneTime' (older data may carry the enum's number). */
+function typeName(type: unknown): string {
   const value = String(type)
-  return value === 'OneTime' || value === '1' ? 'One-time' : value === 'Quarterly' ? 'Quarterly' : value === 'Annual' ? 'Annual' : 'Monthly'
+  return value === 'OneTime' || value === '1' ? 'OneTime' : value === 'Quarterly' ? 'Quarterly' : value === 'Annual' ? 'Annual' : 'Monthly'
+}
+
+function typeLabel(type: unknown): string {
+  return invoiceTypeLabel(typeName(type))
 }
 
 const sortRows = (list: TemplateRow[]) =>
@@ -238,14 +236,14 @@ const sortRows = (list: TemplateRow[]) =>
 /** The invoice types templates are chosen for; the other kinds have a single template slot. */
 const slots = computed(() =>
   props.kind === 'invoice'
-    ? [{ label: 'Monthly invoices', type: 'Monthly' }, { label: 'One-time invoices', type: 'One-time' }]
+    ? [{ label: t('templates.list.monthlyInvoices'), type: 'Monthly' }, { label: t('templates.list.oneTimeInvoices'), type: 'OneTime' }]
     : [{ label: '', type: null as string | null }]
 )
 
-const sameSlot = (row: TemplateRow, type: string | null) => type === null || typeLabel(row.invoiceType) === type
+const sameSlot = (row: TemplateRow, type: string | null) => type === null || typeName(row.invoiceType) === type
 
 function overridesShared(row: TemplateRow): boolean {
-  return !isShared.value && row.isActive && sharedRows.value.some(s => s.isActive && sameSlot(s, props.kind === 'invoice' ? typeLabel(row.invoiceType) : null))
+  return !isShared.value && row.isActive && sharedRows.value.some(s => s.isActive && sameSlot(s, props.kind === 'invoice' ? typeName(row.invoiceType) : null))
 }
 
 const applies = computed((): AppliesItem[] => {
@@ -262,18 +260,18 @@ const applies = computed((): AppliesItem[] => {
         label,
         tone: 'ok' as const,
         text: shared
-          ? `uses its own template “${own.name}”, overriding the shared “${shared.name}”.`
-          : `uses its own template “${own.name}”.`
+          ? t('templates.list.usesOwnOverriding', { name: own.name, shared: shared.name })
+          : t('templates.list.usesOwn', { name: own.name })
       }
     }
-    if (shared) return { label, tone: 'ok' as const, text: `uses the shared template “${shared.name}”.` }
+    if (shared) return { label, tone: 'ok' as const, text: t('templates.list.usesShared', { name: shared.name }) }
 
     return {
       label,
       tone: 'warn' as const,
       text: props.kind === 'email'
-        ? 'no active template: the built-in text is used.'
-        : 'no active template, so this can’t be generated yet.'
+        ? t('templates.list.noActiveEmail')
+        : t('templates.list.noActive')
     }
   })
 })
@@ -306,8 +304,8 @@ async function load() {
     rows.value = sortRows(own)
     sharedRows.value = sortRows(shared)
   } catch (error) {
-    loadError.value = 'The templates could not be loaded.'
-    toast.failure('Could not load templates', error)
+    loadError.value = t('templates.list.loadFailedDetail')
+    toast.failure(t('templates.list.loadFailed'), error)
   } finally {
     loading.value = false
   }
@@ -318,10 +316,10 @@ async function setActive(row: TemplateRow, active: boolean) {
   try {
     const api = apiFor(props.kind)
     await (active ? api.activate(row.id) : api.deactivate(row.id))
-    toast.success(active ? 'Template activated' : 'Template deactivated')
+    toast.success(active ? t('templates.list.activated') : t('templates.list.deactivated'))
     await load() // activating one can deactivate another of the same type
   } catch (error) {
-    toast.failure(active ? 'Could not activate the template' : 'Could not deactivate the template', error)
+    toast.failure(active ? t('templates.list.activateFailed') : t('templates.list.deactivateFailed'), error)
   } finally {
     busyId.value = null
   }
@@ -342,10 +340,10 @@ async function override(shared: TemplateRow) {
         : await monthlyReportTemplatesApi.create({ customerId, name, content: shared.content ?? '', invoiceType: shared.invoiceType as never })
 
     await apiFor(props.kind).activate(created.id)
-    toast.success('This customer now has its own copy', { message: 'Change it here; the shared template is untouched.' })
+    toast.success(t('templates.list.overridden'), { message: t('templates.list.overriddenMessage') })
     await router.push(editorLink(created.id))
   } catch (error) {
-    toast.failure('Could not override the shared template', error)
+    toast.failure(t('templates.list.overrideFailed'), error)
     await load()
   } finally {
     busyId.value = null
@@ -353,23 +351,21 @@ async function override(shared: TemplateRow) {
 }
 
 async function remove(row: TemplateRow) {
-  const label = row.name || 'this template'
-  const sharedNote = isShared.value ? ' Customers that used it will fall back to their own template, or none.' : ''
+  const name = row.name || t('templates.list.thisTemplate')
+  const message = props.kind === 'email' ? t('templates.list.deleteEmailMessage', { name }) : t('templates.list.deleteMessage', { name })
   if (!(await confirm({
-    title: 'Delete template?',
-    message: (props.kind === 'email'
-      ? `“${label}” will be permanently deleted. Drafts already created in Gmail are not affected.`
-      : `“${label}” will be permanently deleted. Invoices already generated keep their PDFs.`) + sharedNote,
-    confirmLabel: 'Delete',
+    title: t('templates.list.deleteTitle'),
+    message: isShared.value ? `${message} ${t('templates.list.deleteSharedNote')}` : message,
+    confirmLabel: t('common.delete'),
     tone: 'danger'
   }))) return
 
   try {
     await apiFor(props.kind).delete(row.id)
-    toast.success('Template deleted')
+    toast.success(t('templates.list.deleted'))
     await load()
   } catch (error) {
-    toast.failure('Could not delete the template', error)
+    toast.failure(t('templates.list.deleteFailed'), error)
   }
 }
 

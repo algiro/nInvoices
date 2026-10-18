@@ -1,16 +1,16 @@
 <template>
   <BasePanel
     v-if="country || loadError"
-    title="Tax regime"
-    :description="`How you pay taxes in ${country?.name ?? 'your country'}, for the tax prediction. It only estimates: nothing is filed or paid for you.`"
+    :title="t('taxProfile.title')"
+    :description="t('taxProfile.description', { country: country?.name ?? t('taxProfile.yourCountry') })"
   >
-    <EmptyState v-if="loadError" icon="alert" title="The tax settings could not be loaded" :description="loadError" compact>
-      <BaseButton @click="load">Try again</BaseButton>
+    <EmptyState v-if="loadError" icon="alert" :title="t('taxProfile.loadFailed')" :description="loadError" compact>
+      <BaseButton @click="load">{{ t('common.tryAgain') }}</BaseButton>
     </EmptyState>
 
     <form v-else novalidate class="tax-form" @submit.prevent="save">
       <div class="grid">
-        <BaseField v-if="country" label="Tax regime" for="tax-regime" required :help="regime?.help ?? undefined" :error="errors.regimeId">
+        <BaseField v-if="country" :label="t('taxProfile.title')" for="tax-regime" required :help="regime?.help ?? undefined" :error="errors.regimeId">
           <select id="tax-regime" v-model="regimeId" class="control" @change="onRegimeChange">
             <option v-for="option in country.regimes" :key="option.id" :value="option.id">{{ option.name }}</option>
           </select>
@@ -32,8 +32,8 @@
       <p v-if="errors.general" class="field-error" role="alert">{{ errors.general }}</p>
 
       <div class="actions">
-        <StatusPill v-if="!profile" tone="neutral">Not set up</StatusPill>
-        <BaseButton type="submit" variant="primary" :loading="saving" :disabled="saving || !regime">Save</BaseButton>
+        <StatusPill v-if="!profile" tone="neutral">{{ t('taxProfile.notSetUp') }}</StatusPill>
+        <BaseButton type="submit" variant="primary" :loading="saving" :disabled="saving || !regime">{{ t('common.save') }}</BaseButton>
       </div>
     </form>
   </BasePanel>
@@ -51,6 +51,9 @@ import StatusPill from '@/components/ui/StatusPill.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import ComplianceFieldInput from '@/components/settings/ComplianceFieldInput.vue'
 import { initialValues } from '@/utils/taxPrediction'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   /** The country the user works from: only its regimes are offered */
@@ -96,7 +99,7 @@ async function load() {
     profile.value = settings.profile ?? null
     selectRegime()
   } catch (err) {
-    loadError.value = errorMessage(err, 'Failed to load the tax settings')
+    loadError.value = errorMessage(err, t('taxProfile.loadFailed'))
   }
 }
 
@@ -106,7 +109,7 @@ async function save() {
   try {
     profile.value = await taxPredictionApi.updateProfile({ countryCode: countryCode.value, regimeId: regimeId.value, values: values.value })
     values.value = { ...profile.value.values }
-    toast.success('Tax settings saved')
+    toast.success(t('taxProfile.saved'))
   } catch (err) {
     if (apiStatus(err) === 400) {
       const byField: Record<string, string> = {}
@@ -115,12 +118,12 @@ async function save() {
       }
       errors.value = Object.keys(byField).length ? byField : { general: errorMessage(err) }
       // The messages sit under their fields, possibly out of sight: say so, and show the first one
-      toast.warning('Tax settings not saved', { message: 'Check the fields marked in red.' })
+      toast.warning(t('taxProfile.notSaved'), { message: t('common.checkFields') })
       await nextTick()
       document.getElementById('tax-regime')?.closest('form')?.querySelector('[role="alert"]')
         ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     } else {
-      toast.failure('Failed to save the tax settings', err)
+      toast.failure(t('taxProfile.saveFailed'), err)
     }
   } finally {
     saving.value = false

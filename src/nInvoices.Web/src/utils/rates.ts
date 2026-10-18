@@ -1,10 +1,11 @@
 import { RateType } from '@/types'
 import type { RateDto, WorkDayDto } from '@/types'
 import { formatMoney } from '@/utils/format'
+import { t } from '@/i18n'
 import { billedHours, dayHours, FULL_DAY_HOURS } from '@/composables/useWorkMonth'
 
 export function rateUnit(type: RateType | string): string {
-  return type === RateType.Hourly ? 'per hour' : type === RateType.Monthly ? 'per month' : 'per day'
+  return type === RateType.Hourly ? t('rates.perHour') : type === RateType.Monthly ? t('rates.perMonth') : t('rates.perDay')
 }
 
 /** "€70.00 per hour", with the rate's name in front when it has one. */
@@ -16,7 +17,7 @@ export function rateLabel(rate: RateDto): string {
 /** A compact label for a calendar cell: the rate's name, else "€70/h". */
 export function rateShortLabel(rate: RateDto): string {
   if (rate.name) return rate.name
-  const unit = rate.type === RateType.Hourly ? 'h' : rate.type === RateType.Monthly ? 'mo' : 'day'
+  const unit = rate.type === RateType.Hourly ? t('rates.shortHour') : rate.type === RateType.Monthly ? t('rates.shortMonth') : t('rates.shortDay')
   return `${formatMoney(rate.price.amount, rate.price.currency)}/${unit}`
 }
 

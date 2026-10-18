@@ -9,7 +9,8 @@ import type { GenerateInvoiceDto, PublicHolidayDto, RateDto, WorkDayDto } from '
 import { useWorkMonth, localDateString, dayHours, billedHours, FULL_DAY_HOURS } from '@/composables/useWorkMonth'
 import { holidaysApi } from '@/api/holidays'
 import { useToast } from '@/composables/useToast'
-import { formatMoney, invoiceTypeLabel } from '@/utils/format'
+import { formatMoney } from '@/utils/format'
+import { currentLanguage, t } from '@/i18n'
 import { dayAmount, isDayRate } from '@/utils/rates'
 
 export const EXPENSE_CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF']
@@ -110,7 +111,7 @@ export function useInvoiceDraft() {
   const availableTemplates = computed(() => {
     if (!form.customerId) return []
     return monthlyReportTemplatesStore.templates.filter(
-      t => (t.customerId === form.customerId || t.customerId === null) && invoiceTypeLabel(t.invoiceType) === 'Monthly'
+      t => (t.customerId === form.customerId || t.customerId === null) && String(t.invoiceType) === 'Monthly'
     )
   })
 
@@ -121,12 +122,12 @@ export function useInvoiceDraft() {
   })
 
   const periodLabel = computed(() =>
-    new Date(selectedYear.value, selectedMonth.value - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+    new Date(selectedYear.value, selectedMonth.value - 1, 1).toLocaleDateString(currentLanguage(), { month: 'long', year: 'numeric' })
   )
 
   const rateUnit = computed(() => {
     const type = selectedRate.value?.type
-    return type === RateType.Hourly ? 'per hour' : type === RateType.Monthly ? 'per month' : 'per day'
+    return type === RateType.Hourly ? t('rates.perHour') : type === RateType.Monthly ? t('rates.perMonth') : t('rates.perDay')
   })
 
   const estimatedAmount = computed(() => {
@@ -169,16 +170,16 @@ export function useInvoiceDraft() {
   // ---------- what each step still needs; null when it's complete ----------
 
   const customerBlocker = computed((): string | null => {
-    if (!form.customerId) return 'Select a customer.'
-    if (noRate.value) return 'The customer needs a rate.'
-    if (!isMonthly.value && isHourlyRate.value && !(Number(form.hours) > 0)) return 'Enter the hours to bill.'
-    if (!form.issueDate) return 'Set the issue date.'
+    if (!form.customerId) return t('invoiceWizard.blockers.selectCustomer')
+    if (noRate.value) return t('invoiceWizard.blockers.needsRate')
+    if (!isMonthly.value && isHourlyRate.value && !(Number(form.hours) > 0)) return t('invoiceWizard.blockers.enterHours')
+    if (!form.issueDate) return t('invoiceWizard.blockers.setIssueDate')
     return null
   })
 
   const timeBlocker = computed((): string | null => {
     if (!isMonthly.value) return null
-    if ((form.workDays ?? []).length === 0) return 'Mark at least one day.'
+    if ((form.workDays ?? []).length === 0) return t('invoiceWizard.blockers.markDay')
     // Hourly and daily billing need some hours on every worked day
     const missingHours = workMonth.workedDays.value.some(wd => {
       const rate = rateOfDay(wd)
@@ -186,7 +187,7 @@ export function useInvoiceDraft() {
       if (rate?.type === RateType.Daily) return billedHours(wd) <= 0
       return false
     })
-    if (missingHours) return 'Every worked day needs more than 0 hours.'
+    if (missingHours) return t('invoiceWizard.blockers.dayHours')
     return null
   })
 
@@ -196,7 +197,7 @@ export function useInvoiceDraft() {
   )
 
   const expensesBlocker = computed((): string | null =>
-    incompleteExpense.value >= 0 ? 'Complete or remove the unfinished expense.' : null
+    incompleteExpense.value >= 0 ? t('invoiceWizard.blockers.incompleteExpense') : null
   )
 
   // ---------- public holidays ----------
@@ -255,7 +256,7 @@ export function useInvoiceDraft() {
         result = response.holidays
         countryName = response.countryName
       } catch (error) {
-        if (request === holidayRequest) toast.failure('Could not load the public holidays', error)
+        if (request === holidayRequest) toast.failure(t('invoiceWizard.holidaysFailed'), error)
       }
     }
 
@@ -343,7 +344,7 @@ export function useInvoiceDraft() {
         await monthlyReportTemplatesStore.fetchByCustomer(form.customerId)
       }
     } catch (error) {
-      toast.failure('Could not load the customer’s rates and projects', error)
+      toast.failure(t('invoiceWizard.customerDataFailed'), error)
     }
   }
 

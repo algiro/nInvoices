@@ -6,6 +6,12 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
     plugins: [vue()],
+    define: {
+      // vue-i18n: Composition API only (the legacy API is left out of the bundle)
+      __VUE_I18N_FULL_INSTALL__: true,
+      __VUE_I18N_LEGACY_API__: false,
+      __INTLIFY_PROD_DEVTOOLS__: false
+    },
     base: env.VITE_BASE || '/',
     resolve: {
       alias: {

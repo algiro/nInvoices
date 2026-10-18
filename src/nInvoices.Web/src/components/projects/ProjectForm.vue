@@ -1,28 +1,28 @@
 <template>
   <form class="project-form" novalidate @submit.prevent="handleSubmit">
-    <BaseField label="Name" for="project-name" required :error="errors.name">
+    <BaseField :label="t('customers.name')" for="project-name" required :error="errors.name">
       <input
         id="project-name"
         v-model.trim="form.name"
         type="text"
         maxlength="200"
         class="control"
-        placeholder="e.g. Website redesign"
+        :placeholder="t('projects.namePlaceholder')"
       />
     </BaseField>
 
     <label v-if="projectId" class="toggle" for="project-active">
       <input id="project-active" v-model="form.isActive" type="checkbox" />
       <span>
-        <strong>Active</strong>
-        <small>Inactive projects aren't suggested when entering days, but stay on past invoices and reports.</small>
+        <strong>{{ t('common.active') }}</strong>
+        <small>{{ t('projects.activeHelp') }}</small>
       </span>
     </label>
 
     <div class="form-actions">
-      <BaseButton :disabled="saving" @click="emit('cancel')">Cancel</BaseButton>
+      <BaseButton :disabled="saving" @click="emit('cancel')">{{ t('common.cancel') }}</BaseButton>
       <BaseButton type="submit" variant="primary" :loading="saving">
-        {{ projectId ? 'Save changes' : 'Add project' }}
+        {{ projectId ? t('common.saveChanges') : t('projects.add') }}
       </BaseButton>
     </div>
   </form>
@@ -35,6 +35,9 @@ import type { CreateProjectDto } from '@/types'
 import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { errorMessage } from '@/composables/useToast'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   customerId: number
@@ -70,7 +73,7 @@ onMounted(() => {
 async function handleSubmit() {
   delete errors.name
   if (!form.name.trim()) {
-    errors.name = 'Enter a project name.'
+    errors.name = t('projects.enterName')
     document.getElementById('project-name')?.focus()
     return
   }
@@ -84,7 +87,7 @@ async function handleSubmit() {
     }
     emit('success')
   } catch (error) {
-    errors.name = `The project could not be saved: ${errorMessage(error)}`
+    errors.name = t('projects.saveFailedDetail', { error: errorMessage(error) })
   } finally {
     saving.value = false
   }

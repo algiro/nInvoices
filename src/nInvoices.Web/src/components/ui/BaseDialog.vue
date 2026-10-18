@@ -17,7 +17,7 @@
               <h2 :id="titleId" class="dialog-title">{{ title }}</h2>
               <p v-if="description" class="dialog-description">{{ description }}</p>
             </div>
-            <button type="button" class="close-btn" aria-label="Close" @click="emit('close')">
+            <button type="button" class="close-btn" :aria-label="t('common.close')" @click="emit('close')">
               <AppIcon name="close" />
             </button>
           </header>
@@ -36,6 +36,9 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
 import AppIcon from './AppIcon.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = withDefaults(defineProps<{
   open: boolean

@@ -21,7 +21,7 @@ export const useSettingsStore = defineStore('settings', () => {
       invoiceSettings.value = data
       return data
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to load invoice settings')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false

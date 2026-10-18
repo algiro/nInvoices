@@ -1,8 +1,8 @@
 <template>
   <div class="customers-page">
-    <PageHeader title="Customers" :subtitle="subtitle">
+    <PageHeader :title="t('nav.customers')" :subtitle="subtitle">
       <template #actions>
-        <BaseButton variant="primary" icon="plus" to="/customers/new">New customer</BaseButton>
+        <BaseButton variant="primary" icon="plus" to="/customers/new">{{ t('customers.new') }}</BaseButton>
       </template>
     </PageHeader>
 
@@ -14,45 +14,45 @@
           v-model="searchQuery"
           type="search"
           class="control"
-          placeholder="Search by name, VAT number or city"
-          aria-label="Search customers"
+          :placeholder="t('customers.searchPlaceholder')"
+          :aria-label="t('customers.search')"
         />
       </div>
     </div>
 
-    <LoadingState v-if="store.loading && store.customers.length === 0" label="Loading customers…" />
+    <LoadingState v-if="store.loading && store.customers.length === 0" :label="t('customers.loading')" />
 
-    <EmptyState v-else-if="store.error" icon="alert" title="Customers could not be loaded" :description="store.error">
-      <BaseButton @click="loadData">Try again</BaseButton>
+    <EmptyState v-else-if="store.error" icon="alert" :title="t('customers.loadFailed')" :description="store.error">
+      <BaseButton @click="loadData">{{ t('common.tryAgain') }}</BaseButton>
     </EmptyState>
 
     <EmptyState
       v-else-if="store.customers.length === 0"
       icon="customers"
-      title="No customers yet"
-      description="Add a customer, then their rates and templates, before generating the first invoice."
+      :title="t('customers.emptyTitle')"
+      :description="t('customers.emptyDescription')"
     >
-      <BaseButton variant="primary" icon="plus" to="/customers/new">New customer</BaseButton>
+      <BaseButton variant="primary" icon="plus" to="/customers/new">{{ t('customers.new') }}</BaseButton>
     </EmptyState>
 
     <EmptyState
       v-else-if="filteredCustomers.length === 0"
       icon="search"
-      title="No customer matches your search"
-      :description="`Nothing found for “${searchQuery}”.`"
+      :title="t('customers.noMatch')"
+      :description="t('common.nothingFoundFor', { query: searchQuery })"
       compact
     >
-      <BaseButton @click="searchQuery = ''">Clear search</BaseButton>
+      <BaseButton @click="searchQuery = ''">{{ t('common.clearSearch') }}</BaseButton>
     </EmptyState>
 
     <div v-else class="table-wrap">
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">Customer</th>
-            <th scope="col">Location</th>
-            <th scope="col">Language</th>
-            <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+            <th scope="col">{{ t('customers.customer') }}</th>
+            <th scope="col">{{ t('customers.location') }}</th>
+            <th scope="col">{{ t('customers.language') }}</th>
+            <th scope="col" class="actions"><span class="sr-only">{{ t('common.actions') }}</span></th>
           </tr>
         </thead>
         <tbody>
@@ -66,14 +66,14 @@
             <td>{{ [customer.address.city, customer.address.country].filter(Boolean).join(', ') }}</td>
             <td class="muted">{{ localeLabel(customer.locale) }}</td>
             <td class="actions" @click.stop>
-              <BaseButton size="sm" variant="ghost" icon="edit" :to="`/customers/${customer.id}/edit`">Edit</BaseButton>
+              <BaseButton size="sm" variant="ghost" icon="edit" :to="`/customers/${customer.id}/edit`">{{ t('common.edit') }}</BaseButton>
               <BaseButton
                 size="sm"
                 variant="ghost-danger"
                 icon="trash"
                 icon-only
-                title="Delete"
-                :aria-label="`Delete ${customer.name}`"
+                :title="t('common.delete')"
+                :aria-label="t('common.deleteNamed', { name: customer.name })"
                 @click="handleDelete(customer)"
               />
             </td>
@@ -97,6 +97,9 @@ import AppIcon from '@/components/ui/AppIcon.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import { localeLabel } from '@/utils/format'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const toast = useToast()
 const { confirm } = useConfirm()
@@ -106,8 +109,7 @@ const store = useCustomersStore()
 const searchQuery = ref('')
 
 const subtitle = computed(() => {
-  const count = store.customers.length
-  return count === 1 ? '1 customer' : `${count} customers`
+  return t('customers.count', store.customers.length)
 })
 
 const filteredCustomers = computed(() => {
@@ -136,15 +138,15 @@ function handleView(id: number) {
 }
 
 async function handleDelete(customer: CustomerDto) {
-  if (!(await confirm({ title: 'Delete customer?', message: `"${customer.name}" and all of their data will be permanently deleted.`, confirmLabel: 'Delete customer', tone: 'danger' }))) {
+  if (!(await confirm({ title: t('customers.deleteTitle'), message: t('customers.deleteMessage', { name: customer.name }), confirmLabel: t('customers.deleteConfirm'), tone: 'danger' }))) {
     return
   }
 
   try {
     await store.remove(customer.id)
-    toast.success('Customer deleted')
+    toast.success(t('customers.deleted'))
   } catch (error) {
-    toast.failure('Failed to delete customer', error)
+    toast.failure(t('customers.deleteFailed'), error)
   }
 }
 </script>

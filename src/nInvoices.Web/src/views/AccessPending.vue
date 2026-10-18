@@ -2,22 +2,20 @@
   <main class="access-pending">
     <section class="card" aria-labelledby="access-pending-title">
       <span class="brand-mark" aria-hidden="true">nI</span>
-      <h1 id="access-pending-title">Your account is waiting for approval</h1>
-      <p>
-        You're signed in as <strong>{{ authStore.email || authStore.username }}</strong>, but this
-        nInvoices server only lets in accounts its administrator has approved.
-      </p>
+      <h1 id="access-pending-title">{{ t('access.pendingTitle') }}</h1>
+      <i18n-t keypath="access.signedInAs" tag="p">
+        <template #user><strong>{{ authStore.email || authStore.username }}</strong></template>
+      </i18n-t>
       <p v-if="administratorNotified" class="muted" role="status">
-        The administrator has been notified. Once they approve your account, check again.
+        {{ t('access.administratorNotified') }}
       </p>
       <p v-else class="muted">
-        Ask the administrator to approve your account, then check again. Nothing you do here is
-        saved until then.
+        {{ t('access.askAdministrator') }}
       </p>
-      <p v-if="stillPending" class="status" role="status">Not approved yet.</p>
+      <p v-if="stillPending" class="status" role="status">{{ t('access.notApprovedYet') }}</p>
       <div class="actions">
-        <BaseButton variant="primary" :loading="checking" @click="checkAgain">Check again</BaseButton>
-        <BaseButton variant="ghost" @click="authStore.logout()">Sign out</BaseButton>
+        <BaseButton variant="primary" :loading="checking" @click="checkAgain">{{ t('access.checkAgain') }}</BaseButton>
+        <BaseButton variant="ghost" @click="authStore.logout()">{{ t('layout.signOut') }}</BaseButton>
       </div>
     </section>
   </main>
@@ -29,6 +27,9 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import BaseButton from '../components/ui/BaseButton.vue';
 import { accountApi } from '../api/account';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const router = useRouter();
 const authStore = useAuthStore();

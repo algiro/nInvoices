@@ -1,12 +1,15 @@
 <template>
   <div class="loading-state" role="status" aria-live="polite">
     <span class="spinner" aria-hidden="true"></span>
-    <span>{{ label }}</span>
+    <span>{{ label ?? t('common.loading') }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
-withDefaults(defineProps<{ label?: string }>(), { label: 'Loading…' })
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+defineProps<{ label?: string }>()
 </script>
 
 <style scoped>

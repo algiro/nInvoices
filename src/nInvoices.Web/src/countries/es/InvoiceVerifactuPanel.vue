@@ -1,8 +1,8 @@
 <template>
   <BasePanel
     v-if="info?.isRecorded"
-    title="Verifactu"
-    description="This invoice is recorded in your tamper-evident chain of invoices, and shows a QR code anyone can use to check it with the Tax Agency."
+    :title="t('countries.es.verifactu.title')"
+    :description="t('countries.es.verifactu.description')"
   >
     <div class="qr-block">
       <p class="heading">{{ info.qrHeading }}</p>
@@ -12,7 +12,7 @@
       <p class="legend">{{ info.legend }}</p>
     </div>
 
-    <StatusPill v-if="info.isCancelled" tone="danger">Cancelled: recorded as cancelled</StatusPill>
+    <StatusPill v-if="info.isCancelled" tone="danger">{{ t('countries.es.verifactu.cancelled') }}</StatusPill>
 
     <div v-if="info.submissionStatus" class="submission">
       <StatusPill :tone="submissionTone">{{ submissionLabel }}</StatusPill>
@@ -20,16 +20,16 @@
     </div>
 
     <dl class="facts">
-      <div><dt>Record</dt><dd>No. {{ info.sequence }} in your chain</dd></div>
-      <div v-if="info.csv"><dt>Tax Agency code</dt><dd class="mono">{{ info.csv }}</dd></div>
-      <div><dt>Recorded</dt><dd class="mono">{{ info.generatedAt }}</dd></div>
+      <div><dt>{{ t('countries.es.verifactu.record') }}</dt><dd>{{ t('countries.es.verifactu.recordNumber', { n: info.sequence }) }}</dd></div>
+      <div v-if="info.csv"><dt>{{ t('countries.es.verifactu.csv') }}</dt><dd class="mono">{{ info.csv }}</dd></div>
+      <div><dt>{{ t('countries.es.verifactu.recorded') }}</dt><dd class="mono">{{ info.generatedAt }}</dd></div>
       <div>
-        <dt>Hash</dt>
+        <dt>{{ t('countries.es.verifactu.hash') }}</dt>
         <dd class="mono hash" :title="info.hash ?? ''">{{ info.hash }}</dd>
       </div>
     </dl>
 
-    <a v-if="info.qrUrl" :href="info.qrUrl" target="_blank" rel="noopener" class="check">Check it on the Tax Agency site</a>
+    <a v-if="info.qrUrl" :href="info.qrUrl" target="_blank" rel="noopener" class="check">{{ t('countries.es.verifactu.check') }}</a>
   </BasePanel>
 </template>
 
@@ -39,6 +39,9 @@ import { verifactuApi } from './verifactuApi'
 import type { InvoiceVerifactuDto } from './types'
 import BasePanel from '@/components/ui/BasePanel.vue'
 import StatusPill from '@/components/ui/StatusPill.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   invoiceId: number
@@ -50,10 +53,10 @@ const info = ref<InvoiceVerifactuDto | null>(null)
 
 const submissionLabel = computed(() => {
   switch (info.value?.submissionStatus) {
-    case 'Accepted': return 'Registered with the Tax Agency'
-    case 'AcceptedWithErrors': return 'Registered, with remarks'
-    case 'Rejected': return 'Rejected by the Tax Agency'
-    default: return 'Waiting to be sent to the Tax Agency'
+    case 'Accepted': return t('countries.es.verifactu.accepted')
+    case 'AcceptedWithErrors': return t('countries.es.verifactu.acceptedWithErrors')
+    case 'Rejected': return t('countries.es.verifactu.rejected')
+    default: return t('countries.es.verifactu.waiting')
   }
 })
 
