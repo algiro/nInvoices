@@ -139,13 +139,13 @@ public sealed class InvoiceGenerationServiceProjectTests
             _customerRepository.Object,
             _taxRepository.Object,
             _invoiceRepository.Object,
-            new InvoiceRateResolver(_rateRepository.Object),
+            new InvoiceRateResolver(_rateRepository.Object, TestText.Instance),
             new InvoiceWorkDays(_workDayRepository.Object, _projectResolver.Object),
             _templateRenderer.Object,
             _taxCalculationService.Object,
             new InvoiceNumbering(_sequenceRepository.Object, settings),
             _unitOfWork.Object,
-            new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)));
+            new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)), TestText.Instance);
     }
 
     private void GivenRate(RateType type, decimal amount)

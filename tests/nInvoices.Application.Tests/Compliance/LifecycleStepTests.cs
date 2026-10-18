@@ -56,7 +56,7 @@ public sealed class LifecycleStepTests
     }
 
     private FinalizeInvoiceCommandHandler Finalizer() =>
-        new(_invoices, _customers, new InvoiceFinalizer(_numbering.Object, _drafts.Object, Mock.Of<IPublisher>(), [_step.Object]), _unitOfWork.Object);
+        new(_invoices, _customers, new InvoiceFinalizer(_numbering.Object, _drafts.Object, Mock.Of<IPublisher>(), [_step.Object]), _unitOfWork.Object, TestText.Instance);
 
     // --- Finalizing -----------------------------------------------------------------------------
 
@@ -106,7 +106,7 @@ public sealed class LifecycleStepTests
         var invoice = Draft();
         invoice.RenumberDraft(new InvoiceNumber("26-10-001"));
 
-        await new FinalizeInvoiceCommandHandler(_invoices, _customers, new InvoiceFinalizer(_numbering.Object, _drafts.Object, Mock.Of<IPublisher>()), _unitOfWork.Object)
+        await new FinalizeInvoiceCommandHandler(_invoices, _customers, new InvoiceFinalizer(_numbering.Object, _drafts.Object, Mock.Of<IPublisher>()), _unitOfWork.Object, TestText.Instance)
             .Handle(new FinalizeInvoiceCommand(1), Token);
 
         _drafts.Verify(d => d.RerenderAsync(It.IsAny<IEnumerable<long>>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -140,7 +140,7 @@ public sealed class LifecycleStepTests
         invoice.Finalize(invoice.Number);
         _step.Setup(s => s.OnCancellingAsync(It.IsAny<Invoice>(), It.IsAny<CancellationToken>())).Callback(() => _calls.Add("step")).Returns(Task.CompletedTask);
 
-        await new CancelInvoiceCommandHandler(_invoices, _unitOfWork.Object, [_step.Object]).Handle(new CancelInvoiceCommand(1), Token);
+        await new CancelInvoiceCommandHandler(_invoices, _unitOfWork.Object, TestText.Instance, [_step.Object]).Handle(new CancelInvoiceCommand(1), Token);
 
         _calls.ShouldBe(["step", "save"]);
         invoice.Status.ShouldBe(InvoiceStatus.Cancelled);
@@ -155,7 +155,7 @@ public sealed class LifecycleStepTests
             .ThrowsAsync(new InvalidOperationException("part of the chain"));
 
         await Should.ThrowAsync<InvalidOperationException>(() =>
-            new DeleteInvoiceCommandHandler(_invoices, _unitOfWork.Object, [_step.Object]).Handle(new DeleteInvoiceCommand(1, Force: true), Token).AsTask());
+            new DeleteInvoiceCommandHandler(_invoices, _unitOfWork.Object, TestText.Instance, [_step.Object]).Handle(new DeleteInvoiceCommand(1, Force: true), Token).AsTask());
 
         _invoices.Items.ShouldContain(invoice);
         _calls.ShouldBeEmpty();
@@ -166,7 +166,7 @@ public sealed class LifecycleStepTests
     {
         Draft();
 
-        await new DeleteInvoiceCommandHandler(_invoices, _unitOfWork.Object, [_step.Object]).Handle(new DeleteInvoiceCommand(1), Token);
+        await new DeleteInvoiceCommandHandler(_invoices, _unitOfWork.Object, TestText.Instance, [_step.Object]).Handle(new DeleteInvoiceCommand(1), Token);
 
         _invoices.Items.ShouldBeEmpty();
     }
@@ -176,7 +176,7 @@ public sealed class LifecycleStepTests
     {
         var invoice = Draft();
         invoice.Finalize(invoice.Number);
-        var handler = new DeleteInvoiceCommandHandler(_invoices, _unitOfWork.Object, [_step.Object]);
+        var handler = new DeleteInvoiceCommandHandler(_invoices, _unitOfWork.Object, TestText.Instance, [_step.Object]);
 
         var error = await Should.ThrowAsync<InvalidOperationException>(() => handler.Handle(new DeleteInvoiceCommand(1), Token).AsTask());
         error.Message.ShouldContain("cancel it instead");
@@ -233,7 +233,7 @@ public sealed class LifecycleStepTests
     {
         var imageAssets = new Mock<IRepository<ImageAsset>>();
         imageAssets.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new List<ImageAsset>());
-        var renderer = new ScribanTemplateRenderer(Mock.Of<ILogger<ScribanTemplateRenderer>>(), Mock.Of<ILocalizationService>(), imageAssets.Object);
+        var renderer = new ScribanTemplateRenderer(Mock.Of<ILogger<ScribanTemplateRenderer>>(), Mock.Of<ILocalizationService>(), imageAssets.Object, TestText.Instance);
         var contribution = new VerifactuTemplateModel { IsRecorded = true, QrSvg = "<svg>QR</svg>", Sequence = 7 };
         var model = new InvoiceTemplateModel { Compliance = new Dictionary<string, object> { ["verifactu"] = contribution } };
 
@@ -250,7 +250,7 @@ public sealed class LifecycleStepTests
     {
         var imageAssets = new Mock<IRepository<ImageAsset>>();
         imageAssets.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new List<ImageAsset>());
-        return new ScribanTemplateRenderer(Mock.Of<ILogger<ScribanTemplateRenderer>>(), Mock.Of<ILocalizationService>(), imageAssets.Object);
+        return new ScribanTemplateRenderer(Mock.Of<ILogger<ScribanTemplateRenderer>>(), Mock.Of<ILocalizationService>(), imageAssets.Object, TestText.Instance);
     }
 
     /// <summary>The model of an invoice without a record: what the generation service gives templates.</summary>

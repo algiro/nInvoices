@@ -293,6 +293,9 @@ language** of invoices, reports and emails is each customer's `Locale`. UI texts
 use `t('area.key')` in components (`useI18n`) and `t` from `@/i18n` elsewhere. Adding a language = adding its web
 file and its `Application/Localization/Messages/<lang>.json`, nothing else. `Docs/LOCALIZATION.md` has the details;
 `locales.test.ts` and `AppTextTests` fail on a missing key, a broken placeholder, or a language on one side only.
+API messages (validators, exceptions from Application and the countries) are keys too, in
+`Application/Localization/Messages/en.json`: `.WithText(text, "validation.…")` in a validator,
+`_text.Translate("errors.…", ("name", value))` in a handler (inject `IAppText`; tests pass `TestText.Instance`).
 
 ### Templates & PDF
 
@@ -328,7 +331,8 @@ exception into a ProblemDetails response that also carries `error` (the message 
 
 `DomainException` derives from `InvalidOperationException` and `NotFoundException` from
 `KeyNotFoundException`, so internal `catch`es of those still work. Keep `catch` in controllers only for
-deliberate local handling (per-item import errors, best-effort cleanup).
+deliberate local handling (per-item import errors, best-effort cleanup). The message is the user's: a translated key (Localization above), except
+from `Core` entities, which stay English.
 
 ## Conventions
 

@@ -1,8 +1,9 @@
 using Mediator;
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
-using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.Invoices.Commands;
 
@@ -16,26 +17,29 @@ public sealed class FinalizeInvoiceCommandHandler : IRequestHandler<FinalizeInvo
     private readonly IRepository<Customer> _customerRepository;
     private readonly IInvoiceFinalizer _finalizer;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAppText _text;
 
     public FinalizeInvoiceCommandHandler(
         IRepository<Invoice> repository,
         IRepository<Customer> customerRepository,
         IInvoiceFinalizer finalizer,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAppText text)
     {
         _repository = repository;
         _customerRepository = customerRepository;
         _finalizer = finalizer;
         _unitOfWork = unitOfWork;
+        _text = text;
     }
 
     public async ValueTask<Unit> Handle(FinalizeInvoiceCommand request, CancellationToken cancellationToken)
     {
         var invoice = await _repository.GetByIdAsync(request.InvoiceId, cancellationToken)
-            ?? throw new NotFoundException($"Invoice with ID {request.InvoiceId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.invoice", ("id", request.InvoiceId)));
 
         var customer = await _customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken)
-            ?? throw new NotFoundException($"Customer {invoice.CustomerId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.customer", ("id", invoice.CustomerId)));
 
         var outdated = await _finalizer.FinalizeAsync(invoice, customer, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

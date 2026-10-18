@@ -8,6 +8,7 @@ using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
 using Shouldly;
+using nInvoices.Application.Tests.TestDoubles;
 
 namespace nInvoices.Application.Tests.Services;
 
@@ -50,7 +51,7 @@ public sealed class MonthlyReportPreviewTests
             });
 
         _customer = new Customer("Acme", "ACME123", new Address("Main", "1", "Town", "12345", "Country")) { Id = CustomerId };
-        _service = new MonthlyReportGenerationService(_templateRepository.Object, _workDayRepository.Object, renderer.Object);
+        _service = new MonthlyReportGenerationService(_templateRepository.Object, _workDayRepository.Object, renderer.Object, TestText.Instance);
     }
 
     private static Invoice MonthlyInvoice()

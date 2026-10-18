@@ -1,5 +1,6 @@
 using System.Globalization;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Exceptions;
@@ -14,10 +15,13 @@ namespace nInvoices.Application.Services.InvoiceGeneration;
 public sealed class DayRates
 {
     private readonly IReadOnlyDictionary<long, Rate> _byId;
+    private readonly IAppText _text;
 
-    public DayRates(Rate defaultRate, IEnumerable<Rate> dayRates)
+    /// <param name="text">The language of the refusals (<see cref="For"/>, <see cref="Validate"/>).</param>
+    public DayRates(Rate defaultRate, IEnumerable<Rate> dayRates, IAppText text)
     {
         Default = defaultRate;
+        _text = text;
         _byId = dayRates.Concat([defaultRate]).GroupBy(r => r.Id).ToDictionary(g => g.Key, g => g.First());
     }
 
@@ -44,7 +48,7 @@ public sealed class DayRates
 
         return _byId.TryGetValue(id, out var rate)
             ? rate
-            : throw new DomainException($"Rate {id} not found for this customer ({day.Date:yyyy-MM-dd}).");
+            : throw new DomainException(_text.Translate("errors.rate.notFoundForDay", ("id", id), ("date", IsoDate(day.Date))));
     }
 
     /// <summary>
@@ -59,7 +63,7 @@ public sealed class DayRates
         if (IsFixedMonthly)
         {
             if (worked.Any(d => d.RateId.HasValue && d.RateId != Default.Id))
-                throw new DomainException("Days can't have their own rate when the invoice uses a fixed monthly rate.");
+                throw new DomainException(_text.Translate("errors.rate.dayRatesWithFixedMonthly"));
             return;
         }
 
@@ -67,10 +71,10 @@ public sealed class DayRates
         {
             var rate = For(day);
             if (rate.Type == RateType.Monthly)
-                throw new DomainException($"A fixed monthly rate can't be used for a single day ({day.Date:yyyy-MM-dd}).");
+                throw new DomainException(_text.Translate("errors.rate.fixedMonthlyForDay", ("date", IsoDate(day.Date))));
             if (!string.Equals(rate.Price.Currency, Default.Price.Currency, StringComparison.OrdinalIgnoreCase))
                 throw new DomainException(
-                    $"An invoice is billed in one currency: {rate.Price.Currency} on {day.Date:yyyy-MM-dd} differs from {Default.Price.Currency}.");
+                    _text.Translate("errors.rate.oneCurrency", ("currency", rate.Price.Currency), ("date", IsoDate(day.Date)), ("invoiceCurrency", Default.Price.Currency)));
         }
     }
 
@@ -91,4 +95,6 @@ public sealed class DayRates
 
         return string.IsNullOrWhiteSpace(rate.Name) ? price : $"{rate.Name} ({price})";
     }
+
+    private static string IsoDate(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 }

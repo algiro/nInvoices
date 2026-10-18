@@ -1,9 +1,203 @@
 {
   "errors": {
-    "unexpected": "Something went wrong on the server. The error was logged; please try again."
+    "unexpected": "Something went wrong on the server. The error was logged; please try again.",
+    "country": {
+      "notSupported": "{country} is not one of the countries supported here",
+      "rulesOfAnotherCountry": "You work from {current}: choose {country} as your country in Settings › Country & taxes to turn its rules on."
+    },
+    "einvoice": {
+      "cancelled": "A cancelled invoice has no e-invoice",
+      "finalizeFirst": "Finalize the invoice before generating its e-invoice",
+      "notValid": "The invoice is not a valid {format}: {issues}",
+      "sentCannotDelete": "Invoice {number} was sent through {channel} ({reference}) and cannot be deleted."
+    },
+    "email": {
+      "cancelled": "A cancelled invoice cannot be emailed.",
+      "finalizeFirst": "Finalize the invoice before emailing it.",
+      "invalidAddress": "“{address}” is not a valid email address.",
+      "invoicePdfFailed": "The invoice PDF could not be generated.",
+      "noRecipients": "Add at least one recipient.",
+      "reportPdfFailed": "The monthly report PDF could not be generated.{reason}",
+      "subjectAndBody": "The email needs a subject and a body."
+    },
+    "facturae": {
+      "certificateRequired": "Facturae invoices must be signed: upload a signing certificate in the Spanish compliance settings"
+    },
+    "gmail": {
+      "notConfigured": "Gmail is not configured on the server.",
+      "notConnected": "Connect your Gmail account in Settings first.",
+      "revoked": "Gmail access was revoked or has expired. Connect Gmail again.",
+      "unreadable": "The Gmail authorization can no longer be read. Connect Gmail again."
+    },
+    "image": {
+      "aliasExists": "An image with alias '{alias}' already exists."
+    },
+    "invoice": {
+      "calendarOnlyMonthly": "Calendar export is only available for monthly invoices",
+      "hourlyWorkDaysRequired": "Work days are required for hourly rate invoices.",
+      "missingHours": "Hours must be specified for all worked days when using hourly rates (via a project allocation or the day's hours). Missing hours for {count} day(s).",
+      "oneTimeHoursRequired": "Hours are required for a one-time invoice with an hourly rate.",
+      "onlyDraftUpdated": "Only draft invoices can be updated",
+      "reportOnlyMonthly": "Monthly reports are only available for monthly invoices"
+    },
+    "project": {
+      "nameExists": "A project named '{name}' already exists for this customer",
+      "notOfCustomer": "Project {id} does not belong to customer {customer}"
+    },
+    "rate": {
+      "dayRatesWithFixedMonthly": "Days can't have their own rate when the invoice uses a fixed monthly rate.",
+      "fixedMonthlyForDay": "A fixed monthly rate can't be used for a single day ({date}).",
+      "noActiveRate": "No active rate found for customer {customer}. Please add a Daily, Monthly, or Hourly rate.",
+      "notFoundForCustomer": "Rate {id} not found for customer {customer}.",
+      "notFoundForDay": "Rate {id} not found for this customer ({date}).",
+      "oneCurrency": "An invoice is billed in one currency: {currency} on {date} differs from {invoiceCurrency}."
+    },
+    "report": {
+      "monthAndYear": "Invoice must have month and year set",
+      "noActiveTemplate": "No active monthly report template found for customer {customer}",
+      "templateNotFound": "Monthly report template {id} not found"
+    },
+    "taxes": {
+      "anotherCountry": "You work from {current}: choose {country} as your country in Settings › Country & taxes first.",
+      "chooseCountryFirst": "Choose where you pay taxes in Settings before recording a payment",
+      "notAvailable": "Tax estimates for {country} are not available",
+      "unknownRegime": "\"{regime}\" is not a tax regime of {country}"
+    },
+    "template": {
+      "noActiveTemplate": "No active template found for customer {customer} and type {type}",
+      "renderingFailed": "Template rendering failed. Check template syntax and model data.",
+      "syntaxErrors": "Template syntax errors: {errors}"
+    },
+    "verifactu": {
+      "cannotDelete": "Invoice {number} was recorded for Verifactu and cannot be deleted: cancel it instead, which records the cancellation."
+    }
   },
   "preferences": {
     "chooseLanguage": "Choose a language",
     "unsupportedLanguage": "{language} is not one of the languages of this app ({languages})"
+  },
+  "validation": {
+    "account": {
+      "typeToConfirm": "Type {word} to confirm."
+    },
+    "address": {
+      "cityRequired": "City is required",
+      "cityTooLong": "City must not exceed {max} characters",
+      "countryRequired": "Country is required",
+      "countryTooLong": "Country must not exceed {max} characters",
+      "houseNumberRequired": "House number is required",
+      "houseNumberTooLong": "House number must not exceed {max} characters",
+      "stateTooLong": "State must not exceed {max} characters",
+      "streetRequired": "Street is required",
+      "streetTooLong": "Street must not exceed {max} characters",
+      "zipCodeRequired": "Zip code is required",
+      "zipCodeTooLong": "Zip code must not exceed {max} characters"
+    },
+    "amountNegative": "The amount cannot be negative",
+    "amountPositive": "Amount must be positive",
+    "amountRequired": "Amount is required",
+    "country": {
+      "choose": "Choose a country"
+    },
+    "countryIsoCode": "The country must be a two-letter ISO code",
+    "currencyIsoCode": "Currency must be a 3-letter ISO code",
+    "customer": {
+      "addressRequired": "Address is required",
+      "ccInvalid": "CC must be valid addresses separated by commas",
+      "emailInvalid": "Email must be a valid address, e.g. accounts@example.com",
+      "fiscalIdRequired": "Fiscal ID is required",
+      "fiscalIdTooLong": "Fiscal ID must not exceed {max} characters",
+      "holidayCountryInvalid": "Holiday country must be a two-letter country code, e.g. IT",
+      "nameRequired": "Customer name is required",
+      "nameTooLong": "Customer name must not exceed {max} characters"
+    },
+    "customerIdPositive": "Customer ID must be a positive number",
+    "descriptionRequired": "Description is required",
+    "descriptionTooLong": "Description must not exceed {max} characters",
+    "expense": {
+      "deductibleRange": "The deductible percentage must be between 0 and 100",
+      "endsBeforeStart": "It cannot end before it starts",
+      "indirectTaxNegative": "The indirect tax cannot be negative",
+      "invalidCategory": "Invalid expense category",
+      "reverseChargeTax": "A reverse-charge expense has no indirect tax: the supplier didn't charge any",
+      "supplierTooLong": "Supplier must not exceed {max} characters"
+    },
+    "holiday": {
+      "nameRequired": "Holiday name is required",
+      "nameTooLong": "Holiday name must not exceed {max} characters"
+    },
+    "image": {
+      "aliasRequired": "Alias is required.",
+      "fileRequired": "File is required.",
+      "tooLarge": "File size exceeds the maximum of {max} MB.",
+      "typeNotAllowed": "Content type '{type}' is not allowed. Allowed: {allowed}"
+    },
+    "import": {
+      "noCustomers": "No customers to import",
+      "noInvoices": "No invoices to import",
+      "noSettings": "No settings to import"
+    },
+    "invalidInvoiceType": "Invalid invoice type",
+    "invoice": {
+      "expenseDescription": "Description is required and must not exceed {max} characters",
+      "hoursPositive": "Hours must be greater than zero",
+      "issueDateRequired": "Issue date is required",
+      "notesTooLong": "Notes must not exceed {max} characters",
+      "projectHoursPositive": "Project hours must be greater than zero",
+      "renderedContentTooLong": "Rendered content must not exceed {max} characters",
+      "workDayDateRequired": "Work day date is required",
+      "workDaysRequired": "Work days are required for monthly invoices"
+    },
+    "money": {
+      "amountPositive": "Amount must be greater than zero",
+      "currencyIsoCode": "Currency must be a 3-letter ISO code (e.g., USD, EUR)",
+      "currencyRequired": "Currency is required",
+      "currencyUppercase": "Currency must be uppercase 3-letter code"
+    },
+    "monthRange": "Month must be between 1 and 12",
+    "project": {
+      "nameRequired": "Project name is required",
+      "nameTooLong": "Project name must not exceed {max} characters"
+    },
+    "rate": {
+      "invalidType": "Invalid rate type",
+      "nameTooLong": "The rate name must not exceed {max} characters",
+      "priceRequired": "Price is required"
+    },
+    "rateIdPositive": "Rate ID must be positive",
+    "tax": {
+      "handlerRequired": "Handler ID is required",
+      "handlerTooLong": "Handler ID must not exceed {max} characters",
+      "invalidApplicationType": "Invalid application type",
+      "orderNegative": "Order must be non-negative",
+      "taxIdTooLong": "Tax ID must not exceed {max} characters"
+    },
+    "taxes": {
+      "chooseCountry": "Choose the country where you pay taxes",
+      "chooseRegime": "Choose a tax regime",
+      "formRequired": "The tax form is required",
+      "formTooLong": "The tax form must not exceed {max} characters",
+      "periodRange": "Period must be between 1 and {max}",
+      "regimeTooLong": "The tax regime must not exceed {max} characters"
+    },
+    "template": {
+      "contentRequired": "Template content is required",
+      "contentTooLong": "Template content must not exceed {max} characters",
+      "contentTooShort": "Template content must be at least {min} characters",
+      "syntaxError": "Template syntax error: {error}",
+      "subjectSyntaxError": "Subject syntax error: {error}",
+      "bodySyntaxError": "Body syntax error: {error}"
+    },
+    "yearRange": "Year must be between 2000 and 2100"
+  },
+  "notFound": {
+    "customer": "Customer {id} not found",
+    "expense": "Expense {id} not found",
+    "invoice": "Invoice {id} not found",
+    "project": "Project {id} not found",
+    "rate": "Rate {id} not found",
+    "recurringExpense": "Recurring expense {id} not found",
+    "tax": "Tax {id} not found",
+    "template": "Template {id} not found"
   }
 }

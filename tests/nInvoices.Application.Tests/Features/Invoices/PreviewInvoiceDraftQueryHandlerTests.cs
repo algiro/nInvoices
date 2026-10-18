@@ -5,6 +5,7 @@ using nInvoices.Application.Features.Invoices.Validators;
 using nInvoices.Application.Services;
 using nInvoices.Core.Enums;
 using Shouldly;
+using nInvoices.Application.Tests.TestDoubles;
 
 namespace nInvoices.Application.Tests.Features.Invoices;
 
@@ -18,7 +19,7 @@ public sealed class PreviewInvoiceDraftQueryHandlerTests
         var handler = new PreviewInvoiceDraftQueryHandler(
             generation.Object,
             Mock.Of<IMonthlyReportGenerationService>(),
-            new GenerateInvoiceDtoValidator());
+            new GenerateInvoiceDtoValidator(TestText.Instance));
         var dto = new GenerateInvoiceDto
         {
             CustomerId = 1,

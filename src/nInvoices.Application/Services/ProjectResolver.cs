@@ -1,6 +1,7 @@
+using nInvoices.Application.Localization;
 using nInvoices.Core.Entities;
-using nInvoices.Core.Interfaces;
 using nInvoices.Core.Exceptions;
+using nInvoices.Core.Interfaces;
 
 namespace nInvoices.Application.Services;
 
@@ -32,10 +33,12 @@ public sealed class ProjectResolver : IProjectResolver
     // new name (e.g. the same project on several days of one invoice) reuse one row
     // rather than colliding on the unique (CustomerId, Name) index.
     private readonly List<Project> _pendingCreations = [];
+    private readonly IAppText _text;
 
-    public ProjectResolver(IRepository<Project> projectRepository)
+    public ProjectResolver(IRepository<Project> projectRepository, IAppText text)
     {
         _projectRepository = projectRepository;
+        _text = text;
     }
 
     public async Task<Project> ResolveOrCreateAsync(
@@ -58,7 +61,7 @@ public sealed class ProjectResolver : IProjectResolver
         {
             var byId = projects.FirstOrDefault(p => p.Id == projectId.Value)
                 ?? throw new DomainException(
-                    $"Project {projectId.Value} does not belong to customer {customerId}");
+                    _text.Translate("errors.project.notOfCustomer", ("id", projectId.Value), ("customer", customerId)));
 
             if (!byId.IsActive)
                 byId.Activate();

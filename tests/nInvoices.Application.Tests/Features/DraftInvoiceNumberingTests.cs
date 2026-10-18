@@ -72,7 +72,7 @@ public sealed class DraftInvoiceNumberingTests
             NullLogger<DraftInvoiceSynchronizer>.Instance);
         _publisher = new Mock<IPublisher>();
         _finalize = new FinalizeInvoiceCommandHandler(
-            _invoiceRepository.Object, _customers, new InvoiceFinalizer(_numbering, _drafts, _publisher.Object), _unitOfWork.Object);
+            _invoiceRepository.Object, _customers, new InvoiceFinalizer(_numbering, _drafts, _publisher.Object), _unitOfWork.Object, TestText.Instance);
     }
 
     private int SequenceValue => _sequences.Items.Single().CurrentValue;

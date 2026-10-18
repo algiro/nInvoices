@@ -1,15 +1,17 @@
 using FluentValidation;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
+using nInvoices.Application.Validation;
 
 namespace nInvoices.Application.Features.InvoiceTemplates.Validators;
 
 public sealed class UpdateInvoiceTemplateDtoValidator : AbstractValidator<UpdateInvoiceTemplateDto>
 {
-    public UpdateInvoiceTemplateDtoValidator()
+    public UpdateInvoiceTemplateDtoValidator(IAppText text)
     {
         RuleFor(x => x.Content)
-            .NotEmpty().WithMessage("Template content is required")
-            .MinimumLength(10).WithMessage("Template content must be at least 10 characters")
-            .MaximumLength(100000).WithMessage("Template content must not exceed 100,000 characters");
+            .NotEmpty().WithText(text, "validation.template.contentRequired")
+            .MinimumLength(10).WithText(text, "validation.template.contentTooShort", ("min", 10))
+            .MaximumLength(100000).WithText(text, "validation.template.contentTooLong", ("max", 100_000));
     }
 }

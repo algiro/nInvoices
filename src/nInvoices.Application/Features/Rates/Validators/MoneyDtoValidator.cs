@@ -1,18 +1,20 @@
 using FluentValidation;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
+using nInvoices.Application.Validation;
 
 namespace nInvoices.Application.Features.Rates.Validators;
 
 public sealed class MoneyDtoValidator : AbstractValidator<MoneyDto>
 {
-    public MoneyDtoValidator()
+    public MoneyDtoValidator(IAppText text)
     {
         RuleFor(x => x.Amount)
-            .GreaterThan(0).WithMessage("Amount must be greater than zero");
+            .GreaterThan(0).WithText(text, "validation.money.amountPositive");
 
         RuleFor(x => x.Currency)
-            .NotEmpty().WithMessage("Currency is required")
-            .Length(3).WithMessage("Currency must be a 3-letter ISO code (e.g., USD, EUR)")
-            .Matches(@"^[A-Z]{3}$").WithMessage("Currency must be uppercase 3-letter code");
+            .NotEmpty().WithText(text, "validation.money.currencyRequired")
+            .Length(3).WithText(text, "validation.money.currencyIsoCode")
+            .Matches(@"^[A-Z]{3}$").WithText(text, "validation.money.currencyUppercase");
     }
 }

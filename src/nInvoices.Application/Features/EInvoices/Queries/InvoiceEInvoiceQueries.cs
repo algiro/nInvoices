@@ -1,9 +1,10 @@
 using Mediator;
 using nInvoices.Application.Compliance.EInvoice;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
-using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.EInvoices.Queries;
 
@@ -17,11 +18,13 @@ public sealed class GetInvoiceEInvoicesQueryHandler : IRequestHandler<GetInvoice
 {
     private readonly IEInvoiceService _eInvoices;
     private readonly IRepository<Invoice> _invoices;
+    private readonly IAppText _text;
 
-    public GetInvoiceEInvoicesQueryHandler(IEInvoiceService eInvoices, IRepository<Invoice> invoices)
+    public GetInvoiceEInvoicesQueryHandler(IEInvoiceService eInvoices, IRepository<Invoice> invoices, IAppText text)
     {
         _eInvoices = eInvoices;
         _invoices = invoices;
+        _text = text;
     }
 
     /// <exception cref="KeyNotFoundException">The invoice does not exist.</exception>
@@ -32,7 +35,7 @@ public sealed class GetInvoiceEInvoicesQueryHandler : IRequestHandler<GetInvoice
             return [];
 
         var invoice = await _invoices.GetByIdAsync(request.InvoiceId, cancellationToken)
-            ?? throw new NotFoundException($"Invoice {request.InvoiceId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.invoice", ("id", request.InvoiceId)));
 
         return statuses.Select(s => EInvoiceMapper.ToDto(s, invoice.Number.ToString())).ToList();
     }

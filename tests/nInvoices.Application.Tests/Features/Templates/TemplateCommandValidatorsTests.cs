@@ -9,6 +9,7 @@ using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 using Shouldly;
+using nInvoices.Application.Tests.TestDoubles;
 
 namespace nInvoices.Application.Tests.Features.Templates;
 
@@ -28,14 +29,14 @@ public sealed class TemplateCommandValidatorsTests
         _renderer = new ScribanTemplateRenderer(
             NullLogger<ScribanTemplateRenderer>.Instance,
             Mock.Of<ILocalizationService>(),
-            Mock.Of<IRepository<ImageAsset>>());
+            Mock.Of<IRepository<ImageAsset>>(), TestText.Instance);
 
     [Test]
     public async Task CreateMonthlyReportTemplate_WithValidTemplate_IsValid()
     {
         var command = new CreateMonthlyReportTemplateCommand(new CreateMonthlyReportTemplateDto(null, "Timesheet", ValidTemplate));
 
-        var result = await new CreateMonthlyReportTemplateCommandValidator(_renderer).ValidateAsync(command, Token);
+        var result = await new CreateMonthlyReportTemplateCommandValidator(_renderer, TestText.Instance).ValidateAsync(command, Token);
 
         result.IsValid.ShouldBeTrue();
     }
@@ -45,7 +46,7 @@ public sealed class TemplateCommandValidatorsTests
     {
         var command = new CreateMonthlyReportTemplateCommand(new CreateMonthlyReportTemplateDto(null, "Timesheet", UnclosedLoop));
 
-        var result = await new CreateMonthlyReportTemplateCommandValidator(_renderer).ValidateAsync(command, Token);
+        var result = await new CreateMonthlyReportTemplateCommandValidator(_renderer, TestText.Instance).ValidateAsync(command, Token);
 
         var error = result.Errors.ShouldHaveSingleItem();
         error.PropertyName.ShouldBe("Template.Content");
@@ -57,7 +58,7 @@ public sealed class TemplateCommandValidatorsTests
     {
         var command = new UpdateMonthlyReportTemplateCommand(1, new UpdateMonthlyReportTemplateDto("Timesheet", UnclosedLoop));
 
-        var result = await new UpdateMonthlyReportTemplateCommandValidator(_renderer).ValidateAsync(command, Token);
+        var result = await new UpdateMonthlyReportTemplateCommandValidator(_renderer, TestText.Instance).ValidateAsync(command, Token);
 
         result.Errors.ShouldHaveSingleItem().PropertyName.ShouldBe("Template.Content");
     }
@@ -68,7 +69,7 @@ public sealed class TemplateCommandValidatorsTests
         var command = new CreateEmailTemplateCommand(new CreateEmailTemplateDto(
             null, "Default", "Invoice [[ invoice.number ]]", ValidTemplate));
 
-        var result = await new CreateEmailTemplateCommandValidator(_renderer).ValidateAsync(command, Token);
+        var result = await new CreateEmailTemplateCommandValidator(_renderer, TestText.Instance).ValidateAsync(command, Token);
 
         result.IsValid.ShouldBeTrue();
     }
@@ -79,7 +80,7 @@ public sealed class TemplateCommandValidatorsTests
         var command = new CreateEmailTemplateCommand(new CreateEmailTemplateDto(
             null, "Default", "Invoice [[ invoice.number + ]]", ValidTemplate));
 
-        var result = await new CreateEmailTemplateCommandValidator(_renderer).ValidateAsync(command, Token);
+        var result = await new CreateEmailTemplateCommandValidator(_renderer, TestText.Instance).ValidateAsync(command, Token);
 
         var error = result.Errors.ShouldHaveSingleItem();
         error.PropertyName.ShouldBe("Template.Subject");
@@ -91,7 +92,7 @@ public sealed class TemplateCommandValidatorsTests
     {
         var command = new UpdateEmailTemplateCommand(1, new UpdateEmailTemplateDto("Default", "Invoice", UnclosedLoop));
 
-        var result = await new UpdateEmailTemplateCommandValidator(_renderer).ValidateAsync(command, Token);
+        var result = await new UpdateEmailTemplateCommandValidator(_renderer, TestText.Instance).ValidateAsync(command, Token);
 
         var error = result.Errors.ShouldHaveSingleItem();
         error.PropertyName.ShouldBe("Template.Body");

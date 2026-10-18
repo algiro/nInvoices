@@ -57,7 +57,7 @@ public sealed class UserCountryTests
     }
 
     private Task<UserCountryDto> SetAsync(string country) =>
-        new SetUserCountryCommandHandler(_countries, _compliance, ComplianceRegistry, TaxRegistry, _unitOfWork.Object)
+        new SetUserCountryCommandHandler(_countries, _compliance, ComplianceRegistry, TaxRegistry, _unitOfWork.Object, TestText.Instance)
             .Handle(new SetUserCountryCommand(new SetUserCountryDto(country)), Token).AsTask();
 
     [Test]
@@ -132,7 +132,7 @@ public sealed class UserCountryTests
         await _countries.AddAsync(new UserCountry("IT"), Token);
         var handler = new UpdateComplianceSettingsCommandHandler(
             ComplianceRegistry, _compliance, _unitOfWork.Object, new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)),
-            _country, _countries);
+            TestText.Instance, _country, _countries);
 
         var error = await Should.ThrowAsync<DomainException>(handler.Handle(
             new UpdateComplianceSettingsCommand("ES", new UpdateComplianceSettingsDto(true, "Ana", "12345678Z", null, null)), Token).AsTask());
@@ -145,7 +145,7 @@ public sealed class UserCountryTests
     {
         var handler = new UpdateComplianceSettingsCommandHandler(
             ComplianceRegistry, _compliance, _unitOfWork.Object, new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)),
-            _country, _countries);
+            TestText.Instance, _country, _countries);
         var dto = new UpdateComplianceSettingsDto(
             true,
             "Ana Pérez",
@@ -167,7 +167,7 @@ public sealed class UserCountryTests
     public async Task ATaxProfileOfAnotherCountry_IsRefused()
     {
         await _countries.AddAsync(new UserCountry("IT"), Token);
-        var handler = new UpdateTaxProfileCommandHandler(TaxRegistry, _profiles, _unitOfWork.Object, _country, _countries);
+        var handler = new UpdateTaxProfileCommandHandler(TaxRegistry, _profiles, _unitOfWork.Object, TestText.Instance, _country, _countries);
 
         await Should.ThrowAsync<DomainException>(handler.Handle(
             new UpdateTaxProfileCommand(new UpdateTaxProfileDto("ES", SpainTaxPredictionModule.SimplifiedDirectEstimation,

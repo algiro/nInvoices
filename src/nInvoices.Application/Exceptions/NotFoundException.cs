@@ -11,6 +11,4 @@ public sealed class NotFoundException : KeyNotFoundException
         : base(message)
     {
     }
-
-    public static NotFoundException For(string resource, long id) => new($"{resource} {id} not found");
 }

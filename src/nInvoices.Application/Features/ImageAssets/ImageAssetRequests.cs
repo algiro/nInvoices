@@ -1,6 +1,7 @@
 using Mediator;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Exceptions;
@@ -36,12 +37,14 @@ public sealed class ImageAssetHandlers :
     private readonly IRepository<ImageAsset> _repository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<ImageAssetHandlers> _logger;
+    private readonly IAppText _text;
 
-    public ImageAssetHandlers(IRepository<ImageAsset> repository, IUnitOfWork unitOfWork, ILogger<ImageAssetHandlers> logger)
+    public ImageAssetHandlers(IRepository<ImageAsset> repository, IUnitOfWork unitOfWork, ILogger<ImageAssetHandlers> logger, IAppText text)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _text = text;
     }
 
     public async ValueTask<IReadOnlyList<ImageAssetDto>> Handle(GetImageAssetsQuery request, CancellationToken cancellationToken) =>
@@ -104,6 +107,6 @@ public sealed class ImageAssetHandlers :
     {
         var taken = await _repository.FindAsync(a => a.Alias == alias && a.Id != exceptId, cancellationToken);
         if (taken.Any())
-            throw new DomainException($"An image with alias '{alias}' already exists.");
+            throw new DomainException(_text.Translate("errors.image.aliasExists", ("alias", alias)));
     }
 }

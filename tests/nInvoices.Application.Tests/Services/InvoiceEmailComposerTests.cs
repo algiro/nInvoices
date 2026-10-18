@@ -34,7 +34,7 @@ public sealed class InvoiceEmailComposerTests
         var images = new Mock<IRepository<ImageAsset>>();
         images.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
         var localization = new LocalizationService();
-        var renderer = new ScribanTemplateRenderer(NullLogger<ScribanTemplateRenderer>.Instance, localization, images.Object);
+        var renderer = new ScribanTemplateRenderer(NullLogger<ScribanTemplateRenderer>.Instance, localization, images.Object, TestText.Instance);
 
         _composer = new InvoiceEmailComposer(
             _templates,
@@ -45,7 +45,7 @@ public sealed class InvoiceEmailComposerTests
             new Mock<IPdfExportService>().Object,
             new Mock<IHtmlToPdfConverter>().Object,
             new Mock<IMonthlyReportGenerationService>().Object,
-            new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)));
+            new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)), TestText.Instance);
     }
 
     private static CancellationToken Ct => TestContext.CurrentContext.CancellationToken;

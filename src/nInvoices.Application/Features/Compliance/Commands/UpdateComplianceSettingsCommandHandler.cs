@@ -2,6 +2,7 @@ using Mediator;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.Countries;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Entities;
@@ -18,12 +19,14 @@ public sealed class UpdateComplianceSettingsCommandHandler : IRequestHandler<Upd
     private readonly TimeProvider _timeProvider;
     private readonly IUserCountry? _country;
     private readonly IRepository<UserCountry>? _countries;
+    private readonly IAppText _text;
 
     public UpdateComplianceSettingsCommandHandler(
         IComplianceRegistry registry,
         IRepository<ComplianceSettings> settings,
         IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
+        IAppText text,
         IUserCountry? country = null,
         IRepository<UserCountry>? countries = null)
     {
@@ -33,6 +36,7 @@ public sealed class UpdateComplianceSettingsCommandHandler : IRequestHandler<Upd
         _timeProvider = timeProvider;
         _country = country;
         _countries = countries;
+        _text = text;
     }
 
     /// <exception cref="ComplianceValidationException">The regime is being turned on and the settings break its rules.</exception>
@@ -94,7 +98,7 @@ public sealed class UpdateComplianceSettingsCommandHandler : IRequestHandler<Upd
 
         var current = await _country.GetAsync(cancellationToken);
         if (current is not null && !string.Equals(current, countryCode, StringComparison.OrdinalIgnoreCase))
-            throw new DomainException($"You work from {current}: choose {name} as your country in Settings › Country & taxes to turn its rules on.");
+            throw new DomainException(_text.Translate("errors.country.rulesOfAnotherCountry", ("current", current), ("country", name)));
         if (!await _country.IsChosenAsync(cancellationToken))
             await _countries.AddAsync(new UserCountry(countryCode), cancellationToken);
     }

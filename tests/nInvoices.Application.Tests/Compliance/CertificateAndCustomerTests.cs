@@ -48,7 +48,7 @@ public sealed class CertificateAndCustomerTests
         var spain = new SpainComplianceModule();
         _registry = new ComplianceRegistry(
             [spain],
-            [new nInvoices.Countries.Spain.Facturae.FacturaeFormat(spain, _time)],
+            [new nInvoices.Countries.Spain.Facturae.FacturaeFormat(spain, _time, TestText.Instance)],
             Options.Create(new ComplianceOptions()));
     }
 
@@ -276,7 +276,7 @@ public sealed class CertificateAndCustomerTests
         igic.SetComplianceValues("ES", new Dictionary<string, string> { ["taxType"] = "IGIC" });
         var taxSettings = new InMemoryRepository<Tax>(igic);
 
-        var document = await new EInvoiceDocumentFactory(invoices.Object, new InMemoryRepository<Customer>(customer), taxSettings, generation.Object)
+        var document = await new EInvoiceDocumentFactory(invoices.Object, new InMemoryRepository<Customer>(customer), taxSettings, generation.Object, TestText.Instance)
             .CreateAsync(5, settings, Token);
 
         document.Number.ShouldBe("26-10-001");

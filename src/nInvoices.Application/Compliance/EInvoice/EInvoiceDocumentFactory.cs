@@ -1,8 +1,9 @@
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services;
 using nInvoices.Core.Compliance.EInvoice;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
-using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Compliance.EInvoice;
 
@@ -20,25 +21,28 @@ public sealed class EInvoiceDocumentFactory : IEInvoiceDocumentFactory
     private readonly IRepository<Customer> _customers;
     private readonly IRepository<Tax> _taxes;
     private readonly IInvoiceGenerationService _generation;
+    private readonly IAppText _text;
 
     public EInvoiceDocumentFactory(
         IInvoiceRepository invoices,
         IRepository<Customer> customers,
         IRepository<Tax> taxes,
-        IInvoiceGenerationService generation)
+        IInvoiceGenerationService generation,
+        IAppText text)
     {
         _invoices = invoices;
         _customers = customers;
         _taxes = taxes;
         _generation = generation;
+        _text = text;
     }
 
     public async Task<EInvoiceDocument> CreateAsync(long invoiceId, ComplianceSettings settings, CancellationToken cancellationToken = default)
     {
         var invoice = await _invoices.GetByIdWithRelatedAsync(invoiceId, cancellationToken)
-            ?? throw new NotFoundException($"Invoice {invoiceId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.invoice", ("id", invoiceId)));
         var customer = await _customers.GetByIdAsync(invoice.CustomerId, cancellationToken)
-            ?? throw new NotFoundException($"Customer {invoice.CustomerId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.customer", ("id", invoice.CustomerId)));
 
         // The lines are the ones printed on the invoice, so the two documents always agree
         var model = await _generation.BuildTemplateModelAsync(invoiceId, cancellationToken);

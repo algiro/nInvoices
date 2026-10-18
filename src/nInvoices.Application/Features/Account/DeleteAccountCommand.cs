@@ -3,7 +3,9 @@ using Mediator;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Gmail.Commands;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services.Email;
+using nInvoices.Application.Validation;
 using nInvoices.Core.Interfaces;
 
 namespace nInvoices.Application.Features.Account;
@@ -21,11 +23,11 @@ public sealed record DeleteAccountCommand(string? Typed) : IRequest<DeleteAccoun
 
 public sealed class DeleteAccountCommandValidator : AbstractValidator<DeleteAccountCommand>
 {
-    public DeleteAccountCommandValidator()
+    public DeleteAccountCommandValidator(IAppText text)
     {
         RuleFor(x => x.Typed)
             .Equal(DeleteAccountCommand.Confirmation)
-            .WithMessage($"Type {DeleteAccountCommand.Confirmation} to confirm.");
+            .WithText(text, "validation.account.typeToConfirm", ("word", DeleteAccountCommand.Confirmation));
     }
 }
 

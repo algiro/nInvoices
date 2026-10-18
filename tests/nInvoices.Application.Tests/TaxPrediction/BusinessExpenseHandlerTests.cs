@@ -38,7 +38,7 @@ public sealed class BusinessExpenseHandlerTests
     {
         var created = await new CreateBusinessExpenseCommandHandler(_expenses, _unitOfWork.Object)
             .Handle(new CreateBusinessExpenseCommand(Laptop()), Token);
-        var updated = await new UpdateBusinessExpenseCommandHandler(_expenses, _unitOfWork.Object)
+        var updated = await new UpdateBusinessExpenseCommandHandler(_expenses, _unitOfWork.Object, TestText.Instance)
             .Handle(new UpdateBusinessExpenseCommand(created.Id, Laptop(1200m) with { Supplier = null }), Token);
 
         updated.ShouldBe(new BusinessExpenseDto(created.Id, new DateOnly(2026, 3, 2), "Laptop", null, new MoneyDto(1200m, "EUR"),
@@ -49,7 +49,7 @@ public sealed class BusinessExpenseHandlerTests
     [Test]
     public async Task Update_Unknown_IsNotFound()
     {
-        await Should.ThrowAsync<NotFoundException>(() => new UpdateBusinessExpenseCommandHandler(_expenses, _unitOfWork.Object)
+        await Should.ThrowAsync<NotFoundException>(() => new UpdateBusinessExpenseCommandHandler(_expenses, _unitOfWork.Object, TestText.Instance)
             .Handle(new UpdateBusinessExpenseCommand(99, Laptop()), Token).AsTask());
     }
 
@@ -84,7 +84,7 @@ public sealed class BusinessExpenseHandlerTests
         var created = await new CreateRecurringExpenseCommandHandler(_recurring, _unitOfWork.Object)
             .Handle(new CreateRecurringExpenseCommand(new SaveRecurringExpenseDto(
                 "Social Security", new MoneyDto(300.00m, "EUR"), new DateOnly(2026, 1, 15), new DateOnly(2026, 6, 30), ExpenseCategory.SocialSecurity)), Token);
-        var updated = await new UpdateRecurringExpenseCommandHandler(_recurring, _unitOfWork.Object)
+        var updated = await new UpdateRecurringExpenseCommandHandler(_recurring, _unitOfWork.Object, TestText.Instance)
             .Handle(new UpdateRecurringExpenseCommand(created.Id, new SaveRecurringExpenseDto(
                 "Social Security", new MoneyDto(500.00m, "EUR"), new DateOnly(2026, 7, 1), Category: ExpenseCategory.SocialSecurity)), Token);
 
@@ -95,7 +95,7 @@ public sealed class BusinessExpenseHandlerTests
     [Test]
     public void Validator_ReverseChargeWithTax_AndPercentOver100_AreRejected()
     {
-        var result = new SaveBusinessExpenseDtoValidator().TestValidate(
+        var result = new SaveBusinessExpenseDtoValidator(TestText.Instance).TestValidate(
             Laptop() with { ReverseCharge = true, DeductiblePercent = 120m, Description = "" });
 
         result.ShouldHaveValidationErrorFor(x => x.IndirectTax);
@@ -106,7 +106,7 @@ public sealed class BusinessExpenseHandlerTests
     [Test]
     public void Validator_RecurringEndingTheMonthBeforeItStarts_IsRejected_TheSameMonthIsNot()
     {
-        var validator = new SaveRecurringExpenseDtoValidator();
+        var validator = new SaveRecurringExpenseDtoValidator(TestText.Instance);
         var dto = new SaveRecurringExpenseDto("Fee", new MoneyDto(1m, "EUR"), new DateOnly(2026, 5, 20));
 
         validator.TestValidate(dto with { ToMonth = new DateOnly(2026, 4, 30) }).ShouldHaveValidationErrorFor(x => x.ToMonth);

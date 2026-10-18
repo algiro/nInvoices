@@ -1,6 +1,8 @@
 using FluentValidation;
 using Mediator;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
+using nInvoices.Application.Validation;
 
 namespace nInvoices.Application.Features.ImportExport;
 
@@ -52,11 +54,11 @@ public sealed class ImportExportHandlers :
 
 public sealed class ImportCustomersCommandValidator : AbstractValidator<ImportCustomersCommand>
 {
-    public ImportCustomersCommandValidator()
+    public ImportCustomersCommandValidator(IAppText text)
     {
         RuleFor(x => x.Data)
             .Must(d => d is { Customers.Count: > 0 } || HasSharedTemplates(d?.SharedTemplates))
-            .WithMessage("No customers to import");
+            .WithText(text, "validation.import.noCustomers");
     }
 
     private static bool HasSharedTemplates(SharedTemplatesExportDto? shared) =>
@@ -66,20 +68,20 @@ public sealed class ImportCustomersCommandValidator : AbstractValidator<ImportCu
 
 public sealed class ImportInvoicesCommandValidator : AbstractValidator<ImportInvoicesCommand>
 {
-    public ImportInvoicesCommandValidator()
+    public ImportInvoicesCommandValidator(IAppText text)
     {
         RuleFor(x => x.Data)
             .Must(d => d is { Invoices.Count: > 0 })
-            .WithMessage("No invoices to import");
+            .WithText(text, "validation.import.noInvoices");
     }
 }
 
 public sealed class ImportSettingsCommandValidator : AbstractValidator<ImportSettingsCommand>
 {
-    public ImportSettingsCommandValidator()
+    public ImportSettingsCommandValidator(IAppText text)
     {
         RuleFor(x => x.Data)
             .Must(d => d?.Settings is not null)
-            .WithMessage("No settings to import");
+            .WithText(text, "validation.import.noSettings");
     }
 }

@@ -1,7 +1,8 @@
 using nInvoices.Application.Features.Invoices;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Entities;
-using nInvoices.Core.Interfaces;
 using nInvoices.Core.Exceptions;
+using nInvoices.Core.Interfaces;
 
 namespace nInvoices.Application.Compliance.EInvoice;
 
@@ -10,11 +11,13 @@ public sealed class EInvoiceDeliveryLifecycleStep : IInvoiceLifecycleStep
 {
     private readonly IRepository<InvoiceEInvoice> _files;
     private readonly IRepository<EInvoiceSubmission> _submissions;
+    private readonly IAppText _text;
 
-    public EInvoiceDeliveryLifecycleStep(IRepository<InvoiceEInvoice> files, IRepository<EInvoiceSubmission> submissions)
+    public EInvoiceDeliveryLifecycleStep(IRepository<InvoiceEInvoice> files, IRepository<EInvoiceSubmission> submissions, IAppText text)
     {
         _files = files;
         _submissions = submissions;
+        _text = text;
     }
 
     public Task<bool> OnFinalizingAsync(Invoice invoice, Customer customer, CancellationToken cancellationToken) => Task.FromResult(false);
@@ -30,6 +33,6 @@ public sealed class EInvoiceDeliveryLifecycleStep : IInvoiceLifecycleStep
         var delivered = (await _submissions.FindAsync(s => ids.Contains(s.InvoiceEInvoiceId), cancellationToken)).FirstOrDefault();
         if (delivered is not null)
             throw new DomainException(
-                $"Invoice {invoice.Number} was sent through {delivered.ChannelId.ToUpperInvariant()} ({delivered.Reference}) and cannot be deleted.");
+                _text.Translate("errors.einvoice.sentCannotDelete", ("number", invoice.Number), ("channel", delivered.ChannelId.ToUpperInvariant()), ("reference", delivered.Reference)));
     }
 }

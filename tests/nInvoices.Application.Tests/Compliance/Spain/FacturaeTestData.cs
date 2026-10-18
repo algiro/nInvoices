@@ -15,7 +15,7 @@ internal static class FacturaeTestData
 {
     public static readonly DateTimeOffset Now = new(2026, 10, 3, 9, 30, 0, TimeSpan.Zero);
 
-    public static FacturaeFormat Format() => new(new SpainComplianceModule(), new FixedTimeProvider(Now.UtcDateTime));
+    public static FacturaeFormat Format() => new(new SpainComplianceModule(), new FixedTimeProvider(Now.UtcDateTime), TestText.Instance);
 
     public static X509Certificate2 NewCertificate(string subject = "CN=Ana Perez Garcia, O=nInvoices tests, C=ES")
     {

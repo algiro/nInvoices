@@ -2,6 +2,7 @@ using System.Buffers.Text;
 using System.Security.Cryptography;
 using Mediator;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services.Email;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
@@ -16,6 +17,7 @@ public sealed class StartGmailConnectCommandHandler : IRequestHandler<StartGmail
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUserContext _userContext;
     private readonly TimeProvider _timeProvider;
+    private readonly IAppText _text;
 
     public StartGmailConnectCommandHandler(
         IGmailClient gmailClient,
@@ -23,7 +25,8 @@ public sealed class StartGmailConnectCommandHandler : IRequestHandler<StartGmail
         IRepository<GmailConnection> connectionRepository,
         IUnitOfWork unitOfWork,
         IUserContext userContext,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IAppText text)
     {
         _gmailClient = gmailClient;
         _stateRepository = stateRepository;
@@ -31,12 +34,13 @@ public sealed class StartGmailConnectCommandHandler : IRequestHandler<StartGmail
         _unitOfWork = unitOfWork;
         _userContext = userContext;
         _timeProvider = timeProvider;
+        _text = text;
     }
 
     public async ValueTask<GmailConnectUrlDto> Handle(StartGmailConnectCommand request, CancellationToken cancellationToken)
     {
         if (!_gmailClient.IsConfigured)
-            throw new InvoiceEmailException(InvoiceEmailException.GmailNotConfigured, "Gmail is not configured on the server.");
+            throw new InvoiceEmailException(InvoiceEmailException.GmailNotConfigured, _text.Translate("errors.gmail.notConfigured"));
 
         var userId = _userContext.RequireUserId();
         var now = _timeProvider.GetUtcNow().UtcDateTime;

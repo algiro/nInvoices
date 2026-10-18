@@ -1,34 +1,36 @@
 using FluentValidation;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
+using nInvoices.Application.Validation;
 
 namespace nInvoices.Application.Features.Customers.Validators;
 
 public sealed class AddressDtoValidator : AbstractValidator<AddressDto>
 {
-    public AddressDtoValidator()
+    public AddressDtoValidator(IAppText text)
     {
         RuleFor(x => x.Street)
-            .NotEmpty().WithMessage("Street is required")
-            .MaximumLength(200).WithMessage("Street must not exceed 200 characters");
+            .NotEmpty().WithText(text, "validation.address.streetRequired")
+            .MaximumLength(200).WithText(text, "validation.address.streetTooLong", ("max", 200));
 
         RuleFor(x => x.HouseNumber)
-            .NotEmpty().WithMessage("House number is required")
-            .MaximumLength(20).WithMessage("House number must not exceed 20 characters");
+            .NotEmpty().WithText(text, "validation.address.houseNumberRequired")
+            .MaximumLength(20).WithText(text, "validation.address.houseNumberTooLong", ("max", 20));
 
         RuleFor(x => x.City)
-            .NotEmpty().WithMessage("City is required")
-            .MaximumLength(100).WithMessage("City must not exceed 100 characters");
+            .NotEmpty().WithText(text, "validation.address.cityRequired")
+            .MaximumLength(100).WithText(text, "validation.address.cityTooLong", ("max", 100));
 
         RuleFor(x => x.ZipCode)
-            .NotEmpty().WithMessage("Zip code is required")
-            .MaximumLength(20).WithMessage("Zip code must not exceed 20 characters");
+            .NotEmpty().WithText(text, "validation.address.zipCodeRequired")
+            .MaximumLength(20).WithText(text, "validation.address.zipCodeTooLong", ("max", 20));
 
         RuleFor(x => x.Country)
-            .NotEmpty().WithMessage("Country is required")
-            .MaximumLength(100).WithMessage("Country must not exceed 100 characters");
+            .NotEmpty().WithText(text, "validation.address.countryRequired")
+            .MaximumLength(100).WithText(text, "validation.address.countryTooLong", ("max", 100));
 
         RuleFor(x => x.State)
-            .MaximumLength(100).WithMessage("State must not exceed 100 characters")
+            .MaximumLength(100).WithText(text, "validation.address.stateTooLong", ("max", 100))
             .When(x => !string.IsNullOrWhiteSpace(x.State));
     }
 }

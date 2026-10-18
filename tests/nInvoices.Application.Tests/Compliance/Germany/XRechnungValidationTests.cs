@@ -5,6 +5,7 @@ using nInvoices.Countries.Germany;
 using nInvoices.Countries.Germany.XRechnung;
 using Shouldly;
 using static nInvoices.Application.Tests.Compliance.Germany.XRechnungTestData;
+using nInvoices.Application.Tests.TestDoubles;
 
 namespace nInvoices.Application.Tests.Compliance.Germany;
 
@@ -15,7 +16,7 @@ namespace nInvoices.Application.Tests.Compliance.Germany;
 [TestFixture]
 public sealed class XRechnungValidationTests
 {
-    private static readonly XRechnungFormat Format = new(new GermanyComplianceModule());
+    private static readonly XRechnungFormat Format = new(new GermanyComplianceModule(), TestText.Instance);
 
     private static readonly Dictionary<string, EInvoiceDocument> Documents = new()
     {

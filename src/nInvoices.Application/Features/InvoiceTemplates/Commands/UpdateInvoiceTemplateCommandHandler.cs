@@ -1,9 +1,10 @@
 using Mediator;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
-using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.InvoiceTemplates.Commands;
 
@@ -15,20 +16,23 @@ public sealed class UpdateInvoiceTemplateCommandHandler : IRequestHandler<Update
 {
     private readonly IRepository<InvoiceTemplate> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAppText _text;
 
     public UpdateInvoiceTemplateCommandHandler(
         IRepository<InvoiceTemplate> repository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAppText text)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _text = text;
     }
 
     public async ValueTask<InvoiceTemplateDto> Handle(UpdateInvoiceTemplateCommand request, CancellationToken cancellationToken)
     {
         var template = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (template == null)
-            throw new NotFoundException($"Template with ID {request.Id} not found");
+            throw new NotFoundException(_text.Translate("notFound.template", ("id", request.Id)));
 
         var dto = request.Template;
         template.UpdateContent(dto.Name, dto.Content);

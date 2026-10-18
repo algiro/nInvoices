@@ -1,6 +1,7 @@
 using Mediator;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
@@ -38,8 +39,8 @@ public sealed class InvoiceDocumentHandlers :
     IRequestHandler<RegenerateInvoiceHtmlCommand, Unit>,
     IRequestHandler<VerifyMonthlyReportQuery, Unit>
 {
-    private const string CalendarOnlyMonthly = "Calendar export is only available for monthly invoices";
-    private const string ReportOnlyMonthly = "Monthly reports are only available for monthly invoices";
+    private const string CalendarOnlyMonthly = "errors.invoice.calendarOnlyMonthly";
+    private const string ReportOnlyMonthly = "errors.invoice.reportOnlyMonthly";
 
     private readonly IRepository<Invoice> _invoices;
     private readonly IRepository<Customer> _customers;
@@ -48,6 +49,7 @@ public sealed class InvoiceDocumentHandlers :
     private readonly IMonthlyReportGenerationService _monthlyReports;
     private readonly IInvoiceGenerationService _generation;
     private readonly ILogger<InvoiceDocumentHandlers> _logger;
+    private readonly IAppText _text;
 
     public InvoiceDocumentHandlers(
         IRepository<Invoice> invoices,
@@ -56,7 +58,8 @@ public sealed class InvoiceDocumentHandlers :
         IHtmlToPdfConverter htmlToPdf,
         IMonthlyReportGenerationService monthlyReports,
         IInvoiceGenerationService generation,
-        ILogger<InvoiceDocumentHandlers> logger)
+        ILogger<InvoiceDocumentHandlers> logger,
+        IAppText text)
     {
         _invoices = invoices;
         _customers = customers;
@@ -65,6 +68,7 @@ public sealed class InvoiceDocumentHandlers :
         _monthlyReports = monthlyReports;
         _generation = generation;
         _logger = logger;
+        _text = text;
     }
 
     public async ValueTask<DownloadFile> Handle(GetInvoicePdfQuery request, CancellationToken cancellationToken)
@@ -110,16 +114,16 @@ public sealed class InvoiceDocumentHandlers :
     }
 
     private async Task<Invoice> InvoiceAsync(long id, CancellationToken cancellationToken) =>
-        await _invoices.GetByIdAsync(id, cancellationToken) ?? throw NotFoundException.For("Invoice", id);
+        await _invoices.GetByIdAsync(id, cancellationToken) ?? throw new NotFoundException(_text.Translate("notFound.invoice", ("id", id)));
 
-    private async Task<Invoice> MonthlyInvoiceAsync(long id, string notMonthly, CancellationToken cancellationToken)
+    private async Task<Invoice> MonthlyInvoiceAsync(long id, string notMonthlyKey, CancellationToken cancellationToken)
     {
         var invoice = await InvoiceAsync(id, cancellationToken);
         if (invoice.Type != InvoiceType.Monthly)
-            throw new DomainException(notMonthly);
+            throw new DomainException(_text.Translate(notMonthlyKey));
         return invoice;
     }
 
     private async Task<Customer> CustomerAsync(Invoice invoice, CancellationToken cancellationToken) =>
-        await _customers.GetByIdAsync(invoice.CustomerId, cancellationToken) ?? throw NotFoundException.For("Customer", invoice.CustomerId);
+        await _customers.GetByIdAsync(invoice.CustomerId, cancellationToken) ?? throw new NotFoundException(_text.Translate("notFound.customer", ("id", invoice.CustomerId)));
 }

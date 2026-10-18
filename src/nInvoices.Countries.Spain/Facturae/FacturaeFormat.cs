@@ -1,6 +1,7 @@
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services.Holidays;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Compliance.EInvoice;
@@ -20,11 +21,13 @@ public sealed class FacturaeFormat : IEInvoiceFormat
 
     private readonly SpainComplianceModule _spain;
     private readonly TimeProvider _time;
+    private readonly IAppText _text;
 
-    public FacturaeFormat(SpainComplianceModule spain, TimeProvider time)
+    public FacturaeFormat(SpainComplianceModule spain, TimeProvider time, IAppText text)
     {
         _spain = spain;
         _time = time;
+        _text = text;
     }
 
     public string FormatId => Id;
@@ -66,9 +69,9 @@ public sealed class FacturaeFormat : IEInvoiceFormat
     {
         var issues = Validate(document);
         if (issues.Count > 0)
-            throw new DomainException("The invoice is not valid Facturae: " + string.Join("; ", issues.Select(i => i.Message)));
+            throw new DomainException(_text.Translate("errors.einvoice.notValid", ("format", "Facturae"), ("issues", string.Join("; ", issues.Select(i => i.Message)))));
         if (signingCertificate is null)
-            throw new DomainException("Facturae invoices must be signed: upload a signing certificate in the Spanish compliance settings");
+            throw new DomainException(_text.Translate("errors.facturae.certificateRequired"));
 
         var xml = FacturaeXmlBuilder.Build(document);
 

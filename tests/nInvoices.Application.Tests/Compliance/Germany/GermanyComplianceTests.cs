@@ -120,7 +120,7 @@ public sealed class XRechnungFormatTests
     private static readonly XNamespace Cbc = XRechnungXmlBuilder.Cbc;
     private static readonly XNamespace Cac = XRechnungXmlBuilder.Cac;
 
-    private readonly XRechnungFormat _format = new(new GermanyComplianceModule());
+    private readonly XRechnungFormat _format = new(new GermanyComplianceModule(), TestText.Instance);
 
     private XElement Build(EInvoiceDocument document)
     {

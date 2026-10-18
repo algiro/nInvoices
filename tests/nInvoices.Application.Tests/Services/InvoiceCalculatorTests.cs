@@ -5,6 +5,7 @@ using nInvoices.Core.Enums;
 using nInvoices.Core.Exceptions;
 using nInvoices.Core.ValueObjects;
 using Shouldly;
+using nInvoices.Application.Tests.TestDoubles;
 
 namespace nInvoices.Application.Tests.Services;
 
@@ -29,7 +30,7 @@ public sealed class InvoiceCalculatorTests
     [Test]
     public void Subtotal_DailyRate_BillsWorkedDays_PartialDaysAsHoursOverEight()
     {
-        var rates = new DayRates(Rate(1, RateType.Daily, 400m), []);
+        var rates = new DayRates(Rate(1, RateType.Daily, 400m), [], TestText.Instance);
         var dto = Monthly(Day(1), Day(2, hours: 4m), Day(3, DayType.PublicHoliday));
 
         InvoiceCalculator.Subtotal(dto, rates).ShouldBe(new Money(600m, "EUR"));
@@ -38,7 +39,7 @@ public sealed class InvoiceCalculatorTests
     [Test]
     public void Subtotal_HourlyRate_BillsProjectHoursBeforeTheDaysHours()
     {
-        var rates = new DayRates(Rate(1, RateType.Hourly, 50m), []);
+        var rates = new DayRates(Rate(1, RateType.Hourly, 50m), [], TestText.Instance);
         var dto = Monthly(Day(1, hours: 8m, projects: [("A", 3m), ("B", 2m)]), Day(2, hours: 6m));
 
         InvoiceCalculator.Subtotal(dto, rates).ShouldBe(new Money(550m, "EUR")); // (5 + 6) h × 50
@@ -48,7 +49,7 @@ public sealed class InvoiceCalculatorTests
     public void Subtotal_DaysWithTheirOwnRate_AreBilledAtIt()
     {
         var hourly = Rate(2, RateType.Hourly, 100m);
-        var rates = new DayRates(Rate(1, RateType.Daily, 400m), [hourly]);
+        var rates = new DayRates(Rate(1, RateType.Daily, 400m), [hourly], TestText.Instance);
         var dto = Monthly(Day(1), Day(2, hours: 3m, rateId: 2));
 
         InvoiceCalculator.Subtotal(dto, rates).ShouldBe(new Money(700m, "EUR"));
@@ -57,7 +58,7 @@ public sealed class InvoiceCalculatorTests
     [Test]
     public void Subtotal_FixedMonthlyRate_IsThePrice_WhateverTheDays()
     {
-        var rates = new DayRates(Rate(1, RateType.Monthly, 9000m), []);
+        var rates = new DayRates(Rate(1, RateType.Monthly, 9000m), [], TestText.Instance);
 
         InvoiceCalculator.Subtotal(Monthly(Day(1), Day(2)), rates).ShouldBe(new Money(9000m, "EUR"));
     }
@@ -65,29 +66,29 @@ public sealed class InvoiceCalculatorTests
     [Test]
     public void Subtotal_OneTime_HoursTimesHourlyRate_OrTheFixedPrice()
     {
-        InvoiceCalculator.Subtotal(OneTime(hours: 2.5m), new DayRates(Rate(1, RateType.Hourly, 80m), []))
+        InvoiceCalculator.Subtotal(OneTime(hours: 2.5m), new DayRates(Rate(1, RateType.Hourly, 80m), [], TestText.Instance))
             .ShouldBe(new Money(200m, "EUR"));
-        InvoiceCalculator.Subtotal(OneTime(), new DayRates(Rate(1, RateType.Daily, 500m), []))
+        InvoiceCalculator.Subtotal(OneTime(), new DayRates(Rate(1, RateType.Daily, 500m), [], TestText.Instance))
             .ShouldBe(new Money(500m, "EUR"));
     }
 
     [Test]
     public void EnsureBillable_HourlyDayWithoutHours_IsRefused()
     {
-        var rates = new DayRates(Rate(1, RateType.Hourly, 50m), []);
+        var rates = new DayRates(Rate(1, RateType.Hourly, 50m), [], TestText.Instance);
 
-        Should.Throw<DomainException>(() => InvoiceCalculator.EnsureBillable(Monthly(Day(1, hours: 8m), Day(2)), rates))
+        Should.Throw<DomainException>(() => InvoiceCalculator.EnsureBillable(Monthly(Day(1, hours: 8m), Day(2)), rates, TestText.Instance))
             .Message.ShouldContain("Missing hours for 1 day(s)");
     }
 
     [Test]
     public void EnsureBillable_HourlyMonthlyWithoutDays_AndHourlyOneTimeWithoutHours_AreRefused()
     {
-        var rates = new DayRates(Rate(1, RateType.Hourly, 50m), []);
+        var rates = new DayRates(Rate(1, RateType.Hourly, 50m), [], TestText.Instance);
 
-        Should.Throw<DomainException>(() => InvoiceCalculator.EnsureBillable(Monthly(), rates));
-        Should.Throw<DomainException>(() => InvoiceCalculator.EnsureBillable(OneTime(), rates));
-        Should.NotThrow(() => InvoiceCalculator.EnsureBillable(OneTime(hours: 1m), rates));
+        Should.Throw<DomainException>(() => InvoiceCalculator.EnsureBillable(Monthly(), rates, TestText.Instance));
+        Should.Throw<DomainException>(() => InvoiceCalculator.EnsureBillable(OneTime(), rates, TestText.Instance));
+        Should.NotThrow(() => InvoiceCalculator.EnsureBillable(OneTime(hours: 1m), rates, TestText.Instance));
     }
 
     [Test]

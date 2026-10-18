@@ -69,12 +69,12 @@ public sealed class EInvoiceServiceTests
             .ReturnsAsync(() => FacturaeTestData.Invoice(buyer: _buyer));
 
         var spain = new SpainComplianceModule();
-        var format = new nInvoices.Countries.Spain.Facturae.FacturaeFormat(spain, _time);
+        var format = new nInvoices.Countries.Spain.Facturae.FacturaeFormat(spain, _time, TestText.Instance);
         var registry = new ComplianceRegistry([spain], [format], Options.Create(new ComplianceOptions()));
         var gate = new ComplianceGate(registry, _settings);
 
         _service = new EInvoiceService(
-            gate, [format], _invoices.Object, _customers, _stored, _submissions, _documents.Object, new SigningCertificateLoader(new PlainProtector(), _time), _unitOfWork.Object, _time);
+            gate, [format], _invoices.Object, _customers, _stored, _submissions, _documents.Object, new SigningCertificateLoader(new PlainProtector(), _time), _unitOfWork.Object, _time, TestText.Instance);
     }
 
     private static Invoice NewInvoice(InvoiceStatus status)

@@ -1,4 +1,5 @@
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Exceptions;
@@ -28,10 +29,12 @@ public sealed class InvoiceRateResolver : IInvoiceRateResolver
     private static readonly RateType[] Preference = [RateType.Daily, RateType.Monthly, RateType.Hourly];
 
     private readonly IRepository<Rate> _rateRepository;
+    private readonly IAppText _text;
 
-    public InvoiceRateResolver(IRepository<Rate> rateRepository)
+    public InvoiceRateResolver(IRepository<Rate> rateRepository, IAppText text)
     {
         _rateRepository = rateRepository;
+        _text = text;
     }
 
     public async Task<DayRates> ResolveAsync(
@@ -46,7 +49,7 @@ public sealed class InvoiceRateResolver : IInvoiceRateResolver
         // Only the days of a monthly invoice can choose their own rate
         var ids = DayRates.RequestedIds(invoiceType == InvoiceType.Monthly ? workDays : null, defaultRate);
         if (ids.Count == 0)
-            return new DayRates(defaultRate, []);
+            return new DayRates(defaultRate, [], _text);
 
         var found = (await _rateRepository.FindAsync(
             r => r.CustomerId == customerId && ids.Contains(r.Id),
@@ -54,9 +57,9 @@ public sealed class InvoiceRateResolver : IInvoiceRateResolver
 
         var missing = ids.Except(found.Select(r => r.Id)).ToList();
         if (missing.Count > 0)
-            throw new DomainException($"Rate {missing[0]} not found for customer {customerId}.");
+            throw new DomainException(_text.Translate("errors.rate.notFoundForCustomer", ("id", missing[0]), ("customer", customerId)));
 
-        return new DayRates(defaultRate, found);
+        return new DayRates(defaultRate, found, _text);
     }
 
     private async Task<Rate> DefaultRateAsync(
@@ -76,7 +79,7 @@ public sealed class InvoiceRateResolver : IInvoiceRateResolver
                 cancellationToken)).FirstOrDefault();
 
             return chosen
-                ?? throw new DomainException($"Rate {rateId.Value} not found for customer {customerId}.");
+                ?? throw new DomainException(_text.Translate("errors.rate.notFoundForCustomer", ("id", rateId.Value), ("customer", customerId)));
         }
 
         foreach (var type in Preference)
@@ -88,6 +91,6 @@ public sealed class InvoiceRateResolver : IInvoiceRateResolver
                 return rate;
         }
 
-        throw new DomainException($"No active rate found for customer {customerId}. Please add a Daily, Monthly, or Hourly rate.");
+        throw new DomainException(_text.Translate("errors.rate.noActiveRate", ("customer", customerId)));
     }
 }

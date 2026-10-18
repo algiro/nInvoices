@@ -1,4 +1,5 @@
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Exceptions;
 using nInvoices.Core.ValueObjects;
@@ -15,15 +16,15 @@ public static class InvoiceCalculator
     /// Checks the request carries what its rates need: work days (with their hours) for an hourly
     /// monthly invoice, hours for an hourly one-time invoice, and valid per-day rate choices.
     /// </summary>
-    /// <exception cref="DomainException">The request can't be billed as it is.</exception>
-    public static void EnsureBillable(GenerateInvoiceDto dto, DayRates rates)
+    /// <exception cref="DomainException">The request can't be billed as it is (the reason in <paramref name="text"/>'s language).</exception>
+    public static void EnsureBillable(GenerateInvoiceDto dto, DayRates rates, IAppText text)
     {
         var rate = rates.Default;
 
         if (dto.InvoiceType == InvoiceType.Monthly)
         {
             if (rate.Type == RateType.Hourly && (dto.WorkDays == null || dto.WorkDays.Count == 0))
-                throw new DomainException("Work days are required for hourly rate invoices.");
+                throw new DomainException(text.Translate("errors.invoice.hourlyWorkDaysRequired"));
 
             rates.Validate(dto.WorkDays ?? []);
 
@@ -34,12 +35,11 @@ public static class InvoiceCalculator
 
             if (workedDaysWithoutHours.Count > 0)
                 throw new DomainException(
-                    $"Hours must be specified for all worked days when using hourly rates " +
-                    $"(via a project allocation or the day's hours). Missing hours for {workedDaysWithoutHours.Count} day(s).");
+                    text.Translate("errors.invoice.missingHours", ("count", workedDaysWithoutHours.Count)));
         }
 
         if (rate.Type == RateType.Hourly && dto.InvoiceType == InvoiceType.OneTime && dto.Hours is not > 0)
-            throw new DomainException("Hours are required for a one-time invoice with an hourly rate.");
+            throw new DomainException(text.Translate("errors.invoice.oneTimeHoursRequired"));
     }
 
     public static Money Subtotal(GenerateInvoiceDto dto, DayRates rates)

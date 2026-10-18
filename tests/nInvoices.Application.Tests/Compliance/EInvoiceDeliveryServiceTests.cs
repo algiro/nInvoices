@@ -91,14 +91,14 @@ public sealed class EInvoiceDeliveryServiceTests
     private void Rebuild()
     {
         var spain = new SpainComplianceModule();
-        var format = new FacturaeFormat(spain, _time);
+        var format = new FacturaeFormat(spain, _time, TestText.Instance);
         var registry = new ComplianceRegistry([spain], [format], Options.Create(new ComplianceOptions()));
         var gate = new ComplianceGate(registry, _settings);
         var channel = new FaceChannel(_face.Object, Options.Create(_options));
 
         _service = new EInvoiceDeliveryService(
             gate, [channel], _invoices.Object, _customers, _files, _submissions,
-            new SigningCertificateLoader(new PlainProtector(), _time), _unitOfWork.Object, _time);
+            new SigningCertificateLoader(new PlainProtector(), _time), _unitOfWork.Object, _time, TestText.Instance);
     }
 
     private static Invoice NewInvoice(InvoiceStatus status)

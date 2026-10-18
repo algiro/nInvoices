@@ -1,9 +1,10 @@
 using Mediator;
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Entities;
+using nInvoices.Core.Exceptions;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
-using nInvoices.Application.Exceptions;
-using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Features.Invoices.Commands;
 
@@ -11,23 +12,26 @@ public sealed class UpdateInvoiceCommandHandler : IRequestHandler<UpdateInvoiceC
 {
     private readonly IRepository<Invoice> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAppText _text;
 
     public UpdateInvoiceCommandHandler(
         IRepository<Invoice> repository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAppText text)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _text = text;
     }
 
     public async ValueTask<Unit> Handle(UpdateInvoiceCommand request, CancellationToken cancellationToken)
     {
         var invoice = await _repository.GetByIdAsync(request.InvoiceId, cancellationToken);
         if (invoice == null)
-            throw new NotFoundException($"Invoice with ID {request.InvoiceId} not found");
+            throw new NotFoundException(_text.Translate("notFound.invoice", ("id", request.InvoiceId)));
 
         if (invoice.Status != Core.Enums.InvoiceStatus.Draft)
-            throw new DomainException("Only draft invoices can be updated");
+            throw new DomainException(_text.Translate("errors.invoice.onlyDraftUpdated"));
 
         if (request.Dto.DueDate.HasValue)
         {

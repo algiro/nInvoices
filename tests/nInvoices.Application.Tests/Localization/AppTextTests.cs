@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using nInvoices.Application.Localization;
 using Shouldly;
 
@@ -7,7 +8,7 @@ namespace nInvoices.Application.Tests.Localization;
 
 /// <summary>The API's texts in the user's language, falling back to English for what a language lacks.</summary>
 [TestFixture]
-public sealed class AppTextTests
+public sealed partial class AppTextTests
 {
     private static readonly AppText Text = new(new Dictionary<string, string>
     {
@@ -138,6 +139,21 @@ public sealed class AppTextTests
     }
 
     [Test]
+    public void Sources_UseOnlyKeysEnglishHas()
+    {
+        // A key the code asks for that en.json lacks reaches the user as the key itself ("errors.invoice.typo")
+        var english = Shipped.KeysOf("en").ToHashSet();
+        var separator = Path.DirectorySeparatorChar;
+        var used = Directory.GetFiles(Path.Combine(RepositoryRoot(), "src"), "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{separator}obj{separator}", StringComparison.Ordinal) && !f.Contains($"{separator}bin{separator}", StringComparison.Ordinal))
+            .SelectMany(f => KeyLiteral().Matches(File.ReadAllText(f)).Select(m => (File: Path.GetFileName(f), Key: m.Groups[1].Value)))
+            .ToList();
+
+        used.Count.ShouldBeGreaterThan(100);
+        used.Where(u => !english.Contains(u.Key)).Select(u => $"{u.File}: {u.Key}").ShouldBeEmpty("keys missing from Localization/Messages/en.json");
+    }
+
+    [Test]
     public void ShippedLanguages_AreTheWebAppsLanguages()
     {
         // One list of languages: the web app sends the one the user picked, the API must know it
@@ -151,8 +167,12 @@ public sealed class AppTextTests
             Should.NotThrow(() => JsonDocument.Parse(File.ReadAllText(file)).Dispose(), $"{file} is not valid JSON");
     }
 
+    // "errors.invoice.onlyDraftUpdated", "validation.customer.nameRequired"…: the text keys written in the code
+    [GeneratedRegex(@"""((?:errors|notFound|preferences|validation)\.[A-Za-z0-9.]+)""")]
+    private static partial Regex KeyLiteral();
+
     private static List<string> Placeholders(string text) =>
-        System.Text.RegularExpressions.Regex.Matches(text, @"\{(\w+)\}").Select(m => m.Groups[1].Value).ToList();
+        Regex.Matches(text, @"\{(\w+)\}").Select(m => m.Groups[1].Value).ToList();
 
     private static string RepositoryRoot()
     {

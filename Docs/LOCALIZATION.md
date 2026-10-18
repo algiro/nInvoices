@@ -67,6 +67,37 @@ import { t } from '@/i18n'                   // in stores, composables, utils
 - Keys built at run time (``t(`invoices.bulk.${key}.title`)``) are not checked by the tests: keep them rare.
 - A country's screens use keys under `countries.<code>.*`.
 
-**Backend.** Inject `IAppText` and use `Translate("errors.unexpected")` (current UI language) with keys in
-`Localization/Messages/en.json`; placeholders are named: `Translate("preferences.unsupportedLanguage", ("language", x))`.
-Messages that are not yet keys are returned in English; move them to keys as they are touched.
+**Backend.** Every message the API shows the user is a key in `src/nInvoices.Application/Localization/Messages/en.json`
+(Italian in `it.json`), translated into the request's UI language by `IAppText` (registered as a singleton; inject it).
+Keys are grouped by kind: `validation.*` (FluentValidation rules), `errors.*` (a `DomainException` /
+`InvoiceEmailException`: a rule refused), `notFound.*` (`NotFoundException`). Placeholders are named, values passed
+as tuples:
+
+```csharp
+// a validator: its constructor takes IAppText, and passes it on to the validators it nests
+RuleFor(x => x.Name).NotEmpty().WithText(text, "validation.customer.nameRequired")
+    .MaximumLength(200).WithText(text, "validation.customer.nameTooLong", ("max", 200));
+RuleFor(x => x.ContentType).Must(Allowed.Contains)
+    .WithMessage(x => text.Translate("validation.image.typeNotAllowed", ("type", x.ContentType), ("allowed", list)));
+
+// a handler or service
+?? throw new NotFoundException(_text.Translate("notFound.invoice", ("id", request.InvoiceId)));
+throw new DomainException(_text.Translate("errors.project.nameExists", ("name", name)));
+```
+
+- `WithText` (`Validation/LocalizedRuleExtensions`) translates when the rule fails, so the message follows the
+  request's language even though validators are built once. Template syntax rules take the key of their
+  message: `MustBeValidTemplate(renderer, text, "validation.template.subjectSyntaxError")`.
+- Pure code takes the text as a parameter instead of injecting it (`InvoiceCalculator.EnsureBillable(dto, rates, text)`,
+  `new DayRates(defaultRate, dayRates, text)`).
+- Pass dates in an invariant form (`yyyy-MM-dd`) and ids, numbers, names as they are; a value is formatted with the
+  UI culture.
+- Tests construct classes with `TestText.Instance` (the shipped files) and run in the machine's UI language;
+  English where it has no file. `AppTextTests` fails when the code uses a key `en.json` lacks, when a translation
+  has a key English lacks, or when it loses a placeholder.
+
+Still English: messages thrown by `Core` entities and value objects (`Invoice` lifecycle refusals, `Money`'s
+currency mismatch, `ArgumentException`s), which can't take services and carry runtime details; the per-field
+messages of country rules (`ComplianceIssue`, in the `Countries.*` modules) and the parts of a message that come
+from a library (Scriban's syntax errors); Infrastructure's internal checks (tax handlers, PDF export guards that
+the request handlers already check); and the signing-certificate checks of the Spanish signers.

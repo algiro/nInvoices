@@ -1,3 +1,4 @@
+using nInvoices.Application.Localization;
 using nInvoices.Application.Models;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
@@ -64,6 +65,7 @@ public sealed class InvoiceEmailComposer : IInvoiceEmailComposer
     private readonly IHtmlToPdfConverter _htmlToPdfConverter;
     private readonly IMonthlyReportGenerationService _monthlyReportService;
     private readonly TimeProvider _timeProvider;
+    private readonly IAppText _text;
 
     public InvoiceEmailComposer(
         IRepository<EmailTemplate> templateRepository,
@@ -74,7 +76,8 @@ public sealed class InvoiceEmailComposer : IInvoiceEmailComposer
         IPdfExportService pdfExportService,
         IHtmlToPdfConverter htmlToPdfConverter,
         IMonthlyReportGenerationService monthlyReportService,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IAppText text)
     {
         _templateRepository = templateRepository;
         _customerRepository = customerRepository;
@@ -85,6 +88,7 @@ public sealed class InvoiceEmailComposer : IInvoiceEmailComposer
         _htmlToPdfConverter = htmlToPdfConverter;
         _monthlyReportService = monthlyReportService;
         _timeProvider = timeProvider;
+        _text = text;
     }
 
     public async Task<EmailTemplateContent> ResolveTemplateAsync(long customerId, long? templateId, CancellationToken cancellationToken = default)
@@ -192,7 +196,7 @@ public sealed class InvoiceEmailComposer : IInvoiceEmailComposer
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            throw new InvoiceEmailException(InvoiceEmailException.AttachmentFailed, "The invoice PDF could not be generated.", ex);
+            throw new InvoiceEmailException(InvoiceEmailException.AttachmentFailed, _text.Translate("errors.email.invoicePdfFailed"), ex);
         }
 
         if (includeMonthlyReport && invoice.Type == InvoiceType.Monthly)
@@ -208,7 +212,7 @@ public sealed class InvoiceEmailComposer : IInvoiceEmailComposer
                 var reason = ex is InvalidOperationException ? $" {ex.Message}" : string.Empty;
                 throw new InvoiceEmailException(
                     InvoiceEmailException.AttachmentFailed,
-                    $"The monthly report PDF could not be generated.{reason}",
+                    _text.Translate("errors.email.reportPdfFailed", ("reason", reason)),
                     ex);
             }
         }

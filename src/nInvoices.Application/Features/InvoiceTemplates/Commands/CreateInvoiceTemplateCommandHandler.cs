@@ -1,9 +1,10 @@
 using Mediator;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
-using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.InvoiceTemplates.Commands;
 
@@ -16,15 +17,18 @@ public sealed class CreateInvoiceTemplateCommandHandler : IRequestHandler<Create
     private readonly IRepository<InvoiceTemplate> _templateRepository;
     private readonly IRepository<Customer> _customerRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAppText _text;
 
     public CreateInvoiceTemplateCommandHandler(
         IRepository<InvoiceTemplate> templateRepository,
         IRepository<Customer> customerRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAppText text)
     {
         _templateRepository = templateRepository;
         _customerRepository = customerRepository;
         _unitOfWork = unitOfWork;
+        _text = text;
     }
 
     public async ValueTask<InvoiceTemplateDto> Handle(CreateInvoiceTemplateCommand request, CancellationToken cancellationToken)
@@ -35,7 +39,7 @@ public sealed class CreateInvoiceTemplateCommandHandler : IRequestHandler<Create
         {
             var customer = await _customerRepository.GetByIdAsync(dto.CustomerId.Value, cancellationToken);
             if (customer == null)
-                throw new NotFoundException($"Customer with ID {dto.CustomerId} not found");
+                throw new NotFoundException(_text.Translate("notFound.customer", ("id", dto.CustomerId)));
         }
 
         var template = new InvoiceTemplate(dto.CustomerId, dto.InvoiceType, dto.Name, dto.Content);

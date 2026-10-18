@@ -1,6 +1,7 @@
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services.Holidays;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Compliance.EInvoice;
@@ -20,10 +21,12 @@ public sealed class XRechnungFormat : IEInvoiceFormat
     private const decimal Tolerance = 0.01m;
 
     private readonly GermanyComplianceModule _germany;
+    private readonly IAppText _text;
 
-    public XRechnungFormat(GermanyComplianceModule germany)
+    public XRechnungFormat(GermanyComplianceModule germany, IAppText text)
     {
         _germany = germany;
+        _text = text;
     }
 
     public string FormatId => Id;
@@ -77,7 +80,7 @@ public sealed class XRechnungFormat : IEInvoiceFormat
     {
         var issues = Validate(document);
         if (issues.Count > 0)
-            throw new DomainException("The invoice is not a valid XRechnung: " + string.Join("; ", issues.Select(i => i.Message)));
+            throw new DomainException(_text.Translate("errors.einvoice.notValid", ("format", "XRechnung"), ("issues", string.Join("; ", issues.Select(i => i.Message)))));
 
         var xml = XRechnungXmlBuilder.Build(document);
 

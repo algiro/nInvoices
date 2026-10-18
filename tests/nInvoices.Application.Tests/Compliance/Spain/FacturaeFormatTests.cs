@@ -272,7 +272,7 @@ public sealed class FacturaeFormatTests
     public void Build_InvalidInvoice_Throws()
     {
         Should.Throw<InvalidOperationException>(() => Build(FacturaeTestData.Invoice() with { Total = 1m }))
-            .Message.ShouldContain("not valid Facturae");
+            .Message.ShouldContain("not a valid Facturae");
     }
 
     [Test]
