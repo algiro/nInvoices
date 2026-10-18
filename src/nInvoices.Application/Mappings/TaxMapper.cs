@@ -18,5 +18,6 @@ public static class TaxMapper
         tax.IsActive,
         tax.CreatedAt,
         tax.UpdatedAt ?? tax.CreatedAt,
-        tax.ComplianceValues);
+        tax.ComplianceValues,
+        tax.AddsToTaxableBase);
 }

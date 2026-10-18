@@ -18,7 +18,7 @@ namespace nInvoices.Infrastructure.Migrations.PostgreSql.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -1214,6 +1214,11 @@ namespace nInvoices.Infrastructure.Migrations.PostgreSql.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<bool>("AddsToTaxableBase")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("ApplicationType")
                         .IsRequired()
                         .HasColumnType("text");
@@ -1366,7 +1371,96 @@ namespace nInvoices.Infrastructure.Migrations.PostgreSql.Migrations
                     b.ToTable("TaxProfiles", (string)null);
                 });
 
-            modelBuilder.Entity("nInvoices.Core.Entities.VerifactuRecord", b =>
+            modelBuilder.Entity("nInvoices.Core.Entities.WorkDay", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<int>("DayType")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("HoursWorked")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasAnnotation("nInvoices:EncryptionPurpose", "WorkDay.Notes");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<long?>("RateId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("CustomerId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("WorkDays", (string)null);
+                });
+
+            modelBuilder.Entity("nInvoices.Core.Entities.WorkDayProject", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("Hours")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("numeric(6,2)");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<long>("ProjectId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("WorkDayId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("WorkDayId", "ProjectId")
+                        .IsUnique();
+
+                    b.ToTable("WorkDayProjects", (string)null);
+                });
+
+            modelBuilder.Entity("nInvoices.Countries.Spain.Verifactu.VerifactuRecord", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -1458,7 +1552,7 @@ namespace nInvoices.Infrastructure.Migrations.PostgreSql.Migrations
                     b.ToTable("VerifactuRecords", (string)null);
                 });
 
-            modelBuilder.Entity("nInvoices.Core.Entities.VerifactuSubmission", b =>
+            modelBuilder.Entity("nInvoices.Countries.Spain.Verifactu.VerifactuSubmission", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -1522,95 +1616,6 @@ namespace nInvoices.Infrastructure.Migrations.PostgreSql.Migrations
                     b.HasIndex("Status", "NextAttemptAt");
 
                     b.ToTable("VerifactuSubmissions", (string)null);
-                });
-
-            modelBuilder.Entity("nInvoices.Core.Entities.WorkDay", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long>("CustomerId")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
-
-                    b.Property<int>("DayType")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal?>("HoursWorked")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("text")
-                        .HasAnnotation("nInvoices:EncryptionPurpose", "WorkDay.Notes");
-
-                    b.Property<string>("OwnerId")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<long?>("RateId")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OwnerId");
-
-                    b.HasIndex("CustomerId", "Date")
-                        .IsUnique();
-
-                    b.ToTable("WorkDays", (string)null);
-                });
-
-            modelBuilder.Entity("nInvoices.Core.Entities.WorkDayProject", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("Hours")
-                        .HasPrecision(6, 2)
-                        .HasColumnType("numeric(6,2)");
-
-                    b.Property<string>("OwnerId")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<long>("ProjectId")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long>("WorkDayId")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OwnerId");
-
-                    b.HasIndex("ProjectId");
-
-                    b.HasIndex("WorkDayId", "ProjectId")
-                        .IsUnique();
-
-                    b.ToTable("WorkDayProjects", (string)null);
                 });
 
             modelBuilder.Entity("nInvoices.Infrastructure.Encryption.UserKey", b =>
@@ -2175,28 +2180,6 @@ namespace nInvoices.Infrastructure.Migrations.PostgreSql.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("nInvoices.Core.Entities.VerifactuRecord", b =>
-                {
-                    b.HasOne("nInvoices.Core.Entities.Invoice", "Invoice")
-                        .WithMany()
-                        .HasForeignKey("InvoiceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Invoice");
-                });
-
-            modelBuilder.Entity("nInvoices.Core.Entities.VerifactuSubmission", b =>
-                {
-                    b.HasOne("nInvoices.Core.Entities.VerifactuRecord", "Record")
-                        .WithMany()
-                        .HasForeignKey("RecordId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Record");
-                });
-
             modelBuilder.Entity("nInvoices.Core.Entities.WorkDay", b =>
                 {
                     b.HasOne("nInvoices.Core.Entities.Customer", "Customer")
@@ -2225,6 +2208,28 @@ namespace nInvoices.Infrastructure.Migrations.PostgreSql.Migrations
                     b.Navigation("Project");
 
                     b.Navigation("WorkDay");
+                });
+
+            modelBuilder.Entity("nInvoices.Countries.Spain.Verifactu.VerifactuRecord", b =>
+                {
+                    b.HasOne("nInvoices.Core.Entities.Invoice", "Invoice")
+                        .WithMany()
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Invoice");
+                });
+
+            modelBuilder.Entity("nInvoices.Countries.Spain.Verifactu.VerifactuSubmission", b =>
+                {
+                    b.HasOne("nInvoices.Countries.Spain.Verifactu.VerifactuRecord", "Record")
+                        .WithMany()
+                        .HasForeignKey("RecordId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Record");
                 });
 
             modelBuilder.Entity("nInvoices.Core.Entities.Customer", b =>

@@ -51,6 +51,38 @@ public sealed class TaxCalculationServiceTests
     }
 
     [Test]
+    public void CalculateTaxes_AContributionAddsToTheBase_OfTheTaxesAfterIt()
+    {
+        // Italy: rivalsa INPS 4% on the fee, then IVA 22% and the ritenuta 20% on fee + rivalsa
+        var rivalsa = Percentage(1, "INPS", 4m, 0);
+        rivalsa.AddsToTaxableBase = true;
+
+        var (total, taxLines) = Service.CalculateTaxes(
+            [Percentage(2, "IVA", 22m, 1), rivalsa, Percentage(3, "RA", -20m, 2)],
+            new Money(1000m, "EUR"));
+        var lines = taxLines.ToList();
+
+        lines.Select(l => (l.TaxId, l.BaseAmount.Amount, l.TaxAmount.Amount)).ShouldBe(
+        [
+            ("INPS", 1000m, 40m),
+            ("IVA", 1040m, 228.80m),
+            ("RA", 1040m, -208m)
+        ]);
+        total.Amount.ShouldBe(60.80m);
+    }
+
+    [Test]
+    public void CalculateTaxes_AContribution_LeavesTheTaxesBeforeItOnTheSubtotal()
+    {
+        var contribution = Percentage(2, "CASSA", 4m, 1);
+        contribution.AddsToTaxableBase = true;
+
+        var (_, taxLines) = Service.CalculateTaxes([Percentage(1, "VAT", 10m, 0), contribution], new Money(100m, "EUR"));
+
+        taxLines.First().BaseAmount.Amount.ShouldBe(100m);
+    }
+
+    [Test]
     public void CalculateTaxes_NoTaxes_IsZero()
     {
         var (total, lines) = Service.CalculateTaxes([], new Money(100m, "EUR"));

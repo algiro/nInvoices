@@ -74,7 +74,7 @@ internal sealed class CustomerPortability
                 rates.Select(r => new RateExportDto(r.Type, new MoneyDto(r.Price.Amount, r.Price.Currency), r.CreatedAt, r.Name, r.IsActive)).ToList(),
                 c.Taxes.Select(t => new TaxExportDto(t.TaxId, t.Description, t.HandlerId, t.Rate,
                     t.ApplicationType, FindTaxIdByPk(c.Taxes, t.AppliedToTaxId), t.Order, t.IsActive, t.CreatedAt,
-                    t.ComplianceValues)).ToList(),
+                    t.ComplianceValues, t.AddsToTaxableBase)).ToList(),
                 c.Templates.Select(t => new InvoiceTemplateExportDto(t.InvoiceType, t.Name, t.Content, t.IsActive, t.CreatedAt)).ToList(),
                 (templatesByCustomer.GetValueOrDefault(c.Id) ?? [])
                     .Select(mt => new MonthlyReportTemplateExportDto(mt.InvoiceType, mt.Name, mt.Content, mt.IsActive, mt.CreatedAt)).ToList(),
@@ -167,6 +167,7 @@ internal sealed class CustomerPortability
                         tax.SetCompoundTax(mappedId);
                     if (!taxData.IsActive)
                         tax.IsActive = false;
+                    tax.AddsToTaxableBase = taxData.AddsToTaxableBase;
                     foreach (var (country, values) in ByCountry(taxData.ComplianceValues))
                         tax.SetComplianceValues(country, values);
                     await _context.Taxes.AddAsync(tax, cancellationToken);

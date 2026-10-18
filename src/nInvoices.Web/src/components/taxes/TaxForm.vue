@@ -61,6 +61,14 @@
       </select>
     </BaseField>
 
+    <label v-if="form.handlerId === 'PERCENTAGE'" class="toggle" for="tax-adds-to-base">
+      <input id="tax-adds-to-base" v-model="form.addsToTaxableBase" type="checkbox" :disabled="disabled" />
+      <span>
+        <strong>Part of the taxable amount</strong>
+        <small>A contribution charged to the customer, such as rivalsa INPS 4%: the taxes after it are calculated on the subtotal plus it.</small>
+      </span>
+    </label>
+
     <!-- What the countries the user turned on ask about a tax, e.g. which indirect tax it is, or why a 0% VAT charges nothing -->
     <template v-if="form.handlerId !== 'FIXED_AMOUNT'">
       <template v-for="country in complianceCountries" :key="country.countryCode">
@@ -125,7 +133,8 @@ const form = reactive<CreateTaxDto | UpdateTaxDto>({
   applicationType: TaxApplicationType.OnSubtotal,
   order: 1,
   appliedToTaxId: null,
-  complianceValues: {}
+  complianceValues: {},
+  addsToTaxableBase: false
 })
 
 // The countries the user turned on that ask for extra data about a tax (none for most users)
@@ -133,7 +142,7 @@ const complianceCountries = ref<ComplianceCountryDto[]>([])
 
 /** The fields that make sense for this tax: the reason for a zero rate is only asked when the rate is 0 */
 function visibleFields(country: ComplianceCountryDto) {
-  return country.taxFields.filter(field => field.key !== 'operation' || form.rate === 0)
+  return country.taxFields.filter(field => !field.zeroRateOnly || form.rate === 0)
 }
 
 function complianceValue(country: string, key: string): string {
@@ -167,6 +176,7 @@ onMounted(async () => {
         form.rate = tax.rate
         form.order = tax.order
         form.appliedToTaxId = tax.appliedToTaxId
+        form.addsToTaxableBase = tax.addsToTaxableBase
         form.complianceValues = { ...(tax.complianceValues ?? {}) }
       }
     } else {
@@ -219,6 +229,8 @@ function validateForm(): boolean {
 
 async function handleSubmit() {
   if (!validateForm()) return
+  // Only a percentage of the subtotal is a contribution; the box is hidden for the others
+  if (form.handlerId !== 'PERCENTAGE') form.addsToTaxableBase = false
 
   try {
     saving.value = true
@@ -237,6 +249,32 @@ async function handleSubmit() {
 </script>
 
 <style scoped>
+.toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+
+.toggle input {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.15rem;
+  accent-color: var(--color-primary);
+}
+
+.toggle span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: var(--text-md);
+}
+
+.toggle small {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
 .tax-form {
   display: flex;
   flex-direction: column;

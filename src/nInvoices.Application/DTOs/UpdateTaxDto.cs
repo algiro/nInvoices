@@ -13,4 +13,5 @@ public sealed record UpdateTaxDto(
     long? AppliedToTaxId = null,
     int Order = 0,
     bool IsActive = true,
-    Dictionary<string, string>? ComplianceValues = null);
+    Dictionary<string, string>? ComplianceValues = null,
+    bool AddsToTaxableBase = false);

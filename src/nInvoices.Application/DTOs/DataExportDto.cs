@@ -59,7 +59,8 @@ public sealed record TaxExportDto(
     int Order,
     bool IsActive,
     DateTime CreatedAt,
-    IReadOnlyDictionary<string, string>? ComplianceValues = null);
+    IReadOnlyDictionary<string, string>? ComplianceValues = null,
+    bool AddsToTaxableBase = false);
 
 public sealed record InvoiceTemplateExportDto(
     InvoiceType InvoiceType,

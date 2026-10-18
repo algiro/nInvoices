@@ -223,9 +223,10 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
 
     private async Task<InvoiceDraft> RenderAsync(BuiltInvoice built, ICollection<WorkDayDto>? workDays, CancellationToken cancellationToken)
     {
+        // A draft not saved yet: what doesn't depend on it being saved (Italy's bollo, say) is shown already
         var model = InvoiceTemplateModelBuilder.Build(built.Invoice, built.Customer, built.Rates, workDays) with
         {
-            Compliance = _contributors.ToDictionary(c => c.Key, c => c.Empty)
+            Compliance = await ContributionsAsync(built.Invoice, cancellationToken)
         };
         built.Invoice.SetRenderedContent(await _templateRenderer.RenderAsync(built.Template.Content, model, cancellationToken));
 
@@ -250,10 +251,17 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             : null;
 
         var rates = await _rates.ResolveAsync(invoice.CustomerId, invoice.Type, invoice.RateId, workDays, cancellationToken);
+        var compliance = await ContributionsAsync(invoice, cancellationToken);
+        return (invoice, InvoiceTemplateModelBuilder.Build(invoice, customer, rates, workDays) with { Compliance = compliance });
+    }
+
+    /// <summary>What country rules add to the document of the invoice, each contributor's empty entry when it adds nothing.</summary>
+    private async Task<Dictionary<string, object>> ContributionsAsync(Invoice invoice, CancellationToken cancellationToken)
+    {
         var compliance = new Dictionary<string, object>();
         foreach (var contributor in _contributors)
             compliance[contributor.Key] = await contributor.ContributeAsync(invoice, cancellationToken) ?? contributor.Empty;
-        return (invoice, InvoiceTemplateModelBuilder.Build(invoice, customer, rates, workDays) with { Compliance = compliance });
+        return compliance;
     }
 
     private async Task<InvoiceTemplate> GetTemplateAsync(

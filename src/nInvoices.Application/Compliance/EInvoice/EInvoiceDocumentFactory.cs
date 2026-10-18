@@ -57,7 +57,7 @@ public sealed class EInvoiceDocumentFactory : IEInvoiceDocumentFactory
                 Math.Abs(t.Rate),
                 t.BaseAmount.Amount,
                 Math.Abs(t.TaxAmount.Amount),
-                taxSettings.FirstOrDefault(x => x.TaxId == t.TaxId)?.GetComplianceValues(settings.CountryCode)))
+                taxSettings.FirstOrDefault(x => x.CustomerId == invoice.CustomerId && x.TaxId == t.TaxId)?.GetComplianceValues(settings.CountryCode)))
             .ToList();
 
         return new EInvoiceDocument(

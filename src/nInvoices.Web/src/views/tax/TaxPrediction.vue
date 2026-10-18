@@ -1,6 +1,6 @@
 <template>
   <div class="tax-page">
-    <PageHeader title="Tax prediction" subtitle="An estimate of the taxes you pay each quarter, from your invoices and expenses. It doesn't file or pay anything.">
+    <PageHeader title="Tax prediction" subtitle="An estimate of the taxes you pay in the year, from your invoices and expenses. It doesn't file or pay anything.">
       <template #actions>
         <BaseButton icon="receipt" to="/expenses">Expenses</BaseButton>
         <select v-model.number="year" class="control year" aria-label="Year">
@@ -29,7 +29,7 @@
         <div class="stat-tile hero">
           <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="landmark" /></span><span class="stat-tile-label">Estimated for {{ year }}</span></span>
           <span class="stat-tile-value">{{ formatMoney(totals.estimated, currency) }}</span>
-          <span class="stat-tile-note">all quarters, as things stand</span>
+          <span class="stat-tile-note">all periods, as things stand</span>
         </div>
         <div class="stat-tile" :style="{ '--accent': 'var(--kpi-2)' }">
           <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="paid" /></span><span class="stat-tile-label">Paid so far</span></span>
@@ -147,7 +147,7 @@ function openPayment(period: TaxPeriodDto, form: TaxFormDto) {
 async function onPaymentChanged(message: string) {
   payment.value = null
   toast.success(message)
-  // Later quarters of a cumulative form start from what was paid
+  // Later periods of a cumulative form start from what was paid
   await load()
 }
 

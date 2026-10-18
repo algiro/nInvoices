@@ -20,6 +20,13 @@ public sealed class Tax : OwnedEntityBase
     public bool IsActive { get; set; }
 
     /// <summary>
+    /// The tax is part of the taxable amount: a contribution charged to the customer, such as Italy's rivalsa
+    /// INPS or a professional fund's contribution. The taxes after it (by <see cref="Order"/>) that apply to the
+    /// subtotal are calculated on the subtotal plus it, so VAT and withholdings include it.
+    /// </summary>
+    public bool AddsToTaxableBase { get; set; }
+
+    /// <summary>
     /// Extra data country invoicing regimes ask for about this tax, keyed "COUNTRY.field"
     /// (e.g. "ES.operation" for how a 0% VAT is treated).
     /// </summary>

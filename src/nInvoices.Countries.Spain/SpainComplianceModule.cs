@@ -131,7 +131,8 @@ public sealed partial class SpainComplianceModule : ICountryComplianceModule
                 new ComplianceFieldOption("E6", "Exempt: E6 (other reasons)"),
                 new ComplianceFieldOption("E7", "Exempt: E7 (IGIC only: article 90 of the Canary Islands consolidated text)"),
                 new ComplianceFieldOption("E8", "Exempt: E8 (IGIC only: Ley 20/1991)")
-            ])
+            ],
+            ZeroRateOnly: true)
     ];
 
     public IReadOnlyList<ComplianceField> CustomerFields { get; } =

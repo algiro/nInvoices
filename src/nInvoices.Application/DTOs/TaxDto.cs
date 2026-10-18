@@ -18,4 +18,5 @@ public sealed record TaxDto(
     bool IsActive,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    IReadOnlyDictionary<string, string>? ComplianceValues = null);
+    IReadOnlyDictionary<string, string>? ComplianceValues = null,
+    bool AddsToTaxableBase = false);

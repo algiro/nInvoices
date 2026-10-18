@@ -14,4 +14,5 @@ public sealed record CreateTaxDto(
     TaxApplicationType ApplicationType,
     long? AppliedToTaxId = null,
     int Order = 0,
-    Dictionary<string, string>? ComplianceValues = null);
+    Dictionary<string, string>? ComplianceValues = null,
+    bool AddsToTaxableBase = false);

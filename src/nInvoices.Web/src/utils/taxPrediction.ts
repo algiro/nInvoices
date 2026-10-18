@@ -8,12 +8,12 @@ export interface FormStatus {
 }
 
 /**
- * Where a quarter's form stands on `today` (ISO date): paid when a payment is recorded; still open
- * while the quarter runs (the estimate keeps changing); then due until the deadline, overdue after it.
+ * Where a period's form stands on `today` (ISO date): paid when a payment is recorded; still open
+ * while the period runs (the estimate keeps changing); then due until the deadline, overdue after it.
  */
 export function formStatus(form: TaxFormDto, period: TaxPeriodDto, today: string): FormStatus {
   if (form.payment) return { label: 'Paid', tone: 'success' }
-  if (today <= period.end) return { label: 'Quarter in progress', tone: 'neutral' }
+  if (today <= period.end) return { label: 'Period in progress', tone: 'neutral' }
   if (today <= form.deadline) return { label: 'Due', tone: 'warning' }
   return { label: 'Overdue', tone: 'danger' }
 }
@@ -27,7 +27,7 @@ export function yearTotals(prediction: TaxPredictionDto): { estimated: number; p
   }
 }
 
-/** The next form to pay: the first unpaid one whose quarter has ended, in deadline order. */
+/** The next form to pay: the first unpaid one whose period has ended, in deadline order. */
 export function nextDue(prediction: TaxPredictionDto, today: string): { form: TaxFormDto; period: TaxPeriodDto } | null {
   for (const period of prediction.periods) {
     if (today <= period.end) continue

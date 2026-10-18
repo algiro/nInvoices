@@ -40,11 +40,13 @@ public sealed class TaxCalculationService : ITaxCalculationService
 
         var taxLines = new List<InvoiceTaxLine>();
         var calculatedTaxes = new Dictionary<long, Money>();
+        // The contributions so far (AddsToTaxableBase): the later taxes on the subtotal include them
+        var taxableBase = subtotal;
 
         foreach (var tax in activeTaxes)
         {
             var handler = GetHandler(tax.HandlerId);
-            var baseAmount = GetBaseAmount(tax, subtotal, calculatedTaxes);
+            var baseAmount = GetBaseAmount(tax, taxableBase, calculatedTaxes);
             
             var context = CreateContext(tax, calculatedTaxes);
             // An invoice is issued in cents: each tax is rounded on its own, so the total of the
@@ -53,6 +55,8 @@ public sealed class TaxCalculationService : ITaxCalculationService
 
             var taxMoney = new Money(taxAmount, subtotal.Currency);
             calculatedTaxes[tax.Id] = taxMoney;
+            if (tax.AddsToTaxableBase)
+                taxableBase += taxMoney;
 
             var taxLine = new InvoiceTaxLine(
                 tax.TaxId,
@@ -85,14 +89,15 @@ public sealed class TaxCalculationService : ITaxCalculationService
         return handler;
     }
 
+    /// <param name="taxableBase">The subtotal plus the contributions calculated so far.</param>
     private static Money GetBaseAmount(
         Tax tax,
-        Money subtotal,
+        Money taxableBase,
         Dictionary<long, Money> calculatedTaxes)
     {
         return tax.ApplicationType switch
         {
-            TaxApplicationType.OnSubtotal => subtotal,
+            TaxApplicationType.OnSubtotal => taxableBase,
             TaxApplicationType.OnTax when tax.AppliedToTaxId.HasValue =>
                 calculatedTaxes.TryGetValue(tax.AppliedToTaxId.Value, out var baseTax)
                     ? baseTax
