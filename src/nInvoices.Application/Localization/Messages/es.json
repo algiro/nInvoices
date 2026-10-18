@@ -1,0 +1,962 @@
+{
+  "errors": {
+    "unexpected": "Algo ha fallado en el servidor. El error ha quedado registrado; inténtalo de nuevo.",
+    "country": {
+      "notSupported": "{country} no es uno de los países admitidos aquí",
+      "rulesOfAnotherCountry": "Trabajas desde {current}: elige {country} como tu país en Ajustes › País e impuestos para activar sus normas."
+    },
+    "einvoice": {
+      "cancelled": "Una factura anulada no tiene factura electrónica",
+      "finalizeFirst": "Emite la factura antes de generar su factura electrónica",
+      "notValid": "La factura no es una {format} válida: {issues}",
+      "sentCannotDelete": "La factura {number} se envió a través de {channel} ({reference}) y no se puede eliminar."
+    },
+    "email": {
+      "cancelled": "Una factura anulada no se puede enviar por correo.",
+      "finalizeFirst": "Emite la factura antes de enviarla por correo.",
+      "invalidAddress": "“{address}” no es una dirección de correo válida.",
+      "invoicePdfFailed": "No se ha podido generar el PDF de la factura.",
+      "noRecipients": "Añade al menos un destinatario.",
+      "reportPdfFailed": "No se ha podido generar el PDF del informe mensual.{reason}",
+      "subjectAndBody": "El correo necesita un asunto y un cuerpo."
+    },
+    "facturae": {
+      "certificateRequired": "Las facturas Facturae deben ir firmadas: sube un certificado de firma en los ajustes de cumplimiento de España"
+    },
+    "gmail": {
+      "notConfigured": "Gmail no está configurado en el servidor.",
+      "notConnected": "Primero conecta tu cuenta de Gmail en Ajustes.",
+      "revoked": "El acceso a Gmail se ha revocado o ha caducado. Vuelve a conectar Gmail.",
+      "unreadable": "La autorización de Gmail ya no se puede leer. Vuelve a conectar Gmail."
+    },
+    "image": {
+      "aliasExists": "Ya existe una imagen con el alias '{alias}'."
+    },
+    "invoice": {
+      "calendarOnlyMonthly": "La exportación al calendario solo está disponible para facturas mensuales",
+      "hourlyWorkDaysRequired": "Las facturas con tarifa por horas necesitan días trabajados.",
+      "missingHours": "Con tarifas por horas hay que indicar las horas de todos los días trabajados (mediante una asignación a proyecto o las horas del día). Faltan horas en {count} día(s).",
+      "oneTimeHoursRequired": "Una factura puntual con tarifa por horas necesita las horas.",
+      "onlyDraftUpdated": "Solo se pueden modificar los borradores",
+      "reportOnlyMonthly": "Los informes mensuales solo están disponibles para facturas mensuales"
+    },
+    "project": {
+      "nameExists": "Ya existe un proyecto llamado '{name}' para este cliente",
+      "notOfCustomer": "El proyecto {id} no pertenece al cliente {customer}"
+    },
+    "rate": {
+      "dayRatesWithFixedMonthly": "Los días no pueden tener tarifa propia cuando la factura usa una tarifa mensual fija.",
+      "fixedMonthlyForDay": "Una tarifa mensual fija no se puede usar para un solo día ({date}).",
+      "noActiveRate": "No hay ninguna tarifa activa para el cliente {customer}. Añade una tarifa diaria, mensual o por horas.",
+      "notFoundForCustomer": "No se ha encontrado la tarifa {id} del cliente {customer}.",
+      "notFoundForDay": "No se ha encontrado la tarifa {id} de este cliente ({date}).",
+      "oneCurrency": "Una factura se emite en una sola moneda: {currency} el {date} no coincide con {invoiceCurrency}."
+    },
+    "report": {
+      "monthAndYear": "La factura debe tener mes y año",
+      "noActiveTemplate": "No hay ninguna plantilla de informe mensual activa para el cliente {customer}",
+      "templateNotFound": "No se ha encontrado la plantilla de informe mensual {id}"
+    },
+    "taxes": {
+      "anotherCountry": "Trabajas desde {current}: primero elige {country} como tu país en Ajustes › País e impuestos.",
+      "chooseCountryFirst": "Elige dónde pagas impuestos en Ajustes antes de registrar un pago",
+      "notAvailable": "Las estimaciones de impuestos para {country} no están disponibles",
+      "unknownRegime": "\"{regime}\" no es un régimen fiscal de {country}"
+    },
+    "template": {
+      "noActiveTemplate": "No hay ninguna plantilla activa para el cliente {customer} y el tipo {type}",
+      "renderingFailed": "No se ha podido generar la plantilla. Revisa su sintaxis y los datos del modelo.",
+      "syntaxErrors": "Errores de sintaxis en la plantilla: {errors}"
+    },
+    "verifactu": {
+      "cannotDelete": "La factura {number} se registró en Verifactu y no se puede eliminar: anúlala, lo que registra la anulación.",
+      "cannotRecord": "Verifactu no puede registrar esta factura: {issues}"
+    },
+    "zip": {
+      "notIncluded": "Estas facturas no están en el zip:",
+      "customerNotFound": "{number}: cliente no encontrado"
+    },
+    "input": {
+      "descriptionRequired": "La descripción es obligatoria",
+      "amountNegative": "El importe no puede ser negativo",
+      "indirectTaxNegative": "El impuesto indirecto no puede ser negativo",
+      "reverseChargeTax": "Un gasto con inversión del sujeto pasivo no tiene impuesto indirecto: el proveedor no lo repercutió",
+      "deductiblePercent": "El porcentaje deducible debe estar entre 0 y 100",
+      "expenseCategory": "Categoría de gasto desconocida",
+      "countryCode": "El país debe ser un código ISO de dos letras",
+      "customerName": "El nombre del cliente es obligatorio",
+      "fiscalId": "El identificador fiscal es obligatorio",
+      "customerId": "Elige un cliente",
+      "templateName": "El nombre de la plantilla es obligatorio",
+      "emailSubject": "El asunto del correo es obligatorio",
+      "emailBody": "El cuerpo del correo es obligatorio",
+      "invoiceId": "Elige una factura",
+      "holidayName": "El nombre del festivo es obligatorio",
+      "holidayYears": "El primer año no puede ser posterior al último",
+      "month": "El mes debe estar entre 1 y 12",
+      "day": "El día no es válido para ese mes",
+      "easterOffset": "Los días desde Pascua deben estar entre -100 y 100",
+      "weekday": "El día de la semana es obligatorio",
+      "occurrence": "La ocurrencia debe ser de 1 a 5, o -1 para la última",
+      "holidayKind": "Tipo de regla de festivo desconocido: {kind}",
+      "year": "El año debe estar entre 2000 y 2100",
+      "workedDays": "Los días trabajados no pueden ser negativos",
+      "sequenceValue": "El valor de la secuencia debe ser al menos 1",
+      "patternToken": "El patrón debe contener al menos un marcador, p. ej. {NUMBER:000}",
+      "templateContent": "El contenido de la plantilla es obligatorio",
+      "monthlyReportType": "Las plantillas de informe mensual son solo para facturas mensuales",
+      "projectName": "El nombre del proyecto es obligatorio",
+      "rateNameLength": "El nombre de la tarifa no debe superar los {max} caracteres",
+      "endBeforeStart": "No puede terminar antes de empezar",
+      "taxId": "El identificador del impuesto es obligatorio",
+      "taxHandler": "Elige cómo se calcula el impuesto",
+      "appliedToTax": "Elige el impuesto al que se aplica",
+      "taxForm": "El modelo fiscal es obligatorio",
+      "period": "El periodo debe estar entre 1 y {max}",
+      "taxRegime": "Elige un régimen fiscal",
+      "language": "'{language}' no es una etiqueta de idioma como 'en' o 'pt-BR'",
+      "hoursWorked": "Las horas trabajadas deben ser positivas",
+      "projectId": "Elige un proyecto",
+      "hours": "Las horas deben ser positivas",
+      "street": "La calle es obligatoria",
+      "houseNumber": "El número es obligatorio",
+      "city": "La ciudad es obligatoria",
+      "zipCode": "El código postal es obligatorio",
+      "country": "El país es obligatorio",
+      "invoiceNumber": "El número de factura es obligatorio",
+      "currency": "La moneda es obligatoria",
+      "currencyCode": "La moneda debe ser un código ISO 4217 (3 letras)",
+      "invoiceCurrency": "Los importes deben estar en la moneda de la factura, {currency}"
+    },
+    "lifecycle": {
+      "refused": "La factura {number} no se puede {action}: {reason}.",
+      "actions": {
+        "finalize": "emitir",
+        "markAsSent": "marcar como enviada",
+        "markAsPaid": "marcar como pagada",
+        "cancel": "anular",
+        "delete": "eliminar"
+      },
+      "alreadyFinalized": "ya está emitida",
+      "notFinalized": "aún no está emitida",
+      "alreadySent": "ya está enviada",
+      "alreadyPaid": "ya está pagada",
+      "cancelled": "está anulada",
+      "notFinalizedDeleteInstead": "aún no está emitida (elimina el borrador)",
+      "alreadyCancelled": "ya está anulada",
+      "alreadyFinalizedCancelInstead": "ya está emitida (anúlala)",
+      "alreadyCancelledOnRecord": "ya está anulada: queda registrada",
+      "notSupported": "no está admitido",
+      "onlyDraftRenumbered": "La factura {number} no es un borrador: solo se puede renumerar un borrador."
+    },
+    "money": {
+      "addCurrencies": "No se pueden sumar monedas distintas: {left} y {right}",
+      "subtractCurrencies": "No se pueden restar monedas distintas: {left} y {right}"
+    },
+    "bulk": {
+      "notFound": "No encontrada",
+      "customerNotFound": "Cliente no encontrado",
+      "tooMany": "Se pueden cambiar como máximo {max} facturas a la vez"
+    },
+    "import": {
+      "customer": "Cliente '{name}' ({fiscalId}): {error}",
+      "sharedTemplates": "Plantillas compartidas: {error}",
+      "invoiceCustomerMissing": "Factura '{number}': no se ha encontrado el cliente con identificador fiscal '{fiscalId}'",
+      "invoice": "Factura '{number}': {error}",
+      "numbering": "Numeración de facturas",
+      "image": "Imagen '{alias}'",
+      "holidayCalendar": "Calendario de festivos ({country})",
+      "preferences": "Preferencias",
+      "country": "País",
+      "taxProfile": "Perfil fiscal",
+      "expense": "Gasto '{description}' del {date}",
+      "recurringExpense": "Gasto recurrente '{description}'",
+      "taxPayment": "Pago de impuestos {form} {year}/{period}"
+    }
+  },
+  "preferences": {
+    "chooseLanguage": "Elige un idioma",
+    "unsupportedLanguage": "{language} no es uno de los idiomas de esta aplicación ({languages})"
+  },
+  "validation": {
+    "account": {
+      "typeToConfirm": "Escribe {word} para confirmar."
+    },
+    "address": {
+      "cityRequired": "La ciudad es obligatoria",
+      "cityTooLong": "La ciudad no debe superar los {max} caracteres",
+      "countryRequired": "El país es obligatorio",
+      "countryTooLong": "El país no debe superar los {max} caracteres",
+      "houseNumberRequired": "El número es obligatorio",
+      "houseNumberTooLong": "El número no debe superar los {max} caracteres",
+      "stateTooLong": "La provincia no debe superar los {max} caracteres",
+      "streetRequired": "La calle es obligatoria",
+      "streetTooLong": "La calle no debe superar los {max} caracteres",
+      "zipCodeRequired": "El código postal es obligatorio",
+      "zipCodeTooLong": "El código postal no debe superar los {max} caracteres"
+    },
+    "amountNegative": "El importe no puede ser negativo",
+    "amountPositive": "El importe debe ser positivo",
+    "amountRequired": "El importe es obligatorio",
+    "country": {
+      "choose": "Elige un país"
+    },
+    "countryIsoCode": "El país debe ser un código ISO de dos letras",
+    "currencyIsoCode": "La moneda debe ser un código ISO de 3 letras",
+    "customer": {
+      "addressRequired": "La dirección es obligatoria",
+      "ccInvalid": "CC deben ser direcciones válidas separadas por comas",
+      "emailInvalid": "El correo debe ser una dirección válida, p. ej. cuentas@example.com",
+      "fiscalIdRequired": "El identificador fiscal es obligatorio",
+      "fiscalIdTooLong": "El identificador fiscal no debe superar los {max} caracteres",
+      "holidayCountryInvalid": "El país de los festivos debe ser un código de país de dos letras, p. ej. ES",
+      "nameRequired": "El nombre del cliente es obligatorio",
+      "nameTooLong": "El nombre del cliente no debe superar los {max} caracteres"
+    },
+    "customerIdPositive": "El ID del cliente debe ser un número positivo",
+    "descriptionRequired": "La descripción es obligatoria",
+    "descriptionTooLong": "La descripción no debe superar los {max} caracteres",
+    "expense": {
+      "deductibleRange": "El porcentaje deducible debe estar entre 0 y 100",
+      "endsBeforeStart": "No puede terminar antes de empezar",
+      "indirectTaxNegative": "El impuesto indirecto no puede ser negativo",
+      "invalidCategory": "Categoría de gasto no válida",
+      "reverseChargeTax": "Un gasto con inversión del sujeto pasivo no tiene impuesto indirecto: el proveedor no lo repercutió",
+      "supplierTooLong": "El proveedor no debe superar los {max} caracteres"
+    },
+    "holiday": {
+      "nameRequired": "El nombre del festivo es obligatorio",
+      "nameTooLong": "El nombre del festivo no debe superar los {max} caracteres"
+    },
+    "image": {
+      "aliasRequired": "El alias es obligatorio.",
+      "fileRequired": "El archivo es obligatorio.",
+      "tooLarge": "El archivo supera el máximo de {max} MB.",
+      "typeNotAllowed": "El tipo de contenido '{type}' no está permitido. Permitidos: {allowed}"
+    },
+    "import": {
+      "noCustomers": "No hay clientes que importar",
+      "noInvoices": "No hay facturas que importar",
+      "noSettings": "No hay ajustes que importar"
+    },
+    "invalidInvoiceType": "Tipo de factura no válido",
+    "invoice": {
+      "expenseDescription": "La descripción es obligatoria y no debe superar los {max} caracteres",
+      "hoursPositive": "Las horas deben ser mayores que cero",
+      "issueDateRequired": "La fecha de emisión es obligatoria",
+      "notesTooLong": "Las notas no deben superar los {max} caracteres",
+      "projectHoursPositive": "Las horas del proyecto deben ser mayores que cero",
+      "renderedContentTooLong": "El contenido generado no debe superar los {max} caracteres",
+      "workDayDateRequired": "La fecha del día trabajado es obligatoria",
+      "workDaysRequired": "Las facturas mensuales necesitan días trabajados"
+    },
+    "money": {
+      "amountPositive": "El importe debe ser mayor que cero",
+      "currencyIsoCode": "La moneda debe ser un código ISO de 3 letras (p. ej., USD, EUR)",
+      "currencyRequired": "La moneda es obligatoria",
+      "currencyUppercase": "La moneda debe ser un código de 3 letras en mayúsculas"
+    },
+    "monthRange": "El mes debe estar entre 1 y 12",
+    "project": {
+      "nameRequired": "El nombre del proyecto es obligatorio",
+      "nameTooLong": "El nombre del proyecto no debe superar los {max} caracteres"
+    },
+    "rate": {
+      "invalidType": "Tipo de tarifa no válido",
+      "nameTooLong": "El nombre de la tarifa no debe superar los {max} caracteres",
+      "priceRequired": "El precio es obligatorio"
+    },
+    "rateIdPositive": "El ID de la tarifa debe ser positivo",
+    "tax": {
+      "handlerRequired": "El ID del cálculo es obligatorio",
+      "handlerTooLong": "El ID del cálculo no debe superar los {max} caracteres",
+      "invalidApplicationType": "Tipo de aplicación no válido",
+      "orderNegative": "El orden no puede ser negativo",
+      "taxIdTooLong": "El identificador del impuesto no debe superar los {max} caracteres"
+    },
+    "taxes": {
+      "chooseCountry": "Elige el país en el que pagas impuestos",
+      "chooseRegime": "Elige un régimen fiscal",
+      "formRequired": "El modelo fiscal es obligatorio",
+      "formTooLong": "El modelo fiscal no debe superar los {max} caracteres",
+      "periodRange": "El periodo debe estar entre 1 y {max}",
+      "regimeTooLong": "El régimen fiscal no debe superar los {max} caracteres"
+    },
+    "template": {
+      "contentRequired": "El contenido de la plantilla es obligatorio",
+      "contentTooLong": "El contenido de la plantilla no debe superar los {max} caracteres",
+      "contentTooShort": "El contenido de la plantilla debe tener al menos {min} caracteres",
+      "syntaxError": "Error de sintaxis en la plantilla: {error}",
+      "subjectSyntaxError": "Error de sintaxis en el asunto: {error}",
+      "bodySyntaxError": "Error de sintaxis en el cuerpo: {error}"
+    },
+    "yearRange": "El año debe estar entre 2000 y 2100"
+  },
+  "notFound": {
+    "customer": "No se ha encontrado el cliente {id}",
+    "expense": "No se ha encontrado el gasto {id}",
+    "invoice": "No se ha encontrado la factura {id}",
+    "project": "No se ha encontrado el proyecto {id}",
+    "rate": "No se ha encontrado la tarifa {id}",
+    "recurringExpense": "No se ha encontrado el gasto recurrente {id}",
+    "tax": "No se ha encontrado el impuesto {id}",
+    "template": "No se ha encontrado la plantilla {id}"
+  },
+  "compliance": {
+    "common": {
+      "legalNameRequired": "La razón social es obligatoria",
+      "addressRequired": "La dirección es obligatoria",
+      "chooseIssuerType": "Elige si el emisor es una persona física o jurídica",
+      "firstNameRequired": "Una persona física necesita un nombre",
+      "notEmail": "No es una dirección de correo",
+      "subjectAddress": "La dirección",
+      "subjectCustomerAddress": "Dirección del cliente"
+    },
+    "spain": {
+      "nifRequired": "El NIF es obligatorio",
+      "nifInvalid": "No es un NIF, NIE o CIF español válido",
+      "firstSurnameRequired": "Una persona física necesita un primer apellido",
+      "verifactuNotConfigured": "Verifactu no está configurado en este servidor: falta {missing} en {section}",
+      "verifactuNifLength": "Verifactu necesita un NIF de nueve caracteres",
+      "chooseCustomerType": "Elige persona física o jurídica",
+      "dir3AccountingOffice": "Una administración pública necesita el código DIR3 de su oficina contable",
+      "dir3ManagingBody": "Una administración pública necesita el código DIR3 de su órgano gestor",
+      "dir3ProcessingUnit": "Una administración pública necesita el código DIR3 de su unidad tramitadora",
+      "customerFirstSurnameRequired": "Un cliente persona física necesita un primer apellido",
+      "postalCode": "{subject}: un código postal español tiene cinco cifras",
+      "provinceRequired": "{subject}: la provincia es obligatoria",
+      "fields": {
+        "personType": {
+          "label": "Tipo de emisor",
+          "help": "Facturae distingue una persona física (autónomo) de una persona jurídica."
+        },
+        "firstName": {
+          "label": "Nombre",
+          "help": "Solo personas físicas: el nombre legal se divide en nombre y apellidos."
+        },
+        "firstSurname": {
+          "label": "Primer apellido"
+        },
+        "secondSurname": {
+          "label": "Segundo apellido"
+        },
+        "individualsOnly": "Solo personas físicas.",
+        "individualsOnlyIfAny": "Solo personas físicas, si lo hay.",
+        "verifactu": {
+          "help": "Cada factura que emites se registra en una cadena a prueba de manipulaciones, se comunica a la Agencia Tributaria (AEAT) y lleva un código QR. Obligatorio para autónomos a partir del 1 de julio de 2027."
+        },
+        "faceEmail": {
+          "label": "Correo para las notificaciones de FACe",
+          "help": "FACe te avisa aquí cuando una factura que envías a una administración pública se registra, se rechaza o se paga. Necesario para enviar facturas a FACe."
+        },
+        "sealCertificate": {
+          "label": "Mi certificado es un certificado de sello de empresa",
+          "help": "Para Verifactu: márcalo solo si el certificado que subes es un sello electrónico de una empresa, no un certificado personal."
+        }
+      },
+      "taxFields": {
+        "taxType": {
+          "label": "¿Qué impuesto es?",
+          "help": "Si se deja vacío, es IVA. Elige IGIC (Impuesto General Indirecto Canario) si facturas desde Canarias. Una retención como el IRPF no se ve afectada: es el impuesto con tipo negativo.",
+          "iva": "IVA",
+          "igic": "IGIC (Canarias)"
+        },
+        "operation": {
+          "label": "Tratamiento en Verifactu de un impuesto al 0%",
+          "help": "Solo se usa cuando el tipo es 0%: por qué no se repercute impuesto. Un impuesto por encima del 0% siempre está sujeto. El artículo de cada exención depende del impuesto (E7 y E8 solo existen para el IGIC).",
+          "S1": "Sujeto al 0% (tipo cero, p. ej. IGIC tipo cero)",
+          "S2": "Sujeto, inversión del sujeto pasivo",
+          "N2": "No sujeto: reglas de localización (p. ej. servicios a una empresa de otro país)",
+          "N1": "No sujeto: artículo 7, 14 u otros (IGIC: artículo 9)",
+          "E1": "Exento: E1 (artículo 20 de la Ley del IVA)",
+          "E2": "Exento: E2 (artículo 21 de la Ley del IVA, exportaciones; IGIC artículo 11)",
+          "E3": "Exento: E3 (artículo 22 de la Ley del IVA; IGIC artículo 12)",
+          "E4": "Exento: E4 (artículos 23 y 24 de la Ley del IVA; IGIC artículo 13)",
+          "E5": "Exento: E5 (artículo 25 de la Ley del IVA, entregas intracomunitarias)",
+          "E6": "Exento: E6 (otros motivos)",
+          "E7": "Exento: E7 (solo IGIC: artículo 90 del texto refundido canario)",
+          "E8": "Exento: E8 (solo IGIC: Ley 20/1991)"
+        }
+      },
+      "customerFields": {
+        "isPublicAdministration": {
+          "label": "Administración pública",
+          "help": "Las facturas a organismos públicos pasan por FACe y necesitan los tres códigos DIR3 de abajo."
+        },
+        "accountingOffice": {
+          "label": "Oficina contable"
+        },
+        "managingBody": {
+          "label": "Órgano gestor"
+        },
+        "processingUnit": {
+          "label": "Unidad tramitadora"
+        },
+        "dir3Help": "Código DIR3. Solo administraciones públicas.",
+        "personType": {
+          "label": "Tipo de cliente",
+          "help": "Si se deja vacío, se deduce del identificador fiscal."
+        },
+        "firstSurname": {
+          "help": "Solo personas físicas; el nombre del cliente es entonces el nombre de pila."
+        }
+      },
+      "personTypes": {
+        "individual": "Persona física (autónomo)",
+        "legalEntity": "Persona jurídica (empresa)"
+      }
+    },
+    "italy": {
+      "partitaIvaRequired": "La Partita IVA es obligatoria",
+      "partitaIvaInvalid": "No es una Partita IVA válida (once cifras)",
+      "chooseRegime": "Elige tu régimen fiscal",
+      "lastNameRequired": "Una persona física necesita un apellido",
+      "fiscalCodeRequired": "Una persona física necesita su codice fiscale",
+      "fiscalCodeInvalid": "No es un codice fiscale válido",
+      "recipientCodeInvalid": "Un codice destinatario tiene 7 letras o cifras",
+      "postalCode": "{subject}: un CAP italiano tiene cinco cifras",
+      "province": "{subject}: la provincia es su código de dos letras, p. ej. MI",
+      "fields": {
+        "regime": {
+          "label": "Régimen fiscal (regime fiscale)",
+          "help": "Figura en cada FatturaPA. En el regime forfettario no se repercute IVA y las facturas de más de 77,47 € llevan la marca da bollo de 2 €."
+        },
+        "personType": {
+          "label": "Tipo de emisor",
+          "help": "En la FatturaPA, una persona física figura con nombre y apellido; una empresa, con su razón social."
+        },
+        "firstName": {
+          "label": "Nombre (nome)"
+        },
+        "lastName": {
+          "label": "Apellido (cognome)"
+        },
+        "individualsOnly": "Solo personas físicas.",
+        "fiscalCode": {
+          "help": "Obligatorio para una persona física: el código de 16 caracteres. El de una empresa suele ser su Partita IVA (el identificador fiscal de arriba)."
+        }
+      },
+      "customerFields": {
+        "recipientCode": {
+          "help": "El código de 7 caracteres que te dio tu cliente. Déjalo vacío para un cliente en el extranjero, para enviar a su PEC o para un consumidor."
+        },
+        "pec": {
+          "help": "El correo certificado para sus facturas electrónicas, si no tiene codice destinatario."
+        },
+        "fiscalCode": {
+          "help": "Para un consumidor residente en Italia sin Partita IVA."
+        }
+      },
+      "taxFields": {
+        "kind": {
+          "label": "¿Qué impuesto es? (Italia)",
+          "help": "Si se deja vacío, es IVA. Una cotización a la pensión cobrada al cliente (rivalsa INPS 4%, cassa professionale) es una cotización: marca también \"Forma parte de la base imponible\", para que el IVA y la ritenuta la incluyan. Una ritenuta d'acconto es el impuesto con tipo negativo.",
+          "contribution": "Cotización a la pensión (rivalsa INPS, cassa)"
+        },
+        "fundType": {
+          "label": "Caja de pensiones (tipo cassa)",
+          "help": "Solo para una cotización. Si se deja vacío, es la rivalsa INPS (Gestione Separata).",
+          "TC22": "TC22 · INPS (rivalsa, Gestione Separata)"
+        },
+        "withholdingType": {
+          "label": "Tipo de ritenuta",
+          "help": "Solo para una retención. Si se deja vacío, es RT01, la ritenuta d'acconto de una persona física.",
+          "RT01": "RT01 · Ritenuta, personas físicas",
+          "RT02": "RT02 · Ritenuta, personas jurídicas",
+          "RT03": "RT03 · Cotización INPS",
+          "RT04": "RT04 · Cotización ENASARCO"
+        },
+        "paymentReason": {
+          "label": "Causa del pago (causale)",
+          "help": "Solo para una retención, como en la Certificazione Unica. Si se deja vacío, es A, trabajo autónomo profesional.",
+          "A": "A · Trabajo autónomo profesional",
+          "B": "B · Derechos de autor y patentes",
+          "M": "M · Trabajo autónomo ocasional",
+          "Q": "Q · Agente comercial monomandatario",
+          "R": "R · Agente comercial plurimandatario",
+          "ZO": "ZO · Otros"
+        },
+        "nature": {
+          "label": "Por qué no se repercute IVA (natura)",
+          "help": "La FatturaPA lo exige para el IVA al 0%. Sin ningún impuesto de IVA, una factura forfettaria es N2.2."
+        }
+      },
+      "natures": {
+        "N1": "N1 · Excluida (art. 15)",
+        "N2_1": "N2.1 · No sujeta: arts. 7 a 7-septies (p. ej. servicios a una empresa en el extranjero)",
+        "N2_2": "N2.2 · No sujeta: otros casos (regime forfettario, minimi)",
+        "N3_1": "N3.1 · No imponible: exportaciones",
+        "N3_2": "N3.2 · No imponible: entregas intracomunitarias",
+        "N3_3": "N3.3 · No imponible: entregas a San Marino",
+        "N3_4": "N3.4 · No imponible: asimiladas a exportaciones",
+        "N3_5": "N3.5 · No imponible: declaración de intenciones",
+        "N3_6": "N3.6 · No imponible: otros",
+        "N4": "N4 · Exenta",
+        "N5": "N5 · Régimen del margen / IVA no indicado",
+        "N6_1": "N6.1 · Inversión del sujeto pasivo: chatarra",
+        "N6_2": "N6.2 · Inversión del sujeto pasivo: oro y plata",
+        "N6_3": "N6.3 · Inversión del sujeto pasivo: subcontratación en construcción",
+        "N6_4": "N6.4 · Inversión del sujeto pasivo: edificios",
+        "N6_5": "N6.5 · Inversión del sujeto pasivo: teléfonos móviles",
+        "N6_6": "N6.6 · Inversión del sujeto pasivo: productos electrónicos",
+        "N6_7": "N6.7 · Inversión del sujeto pasivo: servicios de construcción",
+        "N6_8": "N6.8 · Inversión del sujeto pasivo: energía",
+        "N6_9": "N6.9 · Inversión del sujeto pasivo: otros casos",
+        "N7": "N7 · IVA pagado en otro país de la UE"
+      },
+      "personTypes": {
+        "individual": "Persona física (libero professionista, ditta individuale)",
+        "legalEntity": "Persona jurídica (empresa)"
+      }
+    },
+    "germany": {
+      "taxIdRequired": "La Steuernummer o la USt-IdNr es obligatoria en cada factura (§ 14 UStG)",
+      "taxIdInvalid": "No es ni una Steuernummer (10, 11 o 13 cifras) ni una USt-IdNr válida",
+      "vatIdInvalid": "No es una USt-IdNr válida (DE y nueve cifras)",
+      "ibanInvalid": "No es un IBAN válido",
+      "postalCode": "{subject}: una Postleitzahl alemana tiene cinco cifras",
+      "fields": {
+        "smallBusiness": {
+          "label": "Kleinunternehmer (§ 19 UStG): no repercuto IVA",
+          "help": "Tus facturas llevan entonces la nota del § 19 y no llevan IVA. Solo es posible con menos de 25.000 € de ingresos el año pasado y 100.000 € este año."
+        },
+        "vatId": {
+          "help": "DE y nueve cifras. Necesario para clientes de otros países de la UE; déjalo vacío si el identificador fiscal de arriba ya lo es."
+        },
+        "contactName": {
+          "label": "Nombre de contacto",
+          "help": "Para XRechnung: a quién puede preguntar el cliente sobre la factura."
+        },
+        "contactPhone": {
+          "label": "Teléfono de contacto",
+          "help": "Para XRechnung."
+        },
+        "contactEmail": {
+          "label": "Correo de contacto",
+          "help": "Para XRechnung: también la dirección desde la que llega la factura."
+        },
+        "iban": {
+          "help": "Donde paga el cliente; XRechnung lo exige para una transferencia."
+        },
+        "bic": {
+          "help": "Opcional."
+        }
+      },
+      "customerFields": {
+        "buyerReference": {
+          "label": "Leitweg-ID / referencia del comprador",
+          "help": "Una administración pública te da su Leitweg-ID; una empresa puede darte una referencia (un pedido). Si se deja vacío, se usa el número de factura."
+        },
+        "email": {
+          "label": "Correo para facturas electrónicas",
+          "help": "Adonde va su XRechnung. Obligatorio para XRechnung."
+        }
+      },
+      "taxFields": {
+        "category": {
+          "label": "Por qué no se repercute IVA (Alemania)",
+          "help": "XRechnung lo exige para el IVA al 0%. Para un Kleinunternehmer sin ningún impuesto de IVA, se usa la nota del § 19.",
+          "AE": "AE · Inversión del sujeto pasivo: el cliente debe el IVA (§ 13b UStG, servicios a una empresa de la UE)",
+          "K": "K · Entrega intracomunitaria de bienes",
+          "G": "G · Exportación fuera de la UE",
+          "O": "O · No sujeto al IVA alemán (p. ej. servicios a una empresa fuera de la UE)",
+          "E": "E · Exento (§ 4 UStG): indica el motivo abajo",
+          "Z": "Z · Tipo cero (§ 12 (3) UStG, p. ej. paneles solares)"
+        },
+        "exemptionNote": {
+          "label": "Motivo en la factura",
+          "help": "Para una exención, su base legal (p. ej. \"Steuerfrei nach § 4 Nr. 21 UStG\"). Las demás categorías tienen un texto predeterminado."
+        }
+      }
+    },
+    "einvoice": {
+      "issuer": "Emisor: {message}",
+      "customer": "Cliente: {message}",
+      "noNumber": "La factura no tiene número",
+      "numberTooLong": "Los números de factura {format} tienen como máximo {max} caracteres; cambia el patrón de numeración",
+      "currency": "La moneda de la factura debe ser un código de tres letras",
+      "customerNameRequired": "Cliente: el nombre es obligatorio",
+      "customerNameTooLong": "Cliente: el nombre tiene como máximo {max} caracteres",
+      "customerCountryUnknown": "Cliente: no se reconoce el país \"{country}\"",
+      "noLines": "La factura no tiene líneas",
+      "lineQuantity": "Línea \"{line}\": la cantidad debe ser positiva",
+      "lineAmount": "Línea \"{line}\": el importe no puede ser negativo",
+      "totalsMismatch": "Las líneas y los impuestos no suman el total de la factura",
+      "alreadySent": "Ya se envió ({channel}, {reference}) y no se puede volver a generar"
+    },
+    "facturae": {
+      "issuerInSpain": "Emisor: la dirección debe estar en España",
+      "issuerNameTooLong": "Emisor: los nombres tienen como máximo {max} caracteres",
+      "issuerLegalNameTooLong": "Emisor: la razón social tiene como máximo {max} caracteres",
+      "customerTaxIdRequired": "Cliente: el identificador fiscal es obligatorio",
+      "customerTaxIdTooLong": "Cliente: el identificador fiscal tiene como máximo {max} caracteres",
+      "customerNifInvalid": "Cliente: no es un NIF, NIE o CIF español válido",
+      "publicAdministrationInSpain": "Cliente: una administración pública debe tener una dirección en España",
+      "taxRequired": "La factura necesita al menos un impuesto; para una factura exenta añade un impuesto al 0%",
+      "taxBase": "El impuesto \"{tax}\" se calcula sobre algo distinto del total de la factura antes de impuestos, lo que Facturae no puede expresar",
+      "taxAmount": "Impuesto \"{tax}\": el importe no corresponde al tipo"
+    },
+    "face": {
+      "emailRequired": "Indica el correo para las notificaciones de FACe en los ajustes de España",
+      "notConfigured": "FACe no está configurado en este servidor (falta {missing} en {section})"
+    },
+    "fatturapa": {
+      "issuerInItaly": "Emisor: la dirección debe estar en Italia",
+      "italianCustomerTaxId": "Cliente: un cliente italiano necesita una Partita IVA (el identificador fiscal) o un codice fiscale válidos",
+      "singleIva": "Una factura italiana tiene un tipo de IVA por línea: deja un solo impuesto de IVA para este cliente",
+      "ivaRequired": "La factura necesita su IVA; si no se repercute, añade un impuesto de IVA al 0% con el motivo (natura)",
+      "zeroIvaNature": "El IVA \"{tax}\" es del 0%: elige en el impuesto por qué no se repercute IVA (natura)",
+      "ivaBaseWithContribution": "El IVA \"{tax}\" debe calcularse sobre los honorarios más la cotización: marca \"Forma parte de la base imponible\" en la cotización y dale un orden menor",
+      "ivaBase": "El IVA \"{tax}\" se calcula sobre algo distinto del total de la factura antes de impuestos",
+      "ivaAmount": "IVA \"{tax}\": el importe no corresponde al tipo",
+      "contributionBase": "La cotización \"{tax}\" debe calcularse sobre las líneas de la factura"
+    },
+    "xrechnung": {
+      "issuerInGermany": "Emisor: la dirección debe estar en Alemania",
+      "contactName": "Emisor: XRechnung necesita un nombre de contacto",
+      "contactPhone": "Emisor: XRechnung necesita un teléfono de contacto",
+      "contactEmail": "Emisor: XRechnung necesita un correo de contacto",
+      "ibanRequired": "Emisor: XRechnung necesita el IBAN al que paga el cliente",
+      "customerAddressRequired": "Cliente: la ciudad y el código postal son obligatorios",
+      "customerEmailRequired": "Cliente: XRechnung necesita la dirección de correo a la que van sus facturas electrónicas (cliente › Correo para facturas electrónicas)",
+      "noWithholding": "XRechnung no admite retenciones: quita el impuesto negativo de este cliente",
+      "singleVat": "Aquí una factura tiene un solo tipo de IVA: deja un solo impuesto de IVA para este cliente",
+      "smallBusinessVat": "Un Kleinunternehmer no repercute IVA: quita el impuesto de IVA o desmarca Kleinunternehmer",
+      "vatRequired": "La factura necesita su IVA; si no se repercute, añade un impuesto de IVA al 0% y elige el motivo",
+      "zeroVatReason": "El IVA \"{tax}\" es del 0%: elige en el impuesto por qué no se repercute IVA",
+      "exemptReason": "El IVA \"{tax}\" está exento: indica el motivo en el impuesto",
+      "reverseChargeBuyerVatId": "Inversión del sujeto pasivo: el identificador de IVA del cliente es obligatorio (el identificador fiscal del cliente)",
+      "intraCommunityVatIds": "Una entrega intracomunitaria necesita tu USt-IdNr y el identificador de IVA del cliente",
+      "exportVatId": "Una exportación necesita tu USt-IdNr",
+      "notSubjectTaxNumber": "No sujeto a IVA: XRechnung necesita entonces tu Steuernummer como identificador fiscal, ya que la USt-IdNr no puede figurar",
+      "vatBase": "El IVA \"{tax}\" se calcula sobre algo distinto de las líneas de la factura",
+      "vatAmount": "IVA \"{tax}\": el importe no corresponde al tipo",
+      "totalsMismatch": "Las líneas y el IVA no suman el total de la factura"
+    },
+    "verifactu": {
+      "notConfigured": "Verifactu no está configurado en este servidor (falta {missing})",
+      "issuerNif": "Tu NIF en los ajustes de España debe tener nueve caracteres",
+      "invoiceNumber": "El número de factura debe tener de 1 a 60 caracteres ASCII imprimibles",
+      "vatLineRequired": "La factura necesita una línea de IVA (o IGIC); para una factura exenta añade un impuesto al 0% e indica el motivo en los ajustes del impuesto",
+      "singleVatLine": "Verifactu se admite con una sola línea de IVA (o IGIC) por factura",
+      "taxBase": "El impuesto \"{tax}\" no se calcula sobre toda la factura, lo que Verifactu no puede expresar",
+      "zeroRateReason": "Elige por qué el impuesto \"{tax}\" es del 0% (exento, no sujeto...) en Impuestos, en Verifactu",
+      "igicOnlyExemption": "Impuesto \"{tax}\": las exenciones E7 y E8 solo existen para el IGIC; pon IGIC como tipo de impuesto o elige otra",
+      "customerCountry": "No se reconoce el país del cliente (\"{country}\")",
+      "customerNif": "El NIF del cliente no es un NIF, NIE o CIF español válido",
+      "customerTaxId": "El identificador fiscal del cliente debe tener de 1 a 20 caracteres",
+      "chain": {
+        "gap": "La cadena salta al registro {sequence} cuando se esperaba el {expected} (falta un registro)",
+        "previousHash": "No apunta a la huella del registro anterior",
+        "hashMismatch": "Su huella no corresponde a su contenido: el registro se ha modificado",
+        "timeBackwards": "Tiene una fecha anterior a la del registro que lo precede",
+        "timestampInvalid": "Su marca de tiempo no es válida",
+        "xmlMismatch": "Su XML no dice lo que se usó para la huella",
+        "xmlUnreadable": "Su XML no se puede leer"
+      }
+    },
+    "certificate": {
+      "required": "Sube tu certificado de firma en Ajustes",
+      "expired": "El certificado de firma caducó el {date}",
+      "unreadable": "El certificado de firma guardado ya no se puede leer: vuelve a subirlo"
+    },
+    "taxProfile": {
+      "required": "\"{field}\" es obligatorio",
+      "notAnOption": "\"{value}\" no es una opción de \"{field}\"",
+      "notBoolean": "\"{field}\" se marca con \"true\" o se omite"
+    },
+    "delivery": {
+      "finalizeFirst": "Primero emite la factura",
+      "cancelledCannotBeSent": "Una factura anulada no se puede enviar",
+      "generateFirst": "Primero genera la factura electrónica",
+      "alreadySent": "Ya se envió ({reference})",
+      "notThroughChannel": "Las facturas a este cliente no pasan por {channel}",
+      "notSent": "No se ha enviado",
+      "unknownChannel": "Canal desconocido: \"{channel}\"",
+      "notTurnedOn": "{channel} no está activado",
+      "customerNotFound": "No se ha encontrado el cliente"
+    }
+  },
+  "countries": {
+    "ES": "España",
+    "IT": "Italia",
+    "DE": "Alemania"
+  },
+  "taxPrediction": {
+    "common": {
+      "taxOfTheYear": "Impuesto del año",
+      "taxableIncome": "Base imponible",
+      "notANumber": "\"{text}\" no es un número: no se tiene en cuenta {what}. Corrígelo en Ajustes.",
+      "chargedOnInvoices": "{tax} repercutido en facturas",
+      "deductibleOnExpenses": "{tax} deducible en gastos",
+      "selfCharged": "Autorrepercutido en servicios del extranjero (inversión del sujeto pasivo)",
+      "creditCarried": "Saldo a compensar de trimestres anteriores",
+      "result": "Resultado",
+      "quarter": "{quarter}T",
+      "months": {
+        "january": "Enero",
+        "february": "Febrero",
+        "march": "Marzo",
+        "april": "Abril",
+        "may": "Mayo",
+        "june": "Junio",
+        "july": "Julio",
+        "august": "Agosto",
+        "september": "Septiembre",
+        "october": "Octubre",
+        "november": "Noviembre",
+        "december": "Diciembre"
+      }
+    },
+    "italy": {
+      "fields": {
+        "inpsRate": {
+          "label": "Tipo de cotización INPS (%)",
+          "help": "26,07 para un profesional de la Gestione Separata sin otra pensión. Indica el tipo de tu caja si perteneces a una cassa professionale."
+        },
+        "previousTax": {
+          "label": "Impuesto del año pasado (€, opcional)",
+          "help": "Del Modello Redditi del año pasado: los pagos a cuenta se basan entonces en él (metodo storico). Si se deja vacío, se basan en la estimación de este año (metodo previsionale)."
+        },
+        "previousContributions": {
+          "label": "Cotizaciones INPS del año pasado (€, opcional)",
+          "help": "Los pagos a cuenta del INPS son entonces el 40% y el 40% de ellas; si se deja vacío, de la estimación de este año."
+        },
+        "coefficient": {
+          "label": "Coeficiente de rentabilidad (según el código ATECO)",
+          "help": "La parte de tus ingresos que tributa, fijada por el grupo de tu código de actividad ATECO.",
+          "c78": "78% · Actividades profesionales, científicas, técnicas, sanitarias, educativas, financieras",
+          "c67": "67% · Otras actividades económicas",
+          "c86": "86% · Construcción e inmobiliarias",
+          "c62": "62% · Venta ambulante de otros productos, intermediarios del comercio",
+          "c54": "54% · Venta ambulante de alimentos y bebidas",
+          "c40": "40% · Comercio, alojamiento y restauración"
+        },
+        "startup": {
+          "label": "Actividad nueva: 5% en lugar de 15% (primeros cinco años)",
+          "help": "Durante los primeros cinco años de una actividad realmente nueva (art. 1, comma 65, L. 190/2014)."
+        },
+        "regionalRate": {
+          "help": "El tipo de tu región, p. ej. 1,23."
+        },
+        "municipalRate": {
+          "help": "El tipo de tu municipio, p. ej. 0,8."
+        },
+        "workDeduction": {
+          "label": "Aplicar la deducción por trabajo autónomo (detrazione lavoro autonomo)",
+          "help": "Art. 13 TUIR: hasta 1.265 €, que baja hasta cero con 50.000 € de ingresos."
+        }
+      },
+      "regimes": {
+        "forfettario": {
+          "help": "Imposta sostitutiva e INPS: dos pagos a cuenta (30 de junio, 30 de noviembre) y el saldo el junio siguiente. Sin IVA."
+        },
+        "ordinario": {
+          "help": "IVA cada trimestre; IRPEF e INPS en dos pagos a cuenta (30 de junio, 30 de noviembre) y el saldo el junio siguiente."
+        }
+      },
+      "what": {
+        "inpsRate": "el tipo INPS",
+        "previousTax": "el impuesto del año pasado",
+        "previousContributions": "las cotizaciones INPS del año pasado",
+        "coefficient": "el coeficiente",
+        "regionalRate": "la addizionale regionale",
+        "municipalRate": "la addizionale comunale"
+      },
+      "warnings": {
+        "forfettarioCash": "Los ingresos cuentan al facturarse; el regime forfettario los cuenta al cobrarse (principio di cassa).",
+        "forfettarioImmediateExit": "Ingresos de más de {limit} €: el regime forfettario deja de aplicarse durante el año, y el IVA se debe desde la factura que supera el límite.",
+        "forfettarioLimit": "Ingresos de más de {limit} €: el año que viene sales del regime forfettario.",
+        "forfettarioExpenses": "En el regime forfettario los gastos no se deducen: el coeficiente los representa.",
+        "ordinarioNotEstimated": "No estimados: el pago a cuenta del IVA de diciembre (acconto IVA) y el pago a cuenta de la addizionale comunale.",
+        "inpsDeducted": "Las cotizaciones INPS se deducen el año en que se pagan; la estimación deduce las de este mismo año."
+      },
+      "periods": {
+        "firstInstallment": "1.er pago a cuenta",
+        "secondInstallment": "2.º pago a cuenta",
+        "balance": "Saldo"
+      },
+      "installments": {
+        "basisEstimate": "Base: la estimación de este año (metodo previsionale)",
+        "basisLastYear": "Base: el importe del año pasado (metodo storico)",
+        "first": "{name} · 1.er pago a cuenta",
+        "second": "{name} · 2.º pago a cuenta",
+        "balance": "{name} · saldo",
+        "fortyPercent": "40% de la base",
+        "sixtyPercent": "60% de la base",
+        "nothingInJune": "Nada en junio por debajo de 257,52 €",
+        "nothingUpTo": "Nada hasta 51,65 €",
+        "allOfBasis": "Toda la base",
+        "paidOnAccount": "Pagado a cuenta",
+        "balanceToPay": "Saldo a pagar",
+        "creditNextYear": "Crédito para el año que viene"
+      },
+      "lines": {
+        "revenue": "Ingresos (compensi)",
+        "coefficient": "× {coefficient}% coeficiente de rentabilidad",
+        "inpsContributions": "− Cotizaciones INPS",
+        "withheld": "− Retenido por los clientes",
+        "withheldRitenute": "− Retenido por los clientes (ritenute)",
+        "inpsTaxable": "Base para el INPS (ingresos × coeficiente)",
+        "deductibleExpenses": "− Gastos deducibles",
+        "grossIrpef": "IRPEF bruto (por tramos)",
+        "workDeduction": "− Deducción por trabajo autónomo",
+        "surcharges": "+ Recargos regional y municipal ({rate}%)",
+        "taxCredit": "Impuesto del año (a favor: se retuvo de más)",
+        "income": "Rendimiento (ingresos − gastos)"
+      },
+      "iva": {
+        "lastQuarter": "IVA · 4T (declaración anual)",
+        "quarter": "IVA · {quarter}T",
+        "interest": "Interés del 1% (declarante trimestral)"
+      }
+    },
+    "spain": {
+      "fields": {
+        "territory": {
+          "label": "Dónde pagas el impuesto indirecto",
+          "help": "Canarias tiene el IGIC, que se presenta con el Modelo 420; en el resto es el IVA, que se presenta con el Modelo 303.",
+          "canarias": "Canarias (IGIC, Modelo 420)",
+          "mainland": "Península y Baleares (IVA, Modelo 303)"
+        },
+        "difficultExpenses": {
+          "label": "Deducir gastos de difícil justificación",
+          "help": "El 5% del rendimiento neto, como máximo 2.000 € al año. La mayoría de autónomos y gestores lo aplican."
+        },
+        "deductWithholdings": {
+          "label": "Restar en el Modelo 130 lo que retuvieron los clientes",
+          "help": "La ley permite restar el IRPF que te retuvieron tus clientes (casilla 06). Desmárcalo si tu gestor no lo incluye: lo recuperas entonces en la declaración anual."
+        }
+      },
+      "regimes": {
+        "eds": {
+          "help": "Modelo 130 trimestral y Modelo 420 o 303."
+        }
+      },
+      "warnings": {
+        "chooseTerritory": "Elige dónde pagas el impuesto indirecto (Canarias o el resto de España) para estimar el IGIC o el IVA.",
+        "otherTax": "{count} factura(s) repercuten un impuesto distinto de {tax}: no se cuenta en {form}."
+      },
+      "modelo130": {
+        "name": "Modelo 130 · Pago fraccionado del IRPF",
+        "revenue": "Ingresos facturados desde el 1 de enero",
+        "deductible": "Gastos deducibles desde el 1 de enero",
+        "recorded": "de los cuales gastos registrados",
+        "difficult": "de los cuales gastos de difícil justificación",
+        "net": "Rendimiento neto (01 − 02)",
+        "share": "20% del rendimiento neto",
+        "paidBefore": "Pagado en los trimestres anteriores",
+        "withheld": "Retenido por los clientes desde el 1 de enero",
+        "withheldNotSubtracted": "Retenido por los clientes (no restado: ver ajustes)",
+        "result": "Resultado (04 − 05 − 06)"
+      }
+    },
+    "germany": {
+      "fields": {
+        "smallBusiness": {
+          "label": "Kleinunternehmer (§ 19 UStG): sin declaraciones de IVA",
+          "help": "Con menos de 25.000 € de ingresos el año pasado y 100.000 € este año puedes no repercutir IVA."
+        },
+        "vatPeriod": {
+          "label": "Declaraciones de IVA (Umsatzsteuer-Voranmeldung)",
+          "help": "La regla es trimestral cuando el IVA del año pasado fue como máximo de 9.000 €; mensual si fue mayor.",
+          "quarterly": "Trimestral",
+          "monthly": "Mensual"
+        },
+        "extension": {
+          "label": "Dauerfristverlängerung: un mes más para cada declaración"
+        },
+        "churchTax": {
+          "none": "Ninguno",
+          "rate8": "8% (Baviera, Baden-Wurtemberg)",
+          "rate9": "9% (otros Länder)"
+        },
+        "insurance": {
+          "label": "Seguros deducibles al año (€)",
+          "help": "Cotizaciones de salud, dependencia y pensión que deduces como Vorsorgeaufwendungen (solo la parte deducible)."
+        },
+        "prepayment": {
+          "label": "Einkommensteuer-Vorauszahlung por trimestre (€)",
+          "help": "De tu Vorauszahlungsbescheid, con Soli y Kirchensteuer incluidos. Si se deja vacío, cada trimestre es una cuarta parte de la estimación de este año."
+        },
+        "hebesatz": {
+          "label": "Hebesatz de tu municipio (%)",
+          "help": "P. ej. 400; Berlín 410, Múnich 490."
+        },
+        "tradeTaxPrepayment": {
+          "label": "Gewerbesteuer-Vorauszahlung por trimestre (€)",
+          "help": "Del Bescheid de tu municipio. Si se deja vacío, una cuarta parte de la estimación de este año."
+        }
+      },
+      "regimes": {
+        "freiberufler": {
+          "name": "Freiberufler (profesión liberal)",
+          "help": "Einkommensteuer, Soli y Kirchensteuer: cuatro pagos a cuenta y el saldo; declaraciones de IVA salvo como Kleinunternehmer."
+        },
+        "gewerbe": {
+          "name": "Gewerbetreibender (actividad comercial)",
+          "help": "Como un Freiberufler, más la Gewerbesteuer (en parte compensada con la Einkommensteuer)."
+        }
+      },
+      "what": {
+        "hebesatz": "el Hebesatz",
+        "insurance": "los seguros deducibles",
+        "churchTax": "la Kirchensteuer",
+        "prepayment": "la Vorauszahlung",
+        "tradeTaxPrepayment": "la Gewerbesteuer-Vorauszahlung"
+      },
+      "warnings": {
+        "tariffYear": "La Einkommensteuer de {year} se estima con la tarifa de {tariffYear}.",
+        "cashBasis": "Ingresos y gastos cuentan al facturarse; la Einnahmenüberschussrechnung los cuenta al pagarse.",
+        "singleAssessment": "Tributación individual (Grundtarif): no se estima la tributación conjunta con el cónyuge (Splitting).",
+        "smallBusinessExceeded": "Ingresos de más de {limit} €: ya no eres Kleinunternehmer, y el IVA se debe desde la factura que superó el límite.",
+        "tradeTaxAdjustments": "No se estiman los ajustes de la Gewerbesteuer (Hinzurechnungen, Kürzungen).",
+        "specialPrepayment": "No se estima la Sondervorauszahlung que paga un declarante mensual por la Dauerfristverlängerung.",
+        "balanceDue": "El saldo vence aproximadamente un mes después de la liquidación (Bescheid); su fecha es el plazo de presentación de las declaraciones."
+      },
+      "incomePrepayment": {
+        "form": "Einkommensteuer-Vorauszahlung · {quarter}T",
+        "period": "Pago a cuenta ESt {quarter}T"
+      },
+      "tradePrepayment": {
+        "form": "Gewerbesteuer-Vorauszahlung · {quarter}T",
+        "period": "Pago a cuenta GewSt {quarter}T"
+      },
+      "periods": {
+        "annualReturns": "Declaraciones anuales"
+      },
+      "balance": {
+        "name": "{name} · saldo del año",
+        "paidOnAccount": "Pagado a cuenta (Vorauszahlungen)",
+        "toPay": "Saldo a pagar (Abschlusszahlung)"
+      },
+      "refund": "Devolución (Erstattung)",
+      "lines": {
+        "quarterOfEstimate": "Una cuarta parte de la estimación de este año",
+        "asSetInPrepaymentNotice": "Según el Vorauszahlungsbescheid",
+        "asSetInNotice": "Según el Bescheid",
+        "tradeProfit": "Beneficio (Gewerbeertrag), redondeado a la baja a 100 €",
+        "tradeAllowance": "− Mínimo exento (Freibetrag)",
+        "tradeTax": "Gewerbesteuer con un Hebesatz del {rate}%",
+        "revenue": "Ingresos (sin IVA)",
+        "businessExpenses": "− Gastos de la actividad",
+        "profit": "Beneficio (Gewinn)",
+        "insurance": "− Seguros deducibles (Vorsorgeaufwendungen)",
+        "taxable": "Base imponible (zu versteuerndes Einkommen)",
+        "tradeTaxCredit": "− Compensación de la Gewerbesteuer (§ 35 EStG)"
+      },
+      "vat": {
+        "charged": "IVA repercutido en facturas",
+        "reverseBase": "Servicios recibidos del extranjero (§ 13b), base",
+        "reverseTax": "IVA debido por ellos",
+        "inputVat": "IVA soportado en gastos (Vorsteuer)",
+        "reverseInput": "IVA soportado de los servicios del § 13b",
+        "toPay": "A pagar"
+      }
+    },
+    "notSetUp": {
+      "noProfile": "Elige dónde pagas impuestos en Ajustes para ver una estimación.",
+      "otherCountry": "Elige tu régimen fiscal en Ajustes › País e impuestos para ver una estimación."
+    }
+  }
+}

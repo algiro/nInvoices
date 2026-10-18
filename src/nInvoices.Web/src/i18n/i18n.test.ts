@@ -15,7 +15,7 @@ describe('i18n', () => {
   })
 
   it('lists every locale file as a language', () => {
-    expect(availableLanguages).toContain('it')
+    expect(availableLanguages).toEqual(['en', 'de', 'es', 'it'])
   })
 
   it.each([

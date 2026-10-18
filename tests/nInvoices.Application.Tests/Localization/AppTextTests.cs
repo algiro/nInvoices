@@ -108,9 +108,9 @@ public sealed partial class AppTextTests
     private static readonly AppText Shipped = new();
 
     [Test]
-    public void ShippedFiles_IncludeEnglishAndItalian()
+    public void ShippedFiles_IncludeEveryAppLanguage()
     {
-        Shipped.Languages.ShouldBe(["en", "it"]);
+        Shipped.Languages.ShouldBe(["en", "de", "es", "it"]);
         Shipped.TranslateIn(Italian, "errors.unexpected").ShouldNotBe(Shipped.TranslateIn(CultureInfo.InvariantCulture, "errors.unexpected"));
     }
 

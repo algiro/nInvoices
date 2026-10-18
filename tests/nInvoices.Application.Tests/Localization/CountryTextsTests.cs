@@ -37,6 +37,8 @@ public sealed partial class CountryTextsTests
 
     [TestCase("en")]
     [TestCase("it")]
+    [TestCase("es")]
+    [TestCase("de")]
     public void Texts_AreAllTranslated(string language)
     {
         var texts = InCulture(language, AllTexts);
