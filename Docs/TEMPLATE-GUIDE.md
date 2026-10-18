@@ -156,6 +156,18 @@ The contribution and the ritenuta are taxes of the customer (Customers › Taxes
 kind "Pension contribution" and tick "Part of the taxable amount", so IVA and the ritenuta, which come after it,
 are calculated on the fee plus it. The default template prints the forfettario note, the bollo and the net to pay.
 
+**`compliance.germany`** (Germany); `isApplicable` is true when the German rules are on:
+```
+compliance.germany.isApplicable     - true if the German rules apply to the invoice
+compliance.germany.isSmallBusiness  - true for a Kleinunternehmer (§ 19 UStG)
+compliance.germany.taxNumber        - the Steuernummer (empty if the Tax ID is the USt-IdNr)
+compliance.germany.vatId            - the USt-IdNr, if any
+compliance.germany.hasVatNote       - true if the invoice charges no VAT and vatNote says why
+compliance.germany.vatNote          - "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.", the reverse-charge note,
+                                      or the exemption reason of the customer's 0% VAT tax
+```
+§ 14 UStG asks for the Steuernummer or the USt-IdNr on every invoice; the default template prints them and the note.
+
 ### Monthly Report Template Model
 
 | Property | Type | Description | Example |

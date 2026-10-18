@@ -2,6 +2,7 @@ using FluentValidation;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.TaxPrediction.Commands;
 using nInvoices.Application.Features.TaxPrediction.Queries;
+using nInvoices.Core.Entities;
 
 namespace nInvoices.Application.Features.TaxPrediction.Validators;
 
@@ -27,7 +28,7 @@ public sealed class RecordTaxPaymentDtoValidator : AbstractValidator<RecordTaxPa
             .InclusiveBetween(2000, 2100).WithMessage("Year must be between 2000 and 2100");
 
         RuleFor(x => x.Period)
-            .InclusiveBetween(1, 12).WithMessage("Period must be between 1 and 12");
+            .InclusiveBetween(1, TaxPayment.MaxPeriod).WithMessage($"Period must be between 1 and {TaxPayment.MaxPeriod}");
 
         RuleFor(x => x.Form)
             .NotEmpty().WithMessage("The tax form is required")

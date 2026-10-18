@@ -20,6 +20,12 @@ public sealed class TaxPayment : OwnedEntityBase
 
     public DateOnly PaidOn { get; private set; }
 
+    /// <summary>
+    /// The highest period a payment can be recorded under: a country numbers its forms' periods of the year
+    /// (the months 1-12 of a monthly form) and may number other payments of the year after them.
+    /// </summary>
+    public const int MaxPeriod = 24;
+
     private TaxPayment() { }
 
     /// <exception cref="ArgumentException">The year or period is out of range, the form is empty, or the amount is negative.</exception>
@@ -29,8 +35,8 @@ public sealed class TaxPayment : OwnedEntityBase
             throw new ArgumentException("The tax form is required", nameof(form));
         if (year is < 2000 or > 2100)
             throw new ArgumentException("Year must be between 2000 and 2100", nameof(year));
-        if (period is < 1 or > 12)
-            throw new ArgumentException("Period must be between 1 and 12", nameof(period));
+        if (period is < 1 or > MaxPeriod)
+            throw new ArgumentException($"Period must be between 1 and {MaxPeriod}", nameof(period));
 
         Year = year;
         Period = period;

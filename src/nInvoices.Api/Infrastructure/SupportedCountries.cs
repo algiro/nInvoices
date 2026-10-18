@@ -3,6 +3,7 @@ using FluentValidation;
 using Mediator;
 using nInvoices.Application;
 using nInvoices.Application.Behaviors;
+using nInvoices.Countries.Germany;
 using nInvoices.Countries.Italy;
 using nInvoices.Countries.Spain;
 using nInvoices.Infrastructure.Countries;
@@ -17,7 +18,7 @@ namespace nInvoices.Api.Infrastructure;
 /// </summary>
 public static class SupportedCountries
 {
-    public static IReadOnlyList<ICountryPlugin> All { get; } = [new SpainCountry(), new ItalyCountry()];
+    public static IReadOnlyList<ICountryPlugin> All { get; } = [new SpainCountry(), new ItalyCountry(), new GermanyCountry()];
 
     /// <summary>The assemblies with request handlers and validators: the Application layer's and each country's.</summary>
     public static IReadOnlyList<Assembly> RequestAssemblies { get; } =
@@ -54,7 +55,7 @@ public static class SupportedCountries
     {
         services.AddMediator((MediatorOptions options) =>
         {
-            options.Assemblies = [typeof(ApplicationAssemblyMarker), typeof(SpainCountry), typeof(ItalyCountry)];
+            options.Assemblies = [typeof(ApplicationAssemblyMarker), typeof(SpainCountry), typeof(ItalyCountry), typeof(GermanyCountry)];
             // Handlers use the request's DbContext and user: never the generator's default, Singleton
             options.ServiceLifetime = ServiceLifetime.Scoped;
             // The first one wraps the rest: metrics see the whole request, validation included

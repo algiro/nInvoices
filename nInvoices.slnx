@@ -3,6 +3,7 @@
     <Project Path="src/nInvoices.Api/nInvoices.Api.csproj" />
     <Project Path="src/nInvoices.Application/nInvoices.Application.csproj" />
     <Project Path="src/nInvoices.Core/nInvoices.Core.csproj" />
+    <Project Path="src/nInvoices.Countries.Germany/nInvoices.Countries.Germany.csproj" />
     <Project Path="src/nInvoices.Countries.Italy/nInvoices.Countries.Italy.csproj" />
     <Project Path="src/nInvoices.Countries.Spain/nInvoices.Countries.Spain.csproj" />
     <Project Path="src/nInvoices.Infrastructure.Migrations.PostgreSql/nInvoices.Infrastructure.Migrations.PostgreSql.csproj" />

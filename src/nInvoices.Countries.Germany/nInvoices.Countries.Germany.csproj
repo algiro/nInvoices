@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Germany: invoicing rules (§14 UStG, Kleinunternehmer, XRechnung) and tax prediction (Einkommensteuer,
+       Solidaritätszuschlag, Kirchensteuer, Gewerbesteuer, Umsatzsteuer-Voranmeldung). Registered by the Api
+       through GermanyCountry; nothing outside this project names Germany. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\nInvoices.Application\nInvoices.Application.csproj" />
+    <ProjectReference Include="..\nInvoices.Infrastructure\nInvoices.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="nInvoices.Application.Tests" />
+  </ItemGroup>
+
+</Project>

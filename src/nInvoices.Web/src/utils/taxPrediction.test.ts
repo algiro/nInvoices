@@ -28,6 +28,11 @@ describe('formStatus', () => {
     expect(formStatus(igic, q1, '2026-04-20').label).toBe('Due')
     expect(formStatus(igic, q1, '2026-04-21').label).toBe('Overdue')
   })
+
+  it('has nothing to pay once the period ends with a zero estimate (a refund, a credit)', () => {
+    expect(formStatus(form('303', 0), q1, '2026-05-01')).toEqual({ label: 'Nothing to pay', tone: 'neutral' })
+    expect(formStatus(form('303', 0), q1, '2026-03-01').label).toBe('Period in progress')
+  })
 })
 
 describe('yearTotals', () => {
@@ -40,6 +45,11 @@ describe('nextDue', () => {
   it('is the first unpaid form of a period that has ended', () => {
     expect(nextDue(prediction, '2026-04-10')?.form.code).toBe('420')
     expect(nextDue(prediction, '2026-03-15')).toBeNull()
+  })
+
+  it('skips a form with nothing to pay', () => {
+    const zero: TaxPredictionDto = { ...prediction, periods: [{ ...q1, forms: [form('303', 0)] }, q2] }
+    expect(nextDue(zero, '2026-08-01')?.form.code).toBe('130')
   })
 })
 
