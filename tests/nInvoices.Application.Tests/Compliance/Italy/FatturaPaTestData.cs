@@ -1,3 +1,5 @@
+using System.Xml;
+using System.Xml.Schema;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Compliance.EInvoice;
 using nInvoices.Core.ValueObjects;
@@ -74,4 +76,36 @@ internal static class FatturaPaTestData
         1000m + 40m + 228.80m - 208m,
         "Pagamento a 30 giorni",
         "it");
+
+    private static readonly Lazy<XmlSchemaSet> Schemas = new(LoadSchemas);
+
+    private static XmlSchemaSet LoadSchemas()
+    {
+        var directory = Path.Combine(AppContext.BaseDirectory, "Compliance", "Italy", "Schemas");
+        var set = new XmlSchemaSet { XmlResolver = null };
+
+        // The XML Signature schema has a DOCTYPE; its external DTD is not needed
+        var settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Parse, XmlResolver = null };
+        foreach (var file in new[] { "xmldsig-core-schema.xsd", "Schema_VFPR12_v1.2.3.xsd" })
+        {
+            using var reader = XmlReader.Create(Path.Combine(directory, file), settings);
+            set.Add(null, reader);
+        }
+
+        set.Compile();
+        return set;
+    }
+
+    /// <returns>Every schema violation of the FatturaPA file; empty when it is valid.</returns>
+    public static List<string> SchemaErrors(byte[] fatturaPa)
+    {
+        var errors = new List<string>();
+        var settings = new XmlReaderSettings { ValidationType = ValidationType.Schema, Schemas = Schemas.Value, XmlResolver = null };
+        settings.ValidationFlags |= XmlSchemaValidationFlags.ReportValidationWarnings;
+        settings.ValidationEventHandler += (_, e) => errors.Add($"{e.Severity}: {e.Message} (line {e.Exception?.LineNumber})");
+
+        using var reader = XmlReader.Create(new MemoryStream(fatturaPa), settings);
+        while (reader.Read()) { }
+        return errors;
+    }
 }

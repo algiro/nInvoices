@@ -19,6 +19,10 @@
     <None Update="Compliance\Spain\Schemas\*.xsd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <!-- The official FatturaPA 1.2.3 FPR12 schema (fatturapa.gov.it) and the XML Signature schema it imports -->
+    <None Update="Compliance\Italy\Schemas\*.xsd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
