@@ -1,8 +1,10 @@
 using System.Reflection;
 using FluentValidation;
 using Mediator;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using nInvoices.Application;
 using nInvoices.Application.Behaviors;
+using nInvoices.Application.Localization;
 using nInvoices.Countries.Germany;
 using nInvoices.Countries.Italy;
 using nInvoices.Countries.Spain;
@@ -62,6 +64,8 @@ public static class SupportedCountries
             options.PipelineBehaviors = [typeof(MetricsBehavior<,>), typeof(ValidationBehavior<,>)];
         });
         services.AddValidatorsFromAssemblies(RequestAssemblies);
+        // The validators' messages, in the user's language (also registered by AddApplicationServices)
+        services.TryAddSingleton<IAppText>(_ => new AppText());
         return services;
     }
 }

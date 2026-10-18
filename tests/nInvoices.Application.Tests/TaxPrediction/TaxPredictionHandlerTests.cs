@@ -237,7 +237,7 @@ public sealed class TaxPredictionHandlerTests
     }
 
     private Task<TaxProfileDto> UpdateProfileAsync(UpdateTaxProfileDto dto) =>
-        new UpdateTaxProfileCommandHandler(Registry, _profiles, _unitOfWork.Object).Handle(new UpdateTaxProfileCommand(dto), Token).AsTask();
+        new UpdateTaxProfileCommandHandler(Registry, _profiles, _unitOfWork.Object, TestText.Instance).Handle(new UpdateTaxProfileCommand(dto), Token).AsTask();
 
     [Test]
     public async Task UpdateProfile_CreatesItOnce_ThenUpdatesIt_KeepingOnlyTheRegimeFields()
@@ -275,7 +275,7 @@ public sealed class TaxPredictionHandlerTests
     }
 
     private Task<TaxPaymentDto> RecordAsync(RecordTaxPaymentDto dto) =>
-        new RecordTaxPaymentCommandHandler(Registry, _profiles, _payments, _unitOfWork.Object)
+        new RecordTaxPaymentCommandHandler(Registry, _profiles, _payments, _unitOfWork.Object, TestText.Instance)
             .Handle(new RecordTaxPaymentCommand(dto), Token).AsTask();
 
     [Test]

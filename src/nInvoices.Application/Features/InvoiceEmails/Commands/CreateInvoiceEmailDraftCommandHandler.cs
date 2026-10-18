@@ -1,14 +1,15 @@
-using nInvoices.Application.Telemetry;
 using System.Security.Cryptography;
 using Mediator;
 using Microsoft.Extensions.Logging;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Mappings;
 using nInvoices.Application.Services.Email;
+using nInvoices.Application.Telemetry;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
-using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.InvoiceEmails.Commands;
 
@@ -25,6 +26,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandler : IRequestHandler<Crea
     private readonly IUserContext _userContext;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<CreateInvoiceEmailDraftCommandHandler> _logger;
+    private readonly IAppText _text;
 
     public CreateInvoiceEmailDraftCommandHandler(
         IInvoiceRepository invoiceRepository,
@@ -37,7 +39,8 @@ public sealed class CreateInvoiceEmailDraftCommandHandler : IRequestHandler<Crea
         ISecretProtector secretProtector,
         IUserContext userContext,
         TimeProvider timeProvider,
-        ILogger<CreateInvoiceEmailDraftCommandHandler> logger)
+        ILogger<CreateInvoiceEmailDraftCommandHandler> logger,
+        IAppText text)
     {
         _invoiceRepository = invoiceRepository;
         _customerRepository = customerRepository;
@@ -50,6 +53,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandler : IRequestHandler<Crea
         _userContext = userContext;
         _timeProvider = timeProvider;
         _logger = logger;
+        _text = text;
     }
 
     public async ValueTask<InvoiceEmailDto> Handle(CreateInvoiceEmailDraftCommand request, CancellationToken cancellationToken)
@@ -57,38 +61,38 @@ public sealed class CreateInvoiceEmailDraftCommandHandler : IRequestHandler<Crea
         var dto = request.Email;
 
         var invoice = await _invoiceRepository.GetByIdWithRelatedAsync(request.InvoiceId, cancellationToken)
-            ?? throw new NotFoundException($"Invoice {request.InvoiceId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.invoice", ("id", request.InvoiceId)));
 
         // A draft invoice can still change and a cancelled one must not be sent
         if (invoice.Status is InvoiceStatus.Draft or InvoiceStatus.Cancelled)
             throw new InvoiceEmailException(
                 InvoiceEmailException.InvoiceNotReady,
                 invoice.Status == InvoiceStatus.Draft
-                    ? "Finalize the invoice before emailing it."
-                    : "A cancelled invoice cannot be emailed.");
+                    ? _text.Translate("errors.email.finalizeFirst")
+                    : _text.Translate("errors.email.cancelled"));
 
         var customer = await _customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken)
-            ?? throw new NotFoundException($"Customer {invoice.CustomerId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.customer", ("id", invoice.CustomerId)));
 
         var to = EmailAddresses.Split(dto.To);
         var cc = EmailAddresses.Split(dto.Cc);
         if (to.Count == 0)
-            throw new InvoiceEmailException(InvoiceEmailException.InvalidRecipients, "Add at least one recipient.");
+            throw new InvoiceEmailException(InvoiceEmailException.InvalidRecipients, _text.Translate("errors.email.noRecipients"));
         var invalid = to.Concat(cc).FirstOrDefault(a => !EmailAddresses.IsValid(a));
         if (invalid is not null)
-            throw new InvoiceEmailException(InvoiceEmailException.InvalidRecipients, $"“{invalid}” is not a valid email address.");
+            throw new InvoiceEmailException(InvoiceEmailException.InvalidRecipients, _text.Translate("errors.email.invalidAddress", ("address", invalid)));
 
         // Headers are single lines
         var subject = string.Join(' ', (dto.Subject ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
         if (subject.Length == 0 || string.IsNullOrWhiteSpace(dto.Body))
-            throw new InvoiceEmailException(InvoiceEmailException.InvalidTemplate, "The email needs a subject and a body.");
+            throw new InvoiceEmailException(InvoiceEmailException.InvalidTemplate, _text.Translate("errors.email.subjectAndBody"));
 
         if (!_gmailClient.IsConfigured)
-            throw new InvoiceEmailException(InvoiceEmailException.GmailNotConfigured, "Gmail is not configured on the server.");
+            throw new InvoiceEmailException(InvoiceEmailException.GmailNotConfigured, _text.Translate("errors.gmail.notConfigured"));
 
         var userId = _userContext.RequireUserId();
         var connection = (await _connectionRepository.FindAsync(c => c.UserId == userId, cancellationToken)).FirstOrDefault()
-            ?? throw new InvoiceEmailException(InvoiceEmailException.GmailNotConnected, "Connect your Gmail account in Settings first.");
+            ?? throw new InvoiceEmailException(InvoiceEmailException.GmailNotConnected, _text.Translate("errors.gmail.notConnected"));
 
         string refreshToken;
         try
@@ -98,7 +102,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandler : IRequestHandler<Crea
         catch (CryptographicException ex)
         {
             await ForgetConnectionAsync(connection, ex, cancellationToken);
-            throw new InvoiceEmailException(InvoiceEmailException.GmailReconnectRequired, "The Gmail authorization can no longer be read. Connect Gmail again.", ex);
+            throw new InvoiceEmailException(InvoiceEmailException.GmailReconnectRequired, _text.Translate("errors.gmail.unreadable"), ex);
         }
 
         var attachments = await _composer.BuildAttachmentsAsync(invoice, customer, dto.IncludeMonthlyReport, cancellationToken);
@@ -115,7 +119,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandler : IRequestHandler<Crea
         catch (GmailAuthorizationException ex)
         {
             await ForgetConnectionAsync(connection, ex, cancellationToken);
-            throw new InvoiceEmailException(InvoiceEmailException.GmailReconnectRequired, "Gmail access was revoked or has expired. Connect Gmail again.", ex);
+            throw new InvoiceEmailException(InvoiceEmailException.GmailReconnectRequired, _text.Translate("errors.gmail.revoked"), ex);
         }
 
         var email = new InvoiceEmail

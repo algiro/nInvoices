@@ -1,11 +1,12 @@
 using System.Security.Cryptography.X509Certificates;
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Compliance.EInvoice;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
-using nInvoices.Core.Interfaces;
-using nInvoices.Application.Exceptions;
 using nInvoices.Core.Exceptions;
+using nInvoices.Core.Interfaces;
 
 namespace nInvoices.Application.Compliance.EInvoice;
 
@@ -51,6 +52,7 @@ public sealed class EInvoiceService : IEInvoiceService
     private readonly SigningCertificateLoader _certificates;
     private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _timeProvider;
+    private readonly IAppText _text;
 
     public EInvoiceService(
         IComplianceGate gate,
@@ -62,7 +64,8 @@ public sealed class EInvoiceService : IEInvoiceService
         IEInvoiceDocumentFactory documents,
         SigningCertificateLoader certificates,
         IUnitOfWork unitOfWork,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IAppText text)
     {
         _gate = gate;
         _formats = formats;
@@ -74,6 +77,7 @@ public sealed class EInvoiceService : IEInvoiceService
         _certificates = certificates;
         _unitOfWork = unitOfWork;
         _timeProvider = timeProvider;
+        _text = text;
     }
 
     public async Task<IReadOnlyList<EInvoiceStatus>> GetStatusAsync(long invoiceId, CancellationToken cancellationToken = default)
@@ -83,9 +87,9 @@ public sealed class EInvoiceService : IEInvoiceService
             return [];
 
         var invoice = await _invoices.GetByIdAsync(invoiceId, cancellationToken)
-            ?? throw new NotFoundException($"Invoice {invoiceId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.invoice", ("id", invoiceId)));
         var customer = await _customers.GetByIdAsync(invoice.CustomerId, cancellationToken)
-            ?? throw new NotFoundException($"Customer {invoice.CustomerId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.customer", ("id", invoice.CustomerId)));
         var stored = (await _stored.FindAsync(e => e.InvoiceId == invoiceId, cancellationToken)).ToList();
 
         return applicable
@@ -108,11 +112,11 @@ public sealed class EInvoiceService : IEInvoiceService
             return [];
 
         var invoice = await _invoices.GetByIdAsync(invoiceId, cancellationToken)
-            ?? throw new NotFoundException($"Invoice {invoiceId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.invoice", ("id", invoiceId)));
         if (invoice.Status is InvoiceStatus.Draft or InvoiceStatus.Cancelled)
             throw new DomainException(invoice.Status == InvoiceStatus.Draft
-                ? "Finalize the invoice before generating its e-invoice"
-                : "A cancelled invoice has no e-invoice");
+                ? _text.Translate("errors.einvoice.finalizeFirst")
+                : _text.Translate("errors.einvoice.cancelled"));
 
         var existing = (await _stored.FindAsync(e => e.InvoiceId == invoiceId, cancellationToken)).ToList();
         var results = new List<EInvoiceResult>();

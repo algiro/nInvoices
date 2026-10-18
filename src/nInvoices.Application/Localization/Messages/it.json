@@ -1,9 +1,203 @@
 {
   "errors": {
-    "unexpected": "Si è verificato un errore sul server. L'errore è stato registrato; riprova."
+    "unexpected": "Si è verificato un errore sul server. L'errore è stato registrato; riprova.",
+    "country": {
+      "notSupported": "{country} non è tra i paesi supportati qui",
+      "rulesOfAnotherCountry": "Lavori da {current}: scegli {country} come tuo paese in Impostazioni › Paese e imposte per attivarne le regole."
+    },
+    "einvoice": {
+      "cancelled": "Una fattura annullata non ha una fattura elettronica",
+      "finalizeFirst": "Finalizza la fattura prima di generarne la fattura elettronica",
+      "notValid": "La fattura non è un documento {format} valido: {issues}",
+      "sentCannotDelete": "La fattura {number} è stata inviata tramite {channel} ({reference}) e non può essere eliminata."
+    },
+    "email": {
+      "cancelled": "Una fattura annullata non può essere inviata per email.",
+      "finalizeFirst": "Finalizza la fattura prima di inviarla per email.",
+      "invalidAddress": "“{address}” non è un indirizzo email valido.",
+      "invoicePdfFailed": "Non è stato possibile generare il PDF della fattura.",
+      "noRecipients": "Aggiungi almeno un destinatario.",
+      "reportPdfFailed": "Non è stato possibile generare il PDF del report mensile.{reason}",
+      "subjectAndBody": "L'email deve avere un oggetto e un testo."
+    },
+    "facturae": {
+      "certificateRequired": "Le fatture Facturae devono essere firmate: carica un certificato di firma nelle impostazioni di conformità spagnole"
+    },
+    "gmail": {
+      "notConfigured": "Gmail non è configurato sul server.",
+      "notConnected": "Collega prima il tuo account Gmail nelle Impostazioni.",
+      "revoked": "L'accesso a Gmail è stato revocato o è scaduto. Collega di nuovo Gmail.",
+      "unreadable": "L'autorizzazione di Gmail non è più leggibile. Collega di nuovo Gmail."
+    },
+    "image": {
+      "aliasExists": "Esiste già un'immagine con l'alias '{alias}'."
+    },
+    "invoice": {
+      "calendarOnlyMonthly": "L'esportazione del calendario è disponibile solo per le fatture mensili",
+      "hourlyWorkDaysRequired": "I giorni lavorati sono obbligatori per le fatture con tariffa oraria.",
+      "missingHours": "Con una tariffa oraria servono le ore di ogni giorno lavorato (da un'allocazione di progetto o dalle ore del giorno). Mancano le ore di {count} giorno/i.",
+      "oneTimeHoursRequired": "Le ore sono obbligatorie per una fattura una tantum con tariffa oraria.",
+      "onlyDraftUpdated": "Si possono modificare solo le fatture in bozza",
+      "reportOnlyMonthly": "I report mensili sono disponibili solo per le fatture mensili"
+    },
+    "project": {
+      "nameExists": "Esiste già un progetto chiamato '{name}' per questo cliente",
+      "notOfCustomer": "Il progetto {id} non appartiene al cliente {customer}"
+    },
+    "rate": {
+      "dayRatesWithFixedMonthly": "I giorni non possono avere una tariffa propria quando la fattura usa una tariffa mensile fissa.",
+      "fixedMonthlyForDay": "Una tariffa mensile fissa non può essere usata per un singolo giorno ({date}).",
+      "noActiveRate": "Nessuna tariffa attiva per il cliente {customer}. Aggiungi una tariffa giornaliera, mensile o oraria.",
+      "notFoundForCustomer": "Tariffa {id} non trovata per il cliente {customer}.",
+      "notFoundForDay": "Tariffa {id} non trovata per questo cliente ({date}).",
+      "oneCurrency": "Una fattura è emessa in una sola valuta: {currency} del {date} è diversa da {invoiceCurrency}."
+    },
+    "report": {
+      "monthAndYear": "La fattura deve avere mese e anno",
+      "noActiveTemplate": "Nessun modello di report mensile attivo per il cliente {customer}",
+      "templateNotFound": "Modello di report mensile {id} non trovato"
+    },
+    "taxes": {
+      "anotherCountry": "Lavori da {current}: scegli prima {country} come tuo paese in Impostazioni › Paese e imposte.",
+      "chooseCountryFirst": "Scegli nelle Impostazioni dove paghi le imposte prima di registrare un pagamento",
+      "notAvailable": "Le stime delle imposte per {country} non sono disponibili",
+      "unknownRegime": "\"{regime}\" non è un regime fiscale di {country}"
+    },
+    "template": {
+      "noActiveTemplate": "Nessun modello attivo per il cliente {customer} e il tipo {type}",
+      "renderingFailed": "Non è stato possibile generare il modello. Controlla la sintassi del modello e i dati.",
+      "syntaxErrors": "Errori di sintassi nel modello: {errors}"
+    },
+    "verifactu": {
+      "cannotDelete": "La fattura {number} è stata registrata per Verifactu e non può essere eliminata: annullala, così l'annullamento viene registrato."
+    }
   },
   "preferences": {
     "chooseLanguage": "Scegli una lingua",
     "unsupportedLanguage": "{language} non è una delle lingue di questa app ({languages})"
+  },
+  "validation": {
+    "account": {
+      "typeToConfirm": "Digita {word} per confermare."
+    },
+    "address": {
+      "cityRequired": "La città è obbligatoria",
+      "cityTooLong": "La città non può superare {max} caratteri",
+      "countryRequired": "Il paese è obbligatorio",
+      "countryTooLong": "Il paese non può superare {max} caratteri",
+      "houseNumberRequired": "Il numero civico è obbligatorio",
+      "houseNumberTooLong": "Il numero civico non può superare {max} caratteri",
+      "stateTooLong": "La provincia non può superare {max} caratteri",
+      "streetRequired": "La via è obbligatoria",
+      "streetTooLong": "La via non può superare {max} caratteri",
+      "zipCodeRequired": "Il CAP è obbligatorio",
+      "zipCodeTooLong": "Il CAP non può superare {max} caratteri"
+    },
+    "amountNegative": "L'importo non può essere negativo",
+    "amountPositive": "L'importo deve essere positivo",
+    "amountRequired": "L'importo è obbligatorio",
+    "country": {
+      "choose": "Scegli un paese"
+    },
+    "countryIsoCode": "Il paese deve essere un codice ISO di due lettere",
+    "currencyIsoCode": "La valuta deve essere un codice ISO di 3 lettere",
+    "customer": {
+      "addressRequired": "L'indirizzo è obbligatorio",
+      "ccInvalid": "CC deve contenere indirizzi validi separati da virgole",
+      "emailInvalid": "L'email deve essere un indirizzo valido, ad es. accounts@example.com",
+      "fiscalIdRequired": "La partita IVA o il codice fiscale è obbligatorio",
+      "fiscalIdTooLong": "La partita IVA o il codice fiscale non può superare {max} caratteri",
+      "holidayCountryInvalid": "Il paese delle festività deve essere un codice di due lettere, ad es. IT",
+      "nameRequired": "Il nome del cliente è obbligatorio",
+      "nameTooLong": "Il nome del cliente non può superare {max} caratteri"
+    },
+    "customerIdPositive": "L'ID del cliente deve essere un numero positivo",
+    "descriptionRequired": "La descrizione è obbligatoria",
+    "descriptionTooLong": "La descrizione non può superare {max} caratteri",
+    "expense": {
+      "deductibleRange": "La percentuale deducibile deve essere compresa tra 0 e 100",
+      "endsBeforeStart": "Non può terminare prima di iniziare",
+      "indirectTaxNegative": "L'imposta indiretta non può essere negativa",
+      "invalidCategory": "Categoria di spesa non valida",
+      "reverseChargeTax": "Una spesa in inversione contabile non ha imposta indiretta: il fornitore non l'ha addebitata",
+      "supplierTooLong": "Il fornitore non può superare {max} caratteri"
+    },
+    "holiday": {
+      "nameRequired": "Il nome della festività è obbligatorio",
+      "nameTooLong": "Il nome della festività non può superare {max} caratteri"
+    },
+    "image": {
+      "aliasRequired": "L'alias è obbligatorio.",
+      "fileRequired": "Il file è obbligatorio.",
+      "tooLarge": "Il file supera la dimensione massima di {max} MB.",
+      "typeNotAllowed": "Il tipo di contenuto '{type}' non è consentito. Consentiti: {allowed}"
+    },
+    "import": {
+      "noCustomers": "Nessun cliente da importare",
+      "noInvoices": "Nessuna fattura da importare",
+      "noSettings": "Nessuna impostazione da importare"
+    },
+    "invalidInvoiceType": "Tipo di fattura non valido",
+    "invoice": {
+      "expenseDescription": "La descrizione è obbligatoria e non può superare {max} caratteri",
+      "hoursPositive": "Le ore devono essere maggiori di zero",
+      "issueDateRequired": "La data di emissione è obbligatoria",
+      "notesTooLong": "Le note non possono superare {max} caratteri",
+      "projectHoursPositive": "Le ore del progetto devono essere maggiori di zero",
+      "renderedContentTooLong": "Il contenuto generato non può superare {max} caratteri",
+      "workDayDateRequired": "La data del giorno lavorato è obbligatoria",
+      "workDaysRequired": "I giorni lavorati sono obbligatori per le fatture mensili"
+    },
+    "money": {
+      "amountPositive": "L'importo deve essere maggiore di zero",
+      "currencyIsoCode": "La valuta deve essere un codice ISO di 3 lettere (ad es. USD, EUR)",
+      "currencyRequired": "La valuta è obbligatoria",
+      "currencyUppercase": "La valuta deve essere un codice di 3 lettere maiuscole"
+    },
+    "monthRange": "Il mese deve essere compreso tra 1 e 12",
+    "project": {
+      "nameRequired": "Il nome del progetto è obbligatorio",
+      "nameTooLong": "Il nome del progetto non può superare {max} caratteri"
+    },
+    "rate": {
+      "invalidType": "Tipo di tariffa non valido",
+      "nameTooLong": "Il nome della tariffa non può superare {max} caratteri",
+      "priceRequired": "Il prezzo è obbligatorio"
+    },
+    "rateIdPositive": "L'ID della tariffa deve essere un numero positivo",
+    "tax": {
+      "handlerRequired": "Il metodo di calcolo è obbligatorio",
+      "handlerTooLong": "Il metodo di calcolo non può superare {max} caratteri",
+      "invalidApplicationType": "Tipo di applicazione non valido",
+      "orderNegative": "L'ordine non può essere negativo",
+      "taxIdTooLong": "L'ID dell'imposta non può superare {max} caratteri"
+    },
+    "taxes": {
+      "chooseCountry": "Scegli il paese in cui paghi le tasse",
+      "chooseRegime": "Scegli un regime fiscale",
+      "formRequired": "Il modello fiscale è obbligatorio",
+      "formTooLong": "Il modello fiscale non può superare {max} caratteri",
+      "periodRange": "Il periodo deve essere compreso tra 1 e {max}",
+      "regimeTooLong": "Il regime fiscale non può superare {max} caratteri"
+    },
+    "template": {
+      "contentRequired": "Il contenuto del modello è obbligatorio",
+      "contentTooLong": "Il contenuto del modello non può superare {max} caratteri",
+      "contentTooShort": "Il contenuto del modello deve avere almeno {min} caratteri",
+      "syntaxError": "Errore di sintassi nel modello: {error}",
+      "subjectSyntaxError": "Errore di sintassi nell'oggetto: {error}",
+      "bodySyntaxError": "Errore di sintassi nel testo: {error}"
+    },
+    "yearRange": "L'anno deve essere compreso tra 2000 e 2100"
+  },
+  "notFound": {
+    "customer": "Cliente {id} non trovato",
+    "expense": "Spesa {id} non trovata",
+    "invoice": "Fattura {id} non trovata",
+    "project": "Progetto {id} non trovato",
+    "rate": "Tariffa {id} non trovata",
+    "recurringExpense": "Spesa ricorrente {id} non trovata",
+    "tax": "Imposta {id} non trovata",
+    "template": "Modello {id} non trovato"
   }
 }

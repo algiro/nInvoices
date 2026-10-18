@@ -1,12 +1,13 @@
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Models;
 using nInvoices.Application.Services.InvoiceGeneration;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
+using nInvoices.Core.Exceptions;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
-using nInvoices.Application.Exceptions;
-using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Services;
 
@@ -69,6 +70,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _timeProvider;
     private readonly IReadOnlyList<IInvoiceTemplateModelContributor> _contributors;
+    private readonly IAppText _text;
 
     public InvoiceGenerationService(
         IRepository<InvoiceTemplate> templateRepository,
@@ -82,6 +84,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         IInvoiceNumbering numbering,
         IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
+        IAppText text,
         IEnumerable<IInvoiceTemplateModelContributor>? contributors = null)
     {
         _contributors = contributors?.ToList() ?? [];
@@ -96,6 +99,7 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         _numbering = numbering;
         _unitOfWork = unitOfWork;
         _timeProvider = timeProvider;
+        _text = text;
     }
 
     public async Task<Invoice> GenerateInvoiceAsync(
@@ -166,13 +170,13 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
         var rates = await _rates.ResolveAsync(dto.CustomerId, dto.InvoiceType, dto.RateId, dto.WorkDays, cancellationToken);
         var customerTaxes = await _taxRepository.FindAsync(t => t.CustomerId == dto.CustomerId && t.IsActive, cancellationToken);
 
-        InvoiceCalculator.EnsureBillable(dto, rates);
+        InvoiceCalculator.EnsureBillable(dto, rates, _text);
 
         var rate = rates.Default;
         var subtotal = InvoiceCalculator.Subtotal(dto, rates);
         var expensesTotal = InvoiceCalculator.ExpensesTotal(dto.Expenses, rate.Price.Currency);
         var customer = await _customerRepository.GetByIdAsync(dto.CustomerId, cancellationToken)
-            ?? throw new NotFoundException($"Customer {dto.CustomerId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.customer", ("id", dto.CustomerId)));
         var invoiceNumber = await _numbering.PeekAsync(customer, dto.IssueDate, cancellationToken);
 
         var (totalTax, taxLines) = _taxCalculationService.CalculateTaxes(customerTaxes, subtotal + expensesTotal);
@@ -240,10 +244,10 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
     {
         // Use the specialized repository method to eagerly load related entities
         var invoice = await _invoiceRepository.GetByIdWithRelatedAsync(invoiceId, cancellationToken)
-            ?? throw new NotFoundException($"Invoice {invoiceId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.invoice", ("id", invoiceId)));
 
         var customer = await _customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken)
-            ?? throw new NotFoundException($"Customer {invoice.CustomerId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.customer", ("id", invoice.CustomerId)));
 
         // The saved work days (with project allocations) the line items are built from
         var workDays = invoice is { Year: { } year, Month: { } month }
@@ -275,6 +279,6 @@ public sealed class InvoiceGenerationService : IInvoiceGenerationService
             cancellationToken);
 
         return ScopedTemplates.PickEffective(templates, customerId)
-            ?? throw new DomainException($"No active template found for customer {customerId} and type {invoiceType}");
+            ?? throw new DomainException(_text.Translate("errors.template.noActiveTemplate", ("customer", customerId), ("type", invoiceType)));
     }
 }

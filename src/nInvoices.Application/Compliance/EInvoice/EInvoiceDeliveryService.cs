@@ -1,10 +1,11 @@
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
+using nInvoices.Application.Telemetry;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Compliance.EInvoice;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
-using nInvoices.Application.Exceptions;
-using nInvoices.Application.Telemetry;
 
 namespace nInvoices.Application.Compliance.EInvoice;
 
@@ -50,6 +51,7 @@ public sealed class EInvoiceDeliveryService : IEInvoiceDeliveryService
     private readonly SigningCertificateLoader _certificates;
     private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _time;
+    private readonly IAppText _text;
 
     public EInvoiceDeliveryService(
         IComplianceGate gate,
@@ -60,7 +62,8 @@ public sealed class EInvoiceDeliveryService : IEInvoiceDeliveryService
         IRepository<EInvoiceSubmission> submissions,
         SigningCertificateLoader certificates,
         IUnitOfWork unitOfWork,
-        TimeProvider time)
+        TimeProvider time,
+        IAppText text)
     {
         _gate = gate;
         _channels = channels;
@@ -71,6 +74,7 @@ public sealed class EInvoiceDeliveryService : IEInvoiceDeliveryService
         _certificates = certificates;
         _unitOfWork = unitOfWork;
         _time = time;
+        _text = text;
     }
 
     public async Task<IReadOnlyList<ChannelStatus>> GetChannelsAsync(long invoiceId, CancellationToken cancellationToken = default)
@@ -85,9 +89,9 @@ public sealed class EInvoiceDeliveryService : IEInvoiceDeliveryService
             return [];
 
         var invoice = await _invoices.GetByIdAsync(invoiceId, cancellationToken)
-            ?? throw new NotFoundException($"Invoice {invoiceId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.invoice", ("id", invoiceId)));
         var customer = await _customers.GetByIdAsync(invoice.CustomerId, cancellationToken)
-            ?? throw new NotFoundException($"Customer {invoice.CustomerId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.customer", ("id", invoice.CustomerId)));
         var files = (await _files.FindAsync(f => f.InvoiceId == invoiceId, cancellationToken)).ToList();
         var submissions = (await _submissions.GetAllAsync(cancellationToken)).ToList();
 

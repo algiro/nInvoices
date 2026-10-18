@@ -1,13 +1,14 @@
 using System.Globalization;
 using System.Reflection;
+using Microsoft.Extensions.Options;
+using nInvoices.Application.Compliance;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services.Holidays;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Configuration;
 using nInvoices.Core.Entities;
-using nInvoices.Core.Interfaces;
-using Microsoft.Extensions.Options;
 using nInvoices.Core.Exceptions;
-using nInvoices.Application.Compliance;
+using nInvoices.Core.Interfaces;
 
 namespace nInvoices.Countries.Spain.Verifactu;
 
@@ -67,6 +68,7 @@ public sealed class VerifactuService : IVerifactuService
     private readonly VerifactuOptions _options;
     private readonly TimeProvider _time;
 
+    private readonly IAppText _text;
     // The last record of the chain, kept for the request so records added in it chain to each other
     private VerifactuRecord? _last;
     private bool _lastLoaded;
@@ -78,7 +80,8 @@ public sealed class VerifactuService : IVerifactuService
         IRepository<Tax> taxes,
         IRepository<VerifactuSubmission> submissions,
         IOptions<VerifactuOptions> options,
-        TimeProvider time)
+        TimeProvider time,
+        IAppText text)
     {
         _gate = gate;
         _records = records;
@@ -87,6 +90,7 @@ public sealed class VerifactuService : IVerifactuService
         _submissions = submissions;
         _options = options.Value;
         _time = time;
+        _text = text;
     }
 
     public async Task<bool> IsActiveAsync(CancellationToken cancellationToken = default) =>
@@ -161,7 +165,7 @@ public sealed class VerifactuService : IVerifactuService
     {
         if ((await _records.GetByInvoiceAsync(invoice.Id, cancellationToken)).Count > 0)
             throw new DomainException(
-                $"Invoice {invoice.Number} was recorded for Verifactu and cannot be deleted: cancel it instead, which records the cancellation.");
+                _text.Translate("errors.verifactu.cannotDelete", ("number", invoice.Number)));
     }
 
     public async Task<ChainReport> VerifyChainAsync(CancellationToken cancellationToken = default) =>

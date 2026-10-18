@@ -1,3 +1,4 @@
+using System.Globalization;
 using FluentValidation;
 using Mediator;
 using nInvoices.Application.DTOs;
@@ -10,6 +11,7 @@ using nInvoices.Application.Features.Taxes.Commands;
 using nInvoices.Application.Features.Taxes.Validators;
 using nInvoices.Core.Enums;
 using Shouldly;
+using nInvoices.Application.Tests.TestDoubles;
 
 namespace nInvoices.Application.Tests.Features;
 
@@ -52,7 +54,7 @@ public sealed class CommandValidatorsTests
         // The tax form has no Tax ID field: the handler derives one from the description
         var command = new CreateTaxCommand(new CreateTaxDto(1, "", "VAT", "PERCENTAGE", 21m, TaxApplicationType.OnSubtotal, Order: 1));
 
-        var result = await new CreateTaxCommandValidator().ValidateAsync(command, Token);
+        var result = await new CreateTaxCommandValidator(TestText.Instance).ValidateAsync(command, Token);
 
         result.IsValid.ShouldBeTrue();
     }
@@ -63,7 +65,7 @@ public sealed class CommandValidatorsTests
         // A fixed monthly rate bills its price without any worked day
         var command = new GenerateInvoiceCommand(Monthly(workDays: []));
 
-        var result = await new GenerateInvoiceCommandValidator().ValidateAsync(command, Token);
+        var result = await new GenerateInvoiceCommandValidator(TestText.Instance).ValidateAsync(command, Token);
 
         result.IsValid.ShouldBeTrue();
     }
@@ -73,7 +75,7 @@ public sealed class CommandValidatorsTests
     {
         var command = new GenerateInvoiceCommand(Monthly(workDays: null));
 
-        var result = await new GenerateInvoiceCommandValidator().ValidateAsync(command, Token);
+        var result = await new GenerateInvoiceCommandValidator(TestText.Instance).ValidateAsync(command, Token);
 
         result.Errors.Select(e => e.PropertyName).ShouldBe(["Invoice.WorkDays"]);
     }
@@ -85,7 +87,7 @@ public sealed class CommandValidatorsTests
         var html = "<img src=\"data:image/png;base64," + new string('A', 1_400_000) + "\" />";
         var command = new UpdateInvoiceCommand(1, new UpdateInvoiceDto { RenderedContent = html });
 
-        var result = await new UpdateInvoiceCommandValidator().ValidateAsync(command, Token);
+        var result = await new UpdateInvoiceCommandValidator(TestText.Instance).ValidateAsync(command, Token);
 
         result.IsValid.ShouldBeTrue();
     }
@@ -96,15 +98,35 @@ public sealed class CommandValidatorsTests
         var command = new CreateCustomerCommand(new CreateCustomerDto(
             "", "B12345678", new AddressDto("Main St", "1", "", "28001", "ES")));
 
-        var result = await new CreateCustomerCommandValidator().ValidateAsync(command, Token);
+        var result = await new CreateCustomerCommandValidator(TestText.Instance).ValidateAsync(command, Token);
 
         result.Errors.Select(e => e.PropertyName).ShouldBe(["Customer.Name", "Customer.Address.City"], ignoreOrder: true);
     }
 
     [Test]
+    public async Task CreateCustomerCommand_InItalian_ReportsInItalian()
+    {
+        var command = new CreateCustomerCommand(new CreateCustomerDto(
+            "", "B12345678", new AddressDto("Main St", "1", "", "28001", "ES")));
+        var previous = CultureInfo.CurrentUICulture;
+        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("it-IT");
+        try
+        {
+            // Translated when the rules fail, in the request's UI language
+            var result = await new CreateCustomerCommandValidator(TestText.Instance).ValidateAsync(command, Token);
+
+            result.Errors.Select(e => e.ErrorMessage).ShouldBe(["Il nome del cliente è obbligatorio", "La città è obbligatoria"], ignoreOrder: true);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previous;
+        }
+    }
+
+    [Test]
     public async Task CreateCustomerCommand_WithoutCustomer_IsInvalid()
     {
-        var result = await new CreateCustomerCommandValidator().ValidateAsync(new CreateCustomerCommand(null!), Token);
+        var result = await new CreateCustomerCommandValidator(TestText.Instance).ValidateAsync(new CreateCustomerCommand(null!), Token);
 
         result.IsValid.ShouldBeFalse();
     }

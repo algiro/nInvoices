@@ -4,6 +4,7 @@ using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 using Shouldly;
+using nInvoices.Application.Tests.TestDoubles;
 
 namespace nInvoices.Application.Tests.Services;
 
@@ -29,7 +30,7 @@ public sealed class ProjectResolverTests
             .Setup(r => r.AddAsync(It.IsAny<Project>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Project p, CancellationToken _) => { _projects.Add(p); return p; });
 
-        _resolver = new ProjectResolver(_projectRepository.Object);
+        _resolver = new ProjectResolver(_projectRepository.Object, TestText.Instance);
     }
 
     [Test]

@@ -4,6 +4,7 @@ using nInvoices.Countries.Italy;
 using nInvoices.Countries.Italy.FatturaPA;
 using Shouldly;
 using static nInvoices.Application.Tests.Compliance.Italy.FatturaPaTestData;
+using nInvoices.Application.Tests.TestDoubles;
 
 namespace nInvoices.Application.Tests.Compliance.Italy;
 
@@ -11,7 +12,7 @@ namespace nInvoices.Application.Tests.Compliance.Italy;
 [TestFixture]
 public sealed class FatturaPaSchemaTests
 {
-    private readonly FatturaPaFormat _format = new(new ItalyComplianceModule());
+    private readonly FatturaPaFormat _format = new(new ItalyComplianceModule(), TestText.Instance);
 
     private static IEnumerable<TestCaseData> Documents()
     {

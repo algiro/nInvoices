@@ -42,7 +42,7 @@ public sealed class ComplianceHandlerTests
         new ComplianceRegistry([new SpainComplianceModule()], [], Options.Create(options ?? new ComplianceOptions()));
 
     private Task<ComplianceCountryDto?> Update(string country, UpdateComplianceSettingsDto dto, IComplianceRegistry? registry = null) =>
-        new UpdateComplianceSettingsCommandHandler(registry ?? Registry(), _settings, _unitOfWork.Object, new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)))
+        new UpdateComplianceSettingsCommandHandler(registry ?? Registry(), _settings, _unitOfWork.Object, new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)), TestText.Instance)
             .Handle(new UpdateComplianceSettingsCommand(country, dto), Token).AsTask();
 
     private static UpdateComplianceSettingsDto ValidSpain(bool enabled = true) =>

@@ -1,122 +1,124 @@
 using FluentValidation;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
+using nInvoices.Application.Validation;
 using nInvoices.Core.Enums;
 
 namespace nInvoices.Application.Features.Invoices.Validators;
 
 public sealed class GenerateInvoiceDtoValidator : AbstractValidator<GenerateInvoiceDto>
 {
-    public GenerateInvoiceDtoValidator()
+    public GenerateInvoiceDtoValidator(IAppText text)
     {
         RuleFor(x => x.CustomerId)
             .GreaterThan(0)
-            .WithMessage("Customer ID must be positive");
+            .WithText(text, "validation.customerIdPositive");
 
         RuleFor(x => x.InvoiceType)
             .IsInEnum()
-            .WithMessage("Invalid invoice type");
+            .WithText(text, "validation.invalidInvoiceType");
 
         RuleFor(x => x.IssueDate)
             .NotEmpty()
-            .WithMessage("Issue date is required");
+            .WithText(text, "validation.invoice.issueDateRequired");
 
         When(x => x.InvoiceType == InvoiceType.Monthly, () =>
         {
             RuleFor(x => x.Year)
                 .NotNull()
                 .InclusiveBetween(2000, 2100)
-                .WithMessage("Year must be between 2000 and 2100");
+                .WithText(text, "validation.yearRange");
 
             RuleFor(x => x.Month)
                 .NotNull()
                 .InclusiveBetween(1, 12)
-                .WithMessage("Month must be between 1 and 12");
+                .WithText(text, "validation.monthRange");
 
             // The month's days must be sent, but may be none: a fixed monthly rate bills its price
             // without them. Rates that need worked days are checked when the invoice is built.
             RuleFor(x => x.WorkDays)
                 .NotNull()
-                .WithMessage("Work days are required for monthly invoices");
+                .WithText(text, "validation.invoice.workDaysRequired");
         });
 
         RuleFor(x => x.RateId)
             .GreaterThan(0)
             .When(x => x.RateId.HasValue)
-            .WithMessage("Rate ID must be positive");
+            .WithText(text, "validation.rateIdPositive");
 
         RuleFor(x => x.Hours)
             .GreaterThan(0)
             .LessThanOrEqualTo(100_000)
             .When(x => x.Hours.HasValue)
-            .WithMessage("Hours must be greater than zero");
+            .WithText(text, "validation.invoice.hoursPositive");
 
         RuleForEach(x => x.Expenses)
-            .SetValidator(new ExpenseDtoValidator())
+            .SetValidator(new ExpenseDtoValidator(text))
             .When(x => x.Expenses != null);
 
         RuleForEach(x => x.WorkDays)
-            .SetValidator(new WorkDayDtoValidator())
+            .SetValidator(new WorkDayDtoValidator(text))
             .When(x => x.WorkDays != null);
     }
 }
 
 public sealed class ExpenseDtoValidator : AbstractValidator<ExpenseDto>
 {
-    public ExpenseDtoValidator()
+    public ExpenseDtoValidator(IAppText text)
     {
         RuleFor(x => x.Description)
             .NotEmpty()
             .MaximumLength(500)
-            .WithMessage("Description is required and must not exceed 500 characters");
+            .WithText(text, "validation.invoice.expenseDescription", ("max", 500));
 
         RuleFor(x => x.Amount)
             .GreaterThan(0)
-            .WithMessage("Amount must be positive");
+            .WithText(text, "validation.amountPositive");
 
         RuleFor(x => x.Currency)
             .NotEmpty()
             .Length(3)
-            .WithMessage("Currency must be a 3-letter ISO code");
+            .WithText(text, "validation.currencyIsoCode");
     }
 }
 
 public sealed class WorkDayDtoValidator : AbstractValidator<WorkDayDto>
 {
-    public WorkDayDtoValidator()
+    public WorkDayDtoValidator(IAppText text)
     {
         RuleFor(x => x.Date)
             .NotEmpty()
-            .WithMessage("Work day date is required");
+            .WithText(text, "validation.invoice.workDayDateRequired");
 
         RuleFor(x => x.RateId)
             .GreaterThan(0)
             .When(x => x.RateId.HasValue)
-            .WithMessage("Rate ID must be positive");
+            .WithText(text, "validation.rateIdPositive");
 
         RuleFor(x => x.Notes)
             .MaximumLength(500)
             .When(x => x.Notes != null)
-            .WithMessage("Notes must not exceed 500 characters");
+            .WithText(text, "validation.invoice.notesTooLong", ("max", 500));
 
         RuleForEach(x => x.Projects)
-            .SetValidator(new WorkDayProjectDtoValidator())
+            .SetValidator(new WorkDayProjectDtoValidator(text))
             .When(x => x.Projects != null);
     }
 }
 
 public sealed class WorkDayProjectDtoValidator : AbstractValidator<WorkDayProjectDto>
 {
-    public WorkDayProjectDtoValidator()
+    public WorkDayProjectDtoValidator(IAppText text)
     {
         RuleFor(x => x.Hours)
             .GreaterThan(0)
-            .WithMessage("Project hours must be greater than zero");
+            .WithText(text, "validation.invoice.projectHoursPositive");
 
         RuleFor(x => x.ProjectName)
             .NotEmpty()
-            .WithMessage("Project name is required")
+            .WithText(text, "validation.project.nameRequired")
             .MaximumLength(200)
-            .WithMessage("Project name must not exceed 200 characters")
+            .WithText(text, "validation.project.nameTooLong", ("max", 200))
             .When(x => x.ProjectId is null or <= 0);
     }
 }

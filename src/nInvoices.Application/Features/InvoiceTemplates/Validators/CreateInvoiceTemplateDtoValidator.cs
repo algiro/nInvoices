@@ -1,23 +1,25 @@
 using FluentValidation;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
+using nInvoices.Application.Validation;
 
 namespace nInvoices.Application.Features.InvoiceTemplates.Validators;
 
 public sealed class CreateInvoiceTemplateDtoValidator : AbstractValidator<CreateInvoiceTemplateDto>
 {
-    public CreateInvoiceTemplateDtoValidator()
+    public CreateInvoiceTemplateDtoValidator(IAppText text)
     {
         // No customer = a template shared by all the user's customers
         RuleFor(x => x.CustomerId)
-            .GreaterThan(0).WithMessage("Customer ID must be a positive number")
+            .GreaterThan(0).WithText(text, "validation.customerIdPositive")
             .When(x => x.CustomerId.HasValue);
 
         RuleFor(x => x.InvoiceType)
-            .IsInEnum().WithMessage("Invalid invoice type");
+            .IsInEnum().WithText(text, "validation.invalidInvoiceType");
 
         RuleFor(x => x.Content)
-            .NotEmpty().WithMessage("Template content is required")
-            .MinimumLength(10).WithMessage("Template content must be at least 10 characters")
-            .MaximumLength(100000).WithMessage("Template content must not exceed 100,000 characters");
+            .NotEmpty().WithText(text, "validation.template.contentRequired")
+            .MinimumLength(10).WithText(text, "validation.template.contentTooShort", ("min", 10))
+            .MaximumLength(100000).WithText(text, "validation.template.contentTooLong", ("max", 100_000));
     }
 }

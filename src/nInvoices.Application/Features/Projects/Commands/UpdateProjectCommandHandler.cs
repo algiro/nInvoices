@@ -1,10 +1,11 @@
 using Mediator;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
-using nInvoices.Core.Interfaces;
-using nInvoices.Application.Exceptions;
 using nInvoices.Core.Exceptions;
+using nInvoices.Core.Interfaces;
 
 namespace nInvoices.Application.Features.Projects.Commands;
 
@@ -12,18 +13,20 @@ public sealed class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectC
 {
     private readonly IRepository<Project> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAppText _text;
 
-    public UpdateProjectCommandHandler(IRepository<Project> repository, IUnitOfWork unitOfWork)
+    public UpdateProjectCommandHandler(IRepository<Project> repository, IUnitOfWork unitOfWork, IAppText text)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _text = text;
     }
 
     public async ValueTask<ProjectDto> Handle(UpdateProjectCommand request, CancellationToken cancellationToken)
     {
         var project = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (project == null)
-            throw new NotFoundException($"Project with ID {request.Id} not found");
+            throw new NotFoundException(_text.Translate("notFound.project", ("id", request.Id)));
 
         var dto = request.Project;
         var name = dto.Name?.Trim() ?? string.Empty;
@@ -39,7 +42,7 @@ public sealed class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectC
 
             if (clash is not null)
                 throw new DomainException(
-                    $"A project named '{name}' already exists for this customer");
+                    _text.Translate("errors.project.nameExists", ("name", name)));
         }
 
         project.Rename(name);

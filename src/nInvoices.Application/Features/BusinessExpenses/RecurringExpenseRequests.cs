@@ -1,6 +1,7 @@
 using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
@@ -60,17 +61,19 @@ public sealed class UpdateRecurringExpenseCommandHandler : IRequestHandler<Updat
 {
     private readonly IRepository<RecurringExpense> _expenses;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAppText _text;
 
-    public UpdateRecurringExpenseCommandHandler(IRepository<RecurringExpense> expenses, IUnitOfWork unitOfWork)
+    public UpdateRecurringExpenseCommandHandler(IRepository<RecurringExpense> expenses, IUnitOfWork unitOfWork, IAppText text)
     {
         _expenses = expenses;
         _unitOfWork = unitOfWork;
+        _text = text;
     }
 
     public async ValueTask<RecurringExpenseDto> Handle(UpdateRecurringExpenseCommand request, CancellationToken cancellationToken)
     {
         var expense = await _expenses.GetByIdAsync(request.Id, cancellationToken)
-            ?? throw new NotFoundException($"Recurring expense with ID {request.Id} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.recurringExpense", ("id", request.Id)));
 
         BusinessExpenseMapper.Apply(request.Expense, expense);
         await _expenses.UpdateAsync(expense, cancellationToken);

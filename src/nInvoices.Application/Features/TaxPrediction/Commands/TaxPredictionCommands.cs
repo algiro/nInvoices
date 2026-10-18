@@ -2,6 +2,7 @@ using Mediator;
 using nInvoices.Application.Countries;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.Compliance.Commands;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Mappings;
 using nInvoices.Application.TaxPrediction;
 using nInvoices.Core.Compliance;
@@ -28,11 +29,13 @@ public sealed class UpdateTaxProfileCommandHandler : IRequestHandler<UpdateTaxPr
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUserCountry? _country;
     private readonly IRepository<UserCountry>? _countries;
+    private readonly IAppText _text;
 
     public UpdateTaxProfileCommandHandler(
         ITaxPredictionRegistry registry,
         IRepository<TaxProfile> profiles,
         IUnitOfWork unitOfWork,
+        IAppText text,
         IUserCountry? country = null,
         IRepository<UserCountry>? countries = null)
     {
@@ -41,6 +44,7 @@ public sealed class UpdateTaxProfileCommandHandler : IRequestHandler<UpdateTaxPr
         _unitOfWork = unitOfWork;
         _country = country;
         _countries = countries;
+        _text = text;
     }
 
     /// <exception cref="DomainException">The country or regime is not offered.</exception>
@@ -49,16 +53,16 @@ public sealed class UpdateTaxProfileCommandHandler : IRequestHandler<UpdateTaxPr
     {
         var dto = request.Profile;
         var module = _registry.Find(dto.CountryCode)
-            ?? throw new DomainException($"Tax estimates for {dto.CountryCode} are not available");
+            ?? throw new DomainException(_text.Translate("errors.taxes.notAvailable", ("country", dto.CountryCode)));
         var regime = module.Regimes.FirstOrDefault(r => r.Id == dto.RegimeId)
-            ?? throw new DomainException($"\"{dto.RegimeId}\" is not a tax regime of {module.DisplayName}");
+            ?? throw new DomainException(_text.Translate("errors.taxes.unknownRegime", ("regime", dto.RegimeId), ("country", module.DisplayName)));
 
         // Taxes are paid where the user works from; without a country yet, this one becomes it
         if (_country is not null && _countries is not null)
         {
             var current = await _country.GetAsync(cancellationToken);
             if (current is not null && !string.Equals(current, module.CountryCode, StringComparison.OrdinalIgnoreCase))
-                throw new DomainException($"You work from {current}: choose {module.DisplayName} as your country in Settings › Country & taxes first.");
+                throw new DomainException(_text.Translate("errors.taxes.anotherCountry", ("current", current), ("country", module.DisplayName)));
             if (!await _country.IsChosenAsync(cancellationToken))
                 await _countries.AddAsync(new UserCountry(module.CountryCode), cancellationToken);
         }
@@ -120,17 +124,20 @@ public sealed class RecordTaxPaymentCommandHandler : IRequestHandler<RecordTaxPa
     private readonly IRepository<TaxProfile> _profiles;
     private readonly IRepository<TaxPayment> _payments;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAppText _text;
 
     public RecordTaxPaymentCommandHandler(
         ITaxPredictionRegistry registry,
         IRepository<TaxProfile> profiles,
         IRepository<TaxPayment> payments,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAppText text)
     {
         _registry = registry;
         _profiles = profiles;
         _payments = payments;
         _unitOfWork = unitOfWork;
+        _text = text;
     }
 
     /// <exception cref="DomainException">The user hasn't said where they pay taxes.</exception>
@@ -142,7 +149,7 @@ public sealed class RecordTaxPaymentCommandHandler : IRequestHandler<RecordTaxPa
         var profile = (await _profiles.GetAllAsync(cancellationToken)).FirstOrDefault();
         var module = profile is null ? null : _registry.Find(profile.CountryCode);
         if (module is null)
-            throw new DomainException("Choose where you pay taxes in Settings before recording a payment");
+            throw new DomainException(_text.Translate("errors.taxes.chooseCountryFirst"));
 
         var form = dto.Form.Trim();
         var amount = new Money(dto.Amount, module.Currency);

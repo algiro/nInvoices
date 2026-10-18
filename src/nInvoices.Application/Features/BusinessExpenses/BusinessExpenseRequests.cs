@@ -1,6 +1,7 @@
 using Mediator;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
@@ -63,17 +64,19 @@ public sealed class UpdateBusinessExpenseCommandHandler : IRequestHandler<Update
 {
     private readonly IRepository<BusinessExpense> _expenses;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAppText _text;
 
-    public UpdateBusinessExpenseCommandHandler(IRepository<BusinessExpense> expenses, IUnitOfWork unitOfWork)
+    public UpdateBusinessExpenseCommandHandler(IRepository<BusinessExpense> expenses, IUnitOfWork unitOfWork, IAppText text)
     {
         _expenses = expenses;
         _unitOfWork = unitOfWork;
+        _text = text;
     }
 
     public async ValueTask<BusinessExpenseDto> Handle(UpdateBusinessExpenseCommand request, CancellationToken cancellationToken)
     {
         var expense = await _expenses.GetByIdAsync(request.Id, cancellationToken)
-            ?? throw new NotFoundException($"Expense with ID {request.Id} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.expense", ("id", request.Id)));
 
         BusinessExpenseMapper.Apply(request.Expense, expense);
         await _expenses.UpdateAsync(expense, cancellationToken);

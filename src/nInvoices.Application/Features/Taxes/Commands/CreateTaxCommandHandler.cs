@@ -1,10 +1,11 @@
 using Mediator;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
-using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.Taxes.Commands;
 
@@ -18,17 +19,20 @@ public sealed class CreateTaxCommandHandler : IRequestHandler<CreateTaxCommand, 
     private readonly IRepository<Customer> _customerRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITaxCompliance _compliance;
+    private readonly IAppText _text;
 
     public CreateTaxCommandHandler(
         IRepository<Tax> taxRepository,
         IRepository<Customer> customerRepository,
         IUnitOfWork unitOfWork,
-        ITaxCompliance compliance)
+        ITaxCompliance compliance,
+        IAppText text)
     {
         _compliance = compliance;
         _taxRepository = taxRepository;
         _customerRepository = customerRepository;
         _unitOfWork = unitOfWork;
+        _text = text;
     }
 
     public async ValueTask<TaxDto> Handle(CreateTaxCommand request, CancellationToken cancellationToken)
@@ -37,7 +41,7 @@ public sealed class CreateTaxCommandHandler : IRequestHandler<CreateTaxCommand, 
 
         var customer = await _customerRepository.GetByIdAsync(dto.CustomerId, cancellationToken);
         if (customer == null)
-            throw new NotFoundException($"Customer with ID {dto.CustomerId} not found");
+            throw new NotFoundException(_text.Translate("notFound.customer", ("id", dto.CustomerId)));
 
         var taxId = string.IsNullOrWhiteSpace(dto.TaxId)
             ? dto.Description.ToUpperInvariant().Replace(" ", "_")

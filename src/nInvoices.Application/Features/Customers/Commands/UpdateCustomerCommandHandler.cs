@@ -1,11 +1,12 @@
 using Mediator;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
-using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.Customers.Commands;
 
@@ -14,19 +15,21 @@ public sealed class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustome
     private readonly IRepository<Customer> _repository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICustomerCompliance _compliance;
+    private readonly IAppText _text;
 
-    public UpdateCustomerCommandHandler(IRepository<Customer> repository, IUnitOfWork unitOfWork, ICustomerCompliance compliance)
+    public UpdateCustomerCommandHandler(IRepository<Customer> repository, IUnitOfWork unitOfWork, ICustomerCompliance compliance, IAppText text)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _compliance = compliance;
+        _text = text;
     }
 
     public async ValueTask<CustomerDto> Handle(UpdateCustomerCommand request, CancellationToken cancellationToken)
     {
         var customer = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (customer == null)
-            throw new NotFoundException($"Customer with ID {request.Id} not found");
+            throw new NotFoundException(_text.Translate("notFound.customer", ("id", request.Id)));
 
         var dto = request.Customer;
         

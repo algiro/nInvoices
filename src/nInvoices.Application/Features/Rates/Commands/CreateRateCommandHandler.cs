@@ -1,10 +1,11 @@
 using Mediator;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
-using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.Rates.Commands;
 
@@ -13,15 +14,18 @@ public sealed class CreateRateCommandHandler : IRequestHandler<CreateRateCommand
     private readonly IRepository<Rate> _rateRepository;
     private readonly IRepository<Customer> _customerRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAppText _text;
 
     public CreateRateCommandHandler(
         IRepository<Rate> rateRepository,
         IRepository<Customer> customerRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAppText text)
     {
         _rateRepository = rateRepository;
         _customerRepository = customerRepository;
         _unitOfWork = unitOfWork;
+        _text = text;
     }
 
     public async ValueTask<RateDto> Handle(CreateRateCommand request, CancellationToken cancellationToken)
@@ -30,7 +34,7 @@ public sealed class CreateRateCommandHandler : IRequestHandler<CreateRateCommand
 
         var customer = await _customerRepository.GetByIdAsync(dto.CustomerId, cancellationToken);
         if (customer == null)
-            throw new NotFoundException($"Customer with ID {dto.CustomerId} not found");
+            throw new NotFoundException(_text.Translate("notFound.customer", ("id", dto.CustomerId)));
 
         var price = new Money(dto.Price.Amount, dto.Price.Currency);
         var rate = new Rate(dto.CustomerId, dto.Type, price);

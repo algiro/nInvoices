@@ -1,10 +1,11 @@
 using System.Globalization;
 using Microsoft.Extensions.Logging;
+using nInvoices.Application.Localization;
 using nInvoices.Core.Entities;
+using nInvoices.Core.Exceptions;
 using nInvoices.Core.Interfaces;
 using Scriban;
 using Scriban.Runtime;
-using nInvoices.Core.Exceptions;
 
 namespace nInvoices.Application.Services;
 
@@ -20,15 +21,18 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
     private readonly ILogger<ScribanTemplateRenderer> _logger;
     private readonly ILocalizationService _localizationService;
     private readonly IRepository<ImageAsset> _imageAssetRepository;
+    private readonly IAppText _text;
 
     public ScribanTemplateRenderer(
         ILogger<ScribanTemplateRenderer> logger,
         ILocalizationService localizationService,
-        IRepository<ImageAsset> imageAssetRepository)
+        IRepository<ImageAsset> imageAssetRepository,
+        IAppText text)
     {
         _logger = logger;
         _localizationService = localizationService;
         _imageAssetRepository = imageAssetRepository;
+        _text = text;
     }
 
     public async Task<string> RenderAsync(
@@ -52,7 +56,7 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
             if (template.HasErrors)
             {
                 var errors = string.Join(", ", template.Messages.Select(m => m.Message));
-                throw new DomainException($"Template syntax errors: {errors}");
+                throw new DomainException(_text.Translate("errors.template.syntaxErrors", ("errors", errors)));
             }
 
             // Preload image assets for the Image function
@@ -89,7 +93,7 @@ public sealed class ScribanTemplateRenderer : ITemplateRenderer
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to render template");
-            throw new DomainException("Template rendering failed. Check template syntax and model data.", ex);
+            throw new DomainException(_text.Translate("errors.template.renderingFailed"), ex);
         }
     }
 

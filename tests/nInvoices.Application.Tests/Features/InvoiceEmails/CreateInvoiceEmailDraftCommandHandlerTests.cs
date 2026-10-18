@@ -68,7 +68,7 @@ public sealed class CreateInvoiceEmailDraftCommandHandlerTests
             _protector.Object,
             userContext.Object,
             new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)),
-            NullLogger<CreateInvoiceEmailDraftCommandHandler>.Instance);
+            NullLogger<CreateInvoiceEmailDraftCommandHandler>.Instance, TestText.Instance);
     }
 
     private static CreateInvoiceEmailDraftDto Email(string to = "billing@acme.it", string? cc = null, string subject = "Invoice 26-09-001") =>

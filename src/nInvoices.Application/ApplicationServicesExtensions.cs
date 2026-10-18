@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.Services;
 using nInvoices.Application.TaxPrediction;
@@ -24,7 +25,7 @@ public static class ApplicationServicesExtensions
         services.AddScoped<IMonthlyReportGenerationService, MonthlyReportGenerationService>();
         services.AddScoped<ITemplateRenderer, ScribanTemplateRenderer>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
-        services.AddSingleton<Localization.IAppText>(_ => new Localization.AppText());
+        services.TryAddSingleton<Localization.IAppText>(_ => new Localization.AppText());
         services.AddScoped<ITemplatePreviewService, TemplatePreviewService>();
         services.AddScoped<IProjectResolver, ProjectResolver>();
         services.AddScoped<Services.Holidays.IHolidayCalendarService, Services.Holidays.HolidayCalendarService>();

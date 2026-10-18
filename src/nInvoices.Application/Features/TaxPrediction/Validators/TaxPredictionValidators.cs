@@ -2,65 +2,67 @@ using FluentValidation;
 using nInvoices.Application.DTOs;
 using nInvoices.Application.Features.TaxPrediction.Commands;
 using nInvoices.Application.Features.TaxPrediction.Queries;
+using nInvoices.Application.Localization;
+using nInvoices.Application.Validation;
 using nInvoices.Core.Entities;
 
 namespace nInvoices.Application.Features.TaxPrediction.Validators;
 
 public sealed class UpdateTaxProfileDtoValidator : AbstractValidator<UpdateTaxProfileDto>
 {
-    public UpdateTaxProfileDtoValidator()
+    public UpdateTaxProfileDtoValidator(IAppText text)
     {
         RuleFor(x => x.CountryCode)
-            .NotEmpty().WithMessage("Choose the country where you pay taxes")
-            .Matches("^[A-Za-z]{2}$").WithMessage("The country must be a two-letter ISO code");
+            .NotEmpty().WithText(text, "validation.taxes.chooseCountry")
+            .Matches("^[A-Za-z]{2}$").WithText(text, "validation.countryIsoCode");
 
         RuleFor(x => x.RegimeId)
-            .NotEmpty().WithMessage("Choose a tax regime")
-            .MaximumLength(50).WithMessage("The tax regime must not exceed 50 characters");
+            .NotEmpty().WithText(text, "validation.taxes.chooseRegime")
+            .MaximumLength(50).WithText(text, "validation.taxes.regimeTooLong", ("max", 50));
     }
 }
 
 public sealed class RecordTaxPaymentDtoValidator : AbstractValidator<RecordTaxPaymentDto>
 {
-    public RecordTaxPaymentDtoValidator()
+    public RecordTaxPaymentDtoValidator(IAppText text)
     {
         RuleFor(x => x.Year)
-            .InclusiveBetween(2000, 2100).WithMessage("Year must be between 2000 and 2100");
+            .InclusiveBetween(2000, 2100).WithText(text, "validation.yearRange");
 
         RuleFor(x => x.Period)
-            .InclusiveBetween(1, TaxPayment.MaxPeriod).WithMessage($"Period must be between 1 and {TaxPayment.MaxPeriod}");
+            .InclusiveBetween(1, TaxPayment.MaxPeriod).WithText(text, "validation.taxes.periodRange", ("max", TaxPayment.MaxPeriod));
 
         RuleFor(x => x.Form)
-            .NotEmpty().WithMessage("The tax form is required")
-            .MaximumLength(20).WithMessage("The tax form must not exceed 20 characters");
+            .NotEmpty().WithText(text, "validation.taxes.formRequired")
+            .MaximumLength(20).WithText(text, "validation.taxes.formTooLong", ("max", 20));
 
         // Zero is a real payment: a quarter with nothing to pay is still filed
         RuleFor(x => x.Amount)
-            .GreaterThanOrEqualTo(0).WithMessage("The amount cannot be negative");
+            .GreaterThanOrEqualTo(0).WithText(text, "validation.amountNegative");
     }
 }
 
 public sealed class UpdateTaxProfileCommandValidator : AbstractValidator<UpdateTaxProfileCommand>
 {
-    public UpdateTaxProfileCommandValidator()
+    public UpdateTaxProfileCommandValidator(IAppText text)
     {
-        RuleFor(x => x.Profile).NotNull().SetValidator(new UpdateTaxProfileDtoValidator());
+        RuleFor(x => x.Profile).NotNull().SetValidator(new UpdateTaxProfileDtoValidator(text));
     }
 }
 
 public sealed class RecordTaxPaymentCommandValidator : AbstractValidator<RecordTaxPaymentCommand>
 {
-    public RecordTaxPaymentCommandValidator()
+    public RecordTaxPaymentCommandValidator(IAppText text)
     {
-        RuleFor(x => x.Payment).NotNull().SetValidator(new RecordTaxPaymentDtoValidator());
+        RuleFor(x => x.Payment).NotNull().SetValidator(new RecordTaxPaymentDtoValidator(text));
     }
 }
 
 public sealed class GetTaxPredictionQueryValidator : AbstractValidator<GetTaxPredictionQuery>
 {
-    public GetTaxPredictionQueryValidator()
+    public GetTaxPredictionQueryValidator(IAppText text)
     {
         RuleFor(x => x.Year)
-            .InclusiveBetween(2000, 2100).WithMessage("Year must be between 2000 and 2100");
+            .InclusiveBetween(2000, 2100).WithText(text, "validation.yearRange");
     }
 }

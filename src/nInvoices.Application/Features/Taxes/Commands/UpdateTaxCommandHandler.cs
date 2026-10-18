@@ -1,10 +1,11 @@
 using Mediator;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Mappings;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
-using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.Taxes.Commands;
 
@@ -13,19 +14,21 @@ public sealed class UpdateTaxCommandHandler : IRequestHandler<UpdateTaxCommand, 
     private readonly IRepository<Tax> _repository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITaxCompliance _compliance;
+    private readonly IAppText _text;
 
-    public UpdateTaxCommandHandler(IRepository<Tax> repository, IUnitOfWork unitOfWork, ITaxCompliance compliance)
+    public UpdateTaxCommandHandler(IRepository<Tax> repository, IUnitOfWork unitOfWork, ITaxCompliance compliance, IAppText text)
     {
         _compliance = compliance;
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _text = text;
     }
 
     public async ValueTask<TaxDto> Handle(UpdateTaxCommand request, CancellationToken cancellationToken)
     {
         var tax = await _repository.GetByIdAsync(request.Id, cancellationToken);
         if (tax == null)
-            throw new NotFoundException($"Tax with ID {request.Id} not found");
+            throw new NotFoundException(_text.Translate("notFound.tax", ("id", request.Id)));
 
         var dto = request.Tax;
 

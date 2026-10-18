@@ -1,24 +1,26 @@
 using FluentValidation;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
+using nInvoices.Application.Validation;
 
 namespace nInvoices.Application.Features.Taxes.Validators;
 
 public sealed class UpdateTaxDtoValidator : AbstractValidator<UpdateTaxDto>
 {
-    public UpdateTaxDtoValidator()
+    public UpdateTaxDtoValidator(IAppText text)
     {
         RuleFor(x => x.Description)
-            .NotEmpty().WithMessage("Description is required")
-            .MaximumLength(200).WithMessage("Description must not exceed 200 characters");
+            .NotEmpty().WithText(text, "validation.descriptionRequired")
+            .MaximumLength(200).WithText(text, "validation.descriptionTooLong", ("max", 200));
 
         RuleFor(x => x.HandlerId)
-            .NotEmpty().WithMessage("Handler ID is required")
-            .MaximumLength(100).WithMessage("Handler ID must not exceed 100 characters");
+            .NotEmpty().WithText(text, "validation.tax.handlerRequired")
+            .MaximumLength(100).WithText(text, "validation.tax.handlerTooLong", ("max", 100));
 
         RuleFor(x => x.ApplicationType)
-            .IsInEnum().WithMessage("Invalid application type");
+            .IsInEnum().WithText(text, "validation.tax.invalidApplicationType");
 
         RuleFor(x => x.Order)
-            .GreaterThanOrEqualTo(0).WithMessage("Order must be non-negative");
+            .GreaterThanOrEqualTo(0).WithText(text, "validation.tax.orderNegative");
     }
 }

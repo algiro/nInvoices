@@ -8,6 +8,7 @@ using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
 using Shouldly;
+using nInvoices.Application.Tests.TestDoubles;
 
 namespace nInvoices.Application.Tests.Features.InvoiceTemplates;
 
@@ -23,7 +24,7 @@ public sealed class InvoiceTemplateCommandValidatorsTests
         _renderer = new ScribanTemplateRenderer(
             NullLogger<ScribanTemplateRenderer>.Instance,
             Mock.Of<ILocalizationService>(),
-            Mock.Of<IRepository<ImageAsset>>());
+            Mock.Of<IRepository<ImageAsset>>(), TestText.Instance);
 
     [TestCase("<h1>[[ customer.name ]]</h1>[[ for line in lineItems ]]<p>[[ line.description ]]</p>[[ end ]]",
         TestName = "Loop with [[ ]] delimiters")]
@@ -33,7 +34,7 @@ public sealed class InvoiceTemplateCommandValidatorsTests
         TestName = "If/else")]
     public async Task Create_WithValidScribanTemplate_IsValid(string content)
     {
-        var result = await new CreateInvoiceTemplateCommandValidator(_renderer).ValidateAsync(Create(content), Token);
+        var result = await new CreateInvoiceTemplateCommandValidator(_renderer, TestText.Instance).ValidateAsync(Create(content), Token);
 
         result.IsValid.ShouldBeTrue(string.Join("; ", result.Errors.Select(e => e.ErrorMessage)));
     }
@@ -44,7 +45,7 @@ public sealed class InvoiceTemplateCommandValidatorsTests
         // The old check only counted {{ and }}: a broken [[ ]] template passed and failed at invoice time
         var content = "<h1>Invoice</h1>\n[[ for line in lineItems ]]<p>[[ line.description ]]</p>";
 
-        var result = await new CreateInvoiceTemplateCommandValidator(_renderer).ValidateAsync(Create(content), Token);
+        var result = await new CreateInvoiceTemplateCommandValidator(_renderer, TestText.Instance).ValidateAsync(Create(content), Token);
 
         var error = result.Errors.ShouldHaveSingleItem();
         error.PropertyName.ShouldBe("Template.Content");
@@ -56,7 +57,7 @@ public sealed class InvoiceTemplateCommandValidatorsTests
     {
         var command = new UpdateInvoiceTemplateCommand(1, new UpdateInvoiceTemplateDto("Default", "<p>[[ customer.name + ]]</p>", true));
 
-        var result = await new UpdateInvoiceTemplateCommandValidator(_renderer).ValidateAsync(command, Token);
+        var result = await new UpdateInvoiceTemplateCommandValidator(_renderer, TestText.Instance).ValidateAsync(command, Token);
 
         result.Errors.Select(e => e.PropertyName).ShouldAllBe(p => p == "Template.Content");
         result.IsValid.ShouldBeFalse();
@@ -65,7 +66,7 @@ public sealed class InvoiceTemplateCommandValidatorsTests
     [Test]
     public async Task Create_WithBlankContent_ReportsOnlyTheRequiredRule()
     {
-        var result = await new CreateInvoiceTemplateCommandValidator(_renderer).ValidateAsync(Create(""), Token);
+        var result = await new CreateInvoiceTemplateCommandValidator(_renderer, TestText.Instance).ValidateAsync(Create(""), Token);
 
         result.Errors.ShouldNotContain(e => e.ErrorMessage.StartsWith("Template syntax error"));
         result.Errors.ShouldContain(e => e.ErrorMessage == "Template content is required");

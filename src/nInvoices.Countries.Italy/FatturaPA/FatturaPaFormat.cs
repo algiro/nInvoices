@@ -1,6 +1,7 @@
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services.Holidays;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Compliance.EInvoice;
@@ -20,10 +21,12 @@ public sealed class FatturaPaFormat : IEInvoiceFormat
     private const decimal Tolerance = 0.01m;
 
     private readonly ItalyComplianceModule _italy;
+    private readonly IAppText _text;
 
-    public FatturaPaFormat(ItalyComplianceModule italy)
+    public FatturaPaFormat(ItalyComplianceModule italy, IAppText text)
     {
         _italy = italy;
+        _text = text;
     }
 
     public string FormatId => Id;
@@ -65,7 +68,7 @@ public sealed class FatturaPaFormat : IEInvoiceFormat
     {
         var issues = Validate(document);
         if (issues.Count > 0)
-            throw new DomainException("The invoice is not a valid FatturaPA: " + string.Join("; ", issues.Select(i => i.Message)));
+            throw new DomainException(_text.Translate("errors.einvoice.notValid", ("format", "FatturaPA"), ("issues", string.Join("; ", issues.Select(i => i.Message)))));
 
         var xml = FatturaPaXmlBuilder.Build(document);
 

@@ -3,7 +3,9 @@ using Mediator;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.Countries;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Localization;
 using nInvoices.Application.TaxPrediction;
+using nInvoices.Application.Validation;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Exceptions;
 using nInvoices.Core.Interfaces;
@@ -21,12 +23,12 @@ public sealed record SetUserCountryCommand(SetUserCountryDto Country) : IRequest
 
 public sealed class SetUserCountryCommandValidator : AbstractValidator<SetUserCountryCommand>
 {
-    public SetUserCountryCommandValidator()
+    public SetUserCountryCommandValidator(IAppText text)
     {
         RuleFor(x => x.Country).NotNull();
         RuleFor(x => x.Country.CountryCode)
-            .NotEmpty().WithMessage("Choose a country")
-            .Length(2).WithMessage("The country must be a two-letter ISO code");
+            .NotEmpty().WithText(text, "validation.country.choose")
+            .Length(2).WithText(text, "validation.countryIsoCode");
     }
 }
 
@@ -72,19 +74,22 @@ public sealed class SetUserCountryCommandHandler : IRequestHandler<SetUserCountr
     private readonly IComplianceRegistry _complianceRegistry;
     private readonly ITaxPredictionRegistry _taxes;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAppText _text;
 
     public SetUserCountryCommandHandler(
         IRepository<UserCountry> countries,
         IRepository<ComplianceSettings> compliance,
         IComplianceRegistry complianceRegistry,
         ITaxPredictionRegistry taxes,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAppText text)
     {
         _countries = countries;
         _compliance = compliance;
         _complianceRegistry = complianceRegistry;
         _taxes = taxes;
         _unitOfWork = unitOfWork;
+        _text = text;
     }
 
     /// <exception cref="DomainException">The country is not offered here.</exception>
@@ -92,7 +97,7 @@ public sealed class SetUserCountryCommandHandler : IRequestHandler<SetUserCountr
     {
         var offered = OfferedCountries.List(_complianceRegistry, _taxes);
         var country = offered.FirstOrDefault(c => string.Equals(c.CountryCode, request.Country.CountryCode.Trim(), StringComparison.OrdinalIgnoreCase))
-            ?? throw new DomainException($"{request.Country.CountryCode} is not one of the countries supported here");
+            ?? throw new DomainException(_text.Translate("errors.country.notSupported", ("country", request.Country.CountryCode)));
 
         // The query filters return only the current user's rows
         var current = (await _countries.GetAllAsync(cancellationToken)).FirstOrDefault();

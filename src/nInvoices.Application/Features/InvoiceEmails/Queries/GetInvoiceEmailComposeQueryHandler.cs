@@ -1,10 +1,11 @@
 using Mediator;
 using nInvoices.Application.DTOs;
+using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services.Email;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
-using nInvoices.Application.Exceptions;
 
 namespace nInvoices.Application.Features.InvoiceEmails.Queries;
 
@@ -19,6 +20,7 @@ public sealed class GetInvoiceEmailComposeQueryHandler : IRequestHandler<GetInvo
     private readonly IRepository<GmailConnection> _connectionRepository;
     private readonly IInvoiceEmailComposer _composer;
     private readonly IUserContext _userContext;
+    private readonly IAppText _text;
 
     public GetInvoiceEmailComposeQueryHandler(
         IInvoiceRepository invoiceRepository,
@@ -26,7 +28,8 @@ public sealed class GetInvoiceEmailComposeQueryHandler : IRequestHandler<GetInvo
         IRepository<EmailTemplate> templateRepository,
         IRepository<GmailConnection> connectionRepository,
         IInvoiceEmailComposer composer,
-        IUserContext userContext)
+        IUserContext userContext,
+        IAppText text)
     {
         _invoiceRepository = invoiceRepository;
         _customerRepository = customerRepository;
@@ -34,6 +37,7 @@ public sealed class GetInvoiceEmailComposeQueryHandler : IRequestHandler<GetInvo
         _connectionRepository = connectionRepository;
         _composer = composer;
         _userContext = userContext;
+        _text = text;
     }
 
     public async ValueTask<InvoiceEmailComposeDto?> Handle(GetInvoiceEmailComposeQuery request, CancellationToken cancellationToken)
@@ -43,7 +47,7 @@ public sealed class GetInvoiceEmailComposeQueryHandler : IRequestHandler<GetInvo
             return null;
 
         var customer = await _customerRepository.GetByIdAsync(invoice.CustomerId, cancellationToken)
-            ?? throw new NotFoundException($"Customer {invoice.CustomerId} not found");
+            ?? throw new NotFoundException(_text.Translate("notFound.customer", ("id", invoice.CustomerId)));
 
         var userId = _userContext.RequireUserId();
         var connection = (await _connectionRepository.FindAsync(c => c.UserId == userId, cancellationToken)).FirstOrDefault();

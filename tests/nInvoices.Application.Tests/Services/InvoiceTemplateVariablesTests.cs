@@ -5,6 +5,7 @@ using nInvoices.Application.Services;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
 using Shouldly;
+using nInvoices.Application.Tests.TestDoubles;
 
 namespace nInvoices.Application.Tests.Services;
 
@@ -28,7 +29,7 @@ public sealed class InvoiceTemplateVariablesTests
         _images = [];
         var imageRepository = new Mock<IRepository<ImageAsset>>();
         imageRepository.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(() => _images);
-        _renderer = new ScribanTemplateRenderer(Mock.Of<ILogger<ScribanTemplateRenderer>>(), _localization.Object, imageRepository.Object);
+        _renderer = new ScribanTemplateRenderer(Mock.Of<ILogger<ScribanTemplateRenderer>>(), _localization.Object, imageRepository.Object, TestText.Instance);
     }
 
     private static InvoiceTemplateModel MonthlyInvoice() => new()
@@ -550,7 +551,7 @@ public sealed class InvoiceTemplateVariablesTests
         var imageRepository = new Mock<IRepository<ImageAsset>>();
         imageRepository.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
         var renderer = new ScribanTemplateRenderer(
-            Mock.Of<ILogger<ScribanTemplateRenderer>>(), new LocalizationService(), imageRepository.Object);
+            Mock.Of<ILogger<ScribanTemplateRenderer>>(), new LocalizationService(), imageRepository.Object, TestText.Instance);
 
         var result = await renderer.RenderAsync(
             "[[ LocalizeDayOfWeek date 'it-IT' false ]] [[ LocalizeMonth monthNumber 'it-IT' false ]]",

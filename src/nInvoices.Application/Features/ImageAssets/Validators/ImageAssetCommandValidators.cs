@@ -1,4 +1,6 @@
 using FluentValidation;
+using nInvoices.Application.Localization;
+using nInvoices.Application.Validation;
 
 namespace nInvoices.Application.Features.ImageAssets.Validators;
 
@@ -16,40 +18,40 @@ public sealed class ImageFileValidator : AbstractValidator<ImageFile>
         "image/webp"
     };
 
-    public ImageFileValidator()
+    public ImageFileValidator(IAppText text)
     {
         RuleFor(x => x.Content.LongLength)
             .LessThanOrEqualTo(MaxFileSizeBytes)
-            .WithMessage($"File size exceeds the maximum of {MaxFileSizeBytes / 1024 / 1024} MB.")
+            .WithText(text, "validation.image.tooLarge", ("max", MaxFileSizeBytes / 1024 / 1024))
             .OverridePropertyName("Size");
 
         RuleFor(x => x.ContentType)
             .Must(AllowedContentTypes.Contains)
-            .WithMessage(x => $"Content type '{x.ContentType}' is not allowed. Allowed: {string.Join(", ", AllowedContentTypes)}");
+            .WithMessage(x => text.Translate("validation.image.typeNotAllowed", ("type", x.ContentType), ("allowed", string.Join(", ", AllowedContentTypes))));
     }
 }
 
 public sealed class UploadImageAssetCommandValidator : AbstractValidator<UploadImageAssetCommand>
 {
-    public UploadImageAssetCommandValidator()
+    public UploadImageAssetCommandValidator(IAppText text)
     {
-        RuleFor(x => x.Alias).NotEmpty().WithMessage("Alias is required.");
+        RuleFor(x => x.Alias).NotEmpty().WithText(text, "validation.image.aliasRequired");
 
         RuleFor(x => x.File)
-            .Must(f => f is { Content.Length: > 0 }).WithMessage("File is required.");
+            .Must(f => f is { Content.Length: > 0 }).WithText(text, "validation.image.fileRequired");
         RuleFor(x => x.File!)
-            .SetValidator(new ImageFileValidator())
+            .SetValidator(new ImageFileValidator(text))
             .When(x => x.File is { Content.Length: > 0 });
     }
 }
 
 public sealed class UpdateImageAssetCommandValidator : AbstractValidator<UpdateImageAssetCommand>
 {
-    public UpdateImageAssetCommandValidator()
+    public UpdateImageAssetCommandValidator(IAppText text)
     {
         // A file is optional on update; none (or an empty one) keeps the current image
         RuleFor(x => x.File!)
-            .SetValidator(new ImageFileValidator())
+            .SetValidator(new ImageFileValidator(text))
             .When(x => x.File is { Content.Length: > 0 });
     }
 }
