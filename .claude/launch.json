@@ -1,0 +1,28 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "src/nInvoices.Api",
+        "--launch-profile",
+        "http"
+      ],
+      "port": 5297
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "src/nInvoices.Web",
+        "run",
+        "dev"
+      ],
+      "port": 3000
+    }
+  ]
+}
