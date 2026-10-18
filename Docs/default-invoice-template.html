@@ -433,5 +433,19 @@
         [[ end ]]
     </div>
     [[ end ]]
+
+    [[ if compliance.germany.isApplicable ]]
+    <div class="summary-section">
+        [[ if compliance.germany.taxNumber != "" ]]
+        <div class="summary-text">Steuernummer: [[ compliance.germany.taxNumber ]]</div>
+        [[ end ]]
+        [[ if compliance.germany.vatId != "" ]]
+        <div class="summary-text">USt-IdNr: [[ compliance.germany.vatId ]]</div>
+        [[ end ]]
+        [[ if compliance.germany.hasVatNote ]]
+        <div class="summary-text">[[ compliance.germany.vatNote ]]</div>
+        [[ end ]]
+    </div>
+    [[ end ]]
 </body>
 </html>

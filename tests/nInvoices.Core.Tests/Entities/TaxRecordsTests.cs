@@ -100,7 +100,7 @@ public sealed class TaxRecordsTests
 
     [TestCase(1999, 1, "130", 1)]
     [TestCase(2026, 0, "130", 1)]
-    [TestCase(2026, 13, "130", 1)]
+    [TestCase(2026, 25, "130", 1)]
     [TestCase(2026, 1, "", 1)]
     [TestCase(2026, 1, "130", -1)]
     public void TaxPayment_InvalidValues_Throw(int year, int period, string form, decimal amount)
