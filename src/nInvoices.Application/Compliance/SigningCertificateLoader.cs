@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services.Email;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Entities;
@@ -14,11 +16,13 @@ public sealed class SigningCertificateLoader
 {
     private readonly ISecretProtector _protector;
     private readonly TimeProvider _time;
+    private readonly IAppText _text;
 
-    public SigningCertificateLoader(ISecretProtector protector, TimeProvider time)
+    public SigningCertificateLoader(ISecretProtector protector, TimeProvider time, IAppText text)
     {
         _protector = protector;
         _time = time;
+        _text = text;
     }
 
     /// <summary>
@@ -29,13 +33,13 @@ public sealed class SigningCertificateLoader
     {
         if (!settings.HasCertificate)
         {
-            issues.Add(new ComplianceIssue(null, "Upload your signing certificate in Settings"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.certificate.required")));
             return null;
         }
 
         if (settings.CertificateNotAfter is { } notAfter && notAfter < _time.GetUtcNow().UtcDateTime)
         {
-            issues.Add(new ComplianceIssue(null, $"The signing certificate expired on {notAfter:yyyy-MM-dd}"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.certificate.expired", ("date", notAfter.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)))));
             return null;
         }
 
@@ -46,7 +50,7 @@ public sealed class SigningCertificateLoader
         }
         catch (Exception ex) when (ex is CryptographicException or FormatException)
         {
-            issues.Add(new ComplianceIssue(null, "The stored signing certificate can no longer be read: upload it again"));
+            issues.Add(new ComplianceIssue(null, _text.Translate("compliance.certificate.unreadable")));
             return null;
         }
     }

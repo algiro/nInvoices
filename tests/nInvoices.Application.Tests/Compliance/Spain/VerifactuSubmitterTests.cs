@@ -81,7 +81,7 @@ public sealed class VerifactuSubmitterTests
     }
 
     private VerifactuSubmitter Submitter() => new(
-        _submissions, _records, _settings, new SigningCertificateLoader(new PlainProtector(), _time),
+        _submissions, _records, _settings, new SigningCertificateLoader(new PlainProtector(), _time, TestText.Instance),
         _client, _unitOfWork.Object, Options.Create(_options), _time);
 
     /// <summary>Adds records 1..count, each with its pending submission.</summary>

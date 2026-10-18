@@ -16,7 +16,7 @@ namespace nInvoices.Application.Tests.Compliance.Germany;
 [TestFixture]
 public sealed class XRechnungValidationTests
 {
-    private static readonly XRechnungFormat Format = new(new GermanyComplianceModule(), TestText.Instance);
+    private static readonly XRechnungFormat Format = new(new GermanyComplianceModule(TestText.Instance), TestText.Instance);
 
     private static readonly Dictionary<string, EInvoiceDocument> Documents = new()
     {

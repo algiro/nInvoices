@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Xml.Linq;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Compliance.EInvoice;
@@ -36,7 +37,7 @@ public sealed class ItalianTaxIdTests
 [TestFixture]
 public sealed class ItalyComplianceModuleTests
 {
-    private readonly ItalyComplianceModule _module = new();
+    private readonly ItalyComplianceModule _module = new(TestText.Instance);
 
     [Test]
     public void ValidateIssuer_ACompleteIndividual_IsAccepted() =>
@@ -55,6 +56,29 @@ public sealed class ItalyComplianceModuleTests
 
         fields.ShouldContain("taxId");
         fields.ShouldContain(ItalyComplianceModule.RegimeKey);
+    }
+
+    [Test]
+    public void ValidateIssuer_ItalianUser_SaysItInItalian()
+    {
+        var issuer = Issuer() with
+        {
+            Address = new Address("Via Roma", "10", "Milano", "201", "Italy", "MI"),
+            Values = new Dictionary<string, string>(Issuer().Values) { [ItalyComplianceModule.RegimeKey] = "" }
+        };
+        var previous = CultureInfo.CurrentUICulture;
+        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("it-IT");
+        try
+        {
+            var messages = _module.ValidateIssuer(issuer).Select(i => i.Message).ToList();
+
+            messages.ShouldContain("L'indirizzo: un CAP italiano ha cinque cifre");
+            messages.ShouldContain("Scegli il tuo regime fiscale");
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previous;
+        }
     }
 
     [Test]
@@ -126,7 +150,7 @@ public sealed class ItalianInvoiceTaxesTests
 [TestFixture]
 public sealed class FatturaPaFormatTests
 {
-    private readonly FatturaPaFormat _format = new(new ItalyComplianceModule(), TestText.Instance);
+    private readonly FatturaPaFormat _format = new(new ItalyComplianceModule(TestText.Instance), TestText.Instance);
 
     private XElement Build(EInvoiceDocument document)
     {

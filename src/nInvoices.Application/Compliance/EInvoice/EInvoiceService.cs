@@ -130,7 +130,7 @@ public sealed class EInvoiceService : IEInvoiceService
             if (delivered is not null)
             {
                 results.Add(new EInvoiceResult(format, false,
-                    [new ComplianceIssue(null, $"It was already sent ({delivered.ChannelId.ToUpperInvariant()}, {delivered.Reference}) and cannot be generated again")]));
+                    [new ComplianceIssue(null, _text.Translate("compliance.einvoice.alreadySent", ("channel", delivered.ChannelId.ToUpperInvariant()), ("reference", delivered.Reference)))]));
                 continue;
             }
 

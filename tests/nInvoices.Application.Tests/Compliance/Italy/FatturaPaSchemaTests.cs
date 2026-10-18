@@ -12,7 +12,7 @@ namespace nInvoices.Application.Tests.Compliance.Italy;
 [TestFixture]
 public sealed class FatturaPaSchemaTests
 {
-    private readonly FatturaPaFormat _format = new(new ItalyComplianceModule(), TestText.Instance);
+    private readonly FatturaPaFormat _format = new(new ItalyComplianceModule(TestText.Instance), TestText.Instance);
 
     private static IEnumerable<TestCaseData> Documents()
     {

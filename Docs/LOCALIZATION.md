@@ -70,8 +70,9 @@ import { t } from '@/i18n'                   // in stores, composables, utils
 **Backend.** Every message the API shows the user is a key in `src/nInvoices.Application/Localization/Messages/en.json`
 (Italian in `it.json`), translated into the request's UI language by `IAppText` (registered as a singleton; inject it).
 Keys are grouped by kind: `validation.*` (FluentValidation rules), `errors.*` (a `DomainException` /
-`InvoiceEmailException`: a rule refused), `notFound.*` (`NotFoundException`). Placeholders are named, values passed
-as tuples:
+`InvoiceEmailException`: a rule refused), `notFound.*` (`NotFoundException`), `compliance.*` (the per-field
+`ComplianceIssue`s of country rules and e-invoice formats: `compliance.<country or format>.<name>`, with what several
+share under `compliance.common.*` and `compliance.einvoice.*`). Placeholders are named, values passed as tuples:
 
 ```csharp
 // a validator: its constructor takes IAppText, and passes it on to the validators it nests
@@ -97,7 +98,8 @@ throw new DomainException(_text.Translate("errors.project.nameExists", ("name", 
   has a key English lacks, or when it loses a placeholder.
 
 Still English: messages thrown by `Core` entities and value objects (`Invoice` lifecycle refusals, `Money`'s
-currency mismatch, `ArgumentException`s), which can't take services and carry runtime details; the per-field
-messages of country rules (`ComplianceIssue`, in the `Countries.*` modules) and the parts of a message that come
-from a library (Scriban's syntax errors); Infrastructure's internal checks (tax handlers, PDF export guards that
-the request handlers already check); and the signing-certificate checks of the Spanish signers.
+currency mismatch, `ArgumentException`s), which can't take services and carry runtime details; what the country
+modules describe rather than refuse (the labels, help and options of their `ComplianceField`s, display names, a
+channel's `UnavailableReason`) and the parts of a message that come from a library (Scriban's syntax errors);
+Infrastructure's internal checks (tax handlers, PDF export guards that the request handlers already check); and the
+signing-certificate checks of the Spanish signers.
