@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using nInvoices.Infrastructure.Countries;
 using nInvoices.Infrastructure.Data;
 using nInvoices.Infrastructure.Tests.Data;
 using Shouldly;
@@ -183,6 +184,7 @@ public sealed class PostgreSqlMigrationScriptsTests
     private static ApplicationDbContext MigrationsContext(string connectionString) =>
         new(new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseNpgsql(connectionString, o => o.MigrationsAssembly(DatabaseExtensions.PostgreSqlMigrationsAssembly))
+                .UseCountryModels(TestCountries.All)
                 .Options,
             TestEncryption.Encryptor,
             new TestUserContext(null));
@@ -191,6 +193,7 @@ public sealed class PostgreSqlMigrationScriptsTests
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(connectionString, o => o.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName))
+            .UseCountryModels(TestCountries.All)
             .Options;
         await using var context = new ApplicationDbContext(options, TestEncryption.Encryptor, new TestUserContext(null));
         await context.Database.EnsureCreatedAsync(Token);

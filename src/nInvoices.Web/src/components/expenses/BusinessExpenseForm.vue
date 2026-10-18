@@ -33,7 +33,7 @@
     <label class="toggle" for="expense-reverse-charge">
       <input id="expense-reverse-charge" v-model="form.reverseCharge" type="checkbox" />
       <span>
-        <strong>The supplier charged no IVA/IGIC (reverse charge)</strong>
+        <strong>The supplier charged no {{ taxName }} (reverse charge)</strong>
         <small>For a supplier abroad, such as a US software company: you charge the tax to yourself and deduct it.</small>
       </span>
     </label>
@@ -41,7 +41,7 @@
     <div class="row">
       <BaseField
         v-if="!form.reverseCharge"
-        label="IVA / IGIC paid"
+        :label="`${taxName} paid`"
         for="expense-tax"
         help="As shown on the invoice; 0 if none."
         :error="errors.indirectTax"
@@ -75,12 +75,14 @@ import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { todayIso } from '@/utils/taxPrediction'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   /** The expense to edit; a new one when absent */
   expense?: BusinessExpenseDto | null
   /** For a new expense */
   defaultCurrency?: string
-}>()
+  /** What the user's VAT is called (useIndirectTaxName) */
+  taxName?: string
+}>(), { expense: null, defaultCurrency: undefined, taxName: 'VAT' })
 
 const emit = defineEmits<{ saved: [expense: BusinessExpenseDto]; cancel: [] }>()
 

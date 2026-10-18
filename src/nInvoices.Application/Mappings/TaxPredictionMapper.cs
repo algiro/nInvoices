@@ -11,6 +11,7 @@ public static class TaxPredictionMapper
         module.CountryCode,
         module.DisplayName,
         module.Currency,
+        module.IndirectTaxName,
         module.Regimes.Select(r => new TaxRegimeDto(
             r.Id,
             r.Name,

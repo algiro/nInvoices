@@ -1,4 +1,4 @@
-using nInvoices.Application.Compliance.Spain;
+using nInvoices.Countries.Spain;
 using Shouldly;
 
 namespace nInvoices.Application.Tests.Compliance;

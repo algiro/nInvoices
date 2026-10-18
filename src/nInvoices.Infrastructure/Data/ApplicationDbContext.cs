@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Interfaces;
+using nInvoices.Infrastructure.Countries;
 using nInvoices.Infrastructure.Encryption;
 
 namespace nInvoices.Infrastructure.Data;
@@ -34,6 +35,7 @@ public sealed class ApplicationDbContext : DbContext
     {
         ArgumentNullException.ThrowIfNull(encryptor);
         Encryptor = encryptor;
+        CountryModels = options.FindExtension<CountryModelExtension>();
         _userContext = userContext;
         _timeProvider = timeProvider ?? TimeProvider.System;
     }
@@ -41,11 +43,14 @@ public sealed class ApplicationDbContext : DbContext
     /// <summary>Encrypts the sensitive columns. Part of the model cache key: the converters use it.</summary>
     internal FieldEncryptor Encryptor { get; }
 
+    /// <summary>The country assemblies whose entities are in the model (<see cref="CountryModelExtensions.UseCountryModels{TBuilder}(TBuilder, IEnumerable{ICountryPlugin})"/>). Part of the model cache key.</summary>
+    internal CountryModelExtension? CountryModels { get; }
+
     /// <summary>
-    /// Lets <see cref="LegacyDataEncryption"/> save Verifactu records again to encrypt them: their
-    /// values don't change, only how they are stored.
+    /// Lets <see cref="LegacyDataEncryption"/> save <see cref="IAppendOnlyEntity"/> rows again to encrypt them:
+    /// their values don't change, only how they are stored.
     /// </summary>
-    internal bool AllowRewritingVerifactuRecords { get; set; }
+    internal bool AllowRewritingAppendOnlyRows { get; set; }
 
     /// <summary>
     /// Saves leave CreatedAt/UpdatedAt as they are: for rewriting how rows are stored (encrypting them),
@@ -81,8 +86,6 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<ComplianceSettings> ComplianceSettings => Set<ComplianceSettings>();
     public DbSet<InvoiceEInvoice> InvoiceEInvoices => Set<InvoiceEInvoice>();
     public DbSet<EInvoiceSubmission> EInvoiceSubmissions => Set<EInvoiceSubmission>();
-    public DbSet<VerifactuRecord> VerifactuRecords => Set<VerifactuRecord>();
-    public DbSet<VerifactuSubmission> VerifactuSubmissions => Set<VerifactuSubmission>();
     public DbSet<AccessRequest> AccessRequests => Set<AccessRequest>();
     public DbSet<TaxProfile> TaxProfiles => Set<TaxProfile>();
     public DbSet<BusinessExpense> BusinessExpenses => Set<BusinessExpense>();
@@ -98,6 +101,8 @@ public sealed class ApplicationDbContext : DbContext
 
         // Apply all configurations from the assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+        foreach (var assembly in CountryModels?.Assemblies ?? [])
+            modelBuilder.ApplyConfigurationsFromAssembly(assembly);
         modelBuilder.ApplyEncryption(Encryptor);
 
         // "One active template per (customer, invoice type)" is a partial unique index.
@@ -140,7 +145,7 @@ public sealed class ApplicationDbContext : DbContext
         bool acceptAllChangesOnSuccess,
         CancellationToken cancellationToken = default)
     {
-        EnsureVerifactuRecordsAreAppendOnly();
+        EnsureAppendOnlyRowsAreKept();
         StampTimes();
         await ApplyOwnershipAsync(cancellationToken);
 
@@ -175,16 +180,18 @@ public sealed class ApplicationDbContext : DbContext
     }
 
     /// <summary>
-    /// Verifactu records form a hash chain that must not be altered: once saved, a record can be neither
-    /// modified nor deleted, whoever asks (a deleted invoice, a stray update, a bug).
+    /// An <see cref="IAppendOnlyEntity"/> (the records of a hash chain, say) must not be altered: once saved,
+    /// a row can be neither modified nor deleted, whoever asks (a deleted invoice, a stray update, a bug).
     /// </summary>
-    private void EnsureVerifactuRecordsAreAppendOnly()
+    private void EnsureAppendOnlyRowsAreKept()
     {
         ChangeTracker.DetectChanges();
 
-        if (ChangeTracker.Entries<VerifactuRecord>().Any(e =>
-                e.State == EntityState.Deleted || (e.State == EntityState.Modified && !AllowRewritingVerifactuRecords)))
-            throw new InvalidOperationException("Verifactu records are append-only: a saved record cannot be changed or deleted.");
+        var altered = ChangeTracker.Entries()
+            .FirstOrDefault(e => e.Entity is IAppendOnlyEntity
+                && (e.State == EntityState.Deleted || (e.State == EntityState.Modified && !AllowRewritingAppendOnlyRows)));
+        if (altered is not null)
+            throw new InvalidOperationException($"{altered.Metadata.ClrType.Name} rows are append-only: a saved row cannot be changed or deleted.");
     }
 
     /// <summary>

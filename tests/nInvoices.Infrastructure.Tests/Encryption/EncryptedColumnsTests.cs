@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using nInvoices.Infrastructure.Countries;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
@@ -59,7 +60,7 @@ public sealed class EncryptedColumnsTests
     }
 
     private ApplicationDbContext ContextFor(string userId) =>
-        new(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options,
+        new(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).UseCountryModels(TestCountries.All).Options,
             TestEncryption.Encryptor, new TestUserContext(userId));
 
     private async Task<string?> RawAsync(string sql)

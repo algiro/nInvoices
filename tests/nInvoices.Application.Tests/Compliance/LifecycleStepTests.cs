@@ -1,7 +1,7 @@
 using Mediator;
 using Microsoft.Extensions.Logging;
 using Moq;
-using nInvoices.Application.Compliance.Spain.Verifactu;
+using nInvoices.Countries.Spain.Verifactu;
 using nInvoices.Application.Features.Invoices;
 using nInvoices.Application.Features.Invoices.Commands;
 using nInvoices.Application.Models;
@@ -201,9 +201,8 @@ public sealed class LifecycleStepTests
         verifactu.Setup(v => v.QrUrl(record)).Returns("https://prewww2.aeat.es/wlpl/TIKE-CONT/ValidarQR?nif=12345678Z");
         var invoice = new Invoice(1, new InvoiceNumber("26-10-001"), InvoiceType.OneTime, new DateOnly(2026, 10, 3), new Money(100m, "EUR"), "EUR") { Id = 1 };
 
-        var model = await new VerifactuTemplateContributor(verifactu.Object).ContributeAsync(invoice, new InvoiceTemplateModel(), Token);
-
-        var contribution = model.Compliance["verifactu"].ShouldBeOfType<VerifactuTemplateModel>();
+        var contribution = (await new VerifactuTemplateContributor(verifactu.Object).ContributeAsync(invoice, Token))
+            .ShouldBeOfType<VerifactuTemplateModel>();
         contribution.IsRecorded.ShouldBeTrue();
         contribution.Sequence.ShouldBe(3);
         contribution.QrSvg.ShouldStartWith("<svg");
@@ -219,13 +218,14 @@ public sealed class LifecycleStepTests
         var verifactu = new Mock<IVerifactuService>();
         verifactu.Setup(v => v.GetRecordsAsync(It.IsAny<long>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
         var invoice = new Invoice(1, new InvoiceNumber("26-10-001"), InvoiceType.OneTime, new DateOnly(2026, 10, 3), new Money(100m, "EUR"), "EUR") { Id = 1 };
+        var contributor = new VerifactuTemplateContributor(verifactu.Object);
 
-        var model = await new VerifactuTemplateContributor(verifactu.Object).ContributeAsync(invoice, new InvoiceTemplateModel(), Token);
+        (await contributor.ContributeAsync(invoice, Token)).ShouldBeNull();
 
-        // The entry stays, empty, so a template can print from it without checking
-        var contribution = model.Compliance["verifactu"].ShouldBeOfType<VerifactuTemplateModel>();
-        contribution.IsRecorded.ShouldBeFalse();
-        contribution.QrSvg.ShouldBeEmpty();
+        // Its empty entry is used instead, so a template can print from it without checking
+        var empty = contributor.Empty.ShouldBeOfType<VerifactuTemplateModel>();
+        empty.IsRecorded.ShouldBeFalse();
+        empty.QrSvg.ShouldBeEmpty();
     }
 
     [Test]
@@ -253,12 +253,18 @@ public sealed class LifecycleStepTests
         return new ScribanTemplateRenderer(Mock.Of<ILogger<ScribanTemplateRenderer>>(), Mock.Of<ILocalizationService>(), imageAssets.Object);
     }
 
+    /// <summary>The model of an invoice without a record: what the generation service gives templates.</summary>
+    private static InvoiceTemplateModel WithoutRecord() => new()
+    {
+        Compliance = new Dictionary<string, object> { ["verifactu"] = new VerifactuTemplateContributor(Mock.Of<IVerifactuService>()).Empty }
+    };
+
     [Test]
     public async Task Template_PrintingTheQrWithoutAGuard_PrintsNothingWhenThereIsNoRecord()
     {
         // A draft, or a user without Verifactu: a template that prints the QR unconditionally must not fail
         var html = await Renderer().RenderAsync(
-            "<p>[[ compliance.verifactu.qrSvg ]]</p><p>[[ compliance.verifactu.heading ]]</p>", new InvoiceTemplateModel(), Token);
+            "<p>[[ compliance.verifactu.qrSvg ]]</p><p>[[ compliance.verifactu.heading ]]</p>", WithoutRecord(), Token);
 
         html.ShouldBe("<p></p><p>QR tributario:</p>");
     }
@@ -272,7 +278,7 @@ public sealed class LifecycleStepTests
             Compliance = new Dictionary<string, object> { ["verifactu"] = new VerifactuTemplateModel { IsRecorded = true, QrSvg = "<svg/>" } }
         };
 
-        (await Renderer().RenderAsync(template, new InvoiceTemplateModel(), Token)).ShouldBeEmpty();
+        (await Renderer().RenderAsync(template, WithoutRecord(), Token)).ShouldBeEmpty();
         (await Renderer().RenderAsync(template, recorded, Token)).ShouldBe("QR:<svg/>");
     }
 
@@ -280,7 +286,8 @@ public sealed class LifecycleStepTests
     public async Task Preview_InTheTemplateEditor_ShowsASampleQr_WithoutFailing()
     {
         var preview = new TemplatePreviewService(
-            Renderer(), new InMemoryRepository<Customer>(), new InMemoryRepository<Rate>(), new InMemoryRepository<Tax>(), new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)));
+            Renderer(), new InMemoryRepository<Customer>(), new InMemoryRepository<Rate>(), new InMemoryRepository<Tax>(), new FixedTimeProvider(new DateTime(2026, 10, 1, 9, 0, 0, DateTimeKind.Utc)),
+            [new VerifactuTemplateContributor(Mock.Of<IVerifactuService>())]);
 
         var result = await preview.PreviewInvoiceAsync("<div>[[ compliance.verifactu.qrSvg ]]</div>", null, Token);
 

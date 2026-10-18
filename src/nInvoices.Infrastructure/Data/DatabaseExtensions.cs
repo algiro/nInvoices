@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using nInvoices.Core.Interfaces;
+using nInvoices.Infrastructure.Countries;
 using nInvoices.Infrastructure.Data.Repositories;
 using nInvoices.Infrastructure.Encryption;
 using nInvoices.Infrastructure.Services;
@@ -32,9 +33,12 @@ public static class DatabaseExtensions
         // One clock for the whole app (audit times in the DbContext included); tests swap it for a fixed one
         services.TryAddSingleton(TimeProvider.System);
 
-        services.AddDbContext<ApplicationDbContext>(options =>
+        services.AddDbContext<ApplicationDbContext>((provider, options) =>
         {
             ConfigureDatabase(options, dbType, connectionString);
+
+            // The entities of every country the build includes (ICountryPlugin, registered by the Api)
+            options.UseCountryModels(provider.GetServices<ICountryPlugin>());
             
             // Enable sensitive data logging in development
             if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
@@ -60,7 +64,6 @@ public static class DatabaseExtensions
         // Register specialized repositories
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<IWorkDayRepository, WorkDayRepository>();
-        services.AddScoped<IVerifactuRecordRepository, VerifactuRecordRepository>();
         services.AddScoped<IAccessRequestRepository, AccessRequestRepository>();
         services.AddScoped<IAccountDataEraser, AccountDataEraser>();
         services.AddScoped<IDataPortability, DataPortabilityService>();

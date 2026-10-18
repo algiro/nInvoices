@@ -4,7 +4,7 @@ using nInvoices.Application.Features.Compliance.Commands;
 using nInvoices.Application.Features.TaxPrediction.Commands;
 using nInvoices.Application.Features.TaxPrediction.Queries;
 using nInvoices.Application.TaxPrediction;
-using nInvoices.Application.TaxPrediction.Spain;
+using nInvoices.Countries.Spain.TaxPrediction;
 using nInvoices.Application.Tests.TestDoubles;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
@@ -12,7 +12,7 @@ using nInvoices.Core.Exceptions;
 using nInvoices.Core.Interfaces;
 using nInvoices.Core.ValueObjects;
 using Shouldly;
-using static nInvoices.Application.TaxPrediction.Spain.SpainTaxPredictionModule;
+using static nInvoices.Countries.Spain.TaxPrediction.SpainTaxPredictionModule;
 
 namespace nInvoices.Application.Tests.TaxPrediction;
 

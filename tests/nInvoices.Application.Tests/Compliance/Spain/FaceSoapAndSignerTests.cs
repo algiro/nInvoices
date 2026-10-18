@@ -3,7 +3,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using System.Xml;
 using System.Xml.Linq;
-using nInvoices.Application.Compliance.Spain.Face;
+using nInvoices.Countries.Spain.Face;
 using Shouldly;
 
 namespace nInvoices.Application.Tests.Compliance.Spain;

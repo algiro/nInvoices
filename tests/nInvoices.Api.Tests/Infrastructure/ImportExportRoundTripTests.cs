@@ -4,6 +4,8 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using nInvoices.Api.Infrastructure;
+using nInvoices.Infrastructure.Countries;
 using nInvoices.Application.Compliance;
 using nInvoices.Application.DTOs;
 using nInvoices.Core.Compliance;
@@ -76,7 +78,7 @@ public sealed class ImportExportRoundTripTests
     private ApplicationDbContext Context(SqliteConnection connection)
     {
         var context = new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).Options, Encryptor, new TestUser(User));
+            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).UseCountryModels(SupportedCountries.All).Options, Encryptor, new TestUser(User));
         _contexts.Add(context);
         return context;
     }

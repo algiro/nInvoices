@@ -1,7 +1,7 @@
-using nInvoices.Application.TaxPrediction.Spain;
+using nInvoices.Countries.Spain.TaxPrediction;
 using nInvoices.Core.TaxPrediction;
 using Shouldly;
-using static nInvoices.Application.TaxPrediction.Spain.SpainTaxPredictionModule;
+using static nInvoices.Countries.Spain.TaxPrediction.SpainTaxPredictionModule;
 
 namespace nInvoices.Application.Tests.TaxPrediction;
 

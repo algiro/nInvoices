@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Spain: invoicing rules (Facturae, FACe, Verifactu) and tax prediction (Modelo 130, 303/420).
+       Registered by the Api through SpainCountry; nothing outside this project names Spain. -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\nInvoices.Application\nInvoices.Application.csproj" />
+    <ProjectReference Include="..\nInvoices.Infrastructure\nInvoices.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="QRCoder" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="nInvoices.Application.Tests" />
+    <InternalsVisibleTo Include="nInvoices.Infrastructure.Tests" />
+  </ItemGroup>
+
+</Project>

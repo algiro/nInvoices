@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using nInvoices.Infrastructure.Countries;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.ValueObjects;
@@ -43,7 +44,7 @@ public sealed class SharedTemplateTests
     private ApplicationDbContext ContextFor(string? userId)
     {
         var context = new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options,
+            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).UseCountryModels(TestCountries.All).Options,
             TestEncryption.Encryptor, new TestUserContext(userId));
         _contexts.Add(context);
         return context;

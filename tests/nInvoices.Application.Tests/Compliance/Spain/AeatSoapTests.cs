@@ -1,5 +1,5 @@
 using System.Xml.Linq;
-using nInvoices.Application.Compliance.Spain.Verifactu;
+using nInvoices.Countries.Spain.Verifactu;
 using Shouldly;
 
 namespace nInvoices.Application.Tests.Compliance.Spain;

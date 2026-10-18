@@ -1,5 +1,5 @@
 using System.Reflection;
-using nInvoices.Application.Compliance.Spain.Verifactu;
+using nInvoices.Countries.Spain.Verifactu;
 using nInvoices.Core.Entities;
 using Shouldly;
 

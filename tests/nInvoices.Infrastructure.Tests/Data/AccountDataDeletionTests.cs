@@ -1,6 +1,8 @@
 using System.Reflection;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using nInvoices.Countries.Spain.Verifactu;
+using nInvoices.Infrastructure.Countries;
 using nInvoices.Core.Entities;
 using nInvoices.Core.Enums;
 using nInvoices.Core.Interfaces;
@@ -50,7 +52,7 @@ public sealed class AccountDataDeletionTests
     private ApplicationDbContext ContextFor(string? userId)
     {
         var context = new ApplicationDbContext(
-            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options,
+            new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).UseCountryModels(TestCountries.All).Options,
             TestEncryption.Encryptor, new TestUserContext(userId));
         // The deletion order must work with foreign keys checked, as PostgreSQL always does
         context.Database.ExecuteSqlRaw("PRAGMA foreign_keys = ON;");
@@ -120,7 +122,7 @@ public sealed class AccountDataDeletionTests
         db.InvoiceEInvoices.Add(eInvoice);
         var record = new VerifactuRecord(1, VerifactuRecordKind.Issued, invoice.Id, "12345678Z", invoice.Number.Value, "30-09-2026",
             "F1", "140.80", "780.80", "", "2026-09-30T10:00:00+02:00", "HASH1", "<x/>");
-        db.VerifactuRecords.Add(record);
+        db.Set<VerifactuRecord>().Add(record);
         await db.SaveChangesAsync(Token);
 
         db.AddRange(

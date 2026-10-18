@@ -47,7 +47,7 @@
               <th scope="col">Description</th>
               <th scope="col">Category</th>
               <th scope="col" class="num">Amount</th>
-              <th scope="col" class="num">IVA / IGIC</th>
+              <th scope="col" class="num">{{ taxName }}</th>
               <th scope="col" class="num">Business use</th>
               <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
             </tr>
@@ -161,6 +161,7 @@
       <BusinessExpenseForm
         v-if="dialog?.kind === 'one-off'"
         :expense="dialog.expense"
+        :tax-name="taxName"
         @saved="onSaved"
         @cancel="dialog = null"
       />
@@ -181,6 +182,7 @@ import { ExpenseCategoryNames } from '@/types'
 import type { BusinessExpenseDto, RecurringExpenseDto } from '@/types'
 import { useToast, errorMessage } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
+import { useIndirectTaxName } from '@/composables/useIndirectTaxName'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import BasePanel from '@/components/ui/BasePanel.vue'
 import BaseTabs from '@/components/ui/BaseTabs.vue'
@@ -197,6 +199,7 @@ type Dialog =
   | { kind: 'recurring'; expense: RecurringExpenseDto | null }
 
 const toast = useToast()
+const taxName = useIndirectTaxName()
 const { confirm } = useConfirm()
 
 const tab = ref('one-off')
