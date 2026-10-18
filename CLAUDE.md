@@ -132,7 +132,8 @@ tests; check a UI change in the browser against the fast loop above. Past incide
   (the generator's default is Singleton, which would capture the DbContext); in tests, wrap a
   handler call passed to `Should.ThrowAsync` in `.AsTask()`. DTOs in `DTOs/`, FluentValidation validators
   alongside features, template rendering (`ScribanTemplateRenderer`) and invoice/report
-  generation services in `Services/`, i18n JSON in `Localization/`. Invoice generation
+  generation services in `Services/`, document-language JSON (month/day names) in `Localization/` and the API's
+  own texts in `Localization/Messages/<lang>.json` (`IAppText`). Invoice generation
   (`InvoiceGenerationService`) only orchestrates; its parts live in `Services/InvoiceGeneration/`:
   `InvoiceCalculator` (pure: billable checks, subtotal, expenses, day hours), `InvoiceTemplateModelBuilder`
   (pure: line items, project summary), `InvoiceRateResolver` (default + per-day rates → `DayRates`) and
@@ -282,6 +283,16 @@ Handlers implement `ITaxHandler` (`HandlerId`, `Description`, `Calculate(...)`).
 by `HandlerId`.
 A tax with `AddsToTaxableBase` (a contribution such as Italy's rivalsa INPS) is added to the base of the taxes
 after it (by `Order`) that apply to the subtotal, so IVA and withholdings include it (`TaxCalculationService`).
+
+### Localization
+
+Two languages, kept apart: the **app language** (screens and API messages) is per user, English by default, chosen
+in Settings › General and stored in `UserPreferences` (sent to the API as `Accept-Language`); the **document
+language** of invoices, reports and emails is each customer's `Locale`. UI texts live in
+`src/nInvoices.Web/src/locales/<lang>.json` (vue-i18n; `en.json` is the reference and the fallback), never inline:
+use `t('area.key')` in components (`useI18n`) and `t` from `@/i18n` elsewhere. Adding a language = adding its web
+file and its `Application/Localization/Messages/<lang>.json`, nothing else. `Docs/LOCALIZATION.md` has the details;
+`locales.test.ts` and `AppTextTests` fail on a missing key, a broken placeholder, or a language on one side only.
 
 ### Templates & PDF
 
