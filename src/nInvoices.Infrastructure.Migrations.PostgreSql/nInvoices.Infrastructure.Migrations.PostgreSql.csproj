@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\nInvoices.Infrastructure\nInvoices.Infrastructure.csproj" />
     <ProjectReference Include="..\nInvoices.Countries.Spain\nInvoices.Countries.Spain.csproj" />
+    <ProjectReference Include="..\nInvoices.Countries.Italy\nInvoices.Countries.Italy.csproj" />
   </ItemGroup>
 
   <ItemGroup>

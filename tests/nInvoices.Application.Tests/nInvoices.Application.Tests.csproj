@@ -28,6 +28,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\nInvoices.Application\nInvoices.Application.csproj" />
     <ProjectReference Include="..\..\src\nInvoices.Countries.Spain\nInvoices.Countries.Spain.csproj" />
+    <ProjectReference Include="..\..\src\nInvoices.Countries.Italy\nInvoices.Countries.Italy.csproj" />
   </ItemGroup>
 
 </Project>

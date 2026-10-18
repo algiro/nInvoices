@@ -419,5 +419,19 @@
             (*) “Prestación de servicios no sujeta a IGIC, realizada fuera del ámbito espacial del Impuesto, según lo dispuesto por los artículos 3 y 17 de la Ley 20/1991, de 7 de junio, de modificación de los aspectos fiscales del Régimen Económico-Fiscal de Canarias”
         </div>        
     </div>
+
+    [[ if compliance.italy.isApplicable ]]
+    <div class="summary-section">
+        [[ if compliance.italy.withholding.applies ]]
+        <div class="summary-text">Netto a pagare: [[ FormatCurrency compliance.italy.netToPay currency ]]</div>
+        [[ end ]]
+        [[ if compliance.italy.isForfettario ]]
+        <div class="summary-text">[[ compliance.italy.legalNote ]]</div>
+        [[ end ]]
+        [[ if compliance.italy.stampDuty.applies ]]
+        <div class="summary-text">[[ compliance.italy.stampDuty.note ]]</div>
+        [[ end ]]
+    </div>
+    [[ end ]]
 </body>
 </html>

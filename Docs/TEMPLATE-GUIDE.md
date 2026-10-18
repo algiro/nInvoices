@@ -137,6 +137,25 @@ rest of the invoice. The default template does all this:
 ```
 Templates you wrote earlier need this block added by hand to carry the QR code.
 
+**`compliance.italy`** (Italy); `isApplicable` is true when the Italian rules are on, from the first draft:
+```
+compliance.italy.isApplicable          - true if the Italian rules apply to the invoice
+compliance.italy.regime                - RF01 (ordinario), RF02 (minimi) or RF19 (forfettario)
+compliance.italy.isForfettario         - true in the regime forfettario
+compliance.italy.legalNote             - the note a forfettario invoice must carry (no IVA, no ritenuta, L. 190/2014)
+compliance.italy.stampDuty.applies     - true if the €2 marca da bollo is due (no IVA charged, above €77.47)
+compliance.italy.stampDuty.amount      - 2.00 when due
+compliance.italy.stampDuty.note        - "Imposta di bollo da € 2,00 assolta in modo virtuale ai sensi del D.M. 17/06/2014"
+compliance.italy.contribution.applies  - true if a pension contribution is charged (rivalsa INPS 4%, cassa)
+compliance.italy.contribution.description / .rate / .base / .amount
+compliance.italy.withholding.applies   - true if a ritenuta d'acconto is withheld
+compliance.italy.withholding.description / .rate / .base / .amount (positive)
+compliance.italy.netToPay              - what the customer pays: the total, the ritenuta already subtracted
+```
+The contribution and the ritenuta are taxes of the customer (Customers › Taxes): give the contribution the Italian
+kind "Pension contribution" and tick "Part of the taxable amount", so IVA and the ritenuta, which come after it,
+are calculated on the fee plus it. The default template prints the forfettario note, the bollo and the net to pay.
+
 ### Monthly Report Template Model
 
 | Property | Type | Description | Example |
