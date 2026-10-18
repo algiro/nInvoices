@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Italy: invoicing rules (FatturaPA, bollo, rivalsa, ritenuta) and tax prediction (regime forfettario,
+       regime ordinario semplificato). Registered by the Api through ItalyCountry; nothing outside this project
+       names Italy. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\nInvoices.Application\nInvoices.Application.csproj" />
+    <ProjectReference Include="..\nInvoices.Infrastructure\nInvoices.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="nInvoices.Application.Tests" />
+  </ItemGroup>
+
+</Project>

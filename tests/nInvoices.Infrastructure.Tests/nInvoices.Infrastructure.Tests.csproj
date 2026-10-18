@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\nInvoices.Infrastructure\nInvoices.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\nInvoices.Countries.Spain\nInvoices.Countries.Spain.csproj" />
+    <ProjectReference Include="..\..\src\nInvoices.Countries.Italy\nInvoices.Countries.Italy.csproj" />
     <ProjectReference Include="..\..\src\nInvoices.Infrastructure.Migrations.PostgreSql\nInvoices.Infrastructure.Migrations.PostgreSql.csproj" />
   </ItemGroup>
 

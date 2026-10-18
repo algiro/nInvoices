@@ -177,9 +177,9 @@ tests; check a UI change in the browser against the fast loop above. Past incide
   `Api/Infrastructure/OtlpLogExtensions`, which also keeps the console and file sinks); `Docs/OBSERVABILITY.md`
   has the Grafana Cloud setup and the application metrics (`Application/Telemetry/AppMetrics`: every Mediator request is timed by
   `MetricsBehavior`; keep tags to small fixed sets, never customers or ids) (`HealthController` at `/api/health` is kept for the nginx-routed check).
-- **nInvoices.Countries.\*** (`Countries.Spain`) — one project per country, everything that country adds: its
+- **nInvoices.Countries.\*** (`Countries.Spain`, `Countries.Italy`) — one project per country, everything that country adds: its
   invoicing rules (`ICountryComplianceModule`: issuer/customer/tax fields and checks, e-invoice formats and
-  channels such as Facturae and FACe, Verifactu), its tax prediction (`ITaxPredictionModule`: regimes, forms,
+  channels such as Facturae and FACe, Verifactu, FatturaPA), its tax prediction (`ITaxPredictionModule`: regimes, forms,
   `IndirectTaxName`), and what those need (entities and EF configurations, repositories, HTTP clients, workers,
   options, Mediator requests, controllers). Each exposes an `ICountryPlugin` (`SpainCountry`: `AddServices`).
   Core/Application/Infrastructure never name a country (`ArchitectureTests`); they offer the hooks:
@@ -272,6 +272,8 @@ Handlers implement `ITaxHandler` (`HandlerId`, `Description`, `Calculate(...)`).
 `PERCENTAGE`, `FIXED`, `COMPOUND`. Add one by implementing the interface in
 `Infrastructure/TaxHandlers/` and registering it in `AddTaxHandlers()`; it is then selectable
 by `HandlerId`.
+A tax with `AddsToTaxableBase` (a contribution such as Italy's rivalsa INPS) is added to the base of the taxes
+after it (by `Order`) that apply to the subtotal, so IVA and withholdings include it (`TaxCalculationService`).
 
 ### Templates & PDF
 

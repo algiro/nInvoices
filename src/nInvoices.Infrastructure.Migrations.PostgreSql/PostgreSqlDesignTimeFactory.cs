@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using nInvoices.Countries.Italy;
 using nInvoices.Countries.Spain;
 using nInvoices.Infrastructure.Countries;
 using nInvoices.Infrastructure.Data;
@@ -19,7 +20,7 @@ public sealed class PostgreSqlDesignTimeFactory : IDesignTimeDbContextFactory<Ap
     public const string AssemblyName = DatabaseExtensions.PostgreSqlMigrationsAssembly;
 
     /// <summary>The countries whose entities are in the model: every one the Api registers (<c>SupportedCountries.All</c>).</summary>
-    public static IReadOnlyList<ICountryPlugin> Countries { get; } = [new SpainCountry()];
+    public static IReadOnlyList<ICountryPlugin> Countries { get; } = [new SpainCountry(), new ItalyCountry()];
 
     public ApplicationDbContext CreateDbContext(string[] args) =>
         new(
