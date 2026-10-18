@@ -1,10 +1,10 @@
 <template>
   <div class="customer-details">
-    <LoadingState v-if="loading && !customer" label="Loading customer…" />
+    <LoadingState v-if="loading && !customer" :label="t('customers.loadingOne')" />
 
-    <EmptyState v-else-if="error && !customer" icon="alert" title="Customer could not be loaded" :description="error">
-      <BaseButton @click="loadData">Try again</BaseButton>
-      <BaseButton variant="ghost" to="/customers">Back to customers</BaseButton>
+    <EmptyState v-else-if="error && !customer" icon="alert" :title="t('customers.loadOneFailed')" :description="error">
+      <BaseButton @click="loadData">{{ t('common.tryAgain') }}</BaseButton>
+      <BaseButton variant="ghost" to="/customers">{{ t('customers.backToList') }}</BaseButton>
     </EmptyState>
 
     <template v-else-if="customer">
@@ -19,43 +19,43 @@
           </span>
         </template>
         <template #actions>
-          <BaseButton icon="edit" :to="`/customers/${customerId}/edit`">Edit</BaseButton>
-          <BaseButton variant="ghost-danger" icon="trash" @click="handleDelete">Delete</BaseButton>
-          <BaseButton variant="primary" icon="plus" :to="{ path: '/invoices/new', query: { customerId } }">New invoice</BaseButton>
+          <BaseButton icon="edit" :to="`/customers/${customerId}/edit`">{{ t('common.edit') }}</BaseButton>
+          <BaseButton variant="ghost-danger" icon="trash" @click="handleDelete">{{ t('common.delete') }}</BaseButton>
+          <BaseButton variant="primary" icon="plus" :to="{ path: '/invoices/new', query: { customerId } }">{{ t('layout.newInvoice') }}</BaseButton>
         </template>
       </PageHeader>
 
-      <BaseTabs :model-value="activeTab" :tabs="tabs" label="Customer sections" @update:model-value="selectTab" />
+      <BaseTabs :model-value="activeTab" :tabs="tabs" :label="t('customers.sections')" @update:model-value="selectTab" />
 
       <div class="tab-body" role="tabpanel" :aria-labelledby="`tab-${activeTab}`">
         <div v-if="activeTab === 'overview'" class="overview">
-          <BasePanel title="Details">
+          <BasePanel :title="t('customers.details')">
             <dl class="facts">
-              <div><dt>Name</dt><dd>{{ customer.name }}</dd></div>
-              <div><dt>VAT number / fiscal ID</dt><dd>{{ customer.fiscalId }}</dd></div>
+              <div><dt>{{ t('customers.name') }}</dt><dd>{{ customer.name }}</dd></div>
+              <div><dt>{{ t('customers.fiscalId') }}</dt><dd>{{ customer.fiscalId }}</dd></div>
               <div>
-                <dt>Document language</dt>
+                <dt>{{ t('customers.documentLanguage') }}</dt>
                 <dd>
                   {{ localeLabel(customer.locale) }}
                   <span v-if="customer.locale" class="muted">({{ customer.locale }})</span>
-                  <router-link v-else :to="`/customers/${customerId}/edit`" class="set-link">Choose a language</router-link>
+                  <router-link v-else :to="`/customers/${customerId}/edit`" class="set-link">{{ t('customers.chooseLanguage') }}</router-link>
                 </dd>
               </div>
               <div>
-                <dt>Invoice emails to</dt>
+                <dt>{{ t('customers.emailsTo') }}</dt>
                 <dd>
                   <template v-if="customer.email">
                     {{ customer.email }}
-                    <span v-if="customer.ccEmails" class="muted">(cc {{ customer.ccEmails }})</span>
+                    <span v-if="customer.ccEmails" class="muted">{{ t('customers.cc', { emails: customer.ccEmails }) }}</span>
                   </template>
-                  <router-link v-else :to="`/customers/${customerId}/edit`" class="set-link">Add an email address</router-link>
+                  <router-link v-else :to="`/customers/${customerId}/edit`" class="set-link">{{ t('customers.addEmail') }}</router-link>
                 </dd>
               </div>
-              <div><dt>Customer since</dt><dd>{{ formatDate(customer.createdAt) }}</dd></div>
+              <div><dt>{{ t('customers.since') }}</dt><dd>{{ formatDate(customer.createdAt) }}</dd></div>
             </dl>
           </BasePanel>
 
-          <BasePanel title="Billing address">
+          <BasePanel :title="t('customers.billingAddress')">
             <address class="address">
               {{ customer.address.street }} {{ customer.address.houseNumber }}<br>
               {{ customer.address.zipCode }} {{ customer.address.city }}<br>
@@ -64,14 +64,14 @@
             </address>
           </BasePanel>
 
-          <BasePanel title="Set up for invoicing" description="What the invoice generator uses for this customer." class="setup">
+          <BasePanel :title="t('customers.setup')" :description="t('customers.setupDescription')" class="setup">
             <ul class="setup-links">
-              <li><button type="button" @click="selectTab('rates')"><AppIcon name="coins" />Rates<span>daily, hourly or monthly price</span></button></li>
-              <li><button type="button" @click="selectTab('taxes')"><AppIcon name="percent" />Taxes<span>VAT, withholding and other lines</span></button></li>
-              <li><button type="button" @click="selectTab('projects')"><AppIcon name="folder" />Projects<span>for splitting time on invoices</span></button></li>
-              <li><button type="button" @click="selectTab('templates')"><AppIcon name="template" />Invoice templates<span>layout of the invoice PDF</span></button></li>
-              <li><button type="button" @click="selectTab('monthly-reports')"><AppIcon name="calendar" />Monthly reports<span>layout of the timesheet PDF</span></button></li>
-              <li><button type="button" @click="selectTab('emails')"><AppIcon name="send" />Email templates<span>subject and text of invoice emails</span></button></li>
+              <li><button type="button" @click="selectTab('rates')"><AppIcon name="coins" />{{ t('customers.tabs.rates') }}<span>{{ t('customers.setupRates') }}</span></button></li>
+              <li><button type="button" @click="selectTab('taxes')"><AppIcon name="percent" />{{ t('customers.tabs.taxes') }}<span>{{ t('customers.setupTaxes') }}</span></button></li>
+              <li><button type="button" @click="selectTab('projects')"><AppIcon name="folder" />{{ t('customers.tabs.projects') }}<span>{{ t('customers.setupProjects') }}</span></button></li>
+              <li><button type="button" @click="selectTab('templates')"><AppIcon name="template" />{{ t('customers.tabs.templates') }}<span>{{ t('customers.setupTemplates') }}</span></button></li>
+              <li><button type="button" @click="selectTab('monthly-reports')"><AppIcon name="calendar" />{{ t('customers.tabs.monthlyReports') }}<span>{{ t('customers.setupMonthlyReports') }}</span></button></li>
+              <li><button type="button" @click="selectTab('emails')"><AppIcon name="send" />{{ t('customers.tabs.emails') }}<span>{{ t('customers.setupEmails') }}</span></button></li>
             </ul>
           </BasePanel>
         </div>
@@ -110,6 +110,9 @@ import { useConfirm } from '@/composables/useConfirm'
 import { useToast, errorMessage } from '@/composables/useToast'
 import { setPageTitle } from '@/composables/usePageTitle'
 import { formatDate, localeLabel } from '@/utils/format'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const { confirm } = useConfirm()
 const toast = useToast()
@@ -126,21 +129,21 @@ const customer = computed(() =>
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-const tabs = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'rates', label: 'Rates' },
-  { id: 'taxes', label: 'Taxes' },
-  { id: 'projects', label: 'Projects' },
-  { id: 'templates', label: 'Invoice templates' },
-  { id: 'monthly-reports', label: 'Monthly reports' },
-  { id: 'emails', label: 'Email templates' },
-  { id: 'invoices', label: 'Invoices' }
-]
+const tabs = computed(() => [
+  { id: 'overview', label: t('customers.tabs.overview') },
+  { id: 'rates', label: t('customers.tabs.rates') },
+  { id: 'taxes', label: t('customers.tabs.taxes') },
+  { id: 'projects', label: t('customers.tabs.projects') },
+  { id: 'templates', label: t('customers.tabs.templates') },
+  { id: 'monthly-reports', label: t('customers.tabs.monthlyReports') },
+  { id: 'emails', label: t('customers.tabs.emails') },
+  { id: 'invoices', label: t('customers.tabs.invoices') }
+])
 
 // The open tab lives in the URL (?tab=…) so links such as the template editor's "back" land on it
 const activeTab = computed(() => {
   const tab = route.query.tab
-  return typeof tab === 'string' && tabs.some(t => t.id === tab) ? tab : 'overview'
+  return typeof tab === 'string' && tabs.value.some(item => item.id === tab) ? tab : 'overview'
 })
 
 function selectTab(id: string) {
@@ -161,23 +164,23 @@ async function loadData() {
     error.value = null
     await customersStore.fetchById(customerId.value)
   } catch (err) {
-    error.value = errorMessage(err, 'Failed to load customer')
+    error.value = errorMessage(err, t('customers.loadOneFailed'))
   } finally {
     loading.value = false
   }
 }
 
 async function handleDelete() {
-  if (!(await confirm({ title: 'Delete customer?', message: `"${customer.value?.name}" and all of their data will be permanently deleted.`, confirmLabel: 'Delete customer', tone: 'danger' }))) {
+  if (!(await confirm({ title: t('customers.deleteTitle'), message: t('customers.deleteMessage', { name: customer.value?.name ?? '' }), confirmLabel: t('customers.deleteConfirm'), tone: 'danger' }))) {
     return
   }
 
   try {
     await customersStore.remove(customerId.value)
-    toast.success('Customer deleted')
+    toast.success(t('customers.deleted'))
     router.push('/customers')
   } catch (err) {
-    toast.failure('Could not delete the customer', err)
+    toast.failure(t('customers.deleteFailed'), err)
   }
 }
 </script>

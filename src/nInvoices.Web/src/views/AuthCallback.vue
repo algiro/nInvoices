@@ -12,10 +12,13 @@ import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import authService from '../services/auth.service';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const router = useRouter();
 const authStore = useAuthStore();
-const message = ref('Completing authentication...');
+const message = ref(t('auth.completing'));
 
 onMounted(async () => {
   // Back from Keycloak's "Delete account" page: the sign-in account is gone, unless the user cancelled
@@ -36,7 +39,7 @@ onMounted(async () => {
 
   try {
     await authStore.handleCallback();
-    message.value = 'Authentication successful! Redirecting...';
+    message.value = t('auth.succeeded');
     
     // Redirect to home or intended route
     const returnUrl = sessionStorage.getItem('returnUrl') || '/';
@@ -47,7 +50,7 @@ onMounted(async () => {
     }, 1000);
   } catch (error) {
     console.error('Authentication callback error:', error);
-    message.value = 'Authentication failed. Redirecting to login...';
+    message.value = t('auth.failed');
     
     setTimeout(() => {
       router.push('/');

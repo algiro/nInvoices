@@ -26,7 +26,7 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
       ]);
       templates.value = [...own, ...shared];
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to fetch templates');
+      error.value = errorMessage(err);
       throw err;
     } finally {
       loading.value = false;
@@ -40,7 +40,7 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
       currentTemplate.value = await monthlyReportTemplatesApi.getById(id);
       return currentTemplate.value;
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to fetch template');
+      error.value = errorMessage(err);
       throw err;
     } finally {
       loading.value = false;
@@ -55,7 +55,7 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
       templates.value.push(created);
       return created;
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to create template');
+      error.value = errorMessage(err);
       throw err;
     } finally {
       loading.value = false;
@@ -76,7 +76,7 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
       }
       return updated;
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to update template');
+      error.value = errorMessage(err);
       throw err;
     } finally {
       loading.value = false;
@@ -93,7 +93,7 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
         currentTemplate.value = null;
       }
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to delete template');
+      error.value = errorMessage(err);
       throw err;
     } finally {
       loading.value = false;
@@ -116,7 +116,7 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
         }));
       }
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to activate template');
+      error.value = errorMessage(err);
       throw err;
     } finally {
       loading.value = false;
@@ -133,7 +133,7 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
         template.isActive = false;
       }
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to deactivate template');
+      error.value = errorMessage(err);
       throw err;
     } finally {
       loading.value = false;
@@ -146,7 +146,7 @@ export const useMonthlyReportTemplatesStore = defineStore('monthlyReportTemplate
     try {
       return await monthlyReportTemplatesApi.validate(content);
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to validate template');
+      error.value = errorMessage(err);
       throw err;
     } finally {
       loading.value = false;

@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { t } from '@/i18n'
 
 export type ToastTone = 'success' | 'error' | 'warning' | 'info'
 
@@ -66,7 +67,7 @@ export function apiErrorData(error: unknown): Record<string, unknown> | null {
  * Turns an unknown thrown value into a readable message, preferring the API's own explanation;
  * `fallback` when the value carries none.
  */
-export function errorMessage(error: unknown, fallback = 'Something went wrong. Please try again.'): string {
+export function errorMessage(error: unknown, fallback = t('common.somethingWentWrong')): string {
   const apiMessage = apiErrorBody(error)?.error
   if (typeof apiMessage === 'string' && apiMessage) return apiMessage
   if (error instanceof Error && error.message) return error.message

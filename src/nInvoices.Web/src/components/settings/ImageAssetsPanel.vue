@@ -1,10 +1,10 @@
 <template>
-  <BasePanel title="Images for templates" description="Logos and signatures you can place in invoice and timesheet templates.">
+  <BasePanel :title="t('images.title')" :description="t('images.description')">
     <form class="upload" novalidate @submit.prevent="handleUploadImage">
-      <BaseField label="Name to use in templates" for="imageAlias" help="Letters and numbers, e.g. companyLogo.">
+      <BaseField :label="t('images.alias')" for="imageAlias" :help="t('images.aliasHelp')">
         <input id="imageAlias" v-model="imageAlias" type="text" class="control" placeholder="companyLogo" />
       </BaseField>
-      <BaseField label="Image" for="imageFile" help="PNG, JPEG, GIF, SVG or WebP, up to 1 MB." :error="imageUploadError">
+      <BaseField :label="t('images.image')" for="imageFile" :help="t('images.imageHelp')" :error="imageUploadError">
         <input
           id="imageFile"
           ref="imageFileInput"
@@ -14,15 +14,15 @@
           @change="handleImageFileSelected"
         />
       </BaseField>
-      <BaseButton type="submit" variant="primary" icon="plus" :loading="imageUploading" :disabled="!canUpload" class="upload-btn">Upload</BaseButton>
+      <BaseButton type="submit" variant="primary" icon="plus" :loading="imageUploading" :disabled="!canUpload" class="upload-btn">{{ t('images.upload') }}</BaseButton>
     </form>
 
-    <LoadingState v-if="imageAssetsLoading" label="Loading images…" />
+    <LoadingState v-if="imageAssetsLoading" :label="t('images.loading')" />
     <EmptyState
       v-else-if="imageAssets.length === 0"
       icon="template"
-      title="No images yet"
-      description="Upload a logo, then add it to a template with the snippet shown on its card."
+      :title="t('images.emptyTitle')"
+      :description="t('images.emptyDescription')"
       compact
     />
     <ul v-else class="images">
@@ -33,14 +33,14 @@
             :src="`data:${asset.contentType};base64,${imageDataCache[asset.id]}`"
             :alt="asset.alias"
           />
-          <button v-else type="button" class="load-thumb" @click="loadImageData(asset.id)">Show preview</button>
+          <button v-else type="button" class="load-thumb" @click="loadImageData(asset.id)">{{ t('images.showPreview') }}</button>
         </div>
         <div class="image-body">
           <strong>{{ asset.alias }}</strong>
           <span class="muted">{{ asset.fileName }} · {{ formatFileSize(asset.fileSize) }}</span>
           <div class="snippet">
             <code>[[ Image "{{ asset.alias }}" ]]</code>
-            <BaseButton size="sm" variant="ghost" @click="copySnippet(asset.alias)">Copy</BaseButton>
+            <BaseButton size="sm" variant="ghost" @click="copySnippet(asset.alias)">{{ t('images.copy') }}</BaseButton>
           </div>
         </div>
         <BaseButton
@@ -49,8 +49,8 @@
           icon="trash"
           icon-only
           class="image-delete"
-          :aria-label="`Delete ${asset.alias}`"
-          title="Delete"
+          :aria-label="t('common.deleteNamed', { name: asset.alias })"
+          :title="t('common.delete')"
           @click="handleDeleteImage(asset)"
         />
       </li>
@@ -69,6 +69,9 @@ import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const toast = useToast()
 const { confirm } = useConfirm()
@@ -134,7 +137,7 @@ async function handleUploadImage() {
     if (imageFileInput.value) imageFileInput.value.value = ''
     await loadImageAssets()
   } catch (error) {
-    imageUploadError.value = errorMessage(error, 'Upload failed')
+    imageUploadError.value = errorMessage(error, t('images.uploadFailed'))
   } finally {
     imageUploading.value = false
   }
@@ -144,20 +147,20 @@ async function copySnippet(alias: string) {
   const snippet = `[[ Image "${alias}" ]]`
   try {
     await navigator.clipboard.writeText(snippet)
-    toast.success('Snippet copied', { message: snippet })
+    toast.success(t('images.copied'), { message: snippet })
   } catch {
-    toast.info('Copy this into your template', { message: snippet })
+    toast.info(t('images.copyThis'), { message: snippet })
   }
 }
 
 async function handleDeleteImage(asset: ImageAssetDto) {
-  if (!(await confirm({ title: 'Delete image?', message: `"${asset.alias}" will be deleted. Templates that use it will show a placeholder.`, confirmLabel: 'Delete', tone: 'danger' }))) return
+  if (!(await confirm({ title: t('images.deleteTitle'), message: t('images.deleteMessage', { name: asset.alias }), confirmLabel: t('common.delete'), tone: 'danger' }))) return
   try {
     await imageAssetsApi.delete(asset.id)
     delete imageDataCache[asset.id]
     await loadImageAssets()
   } catch (error) {
-    toast.failure('Failed to delete image', error)
+    toast.failure(t('images.deleteFailed'), error)
   }
 }
 </script>

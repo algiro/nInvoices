@@ -18,7 +18,7 @@
     />
 
     <div v-if="kind === 'email' && !loadingTemplate" class="subject-row">
-      <label for="template-subject">Subject</label>
+      <label for="template-subject">{{ t('invoiceEmail.subject') }}</label>
       <div class="subject-field">
         <input
           id="template-subject"
@@ -26,21 +26,21 @@
           class="subject-input"
           type="text"
           maxlength="500"
-          placeholder="Invoice [[ invoiceNumber ]] - [[ customer.name ]]"
+          :placeholder="t('templates.editor.subjectPlaceholder')"
           spellcheck="false"
         />
         <span class="subject-preview" :title="preview.subject.value ?? ''">
-          <template v-if="preview.subject.value">Preview: {{ preview.subject.value }}</template>
+          <template v-if="preview.subject.value">{{ t('templates.editor.subjectPreview', { subject: preview.subject.value }) }}</template>
         </span>
       </div>
     </div>
 
-    <div v-if="loadingTemplate" class="loading">Loading template…</div>
+    <div v-if="loadingTemplate" class="loading">{{ t('templates.editor.loading') }}</div>
 
     <div v-else class="workspace" :class="[`layout-${layout}`, { 'with-variables': showVariables }]">
       <TemplateVariablesPanel v-if="showVariables" class="pane variables-pane" :groups="variableGroups" @insert="insertSnippet" />
 
-      <section v-show="layout !== 'preview'" class="pane code-pane" aria-label="Template code">
+      <section v-show="layout !== 'preview'" class="pane code-pane" :aria-label="t('templates.editor.code')">
         <TemplateCodeEditor
           ref="codeEditor"
           v-model="content"
@@ -88,6 +88,9 @@ import {
 import { useCustomersStore } from '@/stores/customers'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -147,19 +150,19 @@ async function load() {
     }
 
     if (templateId.value !== null) {
-      const t = await api.value.load(templateId.value)
-      name.value = t.name
-      content.value = t.content
-      isActive.value = t.isActive
-      if (t.subject !== undefined) subject.value = t.subject
-      if (t.invoiceType !== undefined) invoiceType.value = t.invoiceType
+      const loaded = await api.value.load(templateId.value)
+      name.value = loaded.name
+      content.value = loaded.content
+      isActive.value = loaded.isActive
+      if (loaded.subject !== undefined) subject.value = loaded.subject
+      if (loaded.invoiceType !== undefined) invoiceType.value = loaded.invoiceType
     } else {
       // A new template starts from the sample, so the preview shows something right away
       applySample()
     }
     saved.value = isNew.value ? JSON.stringify(['', '', invoiceType.value, '']) : snapshot()
   } catch (error) {
-    toast.failure('Could not load the template', error)
+    toast.failure(t('templates.editor.loadFailed'), error)
   } finally {
     loadingTemplate.value = false
   }
@@ -175,9 +178,9 @@ function insertSnippet(text: string) {
 
 async function loadSample() {
   if (content.value.trim() && !(await confirm({
-    title: 'Replace the template?',
-    message: 'Loading the sample replaces everything currently in the editor.',
-    confirmLabel: 'Replace'
+    title: t('templates.editor.replaceTitle'),
+    message: t('templates.editor.replaceMessage'),
+    confirmLabel: t('templates.editor.replace')
   }))) return
   applySample(true)
 }
@@ -200,27 +203,25 @@ function applySample(keepName = false) {
 async function save() {
   if (saving.value || loadingTemplate.value) return
   if (kind.value !== 'invoice' && !name.value.trim()) {
-    toast.warning('Give the template a name', {
-      message: kind.value === 'email'
-        ? 'Email templates need a name so you can pick them when creating an email.'
-        : 'Monthly report templates need a name so you can pick them when generating an invoice.'
+    toast.warning(t('templates.editor.nameNeeded'), {
+      message: kind.value === 'email' ? t('templates.editor.nameNeededEmail') : t('templates.editor.nameNeededReport')
     })
     document.getElementById('template-name')?.focus()
     return
   }
   if (kind.value === 'email' && !subject.value.trim()) {
-    toast.warning('The subject is empty')
+    toast.warning(t('templates.editor.subjectEmpty'))
     document.getElementById('template-subject')?.focus()
     return
   }
   if (!content.value.trim()) {
-    toast.warning('The template is empty')
+    toast.warning(t('templates.editor.empty'))
     return
   }
   // Make sure the check reflects the latest text before deciding
   await preview.flush()
   if (preview.hasSyntaxErrors.value) {
-    toast.error('Fix the template errors before saving', { message: 'They are listed under the editor; click one to jump to it.' })
+    toast.error(t('templates.editor.fixErrors'), { message: t('templates.editor.fixErrorsMessage') })
     return
   }
 
@@ -237,7 +238,7 @@ async function save() {
     }
 
     saved.value = snapshot()
-    toast.success('Template saved')
+    toast.success(t('templates.editor.saved'))
 
     if (createdId !== null) {
       await router.replace(isShared.value
@@ -245,7 +246,7 @@ async function save() {
         : `/customers/${customerId.value}/templates/${kind.value}/${createdId}`)
     }
   } catch (error) {
-    toast.failure('Could not save the template', error)
+    toast.failure(t('templates.editor.saveFailed'), error)
   } finally {
     saving.value = false
   }
@@ -268,10 +269,10 @@ function onBeforeUnload(event: BeforeUnloadEvent) {
 onBeforeRouteLeave(async () => {
   if (!dirty.value) return true
   return confirm({
-    title: 'Leave without saving?',
-    message: 'Your changes to this template will be lost.',
-    confirmLabel: 'Discard changes',
-    cancelLabel: 'Keep editing',
+    title: t('templates.editor.leaveTitle'),
+    message: t('templates.editor.leaveMessage'),
+    confirmLabel: t('templates.editor.discard'),
+    cancelLabel: t('templates.editor.keepEditing'),
     tone: 'danger'
   })
 })

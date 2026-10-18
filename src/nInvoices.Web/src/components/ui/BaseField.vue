@@ -3,7 +3,7 @@
     <label v-if="label" :for="props.for" class="label">
       {{ label }}
       <span v-if="required" class="required" aria-hidden="true">*</span>
-      <span v-else-if="optional" class="optional">optional</span>
+      <span v-else-if="optional" class="optional">{{ t('common.optional') }}</span>
     </label>
     <slot />
     <p v-if="error" class="error" role="alert">{{ error }}</p>
@@ -12,6 +12,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 const props = defineProps<{
   label?: string
   /** id of the control the label points to */

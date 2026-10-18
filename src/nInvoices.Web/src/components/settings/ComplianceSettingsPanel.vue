@@ -1,18 +1,18 @@
 <template>
   <BasePanel
     v-if="countries.length || loadError"
-    title="Invoicing rules"
-    :description="`What ${countries[0]?.name ?? 'your country'} requires on invoices: your fiscal data, e-invoices and the like. Turn the rules on only if they apply to you; while they are off, invoices work exactly as before.`"
+    :title="t('compliance.title')"
+    :description="t('compliance.description', { country: countries[0]?.name ?? t('taxProfile.yourCountry') })"
   >
-    <EmptyState v-if="loadError" icon="alert" title="The country rules could not be loaded" :description="loadError" compact>
-      <BaseButton @click="load">Try again</BaseButton>
+    <EmptyState v-if="loadError" icon="alert" :title="t('compliance.loadFailed')" :description="loadError" compact>
+      <BaseButton @click="load">{{ t('common.tryAgain') }}</BaseButton>
     </EmptyState>
 
     <div v-else class="countries">
       <section v-for="country in countries" :key="country.countryCode" class="country">
         <header class="country-header">
           <StatusPill :tone="country.settings.isEnabled ? 'success' : 'neutral'">
-            {{ country.settings.isEnabled ? 'On' : 'Off' }}
+            {{ country.settings.isEnabled ? t('compliance.on') : t('holidays.off') }}
           </StatusPill>
         </header>
 
@@ -20,17 +20,17 @@
           <label class="toggle" :for="`compliance-${country.countryCode}-enabled`">
             <input :id="`compliance-${country.countryCode}-enabled`" v-model="forms[country.countryCode].isEnabled" type="checkbox" />
             <span>
-              <strong>Apply the {{ country.name }} rules to my invoices</strong>
-              <small>Turning it on checks the details below.</small>
+              <strong>{{ t('compliance.apply', { country: country.name }) }}</strong>
+              <small>{{ t('compliance.applyHelp') }}</small>
             </span>
           </label>
 
           <div class="grid">
-            <BaseField label="Legal name" :for="`${country.countryCode}-legalName`" :error="errors[country.countryCode]?.legalName">
+            <BaseField :label="t('compliance.legalName')" :for="`${country.countryCode}-legalName`" :error="errors[country.countryCode]?.legalName">
               <input :id="`${country.countryCode}-legalName`" v-model="forms[country.countryCode].legalName" type="text" class="control" maxlength="200" />
             </BaseField>
 
-            <BaseField label="Tax ID" :for="`${country.countryCode}-taxId`" :error="errors[country.countryCode]?.taxId">
+            <BaseField :label="t('compliance.taxId')" :for="`${country.countryCode}-taxId`" :error="errors[country.countryCode]?.taxId">
               <input :id="`${country.countryCode}-taxId`" v-model="forms[country.countryCode].taxId" type="text" class="control mono" maxlength="50" />
             </BaseField>
 
@@ -46,24 +46,24 @@
           </div>
 
           <fieldset class="address">
-            <legend>Address</legend>
+            <legend>{{ t('compliance.address') }}</legend>
             <div class="grid">
-              <BaseField label="Street" :for="`${country.countryCode}-street`" class="wide">
+              <BaseField :label="t('address.street')" :for="`${country.countryCode}-street`" class="wide">
                 <input :id="`${country.countryCode}-street`" v-model="forms[country.countryCode].address.street" type="text" class="control" maxlength="200" />
               </BaseField>
-              <BaseField label="Number" :for="`${country.countryCode}-houseNumber`">
+              <BaseField :label="t('address.number')" :for="`${country.countryCode}-houseNumber`">
                 <input :id="`${country.countryCode}-houseNumber`" v-model="forms[country.countryCode].address.houseNumber" type="text" class="control" maxlength="20" />
               </BaseField>
-              <BaseField label="Postal code" :for="`${country.countryCode}-zipCode`">
+              <BaseField :label="t('address.postalCode')" :for="`${country.countryCode}-zipCode`">
                 <input :id="`${country.countryCode}-zipCode`" v-model="forms[country.countryCode].address.zipCode" type="text" class="control" maxlength="20" />
               </BaseField>
-              <BaseField label="City" :for="`${country.countryCode}-city`">
+              <BaseField :label="t('address.city')" :for="`${country.countryCode}-city`">
                 <input :id="`${country.countryCode}-city`" v-model="forms[country.countryCode].address.city" type="text" class="control" maxlength="100" />
               </BaseField>
-              <BaseField label="Province / state" :for="`${country.countryCode}-state`">
+              <BaseField :label="t('address.state')" :for="`${country.countryCode}-state`">
                 <input :id="`${country.countryCode}-state`" v-model="forms[country.countryCode].address.state" type="text" class="control" maxlength="100" />
               </BaseField>
-              <BaseField label="Country" :for="`${country.countryCode}-country`">
+              <BaseField :label="t('address.country')" :for="`${country.countryCode}-country`">
                 <input :id="`${country.countryCode}-country`" v-model="forms[country.countryCode].address.country" type="text" class="control" maxlength="100" />
               </BaseField>
             </div>
@@ -76,30 +76,29 @@
           <p v-if="errors[country.countryCode]?.general" class="field-error" role="alert">{{ errors[country.countryCode]?.general }}</p>
 
           <fieldset v-if="country.requiresCertificate" class="certificate">
-            <legend>Signing certificate</legend>
+            <legend>{{ t('compliance.certificate.title') }}</legend>
             <p class="cert-intro">
-              {{ country.name }} e-invoices must be signed. Upload your electronic certificate (a .p12 or .pfx file); it is
-              kept encrypted on the server and only used to sign your invoices.
+              {{ t('compliance.certificate.intro', { country: country.name }) }}
             </p>
 
             <div v-if="country.settings.certificate" class="cert-current">
               <StatusPill :tone="country.settings.certificate.isExpired ? 'danger' : 'success'">
-                {{ country.settings.certificate.isExpired ? 'Expired' : 'In use' }}
+                {{ country.settings.certificate.isExpired ? t('compliance.certificate.expired') : t('compliance.certificate.inUse') }}
               </StatusPill>
               <div class="cert-details">
                 <strong class="mono">{{ country.settings.certificate.subject }}</strong>
-                <span class="muted">valid until {{ formatDate(country.settings.certificate.notAfter) }}</span>
+                <span class="muted">{{ t('compliance.certificate.validUntil', { date: formatDate(country.settings.certificate.notAfter) }) }}</span>
               </div>
               <BaseButton variant="ghost-danger" :loading="certBusy === country.countryCode + ':remove'" :disabled="!!certBusy" @click="removeCertificate(country)">
-                Remove
+                {{ t('common.remove') }}
               </BaseButton>
             </div>
 
             <div class="cert-upload">
-              <BaseField :label="country.settings.certificate ? 'Replace with' : 'Certificate file'" :for="`${country.countryCode}-cert-file`" :error="errors[country.countryCode]?.certificate">
+              <BaseField :label="country.settings.certificate ? t('compliance.certificate.replaceWith') : t('compliance.certificate.file')" :for="`${country.countryCode}-cert-file`" :error="errors[country.countryCode]?.certificate">
                 <input :id="`${country.countryCode}-cert-file`" type="file" accept=".p12,.pfx" class="control" @change="onCertificateFile(country.countryCode, $event)" />
               </BaseField>
-              <BaseField label="Certificate password" :for="`${country.countryCode}-cert-password`">
+              <BaseField :label="t('compliance.certificate.password')" :for="`${country.countryCode}-cert-password`">
                 <input :id="`${country.countryCode}-cert-password`" v-model="certPasswords[country.countryCode]" type="password" class="control" autocomplete="off" />
               </BaseField>
               <BaseButton
@@ -107,13 +106,13 @@
                 :disabled="!!certBusy || !certFiles[country.countryCode]"
                 @click="uploadCertificate(country)"
               >
-                Upload
+                {{ t('images.upload') }}
               </BaseButton>
             </div>
           </fieldset>
 
           <div class="actions">
-            <BaseButton type="submit" variant="primary" :loading="saving === country.countryCode" :disabled="!!saving">Save</BaseButton>
+            <BaseButton type="submit" variant="primary" :loading="saving === country.countryCode" :disabled="!!saving">{{ t('common.save') }}</BaseButton>
           </div>
         </form>
       </section>
@@ -134,6 +133,9 @@ import StatusPill from '@/components/ui/StatusPill.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import ComplianceFieldInput from '@/components/settings/ComplianceFieldInput.vue'
 import { formatDate } from '@/utils/format'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface CountryForm {
   isEnabled: boolean
@@ -183,10 +185,10 @@ async function uploadCertificate(country: ComplianceCountryDto) {
     replaceKeepingForm(result)
     certFiles[code] = null
     certPasswords[code] = ''
-    toast.success('Certificate stored', { message: result.settings.certificate?.subject })
+    toast.success(t('compliance.certificate.stored'), { message: result.settings.certificate?.subject })
   } catch (err) {
-    if (apiStatus(err) === 400) errors[code] = { ...errors[code], certificate: errorMessage(err, 'The certificate was not accepted') }
-    else toast.failure('Failed to store the certificate', err)
+    if (apiStatus(err) === 400) errors[code] = { ...errors[code], certificate: errorMessage(err, t('compliance.certificate.notAccepted')) }
+    else toast.failure(t('compliance.certificate.storeFailed'), err)
   } finally {
     certBusy.value = null
   }
@@ -197,9 +199,9 @@ async function removeCertificate(country: ComplianceCountryDto) {
   certBusy.value = `${code}:remove`
   try {
     replaceKeepingForm(await complianceApi.removeCertificate(code))
-    toast.success('Certificate removed')
+    toast.success(t('compliance.certificate.removed'))
   } catch (err) {
-    toast.failure('Failed to remove the certificate', err)
+    toast.failure(t('compliance.certificate.removeFailed'), err)
   } finally {
     certBusy.value = null
   }
@@ -244,7 +246,7 @@ async function load() {
     countries.value = []
     result.filter(c => c.countryCode === props.countryCode).forEach(apply)
   } catch (err) {
-    loadError.value = errorMessage(err, 'Failed to load the country rules')
+    loadError.value = errorMessage(err, t('compliance.loadFailed'))
   }
 }
 
@@ -262,7 +264,7 @@ async function save(country: ComplianceCountryDto) {
       values: form.values
     })
     apply(result)
-    toast.success(`${country.name} rules ${result.settings.isEnabled ? 'turned on' : 'saved (off)'}`)
+    toast.success(result.settings.isEnabled ? t('compliance.turnedOn', { country: country.name }) : t('compliance.savedOff', { country: country.name }))
   } catch (err) {
     const data = apiErrorData(err)
     if (apiStatus(err) === 400) {
@@ -271,15 +273,15 @@ async function save(country: ComplianceCountryDto) {
         const key = issue.field ?? 'general'
         byField[key] = byField[key] ? `${byField[key]} ${issue.message}` : issue.message
       }
-      if (Object.keys(byField).length === 0) byField.address = errorMessage(err, 'The settings are not valid')
+      if (Object.keys(byField).length === 0) byField.address = errorMessage(err, t('compliance.notValid'))
       errors[code] = byField
       // The messages sit under their fields, possibly out of sight: say so, and show the first one
-      toast.warning(`${country.name} settings not saved`, { message: 'Check the fields marked in red.' })
+      toast.warning(t('compliance.notSaved', { country: country.name }), { message: t('common.checkFields') })
       await nextTick()
       document.getElementById(`${code}-legalName`)?.closest('form')?.querySelector('[role="alert"]')
         ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     } else {
-      toast.failure('Failed to save the country rules', err)
+      toast.failure(t('compliance.saveFailed'), err)
     }
   } finally {
     saving.value = null

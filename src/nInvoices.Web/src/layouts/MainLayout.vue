@@ -1,6 +1,6 @@
 <template>
   <div class="shell" :class="{ 'nav-open': navOpen }">
-    <aside class="sidebar" aria-label="Main navigation">
+    <aside class="sidebar" :aria-label="t('layout.mainNavigation')">
       <router-link to="/" class="brand" @click="navOpen = false">
         <span class="brand-mark">nI</span>
         <span class="brand-name">nInvoices</span>
@@ -16,13 +16,13 @@
           @click="navOpen = false"
         >
           <AppIcon :name="item.icon" />
-          <span>{{ item.label }}</span>
+          <span>{{ t(item.label) }}</span>
         </router-link>
       </nav>
 
       <div class="sidebar-footer">
         <BaseButton variant="primary" icon="plus" to="/invoices/new" class="new-invoice" @click="navOpen = false">
-          New invoice
+          {{ t('layout.newInvoice') }}
         </BaseButton>
       </div>
     </aside>
@@ -31,11 +31,11 @@
 
     <div class="main">
       <header class="topbar">
-        <button type="button" class="menu-btn" aria-label="Open navigation" @click="navOpen = true">
+        <button type="button" class="menu-btn" :aria-label="t('layout.openNavigation')" @click="navOpen = true">
           <AppIcon name="menu" />
         </button>
 
-        <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <nav class="breadcrumbs" :aria-label="t('layout.breadcrumb')">
           <template v-for="(crumb, index) in breadcrumbs" :key="index">
             <AppIcon v-if="index > 0" name="chevronRight" class="crumb-sep" />
             <router-link v-if="crumb.to && index < breadcrumbs.length - 1" :to="crumb.to" class="crumb">
@@ -63,9 +63,9 @@
               <span v-if="authStore.email">{{ authStore.email }}</span>
             </div>
             <div class="menu-section">
-              <span class="menu-label">Theme</span>
+              <span class="menu-label">{{ t('layout.theme') }}</span>
               <ThemeSwitch compact />
-              <div class="swatches" role="radiogroup" :aria-label="`${mode === 'dark' ? 'Dark' : 'Light'} theme`">
+              <div class="swatches" role="radiogroup" :aria-label="mode === 'dark' ? t('layout.darkTheme') : t('layout.lightTheme')">
                 <button
                   v-for="option in modeThemes"
                   :key="option.id"
@@ -81,12 +81,12 @@
                   <!-- drawn with the theme's own variables -->
                   <span class="swatch-fill" :data-theme="option.id"><span class="swatch-accent"></span></span>
                 </button>
-                <router-link to="/settings/general" class="all-themes" @click="userOpen = false">All themes</router-link>
+                <router-link to="/settings/general" class="all-themes" @click="userOpen = false">{{ t('layout.allThemes') }}</router-link>
               </div>
             </div>
             <button type="button" class="menu-item" role="menuitem" :disabled="loggingOut" @click="logout">
               <AppIcon name="logout" />
-              {{ loggingOut ? 'Signing out…' : 'Sign out' }}
+              {{ loggingOut ? t('layout.signingOut') : t('layout.signOut') }}
             </button>
           </div>
         </div>
@@ -109,25 +109,30 @@ import ThemeSwitch from '@/components/ui/ThemeSwitch.vue'
 import { useToast } from '@/composables/useToast'
 import { usePageTitle } from '@/composables/usePageTitle'
 import { THEMES, useTheme } from '@/composables/useTheme'
+import { useI18n } from 'vue-i18n'
+import type { MessageKey } from '@/i18n'
+import { usePreferencesStore } from '@/stores/preferences'
 
 interface NavItem {
   to: string
-  label: string
+  /** Message key */
+  label: MessageKey
   icon: IconName
   section: string
 }
 
 const navItems: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: 'dashboard', section: 'dashboard' },
-  { to: '/customers', label: 'Customers', icon: 'customers', section: 'customers' },
-  { to: '/invoices', label: 'Invoices', icon: 'invoices', section: 'invoices' },
-  { to: '/templates', label: 'Templates', icon: 'template', section: 'templates' },
-  { to: '/expenses', label: 'Expenses', icon: 'receipt', section: 'expenses' },
-  { to: '/tax', label: 'Tax prediction', icon: 'landmark', section: 'tax' },
-  { to: '/settings', label: 'Settings', icon: 'settings', section: 'settings' }
+  { to: '/', label: 'nav.dashboard', icon: 'dashboard', section: 'dashboard' },
+  { to: '/customers', label: 'nav.customers', icon: 'customers', section: 'customers' },
+  { to: '/invoices', label: 'nav.invoices', icon: 'invoices', section: 'invoices' },
+  { to: '/templates', label: 'nav.templates', icon: 'template', section: 'templates' },
+  { to: '/expenses', label: 'nav.expenses', icon: 'receipt', section: 'expenses' },
+  { to: '/tax', label: 'nav.taxPrediction', icon: 'landmark', section: 'tax' },
+  { to: '/settings', label: 'nav.settings', icon: 'settings', section: 'settings' }
 ]
 
 const route = useRoute()
+const { t } = useI18n()
 const authStore = useAuthStore()
 const toast = useToast()
 const pageTitle = usePageTitle()
@@ -145,9 +150,11 @@ function isActive(item: NavItem): boolean {
 
 const breadcrumbs = computed(() => {
   const crumbs: { label: string; to?: string }[] = []
+  // Route titles are message keys; a view's own title (a record's name) is shown as is
   const parent = route.meta.parent as { label: string; to: string } | undefined
-  if (parent) crumbs.push(parent)
-  crumbs.push({ label: pageTitle.value ?? (route.meta.title as string) ?? '' })
+  if (parent) crumbs.push({ label: t(parent.label), to: parent.to })
+  const title = route.meta.title as string | undefined
+  crumbs.push({ label: pageTitle.value ?? (title ? t(title) : '') })
   return crumbs
 })
 
@@ -162,7 +169,7 @@ async function logout() {
   try {
     await authStore.logout()
   } catch (error) {
-    toast.failure('Sign out failed', error)
+    toast.failure(t('layout.signOutFailed'), error)
   } finally {
     loggingOut.value = false
     userOpen.value = false
@@ -173,7 +180,12 @@ function closeUserMenu(event: MouseEvent) {
   if (!(event.target as HTMLElement).closest('.user')) userOpen.value = false
 }
 
-onMounted(() => document.addEventListener('click', closeUserMenu))
+// The user's language, from their preferences on the server (the browser's last one shows until then)
+const preferences = usePreferencesStore()
+onMounted(() => {
+  document.addEventListener('click', closeUserMenu)
+  if (!preferences.loaded) preferences.load().catch(() => { /* keeps the current language */ })
+})
 onBeforeUnmount(() => document.removeEventListener('click', closeUserMenu))
 
 watch(() => route.fullPath, () => {

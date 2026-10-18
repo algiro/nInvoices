@@ -1,20 +1,20 @@
 <template>
   <form class="expense-form" novalidate @submit.prevent="submit">
-    <BaseField label="Description" for="recurring-description" required :error="errors.description">
-      <input id="recurring-description" v-model="form.description" type="text" maxlength="500" class="control" placeholder="e.g. Social security fee (cuota de autónomo)" />
+    <BaseField :label="t('expenses.description')" for="recurring-description" required :error="errors.description">
+      <input id="recurring-description" v-model="form.description" type="text" maxlength="500" class="control" :placeholder="t('expenses.form.recurringDescriptionPlaceholder')" />
     </BaseField>
 
-    <BaseField label="Category" for="recurring-category">
+    <BaseField :label="t('expenses.category')" for="recurring-category">
       <select id="recurring-category" v-model="form.category" class="control">
-        <option v-for="(label, value) in ExpenseCategoryNames" :key="value" :value="value">{{ label }}</option>
+        <option v-for="(_, value) in ExpenseCategoryNames" :key="value" :value="value">{{ expenseCategoryLabel(value) }}</option>
       </select>
     </BaseField>
 
     <div class="row">
-      <BaseField label="Amount each month" for="recurring-amount" required :error="errors.amount">
+      <BaseField :label="t('expenses.form.amountEachMonth')" for="recurring-amount" required :error="errors.amount">
         <input id="recurring-amount" v-model.number="form.amount" type="number" step="0.01" min="0" inputmode="decimal" class="control num" />
       </BaseField>
-      <BaseField label="Currency" for="recurring-currency" required>
+      <BaseField :label="t('common.currency')" for="recurring-currency" required>
         <select id="recurring-currency" v-model="form.currency" class="control">
           <option v-for="code in currencies" :key="code" :value="code">{{ code }}</option>
         </select>
@@ -22,21 +22,21 @@
     </div>
 
     <div class="row">
-      <BaseField label="From" for="recurring-from" required :error="errors.fromMonth">
+      <BaseField :label="t('expenses.from')" for="recurring-from" required :error="errors.fromMonth">
         <input id="recurring-from" v-model="form.fromMonth" type="month" class="control" />
       </BaseField>
-      <BaseField label="Until" for="recurring-to" optional help="Leave empty while it goes on." :error="errors.toMonth">
+      <BaseField :label="t('expenses.until')" for="recurring-to" optional :help="t('expenses.form.untilHelp')" :error="errors.toMonth">
         <input id="recurring-to" v-model="form.toMonth" type="month" class="control" />
       </BaseField>
     </div>
 
-    <p class="hint">When the amount changes, end this one the month before and add a new one from the month it changes.</p>
+    <p class="hint">{{ t('expenses.form.amountChangesHint') }}</p>
 
     <p v-if="errors.form" class="form-error" role="alert">{{ errors.form }}</p>
 
     <div class="form-actions">
-      <BaseButton :disabled="saving" @click="emit('cancel')">Cancel</BaseButton>
-      <BaseButton type="submit" variant="primary" :loading="saving">{{ expense ? 'Save changes' : 'Add recurring expense' }}</BaseButton>
+      <BaseButton :disabled="saving" @click="emit('cancel')">{{ t('common.cancel') }}</BaseButton>
+      <BaseButton type="submit" variant="primary" :loading="saving">{{ expense ? t('common.saveChanges') : t('expenses.form.addRecurring') }}</BaseButton>
     </div>
   </form>
 </template>
@@ -50,6 +50,10 @@ import { errorMessage, apiStatus, apiErrorData } from '@/composables/useToast'
 import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { fromMonthInput, toMonthInput, todayIso } from '@/utils/taxPrediction'
+import { expenseCategoryLabel } from '@/utils/format'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   /** The expense to edit; a new one when absent */
@@ -74,10 +78,10 @@ const form = reactive({
 
 function validate(): boolean {
   Object.keys(errors).forEach(key => delete errors[key])
-  if (!form.description.trim()) errors.description = 'Enter a description.'
-  if (!(Number(form.amount) > 0)) errors.amount = 'Enter an amount greater than 0.'
-  if (!fromMonthInput(form.fromMonth)) errors.fromMonth = 'Choose the first month.'
-  if (form.toMonth && form.toMonth < form.fromMonth) errors.toMonth = 'It cannot end before it starts.'
+  if (!form.description.trim()) errors.description = t('expenses.form.enterDescription')
+  if (!(Number(form.amount) > 0)) errors.amount = t('expenses.form.enterAmount')
+  if (!fromMonthInput(form.fromMonth)) errors.fromMonth = t('expenses.form.chooseFirstMonth')
+  if (form.toMonth && form.toMonth < form.fromMonth) errors.toMonth = t('expenses.form.endBeforeStart')
   return Object.keys(errors).length === 0
 }
 
@@ -100,7 +104,7 @@ async function submit() {
     emit('saved', saved)
   } catch (err) {
     const fieldErrors = apiStatus(err) === 400 ? (apiErrorData(err)?.errors as Record<string, string[]> | undefined) : undefined
-    errors.form = fieldErrors ? Object.values(fieldErrors).flat().join(' ') : `The expense could not be saved: ${errorMessage(err)}`
+    errors.form = fieldErrors ? Object.values(fieldErrors).flat().join(' ') : t('expenses.form.saveFailedDetail', { error: errorMessage(err) })
   } finally {
     saving.value = false
   }

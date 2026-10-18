@@ -3,6 +3,7 @@ import { invoicesApi } from '@/api/invoices'
 import { useToast } from '@/composables/useToast'
 import type { InvoiceDto, InvoicePageDto } from '@/types'
 import type { InvoiceListParams } from '@/composables/useInvoiceListQuery'
+import { t } from '@/i18n'
 
 const MAX_SELECT_ALL = 500
 
@@ -44,7 +45,7 @@ export function useInvoiceSelection(page: Ref<InvoicePageDto | null>, params: Re
         result.items.forEach(i => selected.set(i.id, i))
       }
     } catch (error) {
-      toast.failure('Could not select all the invoices', error)
+      toast.failure(t('invoices.bulk.selectAllFailed'), error)
     } finally {
       selectingAll.value = false
     }

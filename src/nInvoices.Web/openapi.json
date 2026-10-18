@@ -6408,6 +6408,102 @@
         }
       }
     },
+    "/api/preferences": {
+      "get": {
+        "tags": [
+          "Preferences"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferencesDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferencesDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferencesDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Preferences"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserPreferencesDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserPreferencesDto"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserPreferencesDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferencesDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferencesDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferencesDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Projects": {
       "get": {
         "tags": [
@@ -12389,6 +12485,17 @@
           }
         }
       },
+      "UpdateUserPreferencesDto": {
+        "required": [
+          "uiLanguage"
+        ],
+        "type": "object",
+        "properties": {
+          "uiLanguage": {
+            "type": "string"
+          }
+        }
+      },
       "UploadCertificateDto": {
         "required": [
           "pfx",
@@ -12426,6 +12533,35 @@
             "items": {
               "$ref": "#/components/schemas/OfferedCountryDto"
             }
+          }
+        }
+      },
+      "UserPreferencesDto": {
+        "required": [
+          "uiLanguage",
+          "uiLanguages"
+        ],
+        "type": "object",
+        "properties": {
+          "uiLanguage": {
+            "type": "string"
+          },
+          "uiLanguages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "UserPreferencesExportDto": {
+        "required": [
+          "uiLanguage"
+        ],
+        "type": "object",
+        "properties": {
+          "uiLanguage": {
+            "type": "string"
           }
         }
       },
@@ -12473,6 +12609,16 @@
               },
               {
                 "$ref": "#/components/schemas/TaxRecordsExportDto"
+              }
+            ]
+          },
+          "preferences": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserPreferencesExportDto"
               }
             ]
           }
@@ -12733,6 +12879,9 @@
     },
     {
       "name": "MonthlyReportTemplates"
+    },
+    {
+      "name": "Preferences"
     },
     {
       "name": "Projects"

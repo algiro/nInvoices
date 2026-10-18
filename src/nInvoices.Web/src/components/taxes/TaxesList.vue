@@ -2,38 +2,38 @@
   <section class="section">
     <header class="section-header">
       <div>
-        <h3>Taxes</h3>
-        <p class="help">Lines added below the subtotal, calculated in order. A negative rate subtracts, e.g. withholding tax.</p>
+        <h3>{{ t('customers.tabs.taxes') }}</h3>
+        <p class="help">{{ t('taxes.help') }}</p>
       </div>
-      <BaseButton variant="primary" icon="plus" @click="handleAdd">New tax</BaseButton>
+      <BaseButton variant="primary" icon="plus" @click="handleAdd">{{ t('taxes.new') }}</BaseButton>
     </header>
 
-    <LoadingState v-if="loading && taxes.length === 0" label="Loading taxes…" />
+    <LoadingState v-if="loading && taxes.length === 0" :label="t('taxes.loading')" />
 
-    <EmptyState v-else-if="error" icon="alert" title="Taxes could not be loaded" :description="error" compact>
-      <BaseButton @click="loadTaxes">Try again</BaseButton>
+    <EmptyState v-else-if="error" icon="alert" :title="t('taxes.loadFailed')" :description="error" compact>
+      <BaseButton @click="loadTaxes">{{ t('common.tryAgain') }}</BaseButton>
     </EmptyState>
 
     <EmptyState
       v-else-if="taxes.length === 0"
       icon="percent"
-      title="No taxes"
-      description="Invoices for this customer show only the subtotal. Add VAT or other taxes if they apply."
+      :title="t('taxes.emptyTitle')"
+      :description="t('taxes.emptyDescription')"
       compact
     >
-      <BaseButton variant="primary" icon="plus" @click="handleAdd">Add a tax</BaseButton>
+      <BaseButton variant="primary" icon="plus" @click="handleAdd">{{ t('taxes.addOne') }}</BaseButton>
     </EmptyState>
 
     <div v-else class="table-wrap">
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col" class="num">Order</th>
-            <th scope="col">Tax</th>
-            <th scope="col">Calculation</th>
-            <th scope="col" class="num">Rate</th>
-            <th scope="col">Applied to</th>
-            <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+            <th scope="col" class="num">{{ t('taxes.order') }}</th>
+            <th scope="col">{{ t('taxes.tax') }}</th>
+            <th scope="col">{{ t('taxes.calculation') }}</th>
+            <th scope="col" class="num">{{ t('rates.rate') }}</th>
+            <th scope="col">{{ t('taxes.appliedTo') }}</th>
+            <th scope="col" class="actions"><span class="sr-only">{{ t('common.actions') }}</span></th>
           </tr>
         </thead>
         <tbody>
@@ -41,20 +41,20 @@
             <td class="num muted">{{ tax.order }}</td>
             <td class="primary-cell">
               {{ tax.description }}
-              <StatusPill v-if="!tax.isActive" class="inactive-pill">Inactive</StatusPill>
+              <StatusPill v-if="!tax.isActive" class="inactive-pill">{{ t('common.inactive') }}</StatusPill>
             </td>
             <td>{{ handlerName(tax.handlerId) }}</td>
             <td class="num primary-cell">{{ formatRate(tax) }}</td>
-            <td class="muted">{{ tax.appliedToTaxId ? getTaxName(tax.appliedToTaxId) : 'Subtotal' }}</td>
+            <td class="muted">{{ tax.appliedToTaxId ? getTaxName(tax.appliedToTaxId) : t('invoiceWizard.review.subtotal') }}</td>
             <td class="actions">
-              <BaseButton size="sm" variant="ghost" icon="edit" @click="handleEdit(tax)">Edit</BaseButton>
+              <BaseButton size="sm" variant="ghost" icon="edit" @click="handleEdit(tax)">{{ t('common.edit') }}</BaseButton>
               <BaseButton
                 size="sm"
                 variant="ghost-danger"
                 icon="trash"
                 icon-only
-                title="Delete"
-                :aria-label="`Delete ${tax.description}`"
+                :title="t('common.delete')"
+                :aria-label="t('common.deleteNamed', { name: tax.description })"
                 @click="handleDelete(tax)"
               />
             </td>
@@ -65,7 +65,7 @@
 
     <BaseDialog
       :open="showForm"
-      :title="editingTax ? 'Edit tax' : 'New tax'"
+      :title="editingTax ? t('taxes.edit') : t('taxes.new')"
       :close-on-overlay="false"
       @close="handleCloseForm"
     >
@@ -92,6 +92,10 @@ import BaseDialog from '@/components/ui/BaseDialog.vue'
 import StatusPill from '@/components/ui/StatusPill.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
+import { currentLanguage } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   customerId: number
@@ -123,18 +127,18 @@ async function loadTaxes() {
 }
 
 function handlerName(handlerId: string): string {
-  return handlerId === 'FIXED_AMOUNT' ? 'Fixed amount' : handlerId === 'COMPOUND' ? 'Compound' : handlerId === 'PERCENTAGE' ? 'Percentage' : handlerId
+  return handlerId === 'FIXED_AMOUNT' ? t('taxes.handlers.fixed') : handlerId === 'COMPOUND' ? t('taxes.handlers.compound') : handlerId === 'PERCENTAGE' ? t('taxes.handlers.percentage') : handlerId
 }
 
 function formatRate(tax: TaxDto): string {
-  const value = tax.rate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const value = tax.rate.toLocaleString(currentLanguage(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   return tax.handlerId === 'FIXED_AMOUNT' ? value : `${value}%`
 }
 
 function getTaxName(taxId: number | null): string {
-  if (!taxId) return 'Subtotal'
+  if (!taxId) return t('invoiceWizard.review.subtotal')
   const tax = taxesStore.getTaxById(taxId)
-  return tax ? tax.description : 'Unknown tax'
+  return tax ? tax.description : t('taxes.unknown')
 }
 
 function handleAdd() {
@@ -148,20 +152,20 @@ function handleEdit(tax: TaxDto) {
 }
 
 async function handleDelete(tax: TaxDto) {
-  if (!(await confirm({ title: 'Delete tax?', message: `"${tax.description}" will be permanently deleted.`, confirmLabel: 'Delete', tone: 'danger' }))) {
+  if (!(await confirm({ title: t('taxes.deleteTitle'), message: t('taxes.deleteMessage', { name: tax.description }), confirmLabel: t('common.delete'), tone: 'danger' }))) {
     return
   }
 
   try {
     await taxesStore.remove(tax.id)
-    toast.success('Tax deleted')
+    toast.success(t('taxes.deleted'))
   } catch (error) {
-    toast.failure('Failed to delete tax', error)
+    toast.failure(t('taxes.deleteFailed'), error)
   }
 }
 
 function handleFormSuccess() {
-  toast.success(editingTax.value ? 'Tax updated' : 'Tax added')
+  toast.success(editingTax.value ? t('taxes.updated') : t('taxes.added'))
   showForm.value = false
   editingTax.value = null
   loadTaxes()

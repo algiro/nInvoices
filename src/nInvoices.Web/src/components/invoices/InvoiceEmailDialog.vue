@@ -1,25 +1,26 @@
 <template>
   <BaseDialog
     :open="open"
-    :title="created ? 'Draft created in Gmail' : `Email invoice ${invoice.invoiceNumber}`"
-    :description="created ? undefined : 'Review the email; it is saved as a draft in your Gmail, where you send it.'"
+    :title="created ? t('invoiceEmail.draftCreated') : t('invoiceEmail.title', { number: invoice.invoiceNumber })"
+    :description="created ? undefined : t('invoiceEmail.description')"
     size="xl"
     :close-on-overlay="false"
     @close="emit('close')"
   >
     <!-- Done: link to the draft -->
     <div v-if="created" class="done">
-      <p>
-        The draft to <strong>{{ created.to }}</strong> is in the Drafts folder of <strong>{{ created.from }}</strong>,
-        with {{ created.attachments.join(' and ') }} attached. Open it, check it, and press Send in Gmail.
-      </p>
-      <p v-if="canMarkSent" class="muted">Once you have sent it, mark the invoice as sent here.</p>
+      <i18n-t keypath="invoiceEmail.done" tag="p">
+        <template #to><strong>{{ created.to }}</strong></template>
+        <template #from><strong>{{ created.from }}</strong></template>
+        <template #attachments>{{ listOf(created.attachments) }}</template>
+      </i18n-t>
+      <p v-if="canMarkSent" class="muted">{{ t('invoiceEmail.markSentHint') }}</p>
     </div>
 
-    <LoadingState v-else-if="loading" label="Preparing the email…" />
+    <LoadingState v-else-if="loading" :label="t('invoiceEmail.preparing')" />
 
-    <EmptyState v-else-if="loadError" icon="alert" title="The email could not be prepared" :description="loadError" compact>
-      <BaseButton @click="load()">Try again</BaseButton>
+    <EmptyState v-else-if="loadError" icon="alert" :title="t('invoiceEmail.prepareFailed')" :description="loadError" compact>
+      <BaseButton @click="load()">{{ t('common.tryAgain') }}</BaseButton>
     </EmptyState>
 
     <form v-else-if="compose" id="invoice-email-form" class="compose" novalidate @submit.prevent="createDraft">
@@ -27,14 +28,14 @@
         <AppIcon name="alert" />
         <span>
           {{ notConnectedMessage }}
-          <router-link to="/settings/email" @click="emit('close')">Open Settings</router-link>
+          <router-link to="/settings/email" @click="emit('close')">{{ t('invoiceEmail.openSettings') }}</router-link>
         </span>
       </div>
 
       <div v-if="compose.errors.length" class="notice danger" role="alert">
         <AppIcon name="error" />
         <div>
-          <strong>The email template has problems; the text below is the template source.</strong>
+          <strong>{{ t('invoiceEmail.templateProblems') }}</strong>
           <ul>
             <li v-for="(problem, index) in compose.errors" :key="index">{{ problem }}</li>
           </ul>
@@ -42,46 +43,46 @@
       </div>
 
       <div class="fields">
-        <BaseField label="From" for="email-from">
-          <input id="email-from" class="control" type="text" :value="compose.from ?? 'Gmail not connected'" readonly />
+        <BaseField :label="t('invoiceEmail.from')" for="email-from">
+          <input id="email-from" class="control" type="text" :value="compose.from ?? t('invoiceEmail.gmailNotConnected')" readonly />
         </BaseField>
-        <BaseField label="Template" for="email-template">
+        <BaseField :label="t('invoiceEmail.template')" for="email-template">
           <select id="email-template" v-model="templateId" class="control" :disabled="switching" @change="switchTemplate">
             <option v-for="option in compose.templates" :key="option.id ?? 'default'" :value="option.id">
-              {{ option.name }}{{ option.isActive ? ' (active)' : '' }}
+              {{ option.name }}{{ option.isActive ? ` (${t('templates.activeSuffix')})` : '' }}
             </option>
           </select>
         </BaseField>
-        <BaseField label="To" for="email-to" required :error="fieldErrors.to" class="span-2">
+        <BaseField :label="t('invoiceEmail.to')" for="email-to" required :error="fieldErrors.to" class="span-2">
           <input id="email-to" v-model="form.to" class="control" type="text" autocomplete="off" placeholder="accounts@example.com" />
         </BaseField>
-        <BaseField label="CC" for="email-cc" optional :error="fieldErrors.cc" class="span-2" help="Several addresses separated by commas.">
+        <BaseField :label="t('customers.form.ccLabel')" for="email-cc" optional :error="fieldErrors.cc" class="span-2" :help="t('customers.form.ccHelp')">
           <input id="email-cc" v-model="form.cc" class="control" type="text" autocomplete="off" />
         </BaseField>
-        <BaseField label="Subject" for="email-subject" required :error="fieldErrors.subject" class="span-2">
+        <BaseField :label="t('invoiceEmail.subject')" for="email-subject" required :error="fieldErrors.subject" class="span-2">
           <input id="email-subject" v-model="form.subject" class="control" type="text" maxlength="500" />
         </BaseField>
       </div>
 
       <div class="body-header">
-        <span class="label">Message</span>
-        <div class="switch" role="group" aria-label="Message view">
-          <button type="button" :class="{ active: bodyView === 'preview' }" :aria-pressed="bodyView === 'preview'" @click="bodyView = 'preview'">Preview</button>
-          <button type="button" :class="{ active: bodyView === 'html' }" :aria-pressed="bodyView === 'html'" @click="bodyView = 'html'">Edit HTML</button>
+        <span class="label">{{ t('invoiceEmail.message') }}</span>
+        <div class="switch" role="group" :aria-label="t('invoiceEmail.messageView')">
+          <button type="button" :class="{ active: bodyView === 'preview' }" :aria-pressed="bodyView === 'preview'" @click="bodyView = 'preview'">{{ t('invoiceEmail.preview') }}</button>
+          <button type="button" :class="{ active: bodyView === 'html' }" :aria-pressed="bodyView === 'html'" @click="bodyView = 'html'">{{ t('invoiceEmail.editHtml') }}</button>
         </div>
       </div>
       <iframe
         v-if="bodyView === 'preview'"
         class="body-preview"
-        title="Email message preview"
+        :title="t('invoiceEmail.previewTitle')"
         sandbox=""
         :srcdoc="previewDocument"
       ></iframe>
-      <textarea v-else v-model="form.body" class="control body-html" spellcheck="false" aria-label="Message HTML"></textarea>
+      <textarea v-else v-model="form.body" class="control body-html" spellcheck="false" :aria-label="t('invoiceEmail.messageHtml')"></textarea>
       <p v-if="fieldErrors.body" class="field-error" role="alert">{{ fieldErrors.body }}</p>
 
       <fieldset class="attachments">
-        <legend>Attachments</legend>
+        <legend>{{ t('invoiceEmail.attachments') }}</legend>
         <label v-for="attachment in compose.attachments" :key="attachment.key" class="attachment">
           <input
             type="checkbox"
@@ -97,14 +98,14 @@
 
     <template #footer>
       <template v-if="created">
-        <BaseButton @click="emit('close')">Close</BaseButton>
-        <BaseButton v-if="canMarkSent" icon="check" @click="emit('mark-sent')">Mark as sent</BaseButton>
+        <BaseButton @click="emit('close')">{{ t('common.close') }}</BaseButton>
+        <BaseButton v-if="canMarkSent" icon="check" @click="emit('mark-sent')">{{ t('invoices.actions.markSent') }}</BaseButton>
         <a class="gmail-link" :href="created.gmailUrl" target="_blank" rel="noopener">
-          <AppIcon name="send" />Open in Gmail
+          <AppIcon name="send" />{{ t('invoices.details.openInGmail') }}
         </a>
       </template>
       <template v-else>
-        <BaseButton :disabled="saving" @click="emit('close')">Cancel</BaseButton>
+        <BaseButton :disabled="saving" @click="emit('close')">{{ t('common.cancel') }}</BaseButton>
         <BaseButton
           type="submit"
           form="invoice-email-form"
@@ -113,7 +114,7 @@
           :loading="saving"
           :disabled="!compose || !gmailReady || switching"
         >
-          Create Gmail draft
+          {{ t('invoiceEmail.create') }}
         </BaseButton>
       </template>
     </template>
@@ -133,6 +134,10 @@ import LoadingState from '@/components/ui/LoadingState.vue'
 import { useToast, apiErrorCode, errorMessage } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import { invoiceStatus } from '@/utils/format'
+import { currentLanguage } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   open: boolean
@@ -169,7 +174,12 @@ const EMAIL_PATTERN = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/
 const canMarkSent = computed(() => invoiceStatus(props.invoice.status).name === 'Finalized')
 const gmailReady = computed(() => !!compose.value?.from && !gmailProblem.value)
 const notConnectedMessage = computed(() =>
-  gmailProblem.value ?? 'Connect your Gmail account in Settings to create the draft.')
+  gmailProblem.value ?? t('invoiceEmail.connectGmail'))
+
+/** ['A', 'B'] → "A and B" in the app's language */
+function listOf(items: string[]): string {
+  return new Intl.ListFormat(currentLanguage(), { type: 'conjunction' }).format(items)
+}
 
 // The rendered HTML inside a minimal page so it reads like an email client would show it
 const previewDocument = computed(() => `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
@@ -208,9 +218,9 @@ async function switchTemplate() {
   const previous = compose.value?.templateId ?? null
   const edited = snapshot() !== loadedSnapshot
   if (edited && !(await confirm({
-    title: 'Replace the subject and message?',
-    message: 'Switching template replaces the text you have edited.',
-    confirmLabel: 'Switch template'
+    title: t('invoiceEmail.replaceTitle'),
+    message: t('invoiceEmail.replaceMessage'),
+    confirmLabel: t('invoiceEmail.switchTemplate')
   }))) {
     templateId.value = previous
     return
@@ -227,11 +237,11 @@ function validate(): boolean {
   Object.keys(fieldErrors).forEach(key => delete fieldErrors[key])
   const to = form.to.split(/[,;\s]+/).filter(Boolean)
   const cc = form.cc.split(/[,;\s]+/).filter(Boolean)
-  if (to.length === 0) fieldErrors.to = 'Add at least one recipient.'
-  else if (to.some(a => !EMAIL_PATTERN.test(a))) fieldErrors.to = `“${to.find(a => !EMAIL_PATTERN.test(a))}” is not a valid address.`
-  if (cc.some(a => !EMAIL_PATTERN.test(a))) fieldErrors.cc = `“${cc.find(a => !EMAIL_PATTERN.test(a))}” is not a valid address.`
-  if (!form.subject.trim()) fieldErrors.subject = 'Enter a subject.'
-  if (!form.body.trim()) fieldErrors.body = 'The message is empty.'
+  if (to.length === 0) fieldErrors.to = t('invoiceEmail.addRecipient')
+  else if (to.some(a => !EMAIL_PATTERN.test(a))) fieldErrors.to = t('customers.form.invalidAddress', { address: to.find(a => !EMAIL_PATTERN.test(a)) ?? '' })
+  if (cc.some(a => !EMAIL_PATTERN.test(a))) fieldErrors.cc = t('customers.form.invalidAddress', { address: cc.find(a => !EMAIL_PATTERN.test(a)) ?? '' })
+  if (!form.subject.trim()) fieldErrors.subject = t('invoiceEmail.enterSubject')
+  if (!form.body.trim()) fieldErrors.body = t('invoiceEmail.emptyMessage')
   return Object.keys(fieldErrors).length === 0
 }
 
@@ -253,7 +263,7 @@ async function createDraft() {
     if (code === 'gmail_not_connected' || code === 'gmail_reconnect_required' || code === 'gmail_not_configured') {
       gmailProblem.value = errorMessage(error)
     } else {
-      toast.failure('The Gmail draft was not created', error)
+      toast.failure(t('invoiceEmail.createFailed'), error)
     }
   } finally {
     saving.value = false

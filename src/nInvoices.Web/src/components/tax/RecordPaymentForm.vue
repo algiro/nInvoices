@@ -1,15 +1,14 @@
 <template>
   <form class="payment-form" novalidate @submit.prevent="submit">
     <p class="intro">
-      What you paid for {{ form.name }}, {{ period.name }} {{ year }}. Later periods start from it instead of the estimate
-      ({{ formatMoney(form.estimated, currency) }}).
+      {{ t('tax.payment.intro', { form: form.name, period: period.name, year, estimate: formatMoney(form.estimated, currency) }) }}
     </p>
 
     <div class="row">
-      <BaseField label="Amount paid" for="payment-amount" required :help="`In ${currency}. 0 if the form was filed with nothing to pay.`" :error="errors.amount">
+      <BaseField :label="t('tax.payment.amount')" for="payment-amount" required :help="t('tax.payment.amountHelp', { currency })" :error="errors.amount">
         <input id="payment-amount" v-model.number="amount" type="number" step="0.01" min="0" inputmode="decimal" class="control num" />
       </BaseField>
-      <BaseField label="Paid on" for="payment-date" required :error="errors.paidOn">
+      <BaseField :label="t('tax.payment.paidOn')" for="payment-date" required :error="errors.paidOn">
         <input id="payment-date" v-model="paidOn" type="date" class="control" />
       </BaseField>
     </div>
@@ -18,10 +17,10 @@
 
     <div class="form-actions">
       <BaseButton v-if="form.payment" variant="ghost-danger" icon="trash" :loading="deleting" :disabled="saving" class="delete" @click="removePayment">
-        Delete record
+        {{ t('tax.payment.deleteRecord') }}
       </BaseButton>
-      <BaseButton :disabled="saving || deleting" @click="emit('cancel')">Cancel</BaseButton>
-      <BaseButton type="submit" variant="primary" :loading="saving" :disabled="deleting">Save</BaseButton>
+      <BaseButton :disabled="saving || deleting" @click="emit('cancel')">{{ t('common.cancel') }}</BaseButton>
+      <BaseButton type="submit" variant="primary" :loading="saving" :disabled="deleting">{{ t('common.save') }}</BaseButton>
     </div>
   </form>
 </template>
@@ -35,6 +34,9 @@ import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { formatMoney } from '@/utils/format'
 import { todayIso } from '@/utils/taxPrediction'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   form: TaxFormDto
@@ -54,8 +56,8 @@ const errors = reactive<Record<string, string>>({})
 
 async function submit() {
   Object.keys(errors).forEach(key => delete errors[key])
-  if (!(Number(amount.value) >= 0) || amount.value === null || (amount.value as unknown) === '') errors.amount = 'Enter the amount paid (0 or more).'
-  if (!paidOn.value) errors.paidOn = 'Enter the date.'
+  if (!(Number(amount.value) >= 0) || amount.value === null || (amount.value as unknown) === '') errors.amount = t('tax.payment.enterAmount')
+  if (!paidOn.value) errors.paidOn = t('expenses.form.enterDate')
   if (Object.keys(errors).length) return
 
   saving.value = true
@@ -69,7 +71,7 @@ async function submit() {
     })
     emit('saved')
   } catch (err) {
-    errors.form = `The payment could not be recorded: ${errorMessage(err)}`
+    errors.form = t('tax.payment.saveFailedDetail', { error: errorMessage(err) })
   } finally {
     saving.value = false
   }
@@ -82,7 +84,7 @@ async function removePayment() {
     await taxPredictionApi.deletePayment(props.form.payment.id)
     emit('deleted')
   } catch (err) {
-    errors.form = `The record could not be deleted: ${errorMessage(err)}`
+    errors.form = t('tax.payment.deleteFailedDetail', { error: errorMessage(err) })
   } finally {
     deleting.value = false
   }

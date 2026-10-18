@@ -1,0 +1,9 @@
+{
+  "errors": {
+    "unexpected": "Si è verificato un errore sul server. L'errore è stato registrato; riprova."
+  },
+  "preferences": {
+    "chooseLanguage": "Scegli una lingua",
+    "unsupportedLanguage": "{language} non è una delle lingue di questa app ({languages})"
+  }
+}

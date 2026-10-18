@@ -1,59 +1,59 @@
 <template>
-  <BasePanel title="Public holidays" description="The holidays marked on time sheets, per country. Each customer uses the calendar of its address country, or the one chosen on the customer.">
+  <BasePanel :title="t('customers.form.publicHolidays')" :description="t('holidays.description')">
     <template #actions>
-      <BaseButton v-if="calendar?.hasBuiltIn" size="sm" variant="ghost" icon="refresh" :disabled="busy" @click="handleReset">Reset to built-in</BaseButton>
-      <BaseButton size="sm" icon="plus" :disabled="!countryCode || busy" @click="openForm(null)">Add holiday</BaseButton>
+      <BaseButton v-if="calendar?.hasBuiltIn" size="sm" variant="ghost" icon="refresh" :disabled="busy" @click="handleReset">{{ t('holidays.resetBuiltIn') }}</BaseButton>
+      <BaseButton size="sm" icon="plus" :disabled="!countryCode || busy" @click="openForm(null)">{{ t('holidays.add') }}</BaseButton>
     </template>
 
     <div class="toolbar">
-      <BaseField label="Country" for="holiday-country">
+      <BaseField :label="t('address.country')" for="holiday-country">
         <select id="holiday-country" v-model="countryCode" class="control">
           <option v-for="country in countries" :key="country.countryCode" :value="country.countryCode">
             {{ country.countryName }} ({{ country.countryCode }})
           </option>
-          <option value="__other">Another country…</option>
+          <option value="__other">{{ t('holidays.anotherCountry') }}</option>
         </select>
       </BaseField>
-      <BaseField v-if="countryCode === '__other' || otherCode" label="Country code" for="holiday-other-code" help="Two letters, e.g. CH or NL.">
+      <BaseField v-if="countryCode === '__other' || otherCode" :label="t('holidays.countryCode')" for="holiday-other-code" :help="t('holidays.countryCodeHelp')">
         <div class="other-code">
           <input id="holiday-other-code" v-model="otherCodeInput" type="text" maxlength="2" class="control code" @keydown.enter.prevent="useOtherCode" />
-          <BaseButton size="sm" @click="useOtherCode">Open</BaseButton>
+          <BaseButton size="sm" @click="useOtherCode">{{ t('dashboard.open') }}</BaseButton>
         </div>
       </BaseField>
-      <BaseField label="Dates in" for="holiday-year">
+      <BaseField :label="t('holidays.datesIn')" for="holiday-year">
         <div class="year">
-          <BaseButton icon="arrowLeft" icon-only size="sm" aria-label="Previous year" @click="year--" />
+          <BaseButton icon="arrowLeft" icon-only size="sm" :aria-label="t('holidays.previousYear')" @click="year--" />
           <input id="holiday-year" v-model.number="year" type="number" class="control num" min="1900" max="2200" />
-          <BaseButton icon="chevronRight" icon-only size="sm" aria-label="Next year" @click="year++" />
+          <BaseButton icon="chevronRight" icon-only size="sm" :aria-label="t('holidays.nextYear')" @click="year++" />
         </div>
       </BaseField>
     </div>
 
-    <LoadingState v-if="loading" label="Loading holidays…" />
+    <LoadingState v-if="loading" :label="t('holidays.loading')" />
 
     <EmptyState
       v-else-if="activeCode && (!calendar || calendar.rules.length === 0)"
       compact
       icon="calendar"
-      :title="`No holidays for ${activeCode}`"
-      description="There are no built-in holidays for this country. Add them one by one; they're used for every customer in this country."
+      :title="t('holidays.noneFor', { country: activeCode })"
+      :description="t('holidays.noneDescription')"
     />
 
     <div v-else-if="calendar" class="table-wrap">
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">Holiday</th>
-            <th scope="col">Rule</th>
+            <th scope="col">{{ t('holidays.holiday') }}</th>
+            <th scope="col">{{ t('holidays.rule') }}</th>
             <th scope="col">{{ year }}</th>
-            <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+            <th scope="col" class="actions"><span class="sr-only">{{ t('common.actions') }}</span></th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="rule in calendar.rules" :key="rule.id" :class="{ inactive: !rule.isActive }">
             <td class="primary-cell">
               {{ rule.name }}
-              <StatusPill v-if="!rule.isActive" tone="neutral">Off</StatusPill>
+              <StatusPill v-if="!rule.isActive" tone="neutral">{{ t('holidays.off') }}</StatusPill>
             </td>
             <td>
               {{ describeRule(rule) }}
@@ -61,14 +61,14 @@
             </td>
             <td class="date-cell">{{ dateIn(rule) }}</td>
             <td class="actions">
-              <BaseButton size="sm" variant="ghost" icon="edit" @click="openForm(rule)">Edit</BaseButton>
+              <BaseButton size="sm" variant="ghost" icon="edit" @click="openForm(rule)">{{ t('common.edit') }}</BaseButton>
               <BaseButton
                 size="sm"
                 variant="ghost-danger"
                 icon="trash"
                 icon-only
-                title="Delete"
-                :aria-label="`Delete ${rule.name}`"
+                :title="t('common.delete')"
+                :aria-label="t('common.deleteNamed', { name: rule.name })"
                 @click="handleDelete(rule)"
               />
             </td>
@@ -77,25 +77,25 @@
       </table>
     </div>
 
-    <BaseDialog :open="formOpen" :title="editing ? 'Edit holiday' : 'New holiday'" size="sm" :close-on-overlay="false" @close="formOpen = false">
+    <BaseDialog :open="formOpen" :title="editing ? t('holidays.edit') : t('holidays.new')" size="sm" :close-on-overlay="false" @close="formOpen = false">
       <form id="holiday-form" class="rule-form" novalidate @submit.prevent="handleSave">
-        <BaseField label="Name" for="rule-name" required :error="formError">
-          <input id="rule-name" v-model="draft.name" type="text" class="control" placeholder="e.g. Sant'Ambrogio" />
+        <BaseField :label="t('customers.name')" for="rule-name" required :error="formError">
+          <input id="rule-name" v-model="draft.name" type="text" class="control" :placeholder="t('holidays.namePlaceholder')" />
         </BaseField>
 
-        <BaseField label="Date" for="rule-kind">
+        <BaseField :label="t('expenses.date')" for="rule-kind">
           <select id="rule-kind" v-model="draft.kind" class="control">
-            <option :value="HolidayRuleKind.Fixed">Same date every year</option>
-            <option :value="HolidayRuleKind.EasterOffset">Days from Easter Sunday</option>
-            <option :value="HolidayRuleKind.NthWeekday">A weekday of a month</option>
+            <option :value="HolidayRuleKind.Fixed">{{ t('holidays.kinds.fixed') }}</option>
+            <option :value="HolidayRuleKind.EasterOffset">{{ t('holidays.kinds.easter') }}</option>
+            <option :value="HolidayRuleKind.NthWeekday">{{ t('holidays.kinds.nthWeekday') }}</option>
           </select>
         </BaseField>
 
         <div v-if="draft.kind === HolidayRuleKind.Fixed" class="row">
-          <BaseField label="Day" for="rule-day">
+          <BaseField :label="t('time.day')" for="rule-day">
             <input id="rule-day" v-model.number="draft.day" type="number" min="1" max="31" class="control num" />
           </BaseField>
-          <BaseField label="Month" for="rule-month">
+          <BaseField :label="t('common.month')" for="rule-month">
             <select id="rule-month" v-model.number="draft.month" class="control">
               <option v-for="m in monthOptions" :key="m.value" :value="m.value">{{ m.label }}</option>
             </select>
@@ -104,25 +104,25 @@
 
         <BaseField
           v-else-if="draft.kind === HolidayRuleKind.EasterOffset"
-          label="Days from Easter Sunday"
+          :label="t('holidays.kinds.easter')"
           for="rule-offset"
-          help="1 = Easter Monday, -2 = Good Friday, 39 = Ascension, 50 = Whit Monday, 60 = Corpus Christi."
+          :help="t('holidays.easterHelp')"
         >
           <input id="rule-offset" v-model.number="draft.easterOffset" type="number" min="-100" max="100" class="control num" />
         </BaseField>
 
         <div v-else class="row three">
-          <BaseField label="Which" for="rule-occurrence">
+          <BaseField :label="t('holidays.which')" for="rule-occurrence">
             <select id="rule-occurrence" v-model.number="draft.occurrence" class="control">
               <option v-for="o in occurrenceOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
             </select>
           </BaseField>
-          <BaseField label="Weekday" for="rule-weekday">
+          <BaseField :label="t('time.weekday')" for="rule-weekday">
             <select id="rule-weekday" v-model="draft.weekday" class="control">
-              <option v-for="w in weekdays" :key="w" :value="w">{{ w }}</option>
+              <option v-for="w in weekdays" :key="w" :value="w">{{ weekdayName(w) }}</option>
             </select>
           </BaseField>
-          <BaseField label="Of" for="rule-nth-month">
+          <BaseField :label="t('holidays.of')" for="rule-nth-month">
             <select id="rule-nth-month" v-model.number="draft.month" class="control">
               <option v-for="m in monthOptions" :key="m.value" :value="m.value">{{ m.label }}</option>
             </select>
@@ -130,23 +130,23 @@
         </div>
 
         <div class="row">
-          <BaseField label="From year" for="rule-from" optional>
-            <input id="rule-from" v-model.number="fromYearValue" type="number" class="control num" placeholder="Always" />
+          <BaseField :label="t('holidays.fromYear')" for="rule-from" optional>
+            <input id="rule-from" v-model.number="fromYearValue" type="number" class="control num" :placeholder="t('holidays.always')" />
           </BaseField>
-          <BaseField label="Until year" for="rule-to" optional>
-            <input id="rule-to" v-model.number="toYearValue" type="number" class="control num" placeholder="Still applies" />
+          <BaseField :label="t('holidays.untilYear')" for="rule-to" optional>
+            <input id="rule-to" v-model.number="toYearValue" type="number" class="control num" :placeholder="t('holidays.stillApplies')" />
           </BaseField>
         </div>
 
         <label class="check">
           <input v-model="draft.isActive" type="checkbox" />
-          Mark this day on time sheets
+          {{ t('holidays.markOnTimesheets') }}
         </label>
       </form>
 
       <template #footer>
-        <BaseButton :disabled="saving" @click="formOpen = false">Cancel</BaseButton>
-        <BaseButton type="submit" form="holiday-form" variant="primary" :loading="saving">{{ editing ? 'Save' : 'Add holiday' }}</BaseButton>
+        <BaseButton :disabled="saving" @click="formOpen = false">{{ t('common.cancel') }}</BaseButton>
+        <BaseButton type="submit" form="holiday-form" variant="primary" :loading="saving">{{ editing ? t('common.save') : t('holidays.add') }}</BaseButton>
       </template>
     </BaseDialog>
   </BasePanel>
@@ -166,6 +166,10 @@ import BaseDialog from '@/components/ui/BaseDialog.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import StatusPill from '@/components/ui/StatusPill.vue'
+import { currentLanguage } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const toast = useToast()
 const { confirm } = useConfirm()
@@ -183,18 +187,23 @@ const busy = ref(false)
 const activeCode = computed(() => (countryCode.value === '__other' ? otherCode.value : countryCode.value))
 
 const weekdays: Weekday[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-const monthOptions = Array.from({ length: 12 }, (_, i) => ({
+/** 'Monday' → its name in the app's language (2 January 2023 was a Monday) */
+function weekdayName(weekday: Weekday | string | null): string {
+  const index = weekdays.indexOf(weekday as Weekday)
+  return index < 0 ? String(weekday ?? '') : new Date(2023, 0, 2 + index).toLocaleDateString(currentLanguage(), { weekday: 'long' })
+}
+const monthOptions = computed(() => Array.from({ length: 12 }, (_, i) => ({
   value: i + 1,
-  label: new Date(2000, i, 1).toLocaleDateString('en-US', { month: 'long' })
-}))
-const occurrenceOptions = [
-  { value: 1, label: 'First' },
-  { value: 2, label: 'Second' },
-  { value: 3, label: 'Third' },
-  { value: 4, label: 'Fourth' },
-  { value: 5, label: 'Fifth' },
-  { value: -1, label: 'Last' }
-]
+  label: new Date(2000, i, 1).toLocaleDateString(currentLanguage(), { month: 'long' })
+})))
+const occurrenceOptions = computed(() => [
+  { value: 1, label: t('holidays.occurrence.first') },
+  { value: 2, label: t('holidays.occurrence.second') },
+  { value: 3, label: t('holidays.occurrence.third') },
+  { value: 4, label: t('holidays.occurrence.fourth') },
+  { value: 5, label: t('holidays.occurrence.fifth') },
+  { value: -1, label: t('holidays.occurrence.last') }
+])
 
 onMounted(async () => {
   try {
@@ -202,7 +211,7 @@ onMounted(async () => {
     // Start from the country most used here: Italy when available, else the first one
     countryCode.value = countries.value.find(c => c.countryCode === 'IT')?.countryCode ?? countries.value[0]?.countryCode ?? ''
   } catch (error) {
-    toast.failure('Could not load the holiday countries', error)
+    toast.failure(t('holidays.countriesFailed'), error)
   }
 })
 
@@ -217,7 +226,7 @@ async function load() {
     calendar.value = await holidaysApi.getCalendar(code, year.value)
   } catch (error) {
     // 404: a country with no built-in holidays and none added yet
-    if (apiStatus(error) !== 404) toast.failure('Could not load the holidays', error)
+    if (apiStatus(error) !== 404) toast.failure(t('holidays.loadFailed'), error)
   } finally {
     loading.value = false
   }
@@ -226,7 +235,7 @@ async function load() {
 function useOtherCode() {
   const code = otherCodeInput.value.trim().toUpperCase()
   if (!/^[A-Z]{2}$/.test(code)) {
-    toast.warning('Enter a two-letter country code', { message: 'For example CH for Switzerland or NL for the Netherlands.' })
+    toast.warning(t('holidays.enterCode'), { message: t('holidays.enterCodeHelp') })
     return
   }
   const known = countries.value.find(c => c.countryCode === code)
@@ -242,7 +251,7 @@ function useOtherCode() {
 // ---------- descriptions ----------
 
 function monthName(month: number | null) {
-  return month ? monthOptions[month - 1].label : ''
+  return month ? monthOptions.value[month - 1].label : ''
 }
 
 function describeRule(rule: HolidayRuleDto): string {
@@ -251,27 +260,27 @@ function describeRule(rule: HolidayRuleDto): string {
       return `${rule.day} ${monthName(rule.month)}`
     case HolidayRuleKind.EasterOffset: {
       const n = rule.easterOffset ?? 0
-      if (n === 0) return 'Easter Sunday'
-      return `${Math.abs(n)} day${Math.abs(n) === 1 ? '' : 's'} ${n > 0 ? 'after' : 'before'} Easter Sunday`
+      if (n === 0) return t('holidays.easterSunday')
+      return n > 0 ? t('holidays.daysAfterEaster', Math.abs(n)) : t('holidays.daysBeforeEaster', Math.abs(n))
     }
     case HolidayRuleKind.NthWeekday: {
-      const which = occurrenceOptions.find(o => o.value === rule.occurrence)?.label ?? ''
-      return `${which} ${rule.weekday} of ${monthName(rule.month)}`
+      const which = occurrenceOptions.value.find(o => o.value === rule.occurrence)?.label ?? ''
+      return t('holidays.nthWeekday', { which, weekday: weekdayName(rule.weekday), month: monthName(rule.month) })
     }
   }
 }
 
 function describeYears(rule: HolidayRuleDto): string {
   if (rule.fromYear && rule.toYear) return `${rule.fromYear}–${rule.toYear}`
-  return rule.fromYear ? `from ${rule.fromYear}` : `until ${rule.toYear}`
+  return rule.fromYear ? t('holidays.fromYearValue', { year: rule.fromYear }) : t('holidays.untilYearValue', { year: rule.toYear ?? '' })
 }
 
 /** The rule's date in the chosen year, from the holidays the server computed. */
 function dateIn(rule: HolidayRuleDto): string {
   if (!rule.isActive) return '–'
   const holiday = calendar.value?.holidays.find(h => h.name === rule.name)
-  if (!holiday) return 'Not this year'
-  return new Date(`${holiday.date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
+  if (!holiday) return t('holidays.notThisYear')
+  return new Date(`${holiday.date}T00:00:00`).toLocaleDateString(currentLanguage(), { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
 // ---------- edit ----------
@@ -337,7 +346,7 @@ function payload(): SaveHolidayRuleDto {
 }
 
 async function handleSave() {
-  formError.value = draft.name.trim() ? null : 'Enter the holiday’s name.'
+  formError.value = draft.name.trim() ? null : t('holidays.enterName')
   if (formError.value) return
 
   saving.value = true
@@ -351,10 +360,10 @@ async function handleSave() {
       }
     }
     formOpen.value = false
-    toast.success(editing.value ? 'Holiday saved' : 'Holiday added')
+    toast.success(editing.value ? t('holidays.saved') : t('holidays.added'))
     await load()
   } catch (error) {
-    toast.failure('Could not save the holiday', error)
+    toast.failure(t('holidays.saveFailed'), error)
   } finally {
     saving.value = false
   }
@@ -362,9 +371,9 @@ async function handleSave() {
 
 async function handleDelete(rule: HolidayRuleDto) {
   const confirmed = await confirm({
-    title: `Delete ${rule.name}?`,
-    message: 'It won’t be marked on time sheets any more. To skip it only for a while, edit it and turn it off instead.',
-    confirmLabel: 'Delete',
+    title: t('holidays.deleteTitle', { name: rule.name }),
+    message: t('holidays.deleteMessage'),
+    confirmLabel: t('common.delete'),
     tone: 'danger'
   })
   if (!confirmed) return
@@ -374,7 +383,7 @@ async function handleDelete(rule: HolidayRuleDto) {
     await holidaysApi.deleteRule(rule.id)
     await load()
   } catch (error) {
-    toast.failure('Could not delete the holiday', error)
+    toast.failure(t('holidays.deleteFailed'), error)
   } finally {
     busy.value = false
   }
@@ -382,9 +391,9 @@ async function handleDelete(rule: HolidayRuleDto) {
 
 async function handleReset() {
   const confirmed = await confirm({
-    title: `Reset ${calendar.value?.countryName} to the built-in holidays?`,
-    message: 'Your changes to this country’s holidays are replaced by the built-in list.',
-    confirmLabel: 'Reset',
+    title: t('holidays.resetTitle', { country: calendar.value?.countryName ?? '' }),
+    message: t('holidays.resetMessage'),
+    confirmLabel: t('holidays.reset'),
     tone: 'danger'
   })
   if (!confirmed) return
@@ -392,9 +401,9 @@ async function handleReset() {
   busy.value = true
   try {
     calendar.value = await holidaysApi.reset(activeCode.value, year.value)
-    toast.success('Holidays reset')
+    toast.success(t('holidays.resetDone'))
   } catch (error) {
-    toast.failure('Could not reset the holidays', error)
+    toast.failure(t('holidays.resetFailed'), error)
   } finally {
     busy.value = false
   }

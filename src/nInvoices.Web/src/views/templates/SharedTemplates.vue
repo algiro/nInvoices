@@ -1,11 +1,11 @@
 <template>
   <div class="shared-templates">
     <PageHeader
-      title="Shared templates"
-      subtitle="Templates shared by all your customers. A customer uses the shared template unless it has an active one of its own."
+      :title="t('routes.sharedTemplates')"
+      :subtitle="t('templates.sharedSubtitle')"
     />
 
-    <BaseTabs :model-value="activeTab" :tabs="tabs" label="Kinds of shared template" @update:model-value="selectTab" />
+    <BaseTabs :model-value="activeTab" :tabs="tabs" :label="t('templates.sharedKinds')" @update:model-value="selectTab" />
 
     <div class="tab-body" role="tabpanel" :aria-labelledby="`tab-${activeTab}`">
       <BasePanel>
@@ -23,20 +23,23 @@ import BasePanel from '@/components/ui/BasePanel.vue'
 import BaseTabs from '@/components/ui/BaseTabs.vue'
 import TemplateListPanel from '@/components/templates/TemplateListPanel.vue'
 import type { TemplateKind } from '@/components/templates/editor/templateVariables'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
 
-const tabs: { id: TemplateKind; label: string }[] = [
-  { id: 'invoice', label: 'Invoice templates' },
-  { id: 'monthly-report', label: 'Monthly reports' },
-  { id: 'email', label: 'Email templates' }
-]
+const tabs = computed((): { id: TemplateKind; label: string }[] => [
+  { id: 'invoice', label: t('customers.tabs.templates') },
+  { id: 'monthly-report', label: t('customers.tabs.monthlyReports') },
+  { id: 'email', label: t('customers.tabs.emails') }
+])
 
 // The open tab lives in the URL (?tab=…) so the editor's "back" link lands on it
 const activeTab = computed((): TemplateKind => {
   const tab = route.query.tab
-  return tabs.find(t => t.id === tab)?.id ?? 'invoice'
+  return tabs.value.find(item => item.id === tab)?.id ?? 'invoice'
 })
 
 function selectTab(id: string) {

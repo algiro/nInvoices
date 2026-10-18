@@ -2,23 +2,23 @@
   <section class="customer-invoices">
     <header class="section-header">
       <div>
-        <h3>Invoices</h3>
-        <p class="help">Everything billed to this customer, newest first.</p>
+        <h3>{{ t('nav.invoices') }}</h3>
+        <p class="help">{{ t('customers.invoicesHelp') }}</p>
       </div>
-      <BaseButton variant="primary" icon="plus" :to="{ path: '/invoices/new', query: { customerId } }">New invoice</BaseButton>
+      <BaseButton variant="primary" icon="plus" :to="{ path: '/invoices/new', query: { customerId } }">{{ t('layout.newInvoice') }}</BaseButton>
     </header>
 
-    <LoadingState v-if="loading" label="Loading invoices…" />
+    <LoadingState v-if="loading" :label="t('invoices.loading')" />
 
-    <EmptyState v-else-if="loadError" icon="alert" title="Invoices could not be loaded" :description="loadError" compact>
-      <BaseButton @click="load">Try again</BaseButton>
+    <EmptyState v-else-if="loadError" icon="alert" :title="t('invoices.loadFailed')" :description="loadError" compact>
+      <BaseButton @click="load">{{ t('common.tryAgain') }}</BaseButton>
     </EmptyState>
 
     <EmptyState
       v-else-if="invoices.length === 0"
       icon="invoices"
-      title="No invoices yet"
-      description="Generated invoices for this customer will be listed here."
+      :title="t('invoices.emptyTitle')"
+      :description="t('customers.invoicesEmpty')"
       compact
     />
 
@@ -26,11 +26,11 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">Number</th>
-            <th scope="col">Period</th>
-            <th scope="col">Issued</th>
-            <th scope="col">Status</th>
-            <th scope="col" class="num">Total</th>
+            <th scope="col">{{ t('invoices.columns.number') }}</th>
+            <th scope="col">{{ t('invoices.columns.period') }}</th>
+            <th scope="col">{{ t('invoices.columns.issued') }}</th>
+            <th scope="col">{{ t('invoices.columns.status') }}</th>
+            <th scope="col" class="num">{{ t('invoices.columns.total') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -63,6 +63,9 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import { formatMoney, formatDate, formatPeriod, invoiceStatus, invoiceTypeLabel } from '@/utils/format'
 import { errorMessage } from '@/composables/useToast'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{ customerId: number }>()
 
@@ -78,7 +81,7 @@ async function load() {
     const list = await invoicesApi.getByCustomer(props.customerId)
     invoices.value = [...list].sort((a, b) => b.issueDate.localeCompare(a.issueDate) || b.id - a.id)
   } catch (error) {
-    loadError.value = errorMessage(error, 'Unknown error')
+    loadError.value = errorMessage(error)
   } finally {
     loading.value = false
   }

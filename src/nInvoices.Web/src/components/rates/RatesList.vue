@@ -2,54 +2,54 @@
   <section class="section">
     <header class="section-header">
       <div>
-        <h3>Rates</h3>
-        <p class="help">The prices used to bill this customer. A customer can have several, even of the same type (say two hourly rates); on a monthly invoice each worked day can be billed at a different one. Without a choice, the daily rate is used first, then monthly, then hourly.</p>
+        <h3>{{ t('customers.tabs.rates') }}</h3>
+        <p class="help">{{ t('rates.help') }}</p>
       </div>
-      <BaseButton variant="primary" icon="plus" @click="handleAdd">New rate</BaseButton>
+      <BaseButton variant="primary" icon="plus" @click="handleAdd">{{ t('rates.new') }}</BaseButton>
     </header>
 
-    <LoadingState v-if="loading && rates.length === 0" label="Loading rates…" />
+    <LoadingState v-if="loading && rates.length === 0" :label="t('rates.loading')" />
 
-    <EmptyState v-else-if="error" icon="alert" title="Rates could not be loaded" :description="error" compact>
-      <BaseButton @click="loadRates">Try again</BaseButton>
+    <EmptyState v-else-if="error" icon="alert" :title="t('rates.loadFailed')" :description="error" compact>
+      <BaseButton @click="loadRates">{{ t('common.tryAgain') }}</BaseButton>
     </EmptyState>
 
     <EmptyState
       v-else-if="rates.length === 0"
       icon="coins"
-      title="No rates yet"
-      description="Invoices can't be generated until the customer has a rate."
+      :title="t('rates.emptyTitle')"
+      :description="t('rates.emptyDescription')"
       compact
     >
-      <BaseButton variant="primary" icon="plus" @click="handleAdd">Add a rate</BaseButton>
+      <BaseButton variant="primary" icon="plus" @click="handleAdd">{{ t('invoiceWizard.customerStep.addRate') }}</BaseButton>
     </EmptyState>
 
     <div v-else class="table-wrap">
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Type</th>
-            <th scope="col" class="num">Price</th>
-            <th scope="col">Billed</th>
-            <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+            <th scope="col">{{ t('customers.name') }}</th>
+            <th scope="col">{{ t('common.type') }}</th>
+            <th scope="col" class="num">{{ t('rates.price') }}</th>
+            <th scope="col">{{ t('rates.billed') }}</th>
+            <th scope="col" class="actions"><span class="sr-only">{{ t('common.actions') }}</span></th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="rate in rates" :key="rate.id">
             <td class="primary-cell">{{ rate.name || '—' }}</td>
-            <td>{{ rateTypeName(rate.type) }}</td>
+            <td>{{ rateTypeLabel(rate.type) }}</td>
             <td class="num primary-cell">{{ formatMoney(rate.price.amount, rate.price.currency) }}</td>
-            <td class="muted">per {{ unitFor(rate.type) }}</td>
+            <td class="muted">{{ rateUnit(rate.type) }}</td>
             <td class="actions">
-              <BaseButton size="sm" variant="ghost" icon="edit" @click="handleEdit(rate)">Edit</BaseButton>
+              <BaseButton size="sm" variant="ghost" icon="edit" @click="handleEdit(rate)">{{ t('common.edit') }}</BaseButton>
               <BaseButton
                 size="sm"
                 variant="ghost-danger"
                 icon="trash"
                 icon-only
-                title="Delete"
-                :aria-label="`Delete ${rateTypeName(rate.type).toLowerCase()} rate`"
+                :title="t('common.delete')"
+                :aria-label="t('rates.deleteNamed', { type: rateTypeLabel(rate.type) })"
                 @click="handleDelete(rate)"
               />
             </td>
@@ -60,7 +60,7 @@
 
     <BaseDialog
       :open="showForm"
-      :title="editingRate ? 'Edit rate' : 'New rate'"
+      :title="editingRate ? t('rates.edit') : t('rates.new')"
       size="sm"
       :close-on-overlay="false"
       @close="handleCloseForm"
@@ -89,6 +89,10 @@ import BaseDialog from '@/components/ui/BaseDialog.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import { formatMoney } from '@/utils/format'
+import { rateUnit } from '@/utils/rates'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   customerId: number
@@ -123,9 +127,9 @@ function rateTypeName(type: RateType | string): string {
   return RateTypeNames[type] || 'Unknown'
 }
 
-function unitFor(type: RateType | string): string {
+function rateTypeLabel(type: RateType | string): string {
   const name = rateTypeName(type)
-  return name === 'Hourly' ? 'hour' : name === 'Monthly' ? 'month' : 'day'
+  return name === 'Hourly' || name === 'Monthly' || name === 'Daily' ? t(`rateType.${name}`) : name
 }
 
 function handleAdd() {
@@ -139,22 +143,22 @@ function handleEdit(rate: RateDto) {
 }
 
 async function handleDelete(rate: RateDto) {
-  const typeName = rateTypeName(rate.type).toLowerCase()
-  const label = rate.name ? `“${rate.name}” (${typeName})` : `This ${typeName} rate`
-  if (!(await confirm({ title: 'Delete rate?', message: `${label} will be permanently deleted. Invoices already generated keep their PDFs.`, confirmLabel: 'Delete', tone: 'danger' }))) {
+  const type = rateTypeLabel(rate.type)
+  const message = rate.name ? t('rates.deleteMessageNamed', { name: rate.name, type }) : t('rates.deleteMessage', { type })
+  if (!(await confirm({ title: t('rates.deleteTitle'), message, confirmLabel: t('common.delete'), tone: 'danger' }))) {
     return
   }
 
   try {
     await ratesStore.remove(rate.id)
-    toast.success('Rate deleted')
+    toast.success(t('rates.deleted'))
   } catch (error) {
-    toast.failure('Failed to delete rate', error)
+    toast.failure(t('rates.deleteFailed'), error)
   }
 }
 
 function handleFormSuccess() {
-  toast.success(editingRate.value ? 'Rate updated' : 'Rate added')
+  toast.success(editingRate.value ? t('rates.updated') : t('rates.added'))
   showForm.value = false
   editingRate.value = null
   loadRates()

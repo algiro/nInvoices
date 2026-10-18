@@ -5,7 +5,7 @@ export type ThemePreference = 'system' | 'light' | 'dark'
 export type ThemeMode = 'light' | 'dark'
 
 export interface ThemeInfo {
-  /** Value of <html data-theme>; must match a block in themes.css */
+  /** Value of <html data-theme>; must match a block in themes.css (its description is the text theme.descriptions.<id>) */
   id: string
   name: string
   mode: ThemeMode

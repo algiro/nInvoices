@@ -1,10 +1,10 @@
 <template>
-  <BasePanel title="Expenses" description="Costs passed on to the customer, added after the worked time.">
+  <BasePanel :title="t('nav.expenses')" :description="t('invoiceWizard.expensesStep.description')">
     <template #actions>
-      <BaseButton size="sm" icon="plus" @click="add">Add expense</BaseButton>
+      <BaseButton size="sm" icon="plus" @click="add">{{ t('invoiceWizard.expensesStep.add') }}</BaseButton>
     </template>
 
-    <p v-if="(form.expenses ?? []).length === 0" class="muted no-expenses">No expenses on this invoice. Add one, or continue to the review.</p>
+    <p v-if="(form.expenses ?? []).length === 0" class="muted no-expenses">{{ t('invoiceWizard.expensesStep.none') }}</p>
 
     <div v-else class="expenses">
       <div v-for="(expense, index) in form.expenses" :key="index" class="expense-row">
@@ -12,10 +12,10 @@
           :id="`expense-description-${index}`"
           v-model="expense.description"
           type="text"
-          placeholder="Description, e.g. Train to Milan"
+          :placeholder="t('invoiceWizard.expensesStep.descriptionPlaceholder')"
           class="control"
           :class="{ invalid: showErrors && !expense.description.trim() }"
-          :aria-label="`Expense ${index + 1} description`"
+          :aria-label="t('invoiceWizard.expensesStep.descriptionOf', { n: index + 1 })"
         />
         <input
           :id="`expense-amount-${index}`"
@@ -25,12 +25,12 @@
           min="0"
           class="control num amount"
           :class="{ invalid: showErrors && !(expense.amount > 0) }"
-          :aria-label="`Expense ${index + 1} amount`"
+          :aria-label="t('invoiceWizard.expensesStep.amountOf', { n: index + 1 })"
         />
-        <select :id="`expense-currency-${index}`" v-model="expense.currency" class="control currency" :aria-label="`Expense ${index + 1} currency`">
+        <select :id="`expense-currency-${index}`" v-model="expense.currency" class="control currency" :aria-label="t('invoiceWizard.expensesStep.currencyOf', { n: index + 1 })">
           <option v-for="code in EXPENSE_CURRENCIES" :key="code">{{ code }}</option>
         </select>
-        <BaseButton variant="ghost-danger" icon="trash" icon-only :aria-label="`Remove expense ${index + 1}`" title="Remove" @click="removeExpense(index)" />
+        <BaseButton variant="ghost-danger" icon="trash" icon-only :aria-label="t('invoiceWizard.expensesStep.remove', { n: index + 1 })" :title="t('common.remove')" @click="removeExpense(index)" />
       </div>
     </div>
   </BasePanel>
@@ -40,6 +40,9 @@
 import { EXPENSE_CURRENCIES, type InvoiceDraft } from '@/composables/useInvoiceDraft'
 import BasePanel from '@/components/ui/BasePanel.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   draft: InvoiceDraft

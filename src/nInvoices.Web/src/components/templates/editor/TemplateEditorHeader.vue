@@ -2,7 +2,7 @@
   <header class="editor-header">
     <router-link :to="backLink" class="back">
       <AppIcon name="chevronRight" class="back-icon" />
-      {{ customerId === null ? 'Shared templates' : (customerName || 'Customer') }} · {{ kindLabel }}
+      {{ customerId === null ? t('routes.sharedTemplates') : (customerName || t('customers.customer')) }} · {{ kindLabel }}
     </router-link>
 
     <div class="header-row">
@@ -12,36 +12,36 @@
         class="name-input"
         type="text"
         maxlength="200"
-        :placeholder="kind === 'invoice' ? 'Untitled invoice template' : 'Template name (required)'"
-        aria-label="Template name"
+        :placeholder="kind === 'invoice' ? t('templates.editor.untitledInvoice') : t('templates.editor.nameRequired')"
+        :aria-label="t('templates.editor.name')"
       />
 
       <label v-if="kind === 'invoice'" class="type-field">
-        <span>Invoice type</span>
+        <span>{{ t('invoiceWizard.customerStep.invoiceType') }}</span>
         <select
           id="template-invoice-type"
           v-model="invoiceType"
           :disabled="!isNew"
-          :title="isNew ? '' : 'The invoice type is fixed once a template is created'"
+          :title="isNew ? '' : t('templates.editor.typeFixed')"
         >
-          <option value="Monthly">Monthly</option>
-          <option value="OneTime">One-time</option>
+          <option value="Monthly">{{ t('invoiceType.Monthly') }}</option>
+          <option value="OneTime">{{ t('invoiceType.OneTime') }}</option>
         </select>
       </label>
 
       <span v-if="!isNew" class="pill" :class="isActive ? 'active' : 'inactive'">
-        {{ isActive ? 'Active' : 'Inactive' }}
+        {{ isActive ? t('common.active') : t('common.inactive') }}
       </span>
 
       <span class="save-state" :class="{ dirty }">
-        {{ saving ? 'Saving…' : dirty ? 'Unsaved changes' : isNew ? 'Not saved yet' : 'All changes saved' }}
+        {{ saving ? t('templates.editor.saving') : dirty ? t('templates.editor.unsaved') : isNew ? t('templates.editor.notSavedYet') : t('templates.editor.allSaved') }}
       </span>
 
       <span class="grow"></span>
 
-      <div class="layout-switch" role="group" aria-label="Layout">
+      <div class="layout-switch" role="group" :aria-label="t('templates.editor.layout')">
         <button type="button" :class="{ active: showVariables }" :aria-pressed="showVariables" @click="showVariables = !showVariables">
-          Variables
+          {{ t('templates.editor.variables') }}
         </button>
         <button
           v-for="mode in LAYOUT_MODES"
@@ -51,13 +51,13 @@
           :aria-pressed="layout === mode.value"
           @click="layout = mode.value"
         >
-          {{ mode.label }}
+          {{ t(mode.label) }}
         </button>
       </div>
 
-      <BaseButton variant="ghost" @click="emit('load-sample')">Load sample</BaseButton>
+      <BaseButton variant="ghost" @click="emit('load-sample')">{{ t('templates.editor.loadSample') }}</BaseButton>
       <BaseButton variant="primary" :loading="saving" :disabled="loading" @click="emit('save')">
-        Save <kbd class="kbd">Ctrl S</kbd>
+        {{ t('common.save') }} <kbd class="kbd">Ctrl S</kbd>
       </BaseButton>
     </div>
   </header>
@@ -70,6 +70,9 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import type { TemplateKind } from './templateVariables'
 import type { InvoiceTypeName } from './templateKinds'
 import { LAYOUT_MODES, type EditorLayout } from './useEditorLayout'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   kind: TemplateKind
@@ -91,7 +94,7 @@ const layout = defineModel<EditorLayout>('layout', { required: true })
 const showVariables = defineModel<boolean>('showVariables', { required: true })
 
 const kindLabel = computed(() =>
-  props.kind === 'invoice' ? 'Invoice templates' : props.kind === 'email' ? 'Email templates' : 'Monthly reports')
+  props.kind === 'invoice' ? t('customers.tabs.templates') : props.kind === 'email' ? t('customers.tabs.emails') : t('customers.tabs.monthlyReports'))
 
 const backLink = computed(() => props.customerId === null
   ? { path: '/templates', query: { tab: props.kind } }

@@ -4,6 +4,10 @@
  * ScribanTemplateRenderer; property names are camelCase as the renderer exposes them.
  */
 
+import { t } from '@/i18n'
+
+// Titles and descriptions below are message keys (templateVars.*); variablesFor translates them.
+
 export type TemplateKind = 'invoice' | 'monthly-report' | 'email'
 
 export interface TemplateVariable {
@@ -29,79 +33,79 @@ const v = (path: string, description: string): TemplateVariable => ({
 })
 
 const customerGroup: VariableGroup = {
-  title: 'Customer',
+  title: 'templateVars.groups.customer',
   items: [
-    v('customer.name', 'Customer name'),
-    v('customer.fiscalId', 'VAT number / fiscal ID'),
-    v('customer.address.street', 'Street and house number'),
-    v('customer.address.postalCode', 'Postal code'),
-    v('customer.address.city', 'City'),
-    v('customer.address.country', 'Country')
+    v('customer.name', 'templateVars.items.customerName'),
+    v('customer.fiscalId', 'templateVars.items.customerFiscalId'),
+    v('customer.address.street', 'templateVars.items.customerAddressStreet'),
+    v('customer.address.postalCode', 'templateVars.items.customerAddressPostalCode'),
+    v('customer.address.city', 'templateVars.items.customerAddressCity'),
+    v('customer.address.country', 'templateVars.items.customerAddressCountry')
   ]
 }
 
 const functionsGroup: VariableGroup = {
-  title: 'Functions',
+  title: 'templateVars.groups.functions',
   items: [
-    { insert: '[[ FormatCurrency $0 currency ]]', label: 'FormatCurrency amount currency locale?', description: 'Money as 1.234,56 EUR; add a locale, e.g. "en-US", for 1,234.56 EUR', completion: 'FormatCurrency' },
-    { insert: '[[ FormatDecimal $0 2 ]]', label: 'FormatDecimal value decimals locale?', description: 'Number rounded to N decimals; the locale sets the decimal separator', completion: 'FormatDecimal' },
-    { insert: '[[ FormatDate $0 "dd/MM/yyyy" ]]', label: 'FormatDate date "format" locale?', description: '.NET date format, e.g. "dd/MM/yyyy"; the locale sets month and day names', completion: 'FormatDate' },
-    { insert: '[[ Image "$0" ]]', label: 'Image "alias" width height', description: 'Image uploaded in Settings › Invoices › Images (width/height optional)', completion: 'Image' }
+    { insert: '[[ FormatCurrency $0 currency ]]', label: 'FormatCurrency amount currency locale?', description: 'templateVars.items.formatCurrencyAmountCurrencyLocale', completion: 'FormatCurrency' },
+    { insert: '[[ FormatDecimal $0 2 ]]', label: 'FormatDecimal value decimals locale?', description: 'templateVars.items.formatDecimalValueDecimalsLocale', completion: 'FormatDecimal' },
+    { insert: '[[ FormatDate $0 "dd/MM/yyyy" ]]', label: 'FormatDate date "format" locale?', description: 'templateVars.items.formatDateDateFormatLocale', completion: 'FormatDate' },
+    { insert: '[[ Image "$0" ]]', label: 'Image "alias" width height', description: 'templateVars.items.imageAliasWidthHeight', completion: 'Image' }
   ]
 }
 
 const projectSummaryItem: TemplateVariable = {
   insert: '[[ for p in projectSummary ]]\n  [[ p.name ]]: [[ p.workedDays ]] days, [[ p.totalHours ]]h, [[ p.amount ]]\n[[ end ]]',
   label: 'for p in projectSummary',
-  description: 'Totals per project for the period'
+  description: 'templateVars.items.forPInProjectSummary'
 }
 
 export const invoiceVariables: VariableGroup[] = [
   {
-    title: 'Invoice',
+    title: 'templateVars.groups.invoice',
     items: [
-      v('invoiceNumber', 'Invoice number, e.g. 26-09-004'),
-      v('invoiceType', 'Monthly, OneTime, …'),
-      v('date', 'Issue date (use FormatDate)'),
-      v('dueDate', 'Due date, may be empty'),
-      v('currency', 'Currency code, e.g. EUR'),
-      v('locale', 'Customer locale, e.g. it-IT (pass it to FormatDate, FormatCurrency…)'),
-      v('subtotal', 'Total before taxes'),
-      v('totalTax', 'Sum of all taxes'),
-      v('total', 'Amount due'),
-      v('totalExpenses', 'Sum of expenses')
+      v('invoiceNumber', 'templateVars.items.invoiceNumber'),
+      v('invoiceType', 'templateVars.items.invoiceType'),
+      v('date', 'templateVars.items.date'),
+      v('dueDate', 'templateVars.items.dueDate'),
+      v('currency', 'templateVars.items.currency'),
+      v('locale', 'templateVars.items.locale'),
+      v('subtotal', 'templateVars.items.subtotal'),
+      v('totalTax', 'templateVars.items.totalTax'),
+      v('total', 'templateVars.items.total'),
+      v('totalExpenses', 'templateVars.items.totalExpenses')
     ]
   },
   customerGroup,
   {
-    title: 'Monthly period',
+    title: 'templateVars.groups.monthlyPeriod',
     items: [
-      v('monthDescription', 'Period, e.g. “September 2026”'),
-      v('monthNumber', 'Month number 1–12'),
-      v('workedDays', 'Number of worked days'),
-      v('monthlyRate', 'Daily or monthly rate')
+      v('monthDescription', 'templateVars.items.monthDescription'),
+      v('monthNumber', 'templateVars.items.monthNumber'),
+      v('workedDays', 'templateVars.items.workedDays'),
+      v('monthlyRate', 'templateVars.items.monthlyRate')
     ]
   },
   {
-    title: 'Loops & conditions',
+    title: 'templateVars.groups.loopsConditions',
     items: [
       {
         insert: '[[ for item in lineItems ]]\n<tr>\n  <td>[[ item.description ]]</td>\n  <td>[[ item.quantity ]]</td>\n  <td>[[ FormatCurrency item.amount currency ]]</td>\n</tr>\n[[ end ]]',
         label: 'for item in lineItems',
-        description: 'One row per line item: description, quantity, rate, amount'
+        description: 'templateVars.items.forItemInLineItems'
       },
       {
         insert: '[[ for tax in taxes ]]\n<tr>\n  <td>[[ tax.description ]] ([[ FormatDecimal tax.rate 2 ]]%)</td>\n  <td>[[ FormatCurrency tax.amount currency ]]</td>\n</tr>\n[[ end ]]',
         label: 'for tax in taxes',
-        description: 'One row per tax: description, rate, amount'
+        description: 'templateVars.items.forTaxInTaxes'
       },
       {
         insert: '[[ for day in workedDayItems ]]\n  [[ day.date ]] [[ day.hours ]]h\n[[ end ]]',
         label: 'for day in workedDayItems',
-        description: 'Each worked day with its hours'
+        description: 'templateVars.items.forDayInWorkedDayItems'
       },
       projectSummaryItem,
-      { insert: '[[ if workedDays ]]\n  $0\n[[ end ]]', label: 'if workedDays … end', description: 'Only for monthly invoices' }
+      { insert: '[[ if workedDays ]]\n  $0\n[[ end ]]', label: 'if workedDays … end', description: 'templateVars.items.ifWorkedDaysEnd' }
     ]
   },
   functionsGroup
@@ -109,46 +113,46 @@ export const invoiceVariables: VariableGroup[] = [
 
 export const monthlyReportVariables: VariableGroup[] = [
   {
-    title: 'Report',
+    title: 'templateVars.groups.report',
     items: [
-      v('year', 'Year, e.g. 2026'),
-      v('monthNumber', 'Month number 1–12'),
-      { insert: '[[ LocalizeMonth monthNumber locale ]]', label: 'LocalizeMonth monthNumber locale', description: 'Month name in the customer’s language', completion: 'LocalizeMonth' },
-      v('locale', 'Customer locale, e.g. it-IT'),
-      v('customerName', 'Customer name'),
-      v('workedDaysCount', 'Number of worked days'),
-      v('publicHolidayCount', 'Number of public holidays'),
-      v('unpaidLeaveCount', 'Number of unpaid leave days'),
-      v('totalDaysInMonth', 'Days in the month'),
-      v('dailyRate', 'Daily rate'),
-      v('currency', 'Currency code'),
-      v('totalAmount', 'Amount for the month')
+      v('year', 'templateVars.items.year'),
+      v('monthNumber', 'templateVars.items.monthNumber'),
+      { insert: '[[ LocalizeMonth monthNumber locale ]]', label: 'LocalizeMonth monthNumber locale', description: 'templateVars.items.localizeMonthMonthNumberLocale', completion: 'LocalizeMonth' },
+      v('locale', 'templateVars.items.locale2'),
+      v('customerName', 'templateVars.items.customerName'),
+      v('workedDaysCount', 'templateVars.items.workedDaysCount'),
+      v('publicHolidayCount', 'templateVars.items.publicHolidayCount'),
+      v('unpaidLeaveCount', 'templateVars.items.unpaidLeaveCount'),
+      v('totalDaysInMonth', 'templateVars.items.totalDaysInMonth'),
+      v('dailyRate', 'templateVars.items.dailyRate'),
+      v('currency', 'templateVars.items.currency2'),
+      v('totalAmount', 'templateVars.items.totalAmount')
     ]
   },
   customerGroup,
   {
-    title: 'Days',
+    title: 'templateVars.groups.days',
     items: [
       {
         insert: '[[ for day in monthDays ]]\n<tr [[ if day.isWeekend ]]class="weekend"[[ end ]]>\n  <td>[[ FormatDate day.dateValue "dd/MM/yyyy" ]]</td>\n  <td>[[ LocalizeDayOfWeek day.dateValue locale ]]</td>\n  <td>[[ if day.isWorked ]][[ day.hours ]][[ end ]]</td>\n  <td>[[ day.notes ]]</td>\n</tr>\n[[ end ]]',
         label: 'for day in monthDays',
-        description: 'One row per calendar day'
+        description: 'templateVars.items.forDayInMonthDays'
       },
-      v('day.dateValue', 'The date (use FormatDate / LocalizeDayOfWeek)'),
-      v('day.dayNumber', 'Day of month 1–31'),
-      v('day.type', 'Worked, PublicHoliday, UnpaidLeave or empty'),
-      v('day.isWorked', 'true on worked days'),
-      v('day.isWeekend', 'true on Saturday and Sunday'),
-      v('day.isPublicHoliday', 'true on public holidays'),
-      v('day.isUnpaidLeave', 'true on unpaid leave days'),
-      v('day.hours', 'Hours worked (8 = full day)'),
-      v('day.notes', 'The day’s note'),
-      { insert: '[[ for p in day.projects ]][[ p.name ]] [[ p.hours ]]h [[ end ]]', label: 'for p in day.projects', description: 'Projects worked on that day' },
-      { insert: '[[ LocalizeDayOfWeek day.dateValue locale ]]', label: 'LocalizeDayOfWeek date locale', description: 'Weekday name in the customer’s language', completion: 'LocalizeDayOfWeek' }
+      v('day.dateValue', 'templateVars.items.dayDateValue'),
+      v('day.dayNumber', 'templateVars.items.dayDayNumber'),
+      v('day.type', 'templateVars.items.dayType'),
+      v('day.isWorked', 'templateVars.items.dayIsWorked'),
+      v('day.isWeekend', 'templateVars.items.dayIsWeekend'),
+      v('day.isPublicHoliday', 'templateVars.items.dayIsPublicHoliday'),
+      v('day.isUnpaidLeave', 'templateVars.items.dayIsUnpaidLeave'),
+      v('day.hours', 'templateVars.items.dayHours'),
+      v('day.notes', 'templateVars.items.dayNotes'),
+      { insert: '[[ for p in day.projects ]][[ p.name ]] [[ p.hours ]]h [[ end ]]', label: 'for p in day.projects', description: 'templateVars.items.forPInDayProjects' },
+      { insert: '[[ LocalizeDayOfWeek day.dateValue locale ]]', label: 'LocalizeDayOfWeek date locale', description: 'templateVars.items.localizeDayOfWeekDateLocale', completion: 'LocalizeDayOfWeek' }
     ]
   },
   {
-    title: 'Projects',
+    title: 'templateVars.groups.projects',
     items: [projectSummaryItem]
   },
   functionsGroup
@@ -156,43 +160,48 @@ export const monthlyReportVariables: VariableGroup[] = [
 
 export const emailVariables: VariableGroup[] = [
   {
-    title: 'Invoice',
+    title: 'templateVars.groups.invoice',
     items: [
-      v('invoiceNumber', 'Invoice number, e.g. 26-09-004'),
-      v('invoiceType', 'Monthly, OneTime, …'),
-      v('date', 'Issue date (use FormatDate)'),
-      v('dueDate', 'Due date, may be empty'),
-      v('currency', 'Currency code, e.g. EUR'),
-      v('subtotal', 'Total before taxes'),
-      v('totalTax', 'Sum of all taxes'),
-      v('totalExpenses', 'Sum of expenses'),
-      v('total', 'Amount due')
+      v('invoiceNumber', 'templateVars.items.invoiceNumber'),
+      v('invoiceType', 'templateVars.items.invoiceType'),
+      v('date', 'templateVars.items.date'),
+      v('dueDate', 'templateVars.items.dueDate'),
+      v('currency', 'templateVars.items.currency'),
+      v('subtotal', 'templateVars.items.subtotal'),
+      v('totalTax', 'templateVars.items.totalTax'),
+      v('totalExpenses', 'templateVars.items.totalExpenses'),
+      v('total', 'templateVars.items.total')
     ]
   },
   {
-    title: 'Monthly period',
+    title: 'templateVars.groups.monthlyPeriod',
     items: [
-      v('monthDescription', 'Month name in the customer’s language'),
-      v('monthNumber', 'Month number 1–12'),
-      v('year', 'Year, e.g. 2026'),
-      v('workedDays', 'Number of worked days'),
-      { insert: '[[ if monthDescription ]]\n  $0\n[[ end ]]', label: 'if monthDescription … end', description: 'Only for monthly invoices' }
+      v('monthDescription', 'templateVars.items.monthDescription2'),
+      v('monthNumber', 'templateVars.items.monthNumber'),
+      v('year', 'templateVars.items.year'),
+      v('workedDays', 'templateVars.items.workedDays'),
+      { insert: '[[ if monthDescription ]]\n  $0\n[[ end ]]', label: 'if monthDescription … end', description: 'templateVars.items.ifMonthDescriptionEnd' }
     ]
   },
   {
-    title: 'Customer & sender',
+    title: 'templateVars.groups.customerSender',
     items: [
-      v('customer.name', 'Customer name'),
-      v('customer.email', 'Customer email address'),
-      v('customer.fiscalId', 'VAT number / fiscal ID'),
-      v('customer.address.city', 'City'),
-      v('locale', 'Customer locale, e.g. it-IT'),
-      v('senderEmail', 'Your connected Gmail address')
+      v('customer.name', 'templateVars.items.customerName'),
+      v('customer.email', 'templateVars.items.customerEmail'),
+      v('customer.fiscalId', 'templateVars.items.customerFiscalId'),
+      v('customer.address.city', 'templateVars.items.customerAddressCity'),
+      v('locale', 'templateVars.items.locale2'),
+      v('senderEmail', 'templateVars.items.senderEmail')
     ]
   },
   functionsGroup
 ]
 
+/** The groups of a kind of template, with their titles and descriptions in the app's language. */
 export function variablesFor(kind: TemplateKind): VariableGroup[] {
-  return kind === 'invoice' ? invoiceVariables : kind === 'email' ? emailVariables : monthlyReportVariables
+  const groups = kind === 'invoice' ? invoiceVariables : kind === 'email' ? emailVariables : monthlyReportVariables
+  return groups.map(group => ({
+    title: t(group.title),
+    items: group.items.map(item => ({ ...item, description: t(item.description) }))
+  }))
 }

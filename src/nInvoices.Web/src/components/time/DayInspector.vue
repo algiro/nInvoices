@@ -1,8 +1,8 @@
 <template>
-  <aside class="inspector" aria-label="Selected days">
+  <aside class="inspector" :aria-label="t('time.selectedDays')">
     <div v-if="days.length === 0" class="empty">
-      <strong>No day selected</strong>
-      <span>Click a day to edit it, or drag across several days to change them together.</span>
+      <strong>{{ t('time.noDaySelected') }}</strong>
+      <span>{{ t('time.noDaySelectedHelp') }}</span>
     </div>
 
     <template v-else>
@@ -12,8 +12,8 @@
       </div>
 
       <div class="section">
-        <span class="label">Day type</span>
-        <div class="segmented" role="group" aria-label="Day type">
+        <span class="label">{{ t('time.dayType') }}</span>
+        <div class="segmented" role="group" :aria-label="t('time.dayType')">
           <button
             v-for="option in kindOptions"
             :key="String(option.value)"
@@ -22,14 +22,14 @@
             :aria-pressed="commonKind === option.value"
             @click="setKind(days, option.value)"
           >
-            {{ option.label }}
+            {{ t(option.label) }}
           </button>
         </div>
       </div>
 
       <template v-if="commonKind === DayType.Worked">
         <div class="section">
-          <span class="label">{{ days.length > 1 ? 'Hours (each day)' : 'Hours' }}</span>
+          <span class="label">{{ days.length > 1 ? t('time.hoursEach') : t('invoiceWizard.hours') }}</span>
           <div class="chips">
             <button
               v-for="preset in hourPresets"
@@ -39,7 +39,7 @@
               :class="{ active: commonHours === preset.hours }"
               @click="setHours(days, preset.hours)"
             >
-              {{ preset.hours }}h <small>{{ preset.label }}</small>
+              {{ preset.hours }}h <small>{{ t(preset.label) }}</small>
             </button>
             <input
               id="inspector-hours"
@@ -49,24 +49,24 @@
               max="24"
               class="input hours-input"
               :value="commonHours ?? ''"
-              :placeholder="commonHours === null ? 'mixed' : ''"
-              aria-label="Custom hours"
+              :placeholder="commonHours === null ? t('time.mixed') : ''"
+              :aria-label="t('time.customHours')"
               @change="setHours(days, Number(($event.target as HTMLInputElement).value))"
             />
           </div>
         </div>
 
         <div v-if="rates.length > 1" class="section">
-          <label class="label" for="inspector-rate">{{ days.length > 1 ? 'Rate (each day)' : 'Rate' }}</label>
+          <label class="label" for="inspector-rate">{{ days.length > 1 ? t('time.rateEach') : t('rates.rate') }}</label>
           <select id="inspector-rate" class="input" :value="commonRate ?? ''" @change="onRateChange(($event.target as HTMLSelectElement).value)">
-            <option v-if="commonRate === null" value="" disabled>Mixed rates</option>
-            <option value="default">Invoice rate{{ defaultRate ? ` (${rateLabel(defaultRate)})` : '' }}</option>
+            <option v-if="commonRate === null" value="" disabled>{{ t('time.mixedRates') }}</option>
+            <option value="default">{{ defaultRate ? t('time.invoiceRateNamed', { rate: rateLabel(defaultRate) }) : t('time.invoiceRate') }}</option>
             <option v-for="rate in rates" :key="rate.id" :value="String(rate.id)">{{ rateLabel(rate) }}</option>
           </select>
         </div>
 
         <div class="section">
-          <span class="label">{{ days.length > 1 ? 'Project (all selected days)' : 'Projects' }}</span>
+          <span class="label">{{ days.length > 1 ? t('time.projectAll') : t('customers.tabs.projects') }}</span>
 
           <template v-if="singleDay">
             <div v-for="(alloc, index) in singleDay.projects ?? []" :key="index" class="alloc-row">
@@ -75,9 +75,9 @@
                 v-model.trim="alloc.projectName"
                 type="text"
                 list="inspector-project-suggestions"
-                placeholder="Project name (optional)"
+                :placeholder="t('time.projectNamePlaceholder')"
                 class="input"
-                aria-label="Project name"
+                :aria-label="t('time.projectName')"
               />
               <input
                 :id="`inspector-project-hours-${index}`"
@@ -87,19 +87,19 @@
                 min="0"
                 max="24"
                 class="input alloc-hours"
-                aria-label="Hours on this project"
+                :aria-label="t('time.hoursOnProject')"
               />
               <button
                 type="button"
                 class="icon-btn"
-                title="Remove project"
+                :title="t('time.removeProject')"
                 :disabled="(singleDay.projects ?? []).length < 2"
                 @click="removeAllocation(singleDay.date, index)"
               >
                 ✕
               </button>
             </div>
-            <button type="button" class="link-btn" @click="addAllocation(singleDay.date)">+ Split with another project</button>
+            <button type="button" class="link-btn" @click="addAllocation(singleDay.date)">{{ t('time.splitProject') }}</button>
           </template>
 
           <input
@@ -109,27 +109,27 @@
             list="inspector-project-suggestions"
             class="input"
             :value="commonProject ?? ''"
-            :placeholder="commonProject === null ? 'Mixed projects' : 'Project name (optional)'"
-            aria-label="Project for all selected days"
+            :placeholder="commonProject === null ? t('time.mixedProjects') : t('time.projectNamePlaceholder')"
+            :aria-label="t('time.projectForAll')"
             @change="setProject(days, ($event.target as HTMLInputElement).value.trim())"
           />
 
           <datalist id="inspector-project-suggestions">
             <option v-for="p in projectSuggestions" :key="p" :value="p" />
           </datalist>
-          <p v-if="requireHours && hasDayWithoutHours" class="error">Every worked day needs more than 0 hours.</p>
+          <p v-if="requireHours && hasDayWithoutHours" class="error">{{ t('invoiceWizard.blockers.dayHours') }}</p>
         </div>
       </template>
 
       <div v-if="commonKind !== 'none'" class="section">
-        <label class="label" for="inspector-note">{{ days.length > 1 ? 'Note (applies to all)' : 'Note' }}</label>
+        <label class="label" for="inspector-note">{{ days.length > 1 ? t('time.noteAll') : t('time.note') }}</label>
         <textarea
           id="inspector-note"
           class="input note"
           maxlength="500"
           rows="2"
           :value="commonNote ?? ''"
-          :placeholder="commonNote === null ? 'Different notes. Typing replaces all of them.' : 'Shown on the monthly report, e.g. “Half day, medical appointment”'"
+          :placeholder="commonNote === null ? t('time.differentNotes') : t('time.notePlaceholder')"
           @input="setNote(days, ($event.target as HTMLTextAreaElement).value)"
         ></textarea>
       </div>
@@ -140,11 +140,11 @@
     </template>
 
     <div class="section shortcuts">
-      <span><kbd>W</kbd> worked</span>
-      <span><kbd>H</kbd> holiday</span>
-      <span><kbd>L</kbd> leave</span>
-      <span><kbd>Del</kbd> clear</span>
-      <span><kbd>1</kbd>–<kbd>8</kbd> hours</span>
+      <span><kbd>W</kbd> {{ t('time.shortcuts.worked') }}</span>
+      <span><kbd>H</kbd> {{ t('time.shortcuts.holiday') }}</span>
+      <span><kbd>L</kbd> {{ t('time.shortcuts.leave') }}</span>
+      <span><kbd>Del</kbd> {{ t('time.shortcuts.clear') }}</span>
+      <span><kbd>1</kbd>–<kbd>8</kbd> {{ t('time.shortcuts.hours') }}</span>
     </div>
   </aside>
 </template>
@@ -155,6 +155,10 @@ import { DayType, RateType } from '@/types'
 import { billedHours, dayHours, FULL_DAY_HOURS, type DayKind, type WorkMonth } from '@/composables/useWorkMonth'
 import { dayAmount, rateLabel } from '@/utils/rates'
 import type { RateDto, WorkDayDto } from '@/types'
+import { currentLanguage, type MessageKey } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   month: WorkMonth
@@ -169,18 +173,18 @@ const props = defineProps<{
 
 const { selectedDays, get, kindOf, setKind, setHours, setProject, setRate, setNote, addAllocation, removeAllocation } = props.month
 
-const kindOptions: { value: DayKind; label: string; css: string }[] = [
-  { value: DayType.Worked, label: 'Worked', css: 'worked' },
-  { value: DayType.PublicHoliday, label: 'Holiday', css: 'holiday' },
-  { value: DayType.UnpaidLeave, label: 'Leave', css: 'leave' },
-  { value: 'none', label: 'Not billed', css: 'none' }
+const kindOptions: { value: DayKind; label: MessageKey; css: string }[] = [
+  { value: DayType.Worked, label: 'time.kinds.worked', css: 'worked' },
+  { value: DayType.PublicHoliday, label: 'time.kinds.holiday', css: 'holiday' },
+  { value: DayType.UnpaidLeave, label: 'time.kinds.leave', css: 'leave' },
+  { value: 'none', label: 'time.kinds.notBilled', css: 'none' }
 ]
 
-const hourPresets = [
-  { hours: 8, label: 'full' },
-  { hours: 6, label: '¾' },
-  { hours: 4, label: 'half' },
-  { hours: 2, label: '¼' }
+const hourPresets: { hours: number; label: MessageKey }[] = [
+  { hours: 8, label: 'time.presets.full' },
+  { hours: 6, label: 'time.presets.threeQuarters' },
+  { hours: 4, label: 'time.presets.half' },
+  { hours: 2, label: 'time.presets.quarter' }
 ]
 
 const days = computed(() => selectedDays.value)
@@ -221,18 +225,18 @@ const hasDayWithoutHours = computed(() =>
 )
 
 const dateFormat = (date: string, opts: Intl.DateTimeFormatOptions) =>
-  new Date(date + 'T00:00:00').toLocaleDateString(undefined, opts)
+  new Date(date + 'T00:00:00').toLocaleDateString(currentLanguage(), opts)
 
 const title = computed(() =>
   days.value.length === 1
     ? dateFormat(days.value[0], { weekday: 'long', day: 'numeric', month: 'long' })
-    : `${days.value.length} days selected`
+    : t('time.daysSelected', { n: days.value.length })
 )
 
 const subtitle = computed(() => {
   if (days.value.length === 1) {
     const dow = new Date(days.value[0] + 'T00:00:00').getDay()
-    return dow === 0 || dow === 6 ? 'Weekend' : 'Weekday'
+    return dow === 0 || dow === 6 ? t('time.weekend') : t('time.weekday')
   }
   const first = days.value[0]
   const last = days.value[days.value.length - 1]
@@ -240,7 +244,7 @@ const subtitle = computed(() => {
   const range = contiguous
     ? `${dateFormat(first, { day: 'numeric', month: 'short' })} – ${dateFormat(last, { day: 'numeric', month: 'short' })}`
     : days.value.map(d => dateFormat(d, { day: 'numeric' })).join(', ')
-  return commonKind.value === null ? `${range} · mixed types` : range
+  return commonKind.value === null ? t('time.mixedTypes', { range }) : range
 })
 
 const calculation = computed(() => {
@@ -255,12 +259,12 @@ const calculation = computed(() => {
   const total = worked.reduce((sum, wd, i) => sum + dayAmount(rates[i]!, wd), 0)
 
   // Days at different rates can't be shown as one multiplication
-  if (rates.some(rate => rate!.id !== first.id)) return `${worked.length} days at different rates = ${money(total)}`
+  if (rates.some(rate => rate!.id !== first.id)) return t('time.differentRates', { n: worked.length, total: money(total) })
 
   const hours = worked.reduce((sum, wd) => sum + billedHours(wd), 0)
   if (first.type === RateType.Daily) {
     const effective = hours / FULL_DAY_HOURS
-    return `${hours}h \u00f7 ${FULL_DAY_HOURS} = ${effective.toFixed(2)} day(s) \u00d7 ${money(first.price.amount)} = ${money(total)}`
+    return t('time.dailyCalculation', { hours, full: FULL_DAY_HOURS, days: effective.toFixed(2), price: money(first.price.amount), total: money(total) })
   }
   return `${hours}h \u00d7 ${money(first.price.amount)} = ${money(total)}`
 })

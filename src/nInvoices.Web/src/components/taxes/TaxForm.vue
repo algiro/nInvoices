@@ -1,33 +1,33 @@
 <template>
-  <LoadingState v-if="loadingTax" label="Loading tax…" />
+  <LoadingState v-if="loadingTax" :label="t('taxes.loadingOne')" />
 
   <form v-else class="tax-form" novalidate @submit.prevent="handleSubmit">
-    <BaseField label="Name on the invoice" for="tax-description" required :error="errors.description">
+    <BaseField :label="t('taxes.nameOnInvoice')" for="tax-description" required :error="errors.description">
       <input
         id="tax-description"
         v-model="form.description"
         type="text"
-        placeholder="e.g. VAT, IRPF withholding"
+        :placeholder="t('taxes.namePlaceholder')"
         class="control"
         :disabled="disabled"
       />
     </BaseField>
 
-    <BaseField label="Calculation" for="tax-handler" required :help="handlerDescription(form.handlerId)">
+    <BaseField :label="t('taxes.calculation')" for="tax-handler" required :help="handlerDescription(form.handlerId)">
       <select id="tax-handler" v-model="form.handlerId" class="control" :disabled="disabled">
-        <option value="PERCENTAGE">Percentage of the subtotal</option>
-        <option value="FIXED_AMOUNT">Fixed amount</option>
-        <option value="COMPOUND">Percentage of another tax</option>
+        <option value="PERCENTAGE">{{ t('taxes.handlers.percentageOption') }}</option>
+        <option value="FIXED_AMOUNT">{{ t('taxes.handlers.fixed') }}</option>
+        <option value="COMPOUND">{{ t('taxes.handlers.compoundOption') }}</option>
       </select>
     </BaseField>
 
     <div class="row">
       <BaseField
-        :label="form.handlerId === 'FIXED_AMOUNT' ? 'Amount' : 'Rate (%)'"
+        :label="form.handlerId === 'FIXED_AMOUNT' ? t('taxes.amount') : t('taxes.ratePercent')"
         for="tax-rate"
         required
         :error="errors.rate"
-        :help="form.handlerId === 'FIXED_AMOUNT' ? undefined : 'Negative to subtract, e.g. −15 for withholding.'"
+        :help="form.handlerId === 'FIXED_AMOUNT' ? undefined : t('taxes.rateHelp')"
       >
         <input
           id="tax-rate"
@@ -42,19 +42,19 @@
         />
       </BaseField>
 
-      <BaseField label="Order" for="tax-order" required :error="errors.order" help="Lower numbers are calculated first.">
+      <BaseField :label="t('taxes.order')" for="tax-order" required :error="errors.order" :help="t('taxes.orderHelp')">
         <input id="tax-order" v-model.number="form.order" type="number" min="1" class="control num" :disabled="disabled" />
       </BaseField>
     </div>
 
     <BaseField
       v-if="form.handlerId === 'COMPOUND'"
-      label="Calculated on"
+      :label="t('taxes.calculatedOn')"
       for="tax-applied-to"
-      help="The tax this one is a percentage of. Leave on “Subtotal” to use the invoice subtotal."
+      :help="t('taxes.calculatedOnHelp')"
     >
       <select id="tax-applied-to" v-model="form.appliedToTaxId" class="control" :disabled="disabled">
-        <option :value="null">Subtotal</option>
+        <option :value="null">{{ t('invoiceWizard.review.subtotal') }}</option>
         <option v-for="tax in availableTaxes" :key="tax.id" :value="tax.id">
           {{ tax.description }} ({{ tax.rate }}%)
         </option>
@@ -64,8 +64,8 @@
     <label v-if="form.handlerId === 'PERCENTAGE'" class="toggle" for="tax-adds-to-base">
       <input id="tax-adds-to-base" v-model="form.addsToTaxableBase" type="checkbox" :disabled="disabled" />
       <span>
-        <strong>Part of the taxable amount</strong>
-        <small>A contribution charged to the customer, such as rivalsa INPS 4%: the taxes after it are calculated on the subtotal plus it.</small>
+        <strong>{{ t('taxes.addsToBase') }}</strong>
+        <small>{{ t('taxes.addsToBaseHelp') }}</small>
       </span>
     </label>
 
@@ -86,9 +86,9 @@
     <p v-if="errors.form" class="form-error" role="alert">{{ errors.form }}</p>
 
     <div class="form-actions">
-      <BaseButton :disabled="saving" @click="emit('cancel')">Cancel</BaseButton>
+      <BaseButton :disabled="saving" @click="emit('cancel')">{{ t('common.cancel') }}</BaseButton>
       <BaseButton type="submit" variant="primary" :loading="saving" :disabled="disabled">
-        {{ taxId ? 'Save changes' : 'Add tax' }}
+        {{ taxId ? t('common.saveChanges') : t('taxes.add') }}
       </BaseButton>
     </div>
   </form>
@@ -105,6 +105,9 @@ import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import { errorMessage } from '@/composables/useToast'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   customerId: number
@@ -184,7 +187,7 @@ onMounted(async () => {
       form.order = Math.max(0, ...availableTaxes.value.map(t => t.order)) + 1
     }
   } catch (error) {
-    errors.form = `The tax could not be loaded: ${errorMessage(error)}`
+    errors.form = t('taxes.loadFailedDetail', { error: errorMessage(error) })
   } finally {
     loadingTax.value = false
   }
@@ -193,11 +196,11 @@ onMounted(async () => {
 function handlerDescription(handlerId: string): string {
   switch (handlerId) {
     case 'PERCENTAGE':
-      return 'A percentage of the invoice subtotal, e.g. 21% VAT.'
+      return t('taxes.handlers.percentageHelp')
     case 'FIXED_AMOUNT':
-      return 'The same amount on every invoice, whatever the subtotal.'
+      return t('taxes.handlers.fixedHelp')
     case 'COMPOUND':
-      return 'A percentage of another tax line, calculated after it.'
+      return t('taxes.handlers.compoundHelp')
     default:
       return ''
   }
@@ -207,18 +210,18 @@ function validateForm(): boolean {
   Object.keys(errors).forEach(key => delete errors[key])
 
   if (!form.description.trim()) {
-    errors.description = 'Enter the name shown on the invoice.'
+    errors.description = t('taxes.enterName')
   }
   if (form.handlerId !== 'FIXED_AMOUNT' && (form.rate < -100 || form.rate > 100)) {
-    errors.rate = 'Enter a rate between −100 and 100.'
+    errors.rate = t('taxes.enterRate')
   }
   if (!(form.order >= 1)) {
-    errors.order = 'Enter 1 or higher.'
+    errors.order = t('taxes.enterOrder')
   }
   if (form.handlerId === 'COMPOUND' && form.appliedToTaxId) {
     const appliedToTax = taxesStore.getTaxById(form.appliedToTaxId)
     if (appliedToTax && appliedToTax.order >= form.order) {
-      errors.order = `Must be higher than “${appliedToTax.description}” (order ${appliedToTax.order}), which it's calculated on.`
+      errors.order = t('taxes.orderAfter', { name: appliedToTax.description, order: appliedToTax.order })
     }
   }
 
@@ -241,7 +244,7 @@ async function handleSubmit() {
     }
     emit('success')
   } catch (error) {
-    errors.form = `The tax could not be saved: ${errorMessage(error)}`
+    errors.form = t('taxes.saveFailedDetail', { error: errorMessage(error) })
   } finally {
     saving.value = false
   }

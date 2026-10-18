@@ -1,4 +1,5 @@
 import type { TaxFormDto, TaxPeriodDto, TaxPredictionDto, TaxProfileDto, TaxRegimeDto } from '@/types'
+import { t } from '@/i18n'
 
 type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'danger'
 
@@ -13,11 +14,11 @@ export interface FormStatus {
  * until the deadline and overdue after it.
  */
 export function formStatus(form: TaxFormDto, period: TaxPeriodDto, today: string): FormStatus {
-  if (form.payment) return { label: 'Paid', tone: 'success' }
-  if (today <= period.end) return { label: 'Period in progress', tone: 'neutral' }
-  if (form.estimated <= 0) return { label: 'Nothing to pay', tone: 'neutral' }
-  if (today <= form.deadline) return { label: 'Due', tone: 'warning' }
-  return { label: 'Overdue', tone: 'danger' }
+  if (form.payment) return { label: t('tax.formStatus.paid'), tone: 'success' }
+  if (today <= period.end) return { label: t('tax.formStatus.inProgress'), tone: 'neutral' }
+  if (form.estimated <= 0) return { label: t('tax.formStatus.nothingToPay'), tone: 'neutral' }
+  if (today <= form.deadline) return { label: t('tax.formStatus.due'), tone: 'warning' }
+  return { label: t('tax.formStatus.overdue'), tone: 'danger' }
 }
 
 /** What the year comes to: the estimates of every form, and what was recorded as paid. */

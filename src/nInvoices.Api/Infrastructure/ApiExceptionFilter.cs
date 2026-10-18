@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using nInvoices.Application.Exceptions;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services.Email;
 using nInvoices.Core.Exceptions;
 
@@ -21,21 +22,21 @@ namespace nInvoices.Api.Infrastructure;
 /// <item><see cref="InvoiceEmailException"/> about the Gmail connection → 409, others → 400</item>
 /// <item><see cref="DomainException"/> (a business rule refused) → 400</item>
 /// <item><see cref="ArgumentException"/> (an entity rejecting its input) → 400; not <see cref="ArgumentNullException"/>, a bug</item>
-/// <item>anything else → 500, logged, with a generic message (the exception only in Development)</item>
+/// <item>anything else → 500, logged, with a generic message in the user's language (the exception only in Development)</item>
 /// </list>
 /// A cancelled request is left alone.
 /// </summary>
 public sealed class ApiExceptionFilter : IExceptionFilter
 {
-    private const string UnexpectedMessage = "Something went wrong on the server. The error was logged; please try again.";
-
     private readonly ILogger<ApiExceptionFilter> _logger;
     private readonly IHostEnvironment _environment;
+    private readonly IAppText _text;
 
-    public ApiExceptionFilter(ILogger<ApiExceptionFilter> logger, IHostEnvironment environment)
+    public ApiExceptionFilter(ILogger<ApiExceptionFilter> logger, IHostEnvironment environment, IAppText text)
     {
         _logger = logger;
         _environment = environment;
+        _text = text;
     }
 
     public void OnException(ExceptionContext context)
@@ -57,7 +58,7 @@ public sealed class ApiExceptionFilter : IExceptionFilter
         if (problem is null)
         {
             _logger.LogError(exception, "Unhandled exception in {Method} {Path}", context.HttpContext.Request.Method, context.HttpContext.Request.Path);
-            problem = Problem(StatusCodes.Status500InternalServerError, _environment.IsDevelopment() ? exception.ToString() : null, UnexpectedMessage);
+            problem = Problem(StatusCodes.Status500InternalServerError, _environment.IsDevelopment() ? exception.ToString() : null, _text.Translate("errors.unexpected"));
         }
         else
         {

@@ -1,3 +1,4 @@
+using System.Globalization;
 using FluentValidation;
 using FluentValidation.Results;
 using Mediator;
@@ -17,6 +18,7 @@ using nInvoices.Application.DTOs;
 using nInvoices.Application.Exceptions;
 using nInvoices.Application.Features.Compliance.Commands;
 using nInvoices.Application.Features.Taxes.Commands;
+using nInvoices.Application.Localization;
 using nInvoices.Application.Services.Email;
 using nInvoices.Core.Compliance;
 using nInvoices.Core.Entities;
@@ -114,6 +116,21 @@ public sealed class ApiExceptionFilterTests
     }
 
     [Test]
+    public void UnexpectedException_ItsMessageIsInTheUsersLanguage()
+    {
+        var previous = CultureInfo.CurrentUICulture;
+        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("it-IT");
+        try
+        {
+            Handle(new InvalidOperationException("boom")).Extensions["error"].ShouldBe("Qualcosa è andato storto");
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previous;
+        }
+    }
+
+    [Test]
     public void UnexpectedException_InDevelopment_ShowsTheExceptionInDetail()
     {
         var problem = Handle(new InvalidOperationException("boom"), Environments.Development);
@@ -201,7 +218,13 @@ public sealed class ApiExceptionFilterTests
     }
 
     private static ApiExceptionFilter Filter(string environment) =>
-        new(NullLogger<ApiExceptionFilter>.Instance, Mock.Of<IHostEnvironment>(e => e.EnvironmentName == environment));
+        new(NullLogger<ApiExceptionFilter>.Instance, Mock.Of<IHostEnvironment>(e => e.EnvironmentName == environment), Text);
+
+    private static readonly AppText Text = new(new Dictionary<string, string>
+    {
+        ["en"] = """{ "errors": { "unexpected": "Something went wrong" } }""",
+        ["it"] = """{ "errors": { "unexpected": "Qualcosa è andato storto" } }"""
+    });
 
     private static ExceptionContext CreateContext(Exception exception)
     {

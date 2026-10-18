@@ -147,7 +147,11 @@ public sealed record UserSettingsExportDto(
     IReadOnlyList<HolidayCalendarExportDto> HolidayCalendars,
     IReadOnlyList<ComplianceSettingsExportDto> Compliance,
     // Absent from older exports
-    TaxRecordsExportDto? Taxes = null);
+    TaxRecordsExportDto? Taxes = null,
+    UserPreferencesExportDto? Preferences = null);
+
+/// <summary>The user's preferences: the app's language.</summary>
+public sealed record UserPreferencesExportDto(string UiLanguage);
 
 /// <summary>The tax prediction's data: where the user pays taxes, their business expenses and the tax payments they recorded.</summary>
 /// <param name="CountryCode">The country the user works from (absent from older exports).</param>

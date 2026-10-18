@@ -1,34 +1,34 @@
 <template>
-  <BasePanel title="Your country" description="The country you work from as a freelancer. Only its invoicing rules and tax regimes apply to you.">
-    <LoadingState v-if="loading" label="Loading countries…" />
+  <BasePanel :title="t('country.title')" :description="t('country.description')">
+    <LoadingState v-if="loading" :label="t('country.loading')" />
 
-    <EmptyState v-else-if="loadError" icon="alert" title="The countries could not be loaded" :description="loadError" compact>
-      <BaseButton @click="load">Try again</BaseButton>
+    <EmptyState v-else-if="loadError" icon="alert" :title="t('country.loadFailed')" :description="loadError" compact>
+      <BaseButton @click="load">{{ t('common.tryAgain') }}</BaseButton>
     </EmptyState>
 
     <EmptyState
       v-else-if="offered.length === 0"
       icon="info"
-      title="No country rules on this server"
-      description="This installation offers no country's invoicing rules or tax estimates; invoices work without them."
+      :title="t('country.noneTitle')"
+      :description="t('country.noneDescription')"
       compact
     />
 
     <form v-else class="country-form" novalidate @submit.prevent="save">
-      <BaseField label="Country" for="user-country" required>
+      <BaseField :label="t('address.country')" for="user-country" required>
         <select id="user-country" v-model="selected" class="control">
-          <option value="" disabled>Select…</option>
+          <option value="" disabled>{{ t('common.select') }}</option>
           <option v-for="country in offered" :key="country.countryCode" :value="country.countryCode">{{ country.name }}</option>
         </select>
       </BaseField>
 
       <BaseButton type="submit" variant="primary" :loading="saving" :disabled="saving || !selected || (selected === current && isChosen)">
-        {{ current && !isChosen && selected === current ? 'Confirm' : 'Save' }}
+        {{ current && !isChosen && selected === current ? t('common.confirm') : t('common.save') }}
       </BaseButton>
     </form>
 
     <p v-if="current && !isChosen && !loading" class="hint">
-      From your settings you work from {{ nameOf(current) }}. Confirm it, or choose another country.
+      {{ t('country.inferred', { country: nameOf(current) }) }}
     </p>
   </BasePanel>
 </template>
@@ -44,6 +44,9 @@ import BaseField from '@/components/ui/BaseField.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   /** The user's country, once known: on load, and after each change (null while there is none) */
@@ -76,7 +79,7 @@ async function load() {
     selected.value = current.value ?? (result.offered.length === 1 ? result.offered[0].countryCode : '')
     emit('country', current.value)
   } catch (err) {
-    loadError.value = errorMessage(err, 'Failed to load the countries')
+    loadError.value = errorMessage(err, t('country.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -86,9 +89,9 @@ async function save() {
   const code = selected.value
   if (current.value && current.value !== code) {
     const ok = await confirm({
-      title: `Work from ${nameOf(code)}?`,
-      message: `${nameOf(current.value)}'s invoicing rules will be turned off (their settings are kept, for if you come back), and you choose your tax regime in ${nameOf(code)}.`,
-      confirmLabel: `Switch to ${nameOf(code)}`
+      title: t('country.switchTitle', { country: nameOf(code) }),
+      message: t('country.switchMessage', { current: nameOf(current.value), country: nameOf(code) }),
+      confirmLabel: t('country.switchTo', { country: nameOf(code) })
     })
     if (!ok) return
   }
@@ -99,9 +102,9 @@ async function save() {
     current.value = result.countryCode ?? null
     isChosen.value = result.isChosen
     emit('country', current.value)
-    toast.success(`You work from ${nameOf(code)}`)
+    toast.success(t('country.saved', { country: nameOf(code) }))
   } catch (err) {
-    toast.failure('Failed to save the country', err)
+    toast.failure(t('country.saveFailed'), err)
   } finally {
     saving.value = false
   }

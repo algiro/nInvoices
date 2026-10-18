@@ -4918,6 +4918,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserPreferencesDto"];
+                        "application/json": components["schemas"]["UserPreferencesDto"];
+                        "text/json": components["schemas"]["UserPreferencesDto"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateUserPreferencesDto"];
+                    "text/json": components["schemas"]["UpdateUserPreferencesDto"];
+                    "application/*+json": components["schemas"]["UpdateUserPreferencesDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserPreferencesDto"];
+                        "application/json": components["schemas"]["UserPreferencesDto"];
+                        "text/json": components["schemas"]["UserPreferencesDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/Projects": {
         parameters: {
             query?: never;
@@ -7266,6 +7341,9 @@ export interface components {
                 [key: string]: string;
             };
         };
+        UpdateUserPreferencesDto: {
+            uiLanguage: string;
+        };
         UploadCertificateDto: {
             pfx: string;
             password: string;
@@ -7275,12 +7353,20 @@ export interface components {
             isChosen: boolean;
             offered: components["schemas"]["OfferedCountryDto"][];
         };
+        UserPreferencesDto: {
+            uiLanguage: string;
+            uiLanguages: string[];
+        };
+        UserPreferencesExportDto: {
+            uiLanguage: string;
+        };
         UserSettingsExportDto: {
             invoiceNumbering: null | components["schemas"]["InvoiceNumberingExportDto"];
             images: components["schemas"]["ImageAssetExportDto"][];
             holidayCalendars: components["schemas"]["HolidayCalendarExportDto"][];
             compliance: components["schemas"]["ComplianceSettingsExportDto"][];
             taxes?: null | components["schemas"]["TaxRecordsExportDto"];
+            preferences?: null | components["schemas"]["UserPreferencesExportDto"];
         };
         ValidateTemplateDto: {
             content: string;

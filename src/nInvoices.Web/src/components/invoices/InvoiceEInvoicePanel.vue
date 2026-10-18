@@ -1,16 +1,16 @@
 <template>
   <BasePanel
     v-if="formats.length || channels.length"
-    title="E-invoice"
-    description="The structured, signed version of this invoice that some countries require, for example Facturae for Spanish public administrations."
+    :title="t('einvoice.title')"
+    :description="t('einvoice.description')"
   >
     <ul class="formats">
       <li v-for="format in formats" :key="format.formatId">
         <div class="line">
           <div class="what">
             <strong>{{ format.formatName }}</strong>
-            <StatusPill v-if="format.isMandatory" tone="info">Required for this customer</StatusPill>
-            <StatusPill v-if="format.isGenerated" tone="success">Generated</StatusPill>
+            <StatusPill v-if="format.isMandatory" tone="info">{{ t('einvoice.required') }}</StatusPill>
+            <StatusPill v-if="format.isGenerated" tone="success">{{ t('einvoice.generated') }}</StatusPill>
           </div>
           <div class="buttons">
             <BaseButton
@@ -20,7 +20,7 @@
               :disabled="!!busy"
               @click="download(format)"
             >
-              Download
+              {{ t('common.download') }}
             </BaseButton>
             <BaseButton
               v-if="canGenerate"
@@ -29,20 +29,20 @@
               :disabled="!!busy"
               @click="generate"
             >
-              {{ format.isGenerated ? 'Regenerate' : 'Generate' }}
+              {{ format.isGenerated ? t('einvoice.regenerate') : t('einvoice.generate') }}
             </BaseButton>
           </div>
         </div>
 
         <p v-if="format.isGenerated && format.generatedAt" class="muted">
-          {{ format.fileName }} · generated {{ formatDate(format.generatedAt, dateTime) }}
+          {{ t('einvoice.generatedOn', { file: format.fileName, date: formatDate(format.generatedAt, dateTime) }) }}
         </p>
         <p v-else-if="!canGenerate" class="muted">
-          {{ format.isMandatory ? 'Generated automatically when the invoice is finalized.' : 'Available once the invoice is finalized.' }}
+          {{ format.isMandatory ? t('einvoice.generatedOnFinalize') : t('einvoice.availableOnFinalize') }}
         </p>
 
         <div v-if="issuesFor(format.formatId).length" class="issues" role="alert">
-          <strong>It could not be generated:</strong>
+          <strong>{{ t('einvoice.couldNotGenerate') }}</strong>
           <ul>
             <li v-for="issue in issuesFor(format.formatId)" :key="issue.message">{{ issue.message }}</li>
           </ul>
@@ -56,7 +56,7 @@
           <div class="what">
             <strong>{{ channel.displayName }}</strong>
             <StatusPill :tone="channel.environment === 'Production' ? 'warning' : 'neutral'">{{ channel.environment }}</StatusPill>
-            <StatusPill v-if="channel.submission" tone="success">Sent</StatusPill>
+            <StatusPill v-if="channel.submission" tone="success">{{ t('invoiceStatus.Sent') }}</StatusPill>
           </div>
           <div class="buttons">
             <BaseButton
@@ -66,7 +66,7 @@
               :disabled="!!busy"
               @click="refresh(channel)"
             >
-              Refresh status
+              {{ t('einvoice.refreshStatus') }}
             </BaseButton>
             <BaseButton
               v-else
@@ -75,23 +75,25 @@
               :disabled="!!busy || !channel.canSend"
               @click="send(channel)"
             >
-              Send to {{ channel.displayName }}
+              {{ t('einvoice.sendTo', { channel: channel.displayName }) }}
             </BaseButton>
           </div>
         </div>
 
         <template v-if="channel.submission">
           <p class="muted">
-            Registry code <strong>{{ channel.submission.reference }}</strong>
-            · sent {{ formatDate(channel.submission.submittedAt, dateTime) }}
+            <i18n-t keypath="einvoice.registryCode" tag="span">
+              <template #code><strong>{{ channel.submission.reference }}</strong></template>
+              <template #date>{{ formatDate(channel.submission.submittedAt, dateTime) }}</template>
+            </i18n-t>
           </p>
           <p class="muted">
-            Status: {{ channel.submission.statusName ?? channel.submission.statusCode ?? 'unknown' }}
-            <template v-if="channel.submission.checkedAt"> (checked {{ formatDate(channel.submission.checkedAt, dateTime) }})</template>
+            {{ t('einvoice.status', { status: channel.submission.statusName ?? channel.submission.statusCode ?? t('einvoice.unknown') }) }}
+            <template v-if="channel.submission.checkedAt"> {{ t('einvoice.checked', { date: formatDate(channel.submission.checkedAt, dateTime) }) }}</template>
           </p>
-          <p v-if="channel.submission.cancellationStatus" class="muted">Cancellation: {{ channel.submission.cancellationStatus }}</p>
+          <p v-if="channel.submission.cancellationStatus" class="muted">{{ t('einvoice.cancellation', { status: channel.submission.cancellationStatus }) }}</p>
           <div v-if="channel.submission.lastError" class="issues" role="alert">
-            The status could not be refreshed: {{ channel.submission.lastError }}
+            {{ t('einvoice.refreshFailedDetail', { error: channel.submission.lastError }) }}
           </div>
         </template>
         <ul v-else-if="channel.problems.length" class="muted problems">
@@ -112,6 +114,9 @@ import StatusPill from '@/components/ui/StatusPill.vue'
 import { useToast } from '@/composables/useToast'
 import { formatDate } from '@/utils/format'
 import { useConfirm } from '@/composables/useConfirm'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   invoiceId: number
@@ -150,11 +155,11 @@ async function load() {
 async function send(channel: EInvoiceChannelDto) {
   const production = channel.environment === 'Production'
   const confirmed = await confirm({
-    title: `Send to ${channel.displayName}?`,
+    title: t('einvoice.sendTitle', { channel: channel.displayName }),
     message: production
-      ? `The signed e-invoice goes to the public administration through ${channel.displayName}. It cannot be taken back, and the file can no longer be regenerated.`
-      : `This is the test environment of ${channel.displayName}: nothing reaches a real administration. The file can no longer be regenerated.`,
-    confirmLabel: 'Send',
+      ? t('einvoice.sendProduction', { channel: channel.displayName })
+      : t('einvoice.sendTest', { channel: channel.displayName }),
+    confirmLabel: t('einvoice.send'),
     tone: production ? 'danger' : 'default'
   })
   if (!confirmed) return
@@ -162,9 +167,9 @@ async function send(channel: EInvoiceChannelDto) {
   busy.value = `send:${channel.channelId}`
   try {
     await invoicesApi.sendEInvoice(props.invoiceId, channel.channelId)
-    toast.success(`Sent to ${channel.displayName}`)
+    toast.success(t('einvoice.sentTo', { channel: channel.displayName }))
   } catch (err) {
-    toast.failure(`${channel.displayName} did not accept the e-invoice`, err)
+    toast.failure(t('einvoice.notAccepted', { channel: channel.displayName }), err)
   } finally {
     busy.value = null
     await load()
@@ -176,7 +181,7 @@ async function refresh(channel: EInvoiceChannelDto) {
   try {
     await invoicesApi.refreshEInvoice(props.invoiceId, channel.channelId)
   } catch (err) {
-    toast.failure(`Could not read the status from ${channel.displayName}`, err)
+    toast.failure(t('einvoice.statusFailed', { channel: channel.displayName }), err)
   } finally {
     busy.value = null
     await load()
@@ -188,9 +193,9 @@ async function generate() {
   try {
     results.value = await invoicesApi.generateEInvoices(props.invoiceId)
     await load()
-    if (results.value.every(r => r.generated)) toast.success('E-invoice generated')
+    if (results.value.every(r => r.generated)) toast.success(t('einvoice.generatedToast'))
   } catch (err) {
-    toast.failure('Could not generate the e-invoice', err)
+    toast.failure(t('einvoice.generateFailed'), err)
   } finally {
     busy.value = null
   }
@@ -207,7 +212,7 @@ async function download(format: InvoiceEInvoiceDto) {
     link.click()
     URL.revokeObjectURL(url)
   } catch (err) {
-    toast.failure('Could not download the e-invoice', err)
+    toast.failure(t('einvoice.downloadFailed'), err)
   } finally {
     busy.value = null
   }

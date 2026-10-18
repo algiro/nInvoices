@@ -161,6 +161,7 @@ public sealed class ImportExportRoundTripTests
         db.AddRange(
             new TaxProfile("ES", "eds", new Dictionary<string, string> { ["territory"] = "canarias", ["difficultExpenses"] = "true" }),
             new UserCountry("ES"),
+            new UserPreferences("it"),
             new BusinessExpense(new DateOnly(2026, 2, 10), "Gestor", new Money(60m, "EUR"), ExpenseCategory.ProfessionalServices, 4.20m,
                 supplier: "Asesoría Pérez"),
             new BusinessExpense(new DateOnly(2026, 3, 1), "Cloud hosting", new Money(20m, "USD"), ExpenseCategory.Software,
@@ -261,6 +262,22 @@ public sealed class ImportExportRoundTripTests
         (compliance.LegalName, compliance.TaxId, compliance.Address!.City).ShouldBe(("Freelancer Name", "12345678Z", "Madrid"));
         compliance.Values["residence"].ShouldBe("R");
         compliance.HasCertificate.ShouldBeFalse();
+        (await db.UserPreferences.SingleAsync(Token)).UiLanguage.ShouldBe("it");
+    }
+
+    [Test]
+    public async Task ImportSettings_PreferencesAlreadySet_AreKept()
+    {
+        var db = Context(_target);
+        db.UserPreferences.Add(new UserPreferences("en"));
+        await db.SaveChangesAsync(Token);
+        var backup = ViaFile(new DataExportDto("1.0", DateTime.UtcNow, null, null, Settings: new UserSettingsExportDto(
+            null, [], [], [], Preferences: new UserPreferencesExportDto("it"))));
+
+        var result = Ok(await Controller(Context(_target)).ImportSettingsAsync(backup, Token));
+
+        (result.Imported, result.Skipped).ShouldBe((0, 1));
+        (await Context(_target).UserPreferences.SingleAsync(Token)).UiLanguage.ShouldBe("en");
     }
 
     [Test]

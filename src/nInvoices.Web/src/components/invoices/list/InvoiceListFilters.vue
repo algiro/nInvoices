@@ -1,7 +1,7 @@
 <template>
   <div class="filters">
     <div class="filters-top">
-      <div class="status-chips" role="group" aria-label="Filter by status">
+      <div class="status-chips" role="group" :aria-label="t('invoices.filters.byStatus')">
         <button
           v-for="chip in statusChips"
           :key="chip.value"
@@ -20,11 +20,11 @@
         <select
           id="invoice-saved-view"
           class="control"
-          aria-label="Saved views"
+          :aria-label="t('invoices.filters.savedViews')"
           :value="currentView?.name ?? ''"
           @change="onViewSelected(($event.target as HTMLSelectElement).value)"
         >
-          <option value="">{{ savedViews.views.value.length ? 'Saved views…' : 'No saved views' }}</option>
+          <option value="">{{ savedViews.views.value.length ? t('invoices.filters.savedViewsPick') : t('invoices.filters.noSavedViews') }}</option>
           <option v-for="view in savedViews.views.value" :key="view.name" :value="view.name">{{ view.name }}</option>
         </select>
         <BaseButton
@@ -33,11 +33,11 @@
           variant="ghost-danger"
           icon="trash"
           icon-only
-          :aria-label="`Delete the view ${currentView.name}`"
-          title="Delete this view"
+          :aria-label="t('invoices.filters.deleteViewNamed', { name: currentView.name })"
+          :title="t('invoices.filters.deleteView')"
           @click="deleteView(currentView.name)"
         />
-        <BaseButton v-else size="sm" variant="ghost" icon="plus" :disabled="!hasFilters" @click="openSaveView">Save view</BaseButton>
+        <BaseButton v-else size="sm" variant="ghost" icon="plus" :disabled="!hasFilters" @click="openSaveView">{{ t('invoices.filters.saveView') }}</BaseButton>
       </div>
     </div>
 
@@ -49,36 +49,36 @@
           v-model="searchText"
           type="search"
           class="control"
-          placeholder="Invoice number or customer"
-          aria-label="Search invoices"
+          :placeholder="t('invoices.filters.searchPlaceholder')"
+          :aria-label="t('invoices.filters.search')"
         />
       </div>
-      <select id="invoice-customer-filter" class="control" aria-label="Filter by customer" :value="params.customerId ?? 0" @change="setQuery({ customerId: selectValue($event) })">
-        <option :value="0">All customers</option>
+      <select id="invoice-customer-filter" class="control" :aria-label="t('invoices.filters.byCustomer')" :value="params.customerId ?? 0" @change="setQuery({ customerId: selectValue($event) })">
+        <option :value="0">{{ t('invoices.filters.allCustomers') }}</option>
         <option v-for="c in sortedCustomers" :key="c.id" :value="c.id">{{ c.name }}</option>
       </select>
-      <select id="invoice-type-filter" class="control" aria-label="Filter by type" :value="params.type ?? ''" @change="setQuery({ type: selectValue($event) })">
-        <option value="">All types</option>
-        <option value="Monthly">Monthly</option>
-        <option value="OneTime">One-time</option>
+      <select id="invoice-type-filter" class="control" :aria-label="t('invoices.filters.byType')" :value="params.type ?? ''" @change="setQuery({ type: selectValue($event) })">
+        <option value="">{{ t('invoices.filters.allTypes') }}</option>
+        <option value="Monthly">{{ t('invoiceType.Monthly') }}</option>
+        <option value="OneTime">{{ t('invoiceType.OneTime') }}</option>
       </select>
-      <select id="invoice-year-filter" class="control" aria-label="Filter by year issued" :value="params.year ?? 0" @change="setQuery({ year: selectValue($event) })">
-        <option :value="0">All years</option>
+      <select id="invoice-year-filter" class="control" :aria-label="t('invoices.filters.byYear')" :value="params.year ?? 0" @change="setQuery({ year: selectValue($event) })">
+        <option :value="0">{{ t('invoices.filters.allYears') }}</option>
         <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
       </select>
-      <BaseButton v-if="hasFilters" variant="ghost" size="sm" @click="applyView({})">Clear filters</BaseButton>
+      <BaseButton v-if="hasFilters" variant="ghost" size="sm" @click="applyView({})">{{ t('common.clearFilters') }}</BaseButton>
     </div>
   </div>
 
-  <BaseDialog :open="saveViewOpen" title="Save this view" description="Filters, sort order and rows per page, under a name. Saved in this browser." size="sm" @close="saveViewOpen = false">
+  <BaseDialog :open="saveViewOpen" :title="t('invoices.filters.saveViewTitle')" :description="t('invoices.filters.saveViewDescription')" size="sm" @close="saveViewOpen = false">
     <form id="save-view-form" novalidate @submit.prevent="confirmSaveView">
-      <BaseField label="Name" for="view-name" required>
-        <input id="view-name" v-model="viewName" type="text" class="control" placeholder="e.g. Unpaid this year" maxlength="60" />
+      <BaseField :label="t('customers.name')" for="view-name" required>
+        <input id="view-name" v-model="viewName" type="text" class="control" :placeholder="t('invoices.filters.viewNamePlaceholder')" maxlength="60" />
       </BaseField>
     </form>
     <template #footer>
-      <BaseButton @click="saveViewOpen = false">Cancel</BaseButton>
-      <BaseButton type="submit" form="save-view-form" variant="primary" :disabled="!viewName.trim()">Save view</BaseButton>
+      <BaseButton @click="saveViewOpen = false">{{ t('common.cancel') }}</BaseButton>
+      <BaseButton type="submit" form="save-view-form" variant="primary" :disabled="!viewName.trim()">{{ t('invoices.filters.saveView') }}</BaseButton>
     </template>
   </BaseDialog>
 </template>
@@ -95,6 +95,9 @@ import { useSavedViews } from '@/composables/useSavedViews'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import { invoiceStatus } from '@/utils/format'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   /** Invoices per status among those matching the other filters. */
@@ -115,7 +118,7 @@ const statusChips = computed(() => {
   const counts = props.statusCounts
   const all = Object.values(counts).reduce((sum, n) => sum + n, 0)
   return [
-    { value: '', label: 'All', count: all },
+    { value: '', label: t('invoices.filters.all'), count: all },
     ...['Draft', 'Finalized', 'Sent', 'Paid', 'Cancelled'].map(name => ({
       value: name,
       label: invoiceStatus(name).label,
@@ -165,11 +168,11 @@ function confirmSaveView() {
   if (!viewName.value.trim()) return
   savedViews.save(viewName.value, filterQuery.value)
   saveViewOpen.value = false
-  toast.success(`View “${viewName.value.trim()}” saved`)
+  toast.success(t('invoices.filters.viewSaved', { name: viewName.value.trim() }))
 }
 
 async function deleteView(name: string) {
-  if (!(await confirm({ title: `Delete the view “${name}”?`, message: 'The invoices are not affected.', confirmLabel: 'Delete', tone: 'danger' }))) return
+  if (!(await confirm({ title: t('invoices.filters.deleteViewTitle', { name }), message: t('invoices.filters.deleteViewMessage'), confirmLabel: t('common.delete'), tone: 'danger' }))) return
   savedViews.remove(name)
 }
 </script>

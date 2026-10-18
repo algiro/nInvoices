@@ -1,14 +1,14 @@
 <template>
   <div class="invoice-details">
-    <LoadingState v-if="loading && !invoice" label="Loading invoice…" />
+    <LoadingState v-if="loading && !invoice" :label="t('invoices.details.loading')" />
 
-    <EmptyState v-else-if="error && !invoice" icon="alert" title="Invoice could not be loaded" :description="error">
-      <BaseButton @click="loadData">Try again</BaseButton>
-      <BaseButton variant="ghost" to="/invoices">Back to invoices</BaseButton>
+    <EmptyState v-else-if="error && !invoice" icon="alert" :title="t('invoices.details.loadFailed')" :description="error">
+      <BaseButton @click="loadData">{{ t('common.tryAgain') }}</BaseButton>
+      <BaseButton variant="ghost" to="/invoices">{{ t('invoices.details.backToList') }}</BaseButton>
     </EmptyState>
 
     <template v-else-if="invoice">
-      <PageHeader :title="`Invoice ${invoice.invoiceNumber}`">
+      <PageHeader :title="t('invoices.details.title', { number: invoice.invoiceNumber })">
         <template #subtitle>
           <span class="meta">
             <StatusPill :tone="status.tone">{{ status.label }}</StatusPill>
@@ -23,7 +23,7 @@
             :loading="isBusy(invoice, 'downloadPdf')"
             @click="run('downloadPdf', invoice)"
           >
-            PDF
+            {{ t('invoices.details.pdf') }}
           </BaseButton>
           <BaseButton
             v-if="isMonthly(invoice)"
@@ -31,9 +31,9 @@
             :loading="isBusy(invoice, 'downloadReport')"
             @click="run('downloadReport', invoice)"
           >
-            Monthly report
+            {{ t('invoices.details.monthlyReport') }}
           </BaseButton>
-          <BaseButton v-if="canEmail" icon="send" @click="emailOpen = true">Email</BaseButton>
+          <BaseButton v-if="canEmail" icon="send" @click="emailOpen = true">{{ t('invoices.details.email') }}</BaseButton>
           <BaseButton
             v-if="actions.primary"
             variant="primary"
@@ -43,11 +43,11 @@
           >
             {{ actions.primary.label }}
           </BaseButton>
-          <ActionMenu :items="menuItems" label="More invoice actions" />
+          <ActionMenu :items="menuItems" :label="t('invoices.details.moreActions')" />
         </template>
       </PageHeader>
 
-      <ol v-if="status.name !== 'Cancelled'" class="lifecycle" aria-label="Invoice progress">
+      <ol v-if="status.name !== 'Cancelled'" class="lifecycle" :aria-label="t('invoices.details.progress')">
         <li
           v-for="(step, index) in lifecycle"
           :key="step"
@@ -55,44 +55,44 @@
           :aria-current="index === stepIndex ? 'step' : undefined"
         >
           <span class="marker"><AppIcon v-if="index < stepIndex" name="check" /><template v-else>{{ index + 1 }}</template></span>
-          {{ step }}
+          {{ invoiceStatus(step).label }}
         </li>
       </ol>
       <div v-else class="cancelled-note" role="status">
         <AppIcon name="ban" />
-        This invoice was cancelled. It stays on record but isn't counted as outstanding.
+        {{ t('invoices.details.cancelledNote') }}
       </div>
 
       <div class="layout">
         <TemplatePreviewPane
           class="document"
-          title="Invoice document"
+          :title="t('invoices.details.document')"
           :html="invoice.renderedContent ?? null"
           :loading="false"
           :stale="false"
-          caption="As generated; regenerate from the ⋯ menu to apply template changes"
+          :caption="t('invoices.details.documentCaption')"
         />
 
         <div class="side">
-          <BasePanel title="Amounts">
+          <BasePanel :title="t('invoices.details.amounts')">
             <dl class="amounts">
-              <div><dt>Subtotal</dt><dd>{{ money(invoice.subtotal) }}</dd></div>
-              <div v-if="invoice.totalExpenses?.amount"><dt>Expenses</dt><dd>{{ money(invoice.totalExpenses) }}</dd></div>
-              <div><dt>Taxes</dt><dd>{{ money(invoice.totalTaxes) }}</dd></div>
-              <div class="total"><dt>Total</dt><dd>{{ money(invoice.total) }}</dd></div>
+              <div><dt>{{ t('invoiceWizard.review.subtotal') }}</dt><dd>{{ money(invoice.subtotal) }}</dd></div>
+              <div v-if="invoice.totalExpenses?.amount"><dt>{{ t('nav.expenses') }}</dt><dd>{{ money(invoice.totalExpenses) }}</dd></div>
+              <div><dt>{{ t('customers.tabs.taxes') }}</dt><dd>{{ money(invoice.totalTaxes) }}</dd></div>
+              <div class="total"><dt>{{ t('invoices.columns.total') }}</dt><dd>{{ money(invoice.total) }}</dd></div>
             </dl>
           </BasePanel>
 
-          <BasePanel title="Details">
+          <BasePanel :title="t('customers.details')">
             <dl class="facts">
-              <div><dt>Customer</dt><dd><router-link :to="`/customers/${invoice.customerId}`">{{ customerName }}</router-link></dd></div>
-              <div><dt>Invoice number</dt><dd class="mono">{{ invoice.invoiceNumber }}</dd></div>
-              <div><dt>Issue date</dt><dd>{{ formatDate(invoice.issueDate) }}</dd></div>
-              <div><dt>Due date</dt><dd>{{ invoice.dueDate ? formatDate(invoice.dueDate) : 'Not set' }}</dd></div>
-              <div v-if="invoice.month"><dt>Period</dt><dd>{{ formatPeriod(invoice.month, invoice.year) }}</dd></div>
-              <div v-if="invoice.workedDays !== undefined && invoice.workedDays !== null"><dt>Worked days</dt><dd>{{ invoice.workedDays }}</dd></div>
-              <div><dt>Created</dt><dd>{{ formatDate(invoice.createdAt) }}</dd></div>
-              <div v-if="invoice.updatedAt && invoice.updatedAt !== invoice.createdAt"><dt>Last changed</dt><dd>{{ formatDate(invoice.updatedAt) }}</dd></div>
+              <div><dt>{{ t('customers.customer') }}</dt><dd><router-link :to="`/customers/${invoice.customerId}`">{{ customerName }}</router-link></dd></div>
+              <div><dt>{{ t('invoiceWizard.review.invoiceNumber') }}</dt><dd class="mono">{{ invoice.invoiceNumber }}</dd></div>
+              <div><dt>{{ t('invoiceWizard.issueDate') }}</dt><dd>{{ formatDate(invoice.issueDate) }}</dd></div>
+              <div><dt>{{ t('invoices.details.dueDate') }}</dt><dd>{{ invoice.dueDate ? formatDate(invoice.dueDate) : t('common.notSet') }}</dd></div>
+              <div v-if="invoice.month"><dt>{{ t('invoices.columns.period') }}</dt><dd>{{ formatPeriod(invoice.month, invoice.year) }}</dd></div>
+              <div v-if="invoice.workedDays !== undefined && invoice.workedDays !== null"><dt>{{ t('invoiceWizard.workedDays') }}</dt><dd>{{ invoice.workedDays }}</dd></div>
+              <div><dt>{{ t('invoices.details.created') }}</dt><dd>{{ formatDate(invoice.createdAt) }}</dd></div>
+              <div v-if="invoice.updatedAt && invoice.updatedAt !== invoice.createdAt"><dt>{{ t('invoices.details.lastChanged') }}</dt><dd>{{ formatDate(invoice.updatedAt) }}</dd></div>
             </dl>
           </BasePanel>
 
@@ -101,23 +101,22 @@
 
           <InvoiceEInvoicePanel :invoice-id="invoice.id" :status="status.name" />
 
-          <BasePanel v-if="canEmail || emails.length" title="Emails" description="Drafts created in your Gmail for this invoice.">
+          <BasePanel v-if="canEmail || emails.length" :title="t('invoices.details.emails')" :description="t('invoices.details.emailsDescription')">
             <ul v-if="emails.length" class="emails">
               <li v-for="email in emails" :key="email.id">
                 <div class="email-line">
                   <span class="email-subject">{{ email.subject }}</span>
-                  <a :href="email.gmailUrl" target="_blank" rel="noopener" class="email-open">Open in Gmail</a>
+                  <a :href="email.gmailUrl" target="_blank" rel="noopener" class="email-open">{{ t('invoices.details.openInGmail') }}</a>
                 </div>
-                <span class="muted">To {{ email.to }} · {{ formatDate(email.createdAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }}</span>
+                <span class="muted">{{ t('invoices.details.emailTo', { to: email.to, date: formatDate(email.createdAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }) }}</span>
               </li>
             </ul>
-            <p v-else class="muted">
-              None yet. <button type="button" class="link-button" @click="emailOpen = true">Create the email</button>
-              and it opens as a draft in Gmail, ready to send.
-            </p>
+            <i18n-t v-else keypath="invoices.details.noEmails" tag="p" class="muted">
+              <template #create><button type="button" class="link-button" @click="emailOpen = true">{{ t('invoices.details.createEmail') }}</button></template>
+            </i18n-t>
           </BasePanel>
 
-          <BasePanel v-if="invoice.notes" title="Notes">
+          <BasePanel v-if="invoice.notes" :title="t('invoices.details.notes')">
             <p class="notes">{{ invoice.notes }}</p>
           </BasePanel>
         </div>
@@ -157,6 +156,9 @@ import { useInvoiceActions, actionsFor, isMonthly, type InvoiceActionId } from '
 import { setPageTitle } from '@/composables/usePageTitle'
 import { formatMoney, formatDate, formatPeriod, invoiceStatus, invoiceTypeLabel } from '@/utils/format'
 import { errorMessage } from '@/composables/useToast'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -198,7 +200,7 @@ const stepIndex = computed(() => lifecycle.indexOf(status.value.name))
 
 const customerName = computed(() => {
   if (!invoice.value) return ''
-  return customersStore.getCustomerById(invoice.value.customerId)?.name ?? 'Unknown customer'
+  return customersStore.getCustomerById(invoice.value.customerId)?.name ?? t('invoices.details.unknownCustomer')
 })
 
 // PDF downloads have their own buttons in the header
@@ -233,7 +235,7 @@ async function loadData() {
       customersStore.customers.length ? Promise.resolve() : customersStore.fetchAll()
     ])
   } catch (err) {
-    error.value = errorMessage(err, 'Failed to load invoice')
+    error.value = errorMessage(err, t('invoices.details.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -247,7 +249,7 @@ watch(invoiceId, () => {
   loadData()
   loadEmails()
 })
-watch(() => invoice.value?.invoiceNumber, number => setPageTitle(number ? `Invoice ${number}` : null), { immediate: true })
+watch(() => invoice.value?.invoiceNumber, number => setPageTitle(number ? t('invoices.details.title', { number }) : null), { immediate: true })
 </script>
 
 <style scoped>

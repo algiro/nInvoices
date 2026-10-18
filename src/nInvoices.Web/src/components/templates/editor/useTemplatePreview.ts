@@ -1,5 +1,6 @@
 import { ref, computed, watch, onBeforeUnmount, type Ref } from 'vue'
 import { useToast } from '@/composables/useToast'
+import { t } from '@/i18n'
 import type { EditorProblem } from './TemplateCodeEditor.vue'
 import type { TemplateKindApi } from './templateKinds'
 
@@ -20,7 +21,7 @@ export function parseTemplateError(raw: string): TemplateError {
   m = raw.match(/^(Subject|Body):\s*([\s\S]*)$/)
   if (m) {
     const inner = parseTemplateError(m[2])
-    return m[1] === 'Body' ? inner : { ...inner, line: 0, column: 0, message: `Subject: ${inner.message}` }
+    return m[1] === 'Body' ? inner : { ...inner, line: 0, column: 0, message: t('templates.problems.inSubject', { message: inner.message }) }
   }
   return { line: 0, column: 0, message: raw, syntax: false }
 }
@@ -72,7 +73,7 @@ export function useTemplatePreview(options: {
         stale.value = html.value !== null
       }
     } catch (error) {
-      if (current === seq) toast.failure('Preview failed', error)
+      if (current === seq) toast.failure(t('templates.preview.failed'), error)
     } finally {
       if (current === seq) busy.value = false
     }

@@ -38,7 +38,7 @@ export const useProjectsStore = defineStore('projects', () => {
       upsert(list, customerId)
       return list
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to fetch projects')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -53,7 +53,7 @@ export const useProjectsStore = defineStore('projects', () => {
       projects.value.push(created)
       return created
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to create project')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -71,7 +71,7 @@ export const useProjectsStore = defineStore('projects', () => {
       }
       return updated
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to update project')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -93,7 +93,7 @@ export const useProjectsStore = defineStore('projects', () => {
       }
       return result
     } catch (err) {
-      error.value = errorMessage(err, 'Failed to delete project')
+      error.value = errorMessage(err)
       throw err
     } finally {
       loading.value = false

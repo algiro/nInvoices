@@ -5,7 +5,7 @@
       class="calendar-grid"
       role="grid"
       tabindex="0"
-      aria-label="Worked days calendar. Arrow keys move, Shift extends, W/H/L set the type, 1-8 set hours, Delete clears."
+      :aria-label="t('time.calendarLabel')"
       aria-multiselectable="true"
       @keydown="onKeydown"
     >
@@ -26,30 +26,30 @@
         >
           <span class="cell-top">
             <span class="cell-num">{{ day.day }}</span>
-            <span v-if="projectCount(day.date) > 1" class="split-badge" title="Split across projects">×{{ projectCount(day.date) }}</span>
-            <svg v-if="get(day.date)?.notes" class="note-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-label="Has a note">
+            <span v-if="projectCount(day.date) > 1" class="split-badge" :title="t('time.splitAcross')">×{{ projectCount(day.date) }}</span>
+            <svg v-if="get(day.date)?.notes" class="note-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" :aria-label="t('time.hasNote')">
               <path d="M3 2.5h10v8l-3 3H3z M10 13.5v-3h3M5.5 6h5M5.5 8.5h3" />
             </svg>
           </span>
 
           <template v-if="kindOf(day.date) === DayType.Worked">
             <span class="cell-hours">{{ formatHours(billedHours(get(day.date)!)) }}</span>
-            <span v-if="rateBadge?.(day.date)" class="cell-rate" :title="`Billed at ${rateBadge(day.date)}`">{{ rateBadge(day.date) }}</span>
+            <span v-if="rateBadge?.(day.date)" class="cell-rate" :title="t('time.billedAt', { rate: rateBadge(day.date) })">{{ rateBadge(day.date) }}</span>
             <span class="cell-project">{{ projectLabel(day.date) }}</span>
           </template>
-          <span v-else-if="kindOf(day.date) === DayType.PublicHoliday" class="cell-label">Holiday</span>
-          <span v-else-if="kindOf(day.date) === DayType.UnpaidLeave" class="cell-label">Unpaid leave</span>
-          <span v-else-if="!day.isWeekend" class="cell-label muted">Not billed</span>
+          <span v-else-if="kindOf(day.date) === DayType.PublicHoliday" class="cell-label">{{ t('time.kinds.holiday') }}</span>
+          <span v-else-if="kindOf(day.date) === DayType.UnpaidLeave" class="cell-label">{{ t('time.kinds.unpaidLeave') }}</span>
+          <span v-else-if="!day.isWeekend" class="cell-label muted">{{ t('time.kinds.notBilled') }}</span>
         </div>
       </template>
     </div>
 
     <div class="legend">
-      <span><i class="swatch worked"></i>Worked</span>
-      <span><i class="swatch partial"></i>Partial day (fill = share of 8h)</span>
-      <span><i class="swatch holiday"></i>Public holiday</span>
-      <span><i class="swatch leave"></i>Unpaid leave</span>
-      <span class="legend-hint">Drag or Shift+click to select several days</span>
+      <span><i class="swatch worked"></i>{{ t('time.kinds.worked') }}</span>
+      <span><i class="swatch partial"></i>{{ t('time.partialDay') }}</span>
+      <span><i class="swatch holiday"></i>{{ t('time.kinds.publicHoliday') }}</span>
+      <span><i class="swatch leave"></i>{{ t('time.kinds.unpaidLeave') }}</span>
+      <span class="legend-hint">{{ t('time.selectHint') }}</span>
     </div>
   </div>
 </template>
@@ -58,6 +58,10 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { DayType } from '@/types'
 import { billedHours, localDateString, FULL_DAY_HOURS, type CalendarDay, type WorkMonth } from '@/composables/useWorkMonth'
+import { currentLanguage } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   month: WorkMonth
@@ -77,7 +81,7 @@ function projectCount(date: string): number {
 
 function projectLabel(date: string): string {
   const rows = get(date)?.projects ?? []
-  if (projectCount(date) > 1) return 'Split'
+  if (projectCount(date) > 1) return t('time.split')
   return rows[0]?.projectName?.trim() || ''
 }
 
@@ -109,7 +113,7 @@ function partialStyle(date: string) {
 
 function cellTitle(date: string): string {
   const d = new Date(date + 'T00:00:00')
-  const label = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
+  const label = d.toLocaleDateString(currentLanguage(), { weekday: 'long', day: 'numeric', month: 'long' })
   const note = get(date)?.notes
   return note ? `${label} — ${note}` : label
 }

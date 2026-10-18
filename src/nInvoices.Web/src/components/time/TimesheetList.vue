@@ -1,27 +1,27 @@
 <template>
   <div class="timesheet">
     <div v-if="selectedDays.length > 1" class="bulk-bar">
-      <strong>{{ selectedDays.length }} days selected</strong>
+      <strong>{{ t('time.daysSelected', { n: selectedDays.length }) }}</strong>
       <span class="spacer"></span>
-      <button type="button" class="bulk-btn" @click="setKind(selectedDays, DayType.Worked)">Worked</button>
-      <button type="button" class="bulk-btn" @click="setKind(selectedDays, DayType.PublicHoliday)">Holiday</button>
-      <button type="button" class="bulk-btn" @click="setKind(selectedDays, DayType.UnpaidLeave)">Leave</button>
+      <button type="button" class="bulk-btn" @click="setKind(selectedDays, DayType.Worked)">{{ t('time.kinds.worked') }}</button>
+      <button type="button" class="bulk-btn" @click="setKind(selectedDays, DayType.PublicHoliday)">{{ t('time.kinds.holiday') }}</button>
+      <button type="button" class="bulk-btn" @click="setKind(selectedDays, DayType.UnpaidLeave)">{{ t('time.kinds.leave') }}</button>
       <button type="button" class="bulk-btn" @click="setHours(selectedDays, 8)">8h</button>
       <button type="button" class="bulk-btn" @click="setHours(selectedDays, 4)">4h</button>
-      <button type="button" class="bulk-btn ghost" @click="clearSelection()">Clear selection</button>
+      <button type="button" class="bulk-btn ghost" @click="clearSelection()">{{ t('invoices.bulk.clearSelection') }}</button>
     </div>
 
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th scope="col">Day</th>
-            <th scope="col">Type</th>
-            <th scope="col" class="num">Hours</th>
-            <th scope="col">Project</th>
-            <th v-if="showRate" scope="col">Rate</th>
-            <th scope="col">Note</th>
-            <th v-if="showAmount" scope="col" class="num">Amount</th>
+            <th scope="col">{{ t('time.day') }}</th>
+            <th scope="col">{{ t('common.type') }}</th>
+            <th scope="col" class="num">{{ t('invoiceWizard.hours') }}</th>
+            <th scope="col">{{ t('projects.project') }}</th>
+            <th v-if="showRate" scope="col">{{ t('rates.rate') }}</th>
+            <th scope="col">{{ t('time.note') }}</th>
+            <th v-if="showAmount" scope="col" class="num">{{ t('taxes.amount') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -40,7 +40,7 @@
                   class="link-btn"
                   @click="setKind([d.date], DayType.Worked)"
                 >
-                  mark {{ d.label }} as worked
+                  {{ t('time.markAsWorked', { day: d.label }) }}
                 </button>
               </td>
             </tr>
@@ -48,7 +48,7 @@
             <tr v-else :class="{ selected: selected.includes(row.date), weekend: row.isWeekend }">
               <td
                 class="day-cell"
-                :title="'Click to select · Shift+click for a range · Ctrl+click to add'"
+                :title="t('time.dayCellHint')"
                 @pointerdown="onDayPointerDown($event, row.date)"
               >
                 <span class="day-num">{{ row.day }}</span><span class="day-name">{{ row.dayName }}</span>
@@ -60,13 +60,13 @@
                   class="input type-select"
                   :class="kindClass(row.date)"
                   :value="String(kindOf(row.date))"
-                  :aria-label="`Type for ${row.label}`"
+                  :aria-label="t('time.typeFor', { day: row.label })"
                   @change="onKindChange(row.date, ($event.target as HTMLSelectElement).value)"
                 >
-                  <option :value="String(DayType.Worked)">Worked</option>
-                  <option :value="String(DayType.PublicHoliday)">Public holiday</option>
-                  <option :value="String(DayType.UnpaidLeave)">Unpaid leave</option>
-                  <option value="none">Not billed</option>
+                  <option :value="String(DayType.Worked)">{{ t('time.kinds.worked') }}</option>
+                  <option :value="String(DayType.PublicHoliday)">{{ t('time.kinds.publicHoliday') }}</option>
+                  <option :value="String(DayType.UnpaidLeave)">{{ t('time.kinds.unpaidLeave') }}</option>
+                  <option value="none">{{ t('time.kinds.notBilled') }}</option>
                 </select>
               </td>
 
@@ -82,8 +82,8 @@
                   :class="{ invalid: hoursOf(row.date) <= 0 }"
                   :value="hoursOf(row.date)"
                   :readonly="isSplit(row.date)"
-                  :title="isSplit(row.date) ? 'Split across projects: edit the hours in the day panel' : ''"
-                  :aria-label="`Hours for ${row.label}`"
+                  :title="isSplit(row.date) ? t('time.splitHoursHint') : ''"
+                  :aria-label="t('time.hoursFor', { day: row.label })"
                   @change="setHours([row.date], Number(($event.target as HTMLInputElement).value))"
                 />
                 <span v-else class="dash">—</span>
@@ -95,7 +95,7 @@
                     v-if="isSplit(row.date)"
                     type="button"
                     class="split-chip"
-                    title="Edit the split in the day panel"
+                    :title="t('time.editSplitHint')"
                     @click="select(row.date)"
                   >
                     {{ splitLabel(row.date) }}
@@ -106,9 +106,9 @@
                     type="text"
                     list="timesheet-project-suggestions"
                     class="input"
-                    placeholder="Project (optional)"
+                    :placeholder="t('time.projectOptional')"
                     :value="get(row.date)?.projects?.[0]?.projectName ?? ''"
-                    :aria-label="`Project for ${row.label}`"
+                    :aria-label="t('time.projectFor', { day: row.label })"
                     @change="setProject([row.date], ($event.target as HTMLInputElement).value.trim())"
                   />
                 </template>
@@ -121,10 +121,10 @@
                   :id="`ts-rate-${row.date}`"
                   class="input rate-select"
                   :value="get(row.date)?.rateId != null ? String(get(row.date)?.rateId) : 'default'"
-                  :aria-label="`Rate for ${row.label}`"
+                  :aria-label="t('time.rateFor', { day: row.label })"
                   @change="onRateChange(row.date, ($event.target as HTMLSelectElement).value)"
                 >
-                  <option value="default">Invoice rate</option>
+                  <option value="default">{{ t('time.invoiceRate') }}</option>
                   <option v-for="rate in rates" :key="rate.id" :value="String(rate.id)">{{ rateLabel(rate) }}</option>
                 </select>
                 <span v-else class="dash">—</span>
@@ -137,9 +137,9 @@
                   type="text"
                   maxlength="500"
                   class="input"
-                  placeholder="Add a note…"
+                  :placeholder="t('time.addNote')"
                   :value="get(row.date)?.notes ?? ''"
-                  :aria-label="`Note for ${row.label}`"
+                  :aria-label="t('time.noteFor', { day: row.label })"
                   @input="setNote([row.date], ($event.target as HTMLInputElement).value)"
                 />
                 <span v-else class="dash">—</span>
@@ -164,6 +164,10 @@ import { DayType, RateType } from '@/types'
 import { billedHours, type DayKind, type WorkMonth } from '@/composables/useWorkMonth'
 import { dayAmount, rateLabel } from '@/utils/rates'
 import type { RateDto, WorkDayDto } from '@/types'
+import { currentLanguage } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   month: WorkMonth
@@ -181,7 +185,9 @@ const {
   setKind, setHours, setProject, setRate, setNote
 } = props.month
 
-const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+// Sunday first, in the app's language (1 January 2023 was a Sunday)
+const dayNames = computed(() => Array.from({ length: 7 }, (_, i) =>
+  new Date(2023, 0, 1 + i).toLocaleDateString(currentLanguage(), { weekday: 'short' })))
 
 interface Row {
   date: string
@@ -205,8 +211,8 @@ const rows = computed((): Row[] => {
     const base = {
       date,
       day: d.getDate(),
-      dayName: dayNames[dow],
-      label: d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }),
+      dayName: dayNames.value[dow],
+      label: d.toLocaleDateString(currentLanguage(), { weekday: 'short', day: 'numeric', month: 'short' }),
       isWeekend
     }
     if (isWeekend && !get(date)) {
@@ -214,9 +220,9 @@ const rows = computed((): Row[] => {
       if (dow === 0 && i > 0 && result[result.length - 1]?.collapsed) continue
       const next = dates[i + 1]
       const foldSunday = dow === 6 && next && !get(next)
-      const markable = [{ date, label: `${dayNames[dow]} ${d.getDate()}` }]
-      if (foldSunday) markable.push({ date: next, label: `Sun ${d.getDate() + 1}` })
-      result.push({ ...base, collapsed: true, markable, label: foldSunday ? 'Weekend' : `${dayNames[dow]}, not billed` })
+      const markable = [{ date, label: `${dayNames.value[dow]} ${d.getDate()}` }]
+      if (foldSunday) markable.push({ date: next, label: `${dayNames.value[0]} ${d.getDate() + 1}` })
+      result.push({ ...base, collapsed: true, markable, label: foldSunday ? t('time.weekend') : t('time.dayNotBilled', { day: dayNames.value[dow] }) })
       continue
     }
     result.push({ ...base, collapsed: false, markable: [] })
@@ -244,7 +250,7 @@ function isSplit(date: string): boolean {
 
 function splitLabel(date: string): string {
   return (get(date)?.projects ?? [])
-    .map(p => `${p.projectName || 'Unnamed'} ${Number(p.hours) || 0}h`)
+    .map(p => `${p.projectName || t('time.unnamed')} ${Number(p.hours) || 0}h`)
     .join(' · ')
 }
 
