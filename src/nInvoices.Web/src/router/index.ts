@@ -142,9 +142,41 @@ const router = createRouter({
         },
         {
           path: 'settings',
-          name: 'settings',
           meta: { title: 'Settings', section: 'settings' },
           component: () => import('../views/settings/Settings.vue'),
+          children: [
+            { path: '', name: 'settings', redirect: { name: 'settings-general' } },
+            {
+              path: 'general',
+              name: 'settings-general',
+              meta: { title: 'General · Settings' },
+              component: () => import('../views/settings/GeneralSettings.vue'),
+            },
+            {
+              path: 'invoices',
+              name: 'settings-invoices',
+              meta: { title: 'Invoices · Settings' },
+              component: () => import('../views/settings/InvoiceSettings.vue'),
+            },
+            {
+              path: 'country',
+              name: 'settings-country',
+              meta: { title: 'Country & taxes · Settings' },
+              component: () => import('../views/settings/CountrySettings.vue'),
+            },
+            {
+              path: 'email',
+              name: 'settings-email',
+              meta: { title: 'Email · Settings' },
+              component: () => import('../views/settings/EmailSettings.vue'),
+            },
+            {
+              path: 'data',
+              name: 'settings-data',
+              meta: { title: 'Data & account · Settings' },
+              component: () => import('../views/settings/DataSettings.vue'),
+            },
+          ],
         },
       ],
     },

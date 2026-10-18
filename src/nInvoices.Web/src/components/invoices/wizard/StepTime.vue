@@ -14,7 +14,7 @@
           Weekdays among them are marked as holidays.
         </span>
         <span v-else>No public holidays in {{ holidayCountryName }} this month.</span>
-        <router-link to="/settings">Edit holidays</router-link>
+        <router-link to="/settings/general">Edit holidays</router-link>
       </p>
     </template>
     <template #actions>

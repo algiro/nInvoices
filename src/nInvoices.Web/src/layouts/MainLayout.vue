@@ -81,7 +81,7 @@
                   <!-- drawn with the theme's own variables -->
                   <span class="swatch-fill" :data-theme="option.id"><span class="swatch-accent"></span></span>
                 </button>
-                <router-link to="/settings" class="all-themes" @click="userOpen = false">All themes</router-link>
+                <router-link to="/settings/general" class="all-themes" @click="userOpen = false">All themes</router-link>
               </div>
             </div>
             <button type="button" class="menu-item" role="menuitem" :disabled="loggingOut" @click="logout">
