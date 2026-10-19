@@ -1,6 +1,7 @@
 using nInvoices.Countries.Germany;
 using nInvoices.Countries.Italy;
 using nInvoices.Countries.Spain;
+using nInvoices.Countries.UnitedKingdom;
 using nInvoices.Infrastructure.Countries;
 
 namespace nInvoices.Infrastructure.Tests.Data;
@@ -11,5 +12,5 @@ namespace nInvoices.Infrastructure.Tests.Data;
 /// </summary>
 internal static class TestCountries
 {
-    public static IReadOnlyList<ICountryPlugin> All { get; } = [new SpainCountry(), new ItalyCountry(), new GermanyCountry()];
+    public static IReadOnlyList<ICountryPlugin> All { get; } = [new SpainCountry(), new ItalyCountry(), new GermanyCountry(), new UnitedKingdomCountry()];
 }

@@ -178,10 +178,10 @@ tests; check a UI change in the browser against the fast loop above. Past incide
   `Api/Infrastructure/OtlpLogExtensions`, which also keeps the console and file sinks); `Docs/OBSERVABILITY.md`
   has the Grafana Cloud setup and the application metrics (`Application/Telemetry/AppMetrics`: every Mediator request is timed by
   `MetricsBehavior`; keep tags to small fixed sets, never customers or ids) (`HealthController` at `/api/health` is kept for the nginx-routed check).
-- **nInvoices.Countries.\*** (`Countries.Spain`, `Countries.Italy`, `Countries.Germany`) — one project per country, everything that country adds: its
+- **nInvoices.Countries.\*** (`Countries.Spain`, `Countries.Italy`, `Countries.Germany`, `Countries.UnitedKingdom`) — one project per country, everything that country adds: its
   invoicing rules (`ICountryComplianceModule`: issuer/customer/tax fields and checks, e-invoice formats and
   channels such as Facturae and FACe, Verifactu, FatturaPA, XRechnung), its tax prediction (`ITaxPredictionModule`: regimes, forms,
-  `IndirectTaxName`), and what those need (entities and EF configurations, repositories, HTTP clients, workers,
+  `IndirectTaxName`, and `TaxYearOf` when its tax year isn't the calendar year: the UK's runs 6 April - 5 April), and what those need (entities and EF configurations, repositories, HTTP clients, workers,
   options, Mediator requests, controllers). Each exposes an `ICountryPlugin` (`SpainCountry`: `AddServices`).
   Core/Application/Infrastructure never name a country (`ArchitectureTests`); they offer the hooks:
   `IInvoiceLifecycleStep`, `IInvoiceTemplateModelContributor` (`Key`, `Empty`, `Sample`, under

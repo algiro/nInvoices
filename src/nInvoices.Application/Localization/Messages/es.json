@@ -675,12 +675,43 @@
       "unknownChannel": "Canal desconocido: \"{channel}\"",
       "notTurnedOn": "{channel} no está activado",
       "customerNotFound": "No se ha encontrado el cliente"
+    },
+    "uk": {
+      "fields": {
+        "vatRegistered": {
+          "label": "Registrado a efectos de IVA (VAT)",
+          "help": "Tus facturas son entonces facturas con IVA: el Tax ID de arriba es tu número de registro de VAT (GB y nueve dígitos)."
+        },
+        "tradingName": {
+          "label": "Nombre comercial",
+          "help": "El nombre con el que operas, si no es el tuyo (p. ej. \"Smith Consulting\")."
+        }
+      },
+      "taxFields": {
+        "treatment": {
+          "label": "Por qué no se aplica VAT (Reino Unido)",
+          "help": "Obligatorio en una factura con VAT al 0%.",
+          "zero": "Tipo cero (zero-rated)",
+          "exempt": "Exento",
+          "outside": "Fuera del ámbito del VAT del Reino Unido (p. ej. servicios a una empresa extranjera)",
+          "reverseCharge": "Inversión del sujeto pasivo nacional (el cliente paga el VAT a HMRC)"
+        }
+      },
+      "vatNumberRequired": "Un negocio registrado en VAT necesita su número de VAT como Tax ID",
+      "vatNumberInvalid": "No es un número de VAT británico válido (GB y nueve dígitos)",
+      "taxIdInvalid": "No es ni un número de VAT británico ni un UTR (diez dígitos)",
+      "postcodeInvalid": "{subject}: no es un código postal británico",
+      "townRequired": "{subject}: la ciudad es obligatoria",
+      "notRegisteredChargesVat": "No estás registrado en VAT: quita el VAT de los impuestos de este cliente, o marca Registrado a efectos de IVA en Ajustes › País e impuestos.",
+      "zeroVatNeedsTreatment": "El VAT \"{tax}\" es del 0%: elige en el impuesto por qué no se aplica, como debe indicar una factura con VAT.",
+      "customerAddressRequired": "Una factura con VAT muestra el nombre y la dirección del cliente: completa primero el cliente."
     }
   },
   "countries": {
     "ES": "España",
     "IT": "Italia",
-    "DE": "Alemania"
+    "DE": "Alemania",
+    "GB": "Reino Unido"
   },
   "taxPrediction": {
     "common": {
@@ -957,6 +988,105 @@
     "notSetUp": {
       "noProfile": "Elige dónde pagas impuestos en Ajustes para ver una estimación.",
       "otherCountry": "Elige tu régimen fiscal en Ajustes › País e impuestos para ver una estimación."
+    },
+    "uk": {
+      "regime": {
+        "name": "Autónomo (Self Assessment)",
+        "help": "Income Tax, National Insurance de clase 4 y préstamos de estudios: dos pagos a cuenta y un pago final. Declaraciones de VAT trimestrales, o el Flat Rate Scheme. El año fiscal va del 6 de abril al 5 de abril."
+      },
+      "fields": {
+        "vatScheme": {
+          "label": "VAT",
+          "help": "Debes registrarte cuando tu facturación supera £90.000 en 12 meses.",
+          "none": "No registrado en VAT",
+          "standard": "Registrado en VAT: declaraciones normales",
+          "flatRate": "Registrado en VAT: Flat Rate Scheme"
+        },
+        "stagger": {
+          "label": "Trimestres de VAT",
+          "help": "Como en tu certificado de registro de VAT.",
+          "1": "Que terminan en marzo, junio, septiembre, diciembre",
+          "2": "Que terminan en abril, julio, octubre, enero",
+          "3": "Que terminan en mayo, agosto, noviembre, febrero"
+        },
+        "flatRate": {
+          "label": "Tipo fijo (%)",
+          "help": "El tipo de tu actividad; 16,5 para un limited cost trader."
+        },
+        "firstYearDiscount": {
+          "label": "Primer año de registro en VAT (1% menos sobre el tipo fijo)",
+          "help": "El descuento de HMRC durante los primeros 12 meses."
+        },
+        "scottish": {
+          "label": "Contribuyente escocés",
+          "help": "Si vives en Escocia se aplican los tramos escoceses del Income Tax."
+        },
+        "studentLoan": {
+          "label": "Préstamo de estudios",
+          "none": "Ninguno",
+          "plan1": "Plan 1",
+          "plan2": "Plan 2",
+          "plan4": "Plan 4 (Escocia)",
+          "plan5": "Plan 5"
+        },
+        "postgraduateLoan": {
+          "label": "Préstamo de posgrado"
+        },
+        "tradingAllowance": {
+          "label": "Usa la trading allowance de £1.000 cuando supera tus gastos",
+          "help": "En lugar de deducir los gastos reales: no se pueden ambas cosas."
+        },
+        "previousYearTax": {
+          "label": "Factura de Self Assessment del año pasado (£, opcional)",
+          "help": "Income Tax y National Insurance de clase 4 de la declaración del año pasado: cada pago a cuenta es la mitad. Si se deja vacío, se usa la estimación de este año."
+        }
+      },
+      "lines": {
+        "turnover": "Facturación (sin VAT)",
+        "flatRateSurplus": "+ VAT retenido con el Flat Rate Scheme",
+        "tradingAllowance": "− Trading allowance",
+        "expenses": "− Gastos deducibles",
+        "profit": "Beneficio",
+        "personalAllowance": "− Personal allowance",
+        "incomeTax": "Income Tax",
+        "incomeTaxScottish": "Income Tax (tipos escoceses)",
+        "class4": "National Insurance de clase 4",
+        "studentLoan": "Reembolso del préstamo de estudios",
+        "withheld": "− Impuesto retenido en origen",
+        "basisEstimate": "Base: la estimación de este año",
+        "basisLastYear": "Base: la factura del año pasado",
+        "noPaymentsOnAccount": "Sin pagos a cuenta por debajo de £1.000",
+        "half": "La mitad de la base",
+        "paidOnAccount": "Pagado a cuenta",
+        "balanceToPay": "Pago final",
+        "refund": "Devolución",
+        "vatOnSales": "VAT devengado en las ventas",
+        "vatReverseCharge": "VAT devengado por servicios del extranjero (inversión del sujeto pasivo)",
+        "vatReclaimed": "VAT recuperado en las compras",
+        "vatToPay": "VAT a pagar",
+        "vatRepayment": "Devolución de VAT",
+        "flatRateTurnover": "Facturación con VAT",
+        "flatRateApplied": "× tipo fijo del {rate}%",
+        "vatCharged": "VAT cobrado a los clientes"
+      },
+      "forms": {
+        "firstPayment": "Primer pago a cuenta",
+        "secondPayment": "Segundo pago a cuenta",
+        "balancing": "Pago final",
+        "vatReturn": "Declaración de VAT · T{quarter}"
+      },
+      "periods": {
+        "firstPayment": "Pago a cuenta de enero",
+        "secondPayment": "Pago a cuenta de julio",
+        "balancing": "Pago final"
+      },
+      "warnings": {
+        "unknownYear": "Los tipos de {year} aún no se conocen: se usan los de {known}.",
+        "scottishBands": "Los tramos escoceses de {year} aún no están incluidos: se usan los de {known}.",
+        "cashBasis": "Ingresos y gastos cuentan en la fecha de la factura; desde 2024/25 las cuentas de un autónomo usan el criterio de caja (al cobro), salvo que se renuncie.",
+        "otherIncome": "Solo se cuenta el beneficio de esta actividad: rentas del trabajo, ahorros o dividendos cambiarían los tramos.",
+        "mustRegister": "Facturación superior a £{threshold}: debes registrarte en VAT."
+      }
     }
   }
 }
