@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { i18n } from '@/i18n'
@@ -41,6 +41,16 @@ describe('MonthCalendar pointer selection', () => {
     cell(3).element.dispatchEvent(pointer('pointerenter', 1))
 
     expect(month.selected.value).toEqual(['2026-09-01', '2026-09-02', '2026-09-03'])
+  })
+
+  it('focuses the grid without scrolling, so the cells do not move under the pressed pointer', () => {
+    const { cell } = calendar()
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus')
+
+    cell(1).element.dispatchEvent(pointer('pointerdown', 1))
+
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+    focus.mockRestore()
   })
 
   it('stops growing the selection when the release was never seen', () => {
