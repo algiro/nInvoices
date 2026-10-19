@@ -36,6 +36,8 @@ trabajados, restar festivos, calcular IVA/IRPF, exportar el PDF, mandar el corre
   Por eso busco a alguien que pueda probarla ahí y me cuente qué responde. Lo que está y no está verificado
   está en `Docs/SPAIN-EINVOICING.md`.
 - No hay todavía facturas rectificativas ni simplificadas.
+- Mucho del código se ha escrito con ayuda de IA (Claude Code); yo lo diseño, lo reviso y lo pruebo, y hay
+  una batería grande de tests automáticos y CI detrás.
 
 **Probarla sin instalar nada:** puedo darte acceso gratuito a mi instancia (<LINK-DEMO>) para que la veas
 funcionando. Es una instancia de pruebas: usa datos de ejemplo, sin garantía de disponibilidad.

@@ -244,6 +244,11 @@ Next on the list (see [`Docs/UI-BACKLOG.md`](Docs/UI-BACKLOG.md)):
 
 Ideas and bug reports are welcome in [Issues](https://github.com/algiro/nInvoices/issues).
 
+## How it was made
+
+A large part of the code was written with AI assistance (Claude Code). It is designed, reviewed and run by
+the maintainer, and backed by an automated test suite and CI (see above).
+
 ## Contributing
 
 Issues, questions and suggestions are very welcome, and so is help with [e-invoicing for your country](#help-wanted-more-countries). For code changes, please **open an issue first** so we can agree on the approach before you invest time. Pull requests are accepted under the project's license (see below). The details are in [`CONTRIBUTING.md`](CONTRIBUTING.md).

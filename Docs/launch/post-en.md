@@ -40,6 +40,8 @@ taxes, export the PDF, email it) was a spreadsheet and a Word template. So I bui
 - The Spanish, Italian and German e-invoicing passes the official schemas/validators but **hasn't been run
   through the real government services yet**. Treat it as a preview.
 - It is a one-person project.
+- **AI disclosure:** a large part of the code was written with AI assistance (Claude Code). I design it,
+  review it and run it, and it is covered by automated tests and CI, but I want you to know how it was made.
 
 Don't want to set anything up? I can give you free access to my instance (<LINK-DEMO>) to look around.
 It's a test instance with sample data and no uptime guarantee.
@@ -71,6 +73,9 @@ PuppeteerSharp for PDFs. Sensitive fields are encrypted per user, so a database 
 
 License: PolyForm Shield, so source-available rather than open source: free to use and self-host, not to
 resell as a competing service. I know that's a trade-off; happy to explain the reasoning.
+
+Disclosure: much of the code was written with AI assistance (Claude Code); I design, review and test it,
+and there is a large automated test suite and CI behind it.
 
 Repo: https://github.com/algiro/nInvoices. If you'd rather click around first: <LINK-DEMO> (sample data).
 
