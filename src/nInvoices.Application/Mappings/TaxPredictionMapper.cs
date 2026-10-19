@@ -29,6 +29,7 @@ public static class TaxPredictionMapper
     /// <param name="warnings">Added before the module's own.</param>
     public static TaxPredictionDto ToDto(
         ITaxPredictionModule module,
+        TaxYear taxYear,
         TaxYearPrediction prediction,
         IReadOnlyList<TaxPayment> payments,
         IReadOnlyList<string> warnings) => new(
@@ -48,7 +49,10 @@ public static class TaxPredictionMapper
                 f.Estimated,
                 payments.FirstOrDefault(x => x.Period == p.Period && x.Form == f.Code) is { } payment ? ToDto(payment) : null,
                 f.Lines.Select(l => new TaxFormLineDto(l.Box, l.Label, l.Amount)).ToList())).ToList())).ToList(),
-        [.. warnings, .. prediction.Warnings]);
+        [.. warnings, .. prediction.Warnings],
+        taxYear.Label,
+        taxYear.Start,
+        taxYear.End);
 
     /// <summary>The estimate of a user who hasn't said where they pay taxes, or whose country is no longer offered.</summary>
     public static TaxPredictionDto NotSetUp(int year, string reason) =>

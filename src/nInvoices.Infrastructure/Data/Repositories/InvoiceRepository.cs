@@ -76,16 +76,16 @@ public sealed class InvoiceRepository : Repository<Invoice>, IInvoiceRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Invoice>> GetIssuedInYearAsync(int year, CancellationToken cancellationToken = default)
-    {
-        var from = new DateOnly(year, 1, 1);
-        var to = new DateOnly(year, 12, 31);
+    public Task<IReadOnlyList<Invoice>> GetIssuedInYearAsync(int year, CancellationToken cancellationToken = default) =>
+        GetIssuedBetweenAsync(new DateOnly(year, 1, 1), new DateOnly(year, 12, 31), cancellationToken);
 
+    public async Task<IReadOnlyList<Invoice>> GetIssuedBetweenAsync(DateOnly first, DateOnly last, CancellationToken cancellationToken = default)
+    {
         // Status and issue date are stored in clear, so this filter runs in SQL
         return await Context.Invoices
             .AsNoTracking()
             .Include(i => i.TaxLines)
-            .Where(i => i.IssueDate >= from && i.IssueDate <= to)
+            .Where(i => i.IssueDate >= first && i.IssueDate <= last)
             .Where(i => i.Status == InvoiceStatus.Finalized || i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.Paid)
             .OrderBy(i => i.IssueDate)
             .ToListAsync(cancellationToken);

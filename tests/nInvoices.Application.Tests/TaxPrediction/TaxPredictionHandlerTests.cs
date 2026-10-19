@@ -52,9 +52,9 @@ public sealed class TaxPredictionHandlerTests
 
         _invoiceRepository = new Mock<IInvoiceRepository>();
         _invoiceRepository
-            .Setup(r => r.GetIssuedInYearAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((int year, CancellationToken _) => _invoices
-                .Where(i => i.IssueDate.Year == year && i.Status is InvoiceStatus.Finalized or InvoiceStatus.Sent or InvoiceStatus.Paid)
+            .Setup(r => r.GetIssuedBetweenAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((DateOnly first, DateOnly last, CancellationToken _) => _invoices
+                .Where(i => i.IssueDate >= first && i.IssueDate <= last && i.Status is InvoiceStatus.Finalized or InvoiceStatus.Sent or InvoiceStatus.Paid)
                 .ToList());
         _invoiceRepository
             .Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Invoice, bool>>>(), It.IsAny<CancellationToken>()))

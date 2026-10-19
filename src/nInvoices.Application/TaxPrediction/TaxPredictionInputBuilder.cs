@@ -17,7 +17,7 @@ public static class TaxPredictionInputBuilder
     public static (TaxPredictionInput Input, IReadOnlyList<string> Warnings) Build(
         ITaxPredictionModule module,
         TaxProfile profile,
-        int year,
+        TaxYear taxYear,
         IReadOnlyList<Invoice> invoices,
         IReadOnlyList<Tax> taxes,
         IReadOnlyList<BusinessExpense> expenses,
@@ -59,23 +59,23 @@ public static class TaxPredictionInputBuilder
             .ToList();
 
         var deductible = expenses
-            .Where(e => e.Date.Year == year && e.Amount.Currency == currency)
+            .Where(e => taxYear.Contains(e.Date) && e.Amount.Currency == currency)
             .Select(e => new DeductibleExpense(e.Date, e.Amount.Amount, e.IndirectTax, e.ReverseCharge, e.DeductiblePercent))
             .Concat(recurring
                 .Where(e => e.Amount.Currency == currency)
-                .SelectMany(e => e.MonthsIn(year).Select(month => new DeductibleExpense(month, e.Amount.Amount))))
+                .SelectMany(e => e.MonthsBetween(taxYear.Start, taxYear.End).Select(month => new DeductibleExpense(month, e.Amount.Amount))))
             .ToList();
 
-        var otherCurrency = expenses.Count(e => e.Date.Year == year && e.Amount.Currency != currency)
-            + recurring.Count(e => e.Amount.Currency != currency && e.MonthsIn(year).Any());
+        var otherCurrency = expenses.Count(e => taxYear.Contains(e.Date) && e.Amount.Currency != currency)
+            + recurring.Count(e => e.Amount.Currency != currency && e.MonthsBetween(taxYear.Start, taxYear.End).Any());
         if (otherCurrency > 0)
             warnings.Add($"{otherCurrency} expense(s) in a currency other than {currency} are not counted.");
 
         var recorded = payments
-            .Where(p => p.Year == year)
+            .Where(p => p.Year == taxYear.Year)
             .Select(p => new RecordedTaxPayment(p.Period, p.Form, p.Amount.Amount))
             .ToList();
 
-        return (new TaxPredictionInput(year, profile.RegimeId, profile.Values, income, deductible, recorded), warnings);
+        return (new TaxPredictionInput(taxYear.Year, profile.RegimeId, profile.Values, income, deductible, recorded), warnings);
     }
 }

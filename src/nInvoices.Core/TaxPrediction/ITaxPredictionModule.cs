@@ -34,6 +34,12 @@ public interface ITaxPredictionModule
     /// </summary>
     string? IndirectTaxKind(IReadOnlyDictionary<string, string> taxValues);
 
+    /// <summary>
+    /// The tax year that starts in <paramref name="year"/>: the calendar year unless the country's differs. The
+    /// invoices, expenses and payments of these days are what <see cref="Predict"/> is given.
+    /// </summary>
+    TaxYear TaxYearOf(int year) => TaxYear.Calendar(year);
+
     /// <summary>Estimates every period of <see cref="TaxPredictionInput.Year"/>. Pure: no I/O, no clock.</summary>
     /// <exception cref="ArgumentException">The regime is not one of <see cref="Regimes"/>.</exception>
     TaxYearPrediction Predict(TaxPredictionInput input);

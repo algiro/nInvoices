@@ -63,11 +63,13 @@ public sealed class RecurringExpense : OwnedEntityBase
     }
 
     /// <summary>The months of <paramref name="year"/> it is paid in, as the 1st of each month.</summary>
-    public IEnumerable<DateOnly> MonthsIn(int year)
+    public IEnumerable<DateOnly> MonthsIn(int year) => MonthsBetween(new DateOnly(year, 1, 1), new DateOnly(year, 12, 31));
+
+    /// <summary>The months it is paid in whose 1st falls between the two days (included), as the 1st of each month.</summary>
+    public IEnumerable<DateOnly> MonthsBetween(DateOnly from, DateOnly to)
     {
-        for (var month = 1; month <= 12; month++)
+        for (var day = FirstOfMonth(from) < from ? FirstOfMonth(from).AddMonths(1) : FirstOfMonth(from); day <= to; day = day.AddMonths(1))
         {
-            var day = new DateOnly(year, month, 1);
             if (day >= FromMonth && (ToMonth is null || day <= ToMonth))
                 yield return day;
         }
