@@ -5,6 +5,9 @@
       "notSupported": "{country} no es uno de los países admitidos aquí",
       "rulesOfAnotherCountry": "Trabajas desde {current}: elige {country} como tu país en Ajustes › País e impuestos para activar sus normas."
     },
+    "customer": {
+      "hasInvoices": "El cliente tiene facturas, así que no se puede eliminar. Anula sus facturas, o conserva el cliente."
+    },
     "einvoice": {
       "cancelled": "Una factura anulada no tiene factura electrónica",
       "finalizeFirst": "Emite la factura antes de generar su factura electrónica",
