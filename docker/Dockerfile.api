@@ -47,7 +47,9 @@ WORKDIR "/src/src/nInvoices.Api"
 RUN dotnet build "nInvoices.Api.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "nInvoices.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+# The commit being built (CI and build-and-push pass it): shown in Settings > General
+ARG SOURCE_REVISION=
+RUN dotnet publish "nInvoices.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false /p:SourceRevisionId=$SOURCE_REVISION
 
 FROM base AS final
 WORKDIR /app

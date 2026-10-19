@@ -15,7 +15,7 @@ export default tseslint.config(
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
-      globals: { ...globals.browser },
+      globals: { ...globals.browser, __APP_COMMIT__: 'readonly' },
       parserOptions: { parser: tseslint.parser, extraFileExtensions: ['.vue'] }
     },
     rules: {

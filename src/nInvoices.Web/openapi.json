@@ -7946,6 +7946,35 @@
         }
       }
     },
+    "/api/version": {
+      "get": {
+        "tags": [
+          "Version"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppVersionDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppVersionDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppVersionDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Verifactu/invoices/{invoiceId}": {
       "get": {
         "tags": [
@@ -8117,6 +8146,24 @@
             "type": "string"
           },
           "state": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AppVersionDto": {
+        "required": [
+          "version",
+          "commit"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "commit": {
             "type": [
               "null",
               "string"
@@ -12917,6 +12964,9 @@
     },
     {
       "name": "TaxPrediction"
+    },
+    {
+      "name": "Version"
     },
     {
       "name": "Verifactu"

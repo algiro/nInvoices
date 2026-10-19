@@ -1114,7 +1114,16 @@
       "calendar": "Calendar",
       "calendarDescription": "How the worked-days calendar lays out weeks.",
       "weeksStartOn": "Weeks start on",
-      "weeksStartOnNote": "Set by {setting} in the API's appsettings.json (0 = Sunday, 1 = Monday … 6 = Saturday); restart the API after changing it."
+      "weeksStartOnNote": "Set by {setting} in the API's appsettings.json (0 = Sunday, 1 = Monday … 6 = Saturday); restart the API after changing it.",
+      "version": {
+        "title": "About this version",
+        "description": "Which build is running, to match it with the source code.",
+        "web": "Web app",
+        "api": "API",
+        "unknown": "Unknown",
+        "mismatch": "The web app and the API come from different commits: reload the page, or check that both were deployed together.",
+        "failed": "Could not read the API version"
+      }
     },
     "sections": "Settings sections",
     "nav": {

@@ -73,7 +73,9 @@ info "Version tag: ${VERSION}"
 
 # [2] build API
 head "[2/6] Building API image  ${API_IMAGE}:${VERSION}"
-docker build -t "${API_IMAGE}:${VERSION}" -f Dockerfile.api .. || die "API build failed."
+COMMIT="$(git rev-parse --short=7 HEAD 2>/dev/null || true)"
+[[ -n "$(git status --porcelain 2>/dev/null)" ]] && COMMIT="${COMMIT}-dirty"
+docker build -t "${API_IMAGE}:${VERSION}" --build-arg "SOURCE_REVISION=${COMMIT}" -f Dockerfile.api .. || die "API build failed."
 [[ "$VERSION" != "latest" ]] && docker tag "${API_IMAGE}:${VERSION}" "${API_IMAGE}:latest"
 ok "API image built"
 

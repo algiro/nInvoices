@@ -1114,7 +1114,16 @@
       "calendar": "Kalender",
       "calendarDescription": "Wie der Kalender der Arbeitstage die Wochen anordnet.",
       "weeksStartOn": "Wochen beginnen am",
-      "weeksStartOnNote": "Festgelegt durch {setting} in der appsettings.json der API (0 = Sonntag, 1 = Montag … 6 = Samstag); starte die API nach einer Änderung neu."
+      "weeksStartOnNote": "Festgelegt durch {setting} in der appsettings.json der API (0 = Sonntag, 1 = Montag … 6 = Samstag); starte die API nach einer Änderung neu.",
+      "version": {
+        "title": "Über diese Version",
+        "description": "Welcher Build läuft, um ihn mit dem Quellcode abzugleichen.",
+        "web": "Web-App",
+        "api": "API",
+        "unknown": "Unbekannt",
+        "mismatch": "Web-App und API stammen aus unterschiedlichen Commits: lade die Seite neu oder prüfe, ob beide zusammen ausgeliefert wurden.",
+        "failed": "Die API-Version konnte nicht gelesen werden"
+      }
     },
     "sections": "Bereiche der Einstellungen",
     "nav": {
