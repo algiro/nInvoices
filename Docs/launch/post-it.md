@@ -32,6 +32,8 @@ era noioso, quindi ho costruito **nInvoices**, pensato per chi fattura **tempo**
 - I file passano lo schema ufficiale, ma **non sono ancora passati dal SDI reale**. Considerala una
   versione preliminare. Cerco proprio qualcuno che provi a mandare un file e mi racconti la risposta.
 - Non ci sono ancora le fatture verso la PA (FPA12).
+- Gran parte del codice è stata scritta con l'aiuto dell'IA (Claude Code); io lo progetto, lo rivedo e lo
+  collaudo, e dietro ci sono molti test automatici e la CI.
 
 **Provarla senza installare nulla:** posso darti accesso gratuito alla mia istanza (<LINK-DEMO>), con dati di
 prova e senza garanzia di disponibilità.

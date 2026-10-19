@@ -35,6 +35,8 @@ zählen, Feiertage abziehen, Steuer berechnen, PDF exportieren, Mail schreiben. 
   eingereicht**. Bitte als Vorabversion verstehen. Wer eine Datei an ein Portal schicken kann und mir die
   Antwort berichtet, hilft mir am meisten.
 - ZUGFeRD und Gutschriften fehlen noch.
+- Ein großer Teil des Codes entstand mit KI-Unterstützung (Claude Code); ich entwerfe, prüfe und teste ihn,
+  dahinter stehen viele automatisierte Tests und CI.
 
 **Ohne Installation testen:** Ich gebe gern kostenlosen Zugang zu meiner Instanz (<LINK-DEMO>): Testdaten,
 keine Verfügbarkeitsgarantie.
