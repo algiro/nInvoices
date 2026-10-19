@@ -5,6 +5,9 @@
       "notSupported": "{country} is not one of the countries supported here",
       "rulesOfAnotherCountry": "You work from {current}: choose {country} as your country in Settings › Country & taxes to turn its rules on."
     },
+    "customer": {
+      "hasInvoices": "The customer has invoices, so it can't be deleted. Cancel its invoices instead, or keep the customer."
+    },
     "einvoice": {
       "cancelled": "A cancelled invoice has no e-invoice",
       "finalizeFirst": "Finalize the invoice before generating its e-invoice",

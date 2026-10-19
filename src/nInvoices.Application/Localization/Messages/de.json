@@ -5,6 +5,9 @@
       "notSupported": "{country} gehört nicht zu den hier unterstützten Ländern",
       "rulesOfAnotherCountry": "Du arbeitest von {current} aus: Wähle {country} als dein Land unter Einstellungen › Land und Steuern, um seine Regeln zu aktivieren."
     },
+    "customer": {
+      "hasInvoices": "Der Kunde hat Rechnungen und kann deshalb nicht gelöscht werden. Storniere stattdessen seine Rechnungen oder behalte den Kunden."
+    },
     "einvoice": {
       "cancelled": "Eine stornierte Rechnung hat keine E-Rechnung",
       "finalizeFirst": "Stelle die Rechnung aus, bevor du ihre E-Rechnung erzeugst",

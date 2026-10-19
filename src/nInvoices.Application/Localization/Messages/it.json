@@ -5,6 +5,9 @@
       "notSupported": "{country} non è tra i paesi supportati qui",
       "rulesOfAnotherCountry": "Lavori da {current}: scegli {country} come tuo paese in Impostazioni › Paese e imposte per attivarne le regole."
     },
+    "customer": {
+      "hasInvoices": "Il cliente ha delle fatture, quindi non può essere eliminato. Annulla le sue fatture, oppure tieni il cliente."
+    },
     "einvoice": {
       "cancelled": "Una fattura annullata non ha una fattura elettronica",
       "finalizeFirst": "Finalizza la fattura prima di generarne la fattura elettronica",
