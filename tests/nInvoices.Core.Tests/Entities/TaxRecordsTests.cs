@@ -82,6 +82,29 @@ public sealed class TaxRecordsTests
     }
 
     [Test]
+    public void RecurringExpense_MonthsBetween_CountsTheMonthsStartingInTheRange()
+    {
+        var fee = new RecurringExpense("Fee", Eur(500.00m), ExpenseCategory.SocialSecurity, new DateOnly(2026, 1, 1));
+
+        // A United Kingdom tax year: 6 April to 5 April, so May to April
+        var months = fee.MonthsBetween(new DateOnly(2026, 4, 6), new DateOnly(2027, 4, 5)).ToList();
+
+        months.Count.ShouldBe(12);
+        months[0].ShouldBe(new DateOnly(2026, 5, 1));
+        months[^1].ShouldBe(new DateOnly(2027, 4, 1));
+    }
+
+    [Test]
+    public void TaxYear_Calendar_IsJanuaryToDecember()
+    {
+        var year = nInvoices.Core.TaxPrediction.TaxYear.Calendar(2026);
+
+        (year.Start, year.End, year.Label).ShouldBe((new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), "2026"));
+        year.Contains(new DateOnly(2026, 12, 31)).ShouldBeTrue();
+        year.Contains(new DateOnly(2027, 1, 1)).ShouldBeFalse();
+    }
+
+    [Test]
     public void RecurringExpense_EndingBeforeItStarts_Throws()
     {
         Should.Throw<ArgumentException>(() =>

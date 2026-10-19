@@ -68,22 +68,24 @@ public sealed class GetTaxPredictionQueryHandler : IRequestHandler<GetTaxPredict
         if (module is null || module.Regimes.All(r => r.Id != profile.RegimeId))
             return TaxPredictionMapper.NotSetUp(year, $"Tax estimates for {profile.CountryCode} are not available here: choose again in Settings.");
 
-        var from = new DateOnly(year, 1, 1);
-        var to = new DateOnly(year, 12, 31);
-        var invoices = await _invoices.GetIssuedInYearAsync(year, cancellationToken);
+        // The country's tax year: 6 April to 5 April in the United Kingdom, the calendar year elsewhere
+        var taxYear = module.TaxYearOf(year);
+        var from = taxYear.Start;
+        var to = taxYear.End;
+        var invoices = await _invoices.GetIssuedBetweenAsync(from, to, cancellationToken);
         var drafts = await _invoices.FindAsync(i => i.Status == InvoiceStatus.Draft && i.IssueDate >= from && i.IssueDate <= to, cancellationToken);
         var taxes = (await _taxes.GetAllAsync(cancellationToken)).ToList();
         var expenses = (await _expenses.FindAsync(e => e.Date >= from && e.Date <= to, cancellationToken)).ToList();
         var recurring = (await _recurring.GetAllAsync(cancellationToken)).ToList();
         var payments = (await _payments.FindAsync(p => p.Year == year, cancellationToken)).ToList();
 
-        var (input, warnings) = TaxPredictionInputBuilder.Build(module, profile, year, invoices, taxes, expenses, recurring, payments);
+        var (input, warnings) = TaxPredictionInputBuilder.Build(module, profile, taxYear, invoices, taxes, expenses, recurring, payments);
 
         var draftCount = drafts.Count();
         if (draftCount > 0)
             warnings = [.. warnings, $"{draftCount} draft invoice(s) dated {year} are not counted until they are finalized."];
 
-        return TaxPredictionMapper.ToDto(module, module.Predict(input), payments, warnings);
+        return TaxPredictionMapper.ToDto(module, taxYear, module.Predict(input), payments, warnings);
     }
 }
 

@@ -29,6 +29,9 @@ public interface IInvoiceRepository : IRepository<Core.Entities.Invoice>
     /// </summary>
     Task<IReadOnlyList<Core.Entities.Invoice>> GetIssuedInYearAsync(int year, CancellationToken cancellationToken = default);
 
+    /// <summary>As <see cref="GetIssuedInYearAsync"/>, for the invoices issued between the two days (included).</summary>
+    Task<IReadOnlyList<Core.Entities.Invoice>> GetIssuedBetweenAsync(DateOnly first, DateOnly last, CancellationToken cancellationToken = default);
+
     /// <summary>The invoices with these ids, in no particular order; unknown ids are ignored.</summary>
     Task<IReadOnlyList<Core.Entities.Invoice>> GetByIdsAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default);
 }

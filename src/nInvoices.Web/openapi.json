@@ -11980,6 +11980,26 @@
             "items": {
               "type": "string"
             }
+          },
+          "yearLabel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "yearStart": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "yearEnd": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
           }
         }
       },

@@ -69,3 +69,13 @@ export function todayIso(now: Date = new Date()): string {
 function round2(value: number): number {
   return Math.round(value * 100) / 100
 }
+
+/**
+ * How the country names the tax year that starts in `year`: "2026", or "2026/27" where it doesn't follow the
+ * calendar (the United Kingdom's runs from 6 April), as the loaded `prediction` shows.
+ */
+export function taxYearName(year: number, prediction: Pick<TaxPredictionDto, 'yearStart'> | null | undefined): string {
+  const start = prediction?.yearStart
+  if (!start || start.slice(5) === '01-01') return String(year)
+  return `${year}/${String((year + 1) % 100).padStart(2, '0')}`
+}

@@ -7211,6 +7211,11 @@ export interface components {
             currency: null | string;
             periods: components["schemas"]["TaxPeriodDto"][];
             warnings: string[];
+            yearLabel?: null | string;
+            /** Format: date */
+            yearStart?: null | string;
+            /** Format: date */
+            yearEnd?: null | string;
         };
         TaxPredictionSettingsDto: {
             countries: components["schemas"]["TaxCountryDto"][];

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { TaxFormDto, TaxPeriodDto, TaxPredictionDto, TaxRegimeDto } from '@/types'
-import { formStatus, fromMonthInput, initialValues, nextDue, toMonthInput, yearTotals } from './taxPrediction'
+import { formStatus, fromMonthInput, initialValues, nextDue, taxYearName, toMonthInput, yearTotals } from './taxPrediction'
 
 function form(code: string, estimated: number, paid?: number): TaxFormDto {
   return {
@@ -32,6 +32,18 @@ describe('formStatus', () => {
   it('has nothing to pay once the period ends with a zero estimate (a refund, a credit)', () => {
     expect(formStatus(form('303', 0), q1, '2026-05-01')).toEqual({ label: 'Nothing to pay', tone: 'neutral' })
     expect(formStatus(form('303', 0), q1, '2026-03-01').label).toBe('Period in progress')
+  })
+})
+
+describe('taxYearName', () => {
+  it('is the year for a calendar tax year, or before anything is loaded', () => {
+    expect(taxYearName(2026, { yearStart: '2026-01-01' })).toBe('2026')
+    expect(taxYearName(2026, null)).toBe('2026')
+  })
+
+  it('spans two years when the tax year starts later, as in the United Kingdom', () => {
+    expect(taxYearName(2026, { yearStart: '2026-04-06' })).toBe('2026/27')
+    expect(taxYearName(2099, { yearStart: '2099-04-06' })).toBe('2099/00')
   })
 })
 

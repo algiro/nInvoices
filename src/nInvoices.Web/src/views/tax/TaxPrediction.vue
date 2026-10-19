@@ -4,8 +4,10 @@
       <template #actions>
         <BaseButton icon="receipt" to="/expenses">{{ t('nav.expenses') }}</BaseButton>
         <select v-model.number="year" class="control year" :aria-label="t('common.year')">
-          <option v-for="option in years" :key="option" :value="option">{{ option }}</option>
+          <option v-for="option in years" :key="option" :value="option">{{ taxYearName(option, prediction) }}</option>
         </select>
+        <!-- A tax year that isn't the calendar year (the United Kingdom's): say which days it covers -->
+        <span v-if="yearRange" class="year-range">{{ yearRange }}</span>
       </template>
     </PageHeader>
 
@@ -27,7 +29,7 @@
     <template v-else-if="prediction">
       <div class="stat-tiles">
         <div class="stat-tile hero">
-          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="landmark" /></span><span class="stat-tile-label">{{ t('tax.estimatedFor', { year }) }}</span></span>
+          <span class="stat-tile-head"><span class="stat-tile-icon"><AppIcon name="landmark" /></span><span class="stat-tile-label">{{ t('tax.estimatedFor', { year: yearName }) }}</span></span>
           <span class="stat-tile-value">{{ formatMoney(totals.estimated, currency) }}</span>
           <span class="stat-tile-note">{{ t('tax.allPeriods') }}</span>
         </div>
@@ -60,7 +62,7 @@
         v-for="period in prediction.periods"
         :key="period.period"
         flush
-        :title="`${period.name} ${year}`"
+        :title="`${period.name} ${yearName}`"
         :description="`${formatDate(period.start, { day: 'numeric', month: 'short' })} – ${formatDate(period.end)}`"
       >
         <TaxFormRow
@@ -79,7 +81,7 @@
       </p>
     </template>
 
-    <BaseDialog :open="payment !== null" :title="payment ? `${payment.form.name} · ${payment.period.name} ${year}` : ''" size="sm" :close-on-overlay="false" @close="payment = null">
+    <BaseDialog :open="payment !== null" :title="payment ? `${payment.form.name} · ${payment.period.name} ${yearName}` : ''" size="sm" :close-on-overlay="false" @close="payment = null">
       <RecordPaymentForm
         v-if="payment"
         :form="payment.form"
@@ -109,7 +111,7 @@ import AppIcon from '@/components/ui/AppIcon.vue'
 import TaxFormRow from '@/components/tax/TaxFormRow.vue'
 import RecordPaymentForm from '@/components/tax/RecordPaymentForm.vue'
 import { formatDate, formatMoney } from '@/utils/format'
-import { nextDue, todayIso, yearTotals } from '@/utils/taxPrediction'
+import { nextDue, taxYearName, todayIso, yearTotals } from '@/utils/taxPrediction'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -127,6 +129,12 @@ const loadError = ref<string | null>(null)
 const payment = ref<{ period: TaxPeriodDto; form: TaxFormDto } | null>(null)
 
 const currency = computed(() => prediction.value?.currency ?? 'EUR')
+const yearName = computed(() => taxYearName(year.value, prediction.value))
+const yearRange = computed(() => {
+  const p = prediction.value
+  if (!p?.yearStart || !p.yearEnd || p.yearStart.slice(5) === '01-01') return null
+  return `${formatDate(p.yearStart)} – ${formatDate(p.yearEnd)}`
+})
 const totals = computed(() => (prediction.value ? yearTotals(prediction.value) : { estimated: 0, paid: 0 }))
 const due = computed(() => (prediction.value ? nextDue(prediction.value, today) : null))
 
@@ -158,6 +166,12 @@ onMounted(load)
 </script>
 
 <style scoped>
+.year-range {
+  align-self: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
 .tax-page {
   display: flex;
   flex-direction: column;

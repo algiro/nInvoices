@@ -6,13 +6,19 @@ namespace nInvoices.Application.DTOs;
 /// </summary>
 /// <param name="Currency">What every amount is in.</param>
 /// <param name="Warnings">What the estimate leaves out or could not work out.</param>
+/// <param name="YearLabel">How the country names the tax year, e.g. "2026/27" in the United Kingdom.</param>
+/// <param name="YearStart">The first day of the tax year: 1 January, or 6 April in the United Kingdom.</param>
+/// <param name="YearEnd">Its last day.</param>
 public sealed record TaxPredictionDto(
     int Year,
     bool IsSetUp,
     string? CountryCode,
     string? Currency,
     IReadOnlyList<TaxPeriodDto> Periods,
-    IReadOnlyList<string> Warnings);
+    IReadOnlyList<string> Warnings,
+    string? YearLabel = null,
+    DateOnly? YearStart = null,
+    DateOnly? YearEnd = null);
 
 /// <param name="Period">1-based period of the year (the quarter, for quarterly forms).</param>
 /// <param name="Name">E.g. "Q1".</param>
