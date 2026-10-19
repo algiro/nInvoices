@@ -1,9 +1,7 @@
 import type { DataExport } from '@/api/importExport'
 import { InvoiceType, RateType, TaxApplicationType, DayType } from '@/types'
-import {
-  invoiceSample, monthlyReportSample, monthlyReportSampleName,
-  emailSampleName, emailSampleSubject, emailSampleBody
-} from '@/components/templates/editor/templateSamples'
+import { emailSampleName, emailSampleSubject, emailSampleBody } from '@/components/templates/editor/templateSamples'
+import { sampleInvoiceTemplate, sampleTimesheetTemplate, sampleTimesheetName } from './sampleTemplates'
 
 /** Fiscal ids of the sample customers: a customer with one of these is sample data. */
 export const SAMPLE_FISCAL_IDS = ['SAMPLE-0001', 'SAMPLE-0002'] as const
@@ -102,14 +100,14 @@ export function buildSampleData(today: Date): DataExport {
       invoiceTemplates: [{
         invoiceType: InvoiceType.Monthly,
         name: 'Standard invoice',
-        content: invoiceSample,
+        content: sampleInvoiceTemplate,
         isActive: true,
         createdAt: now
       }],
       monthlyReportTemplates: [{
         invoiceType: InvoiceType.Monthly,
-        name: monthlyReportSampleName,
-        content: monthlyReportSample,
+        name: sampleTimesheetName,
+        content: sampleTimesheetTemplate,
         isActive: true,
         createdAt: now
       }],
