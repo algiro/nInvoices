@@ -675,12 +675,43 @@
       "unknownChannel": "Unbekannter Kanal \"{channel}\"",
       "notTurnedOn": "{channel} ist nicht aktiviert",
       "customerNotFound": "Der Kunde wurde nicht gefunden"
+    },
+    "uk": {
+      "fields": {
+        "vatRegistered": {
+          "label": "Für die VAT registriert",
+          "help": "Ihre Rechnungen sind dann VAT-Rechnungen: Die Tax ID oben ist Ihre VAT-Registrierungsnummer (GB und neun Ziffern)."
+        },
+        "tradingName": {
+          "label": "Handelsname",
+          "help": "Der Name, unter dem Sie auftreten, falls nicht Ihr eigener (z. B. \"Smith Consulting\")."
+        }
+      },
+      "taxFields": {
+        "treatment": {
+          "label": "Warum keine VAT berechnet wird (Vereinigtes Königreich)",
+          "help": "Auf einer VAT-Rechnung mit 0 % VAT erforderlich.",
+          "zero": "Nullsatz (zero-rated)",
+          "exempt": "Steuerbefreit",
+          "outside": "Nicht im Anwendungsbereich der britischen VAT (z. B. Leistungen an ein Unternehmen im Ausland)",
+          "reverseCharge": "Inländisches Reverse-Charge-Verfahren (der Kunde zahlt die VAT an HMRC)"
+        }
+      },
+      "vatNumberRequired": "Ein für die VAT registriertes Unternehmen braucht seine VAT-Nummer als Tax ID",
+      "vatNumberInvalid": "Dies ist keine gültige britische VAT-Nummer (GB und neun Ziffern)",
+      "taxIdInvalid": "Dies ist weder eine britische VAT-Nummer noch eine UTR (zehn Ziffern)",
+      "postcodeInvalid": "{subject}: Dies ist keine britische Postleitzahl",
+      "townRequired": "{subject}: Der Ort ist erforderlich",
+      "notRegisteredChargesVat": "Sie sind nicht für die VAT registriert: Entfernen Sie die VAT aus den Steuern dieses Kunden oder aktivieren Sie die Registrierung unter Einstellungen › Land & Steuern.",
+      "zeroVatNeedsTreatment": "Die VAT \"{tax}\" beträgt 0 %: Wählen Sie bei der Steuer, warum keine VAT berechnet wird, wie es eine VAT-Rechnung angeben muss.",
+      "customerAddressRequired": "Eine VAT-Rechnung zeigt Namen und Anschrift des Kunden: Vervollständigen Sie zuerst den Kunden."
     }
   },
   "countries": {
     "ES": "Spanien",
     "IT": "Italien",
-    "DE": "Deutschland"
+    "DE": "Deutschland",
+    "GB": "Vereinigtes Königreich"
   },
   "taxPrediction": {
     "common": {
@@ -957,6 +988,105 @@
     "notSetUp": {
       "noProfile": "Wähle in den Einstellungen, wo du Steuern zahlst, um eine Schätzung zu sehen.",
       "otherCountry": "Wähle dein Steuermodell unter Einstellungen › Land und Steuern, um eine Schätzung zu sehen."
+    },
+    "uk": {
+      "regime": {
+        "name": "Einzelunternehmer (Self Assessment)",
+        "help": "Income Tax, National Insurance der Klasse 4 und Studienkredite: zwei Vorauszahlungen und eine Abschlusszahlung. VAT-Erklärungen jedes Quartal oder das Flat Rate Scheme. Das Steuerjahr läuft vom 6. April bis zum 5. April."
+      },
+      "fields": {
+        "vatScheme": {
+          "label": "VAT",
+          "help": "Sie müssen sich registrieren, sobald Ihr Umsatz in 12 Monaten £90.000 übersteigt.",
+          "none": "Nicht für die VAT registriert",
+          "standard": "Für die VAT registriert: normale Erklärungen",
+          "flatRate": "Für die VAT registriert: Flat Rate Scheme"
+        },
+        "stagger": {
+          "label": "VAT-Quartale",
+          "help": "Wie auf Ihrer VAT-Registrierungsbescheinigung.",
+          "1": "Endend im März, Juni, September, Dezember",
+          "2": "Endend im April, Juli, Oktober, Januar",
+          "3": "Endend im Mai, August, November, Februar"
+        },
+        "flatRate": {
+          "label": "Pauschalsatz (%)",
+          "help": "Der Satz Ihrer Branche; 16,5 für einen limited cost trader."
+        },
+        "firstYearDiscount": {
+          "label": "Erstes Jahr der VAT-Registrierung (1 % weniger Pauschalsatz)",
+          "help": "Der Nachlass von HMRC für die ersten 12 Monate."
+        },
+        "scottish": {
+          "label": "In Schottland steuerpflichtig",
+          "help": "Wenn Sie in Schottland leben, gelten die schottischen Income-Tax-Stufen."
+        },
+        "studentLoan": {
+          "label": "Studienkredit",
+          "none": "Keiner",
+          "plan1": "Plan 1",
+          "plan2": "Plan 2",
+          "plan4": "Plan 4 (Schottland)",
+          "plan5": "Plan 5"
+        },
+        "postgraduateLoan": {
+          "label": "Postgraduierten-Kredit"
+        },
+        "tradingAllowance": {
+          "label": "Die Trading Allowance von £1.000 nutzen, wenn sie Ihre Ausgaben übersteigt",
+          "help": "Statt Ihrer tatsächlichen Ausgaben: Beides geht nicht."
+        },
+        "previousYearTax": {
+          "label": "Self-Assessment-Steuer des Vorjahres (£, optional)",
+          "help": "Income Tax und National Insurance der Klasse 4 aus der Vorjahreserklärung: Jede Vorauszahlung ist die Hälfte davon. Leer gelassen, wird die Schätzung dieses Jahres verwendet."
+        }
+      },
+      "lines": {
+        "turnover": "Umsatz (ohne VAT)",
+        "flatRateSurplus": "+ Mit dem Flat Rate Scheme einbehaltene VAT",
+        "tradingAllowance": "− Trading Allowance",
+        "expenses": "− Abzugsfähige Ausgaben",
+        "profit": "Gewinn",
+        "personalAllowance": "− Personal Allowance",
+        "incomeTax": "Income Tax",
+        "incomeTaxScottish": "Income Tax (schottische Sätze)",
+        "class4": "National Insurance der Klasse 4",
+        "studentLoan": "Rückzahlung des Studienkredits",
+        "withheld": "− An der Quelle einbehaltene Steuer",
+        "basisEstimate": "Grundlage: die Schätzung dieses Jahres",
+        "basisLastYear": "Grundlage: die Steuer des Vorjahres",
+        "noPaymentsOnAccount": "Keine Vorauszahlungen unter £1.000",
+        "half": "Die Hälfte der Grundlage",
+        "paidOnAccount": "Vorausgezahlt",
+        "balanceToPay": "Abschlusszahlung",
+        "refund": "Erstattung",
+        "vatOnSales": "Geschuldete VAT auf Umsätze",
+        "vatReverseCharge": "Geschuldete VAT auf Leistungen aus dem Ausland (Reverse Charge)",
+        "vatReclaimed": "Erstattete VAT auf Einkäufe",
+        "vatToPay": "Zu zahlende VAT",
+        "vatRepayment": "VAT-Erstattung",
+        "flatRateTurnover": "Umsatz einschließlich VAT",
+        "flatRateApplied": "× Pauschalsatz von {rate} %",
+        "vatCharged": "Kunden berechnete VAT"
+      },
+      "forms": {
+        "firstPayment": "Erste Vorauszahlung",
+        "secondPayment": "Zweite Vorauszahlung",
+        "balancing": "Abschlusszahlung",
+        "vatReturn": "VAT-Erklärung · Q{quarter}"
+      },
+      "periods": {
+        "firstPayment": "Vorauszahlung im Januar",
+        "secondPayment": "Vorauszahlung im Juli",
+        "balancing": "Abschlusszahlung"
+      },
+      "warnings": {
+        "unknownYear": "Die Sätze für {year} sind noch nicht bekannt: Es werden die von {known} verwendet.",
+        "scottishBands": "Die schottischen Stufen für {year} sind noch nicht enthalten: Es werden die von {known} verwendet.",
+        "cashBasis": "Einnahmen und Ausgaben zählen zum Rechnungsdatum; seit 2024/25 gilt für Einzelunternehmer das Zuflussprinzip (bei Zahlung), sofern sie nicht widersprechen.",
+        "otherIncome": "Nur der Gewinn dieses Unternehmens wird berücksichtigt: Lohn-, Spar- oder Dividendeneinkünfte würden die Stufen verändern.",
+        "mustRegister": "Umsatz über £{threshold}: Sie müssen sich für die VAT registrieren."
+      }
     }
   }
 }

@@ -675,12 +675,43 @@
       "unknownChannel": "Unknown channel \"{channel}\"",
       "notTurnedOn": "{channel} is not turned on",
       "customerNotFound": "The customer was not found"
+    },
+    "uk": {
+      "fields": {
+        "vatRegistered": {
+          "label": "VAT registered",
+          "help": "Your invoices are then VAT invoices: the Tax ID above is your VAT registration number (GB and nine digits)."
+        },
+        "tradingName": {
+          "label": "Trading name",
+          "help": "The name you trade under, if not your own (e.g. \"Smith Consulting\")."
+        }
+      },
+      "taxFields": {
+        "treatment": {
+          "label": "Why no VAT is charged (UK)",
+          "help": "Required on a VAT invoice for VAT at 0%.",
+          "zero": "Zero-rated",
+          "exempt": "Exempt",
+          "outside": "Outside the scope of UK VAT (e.g. services to a business abroad)",
+          "reverseCharge": "Domestic reverse charge (the customer pays the VAT to HMRC)"
+        }
+      },
+      "vatNumberRequired": "A VAT-registered business needs its VAT number as the Tax ID",
+      "vatNumberInvalid": "This is not a valid UK VAT number (GB and nine digits)",
+      "taxIdInvalid": "This is neither a UK VAT number nor a UTR (ten digits)",
+      "postcodeInvalid": "{subject}: this is not a UK postcode",
+      "townRequired": "{subject}: the town is required",
+      "notRegisteredChargesVat": "You are not VAT registered: remove the VAT from this customer's taxes, or tick VAT registered in Settings › Country & taxes.",
+      "zeroVatNeedsTreatment": "VAT \"{tax}\" is 0%: choose on the tax why no VAT is charged, as a VAT invoice must say it.",
+      "customerAddressRequired": "A VAT invoice shows the customer's name and address: complete the customer first."
     }
   },
   "countries": {
     "ES": "Spain",
     "IT": "Italy",
-    "DE": "Germany"
+    "DE": "Germany",
+    "GB": "United Kingdom"
   },
   "taxPrediction": {
     "common": {
@@ -957,6 +988,105 @@
     "notSetUp": {
       "noProfile": "Choose where you pay taxes in Settings to see an estimate.",
       "otherCountry": "Choose your tax regime in Settings › Country & taxes to see an estimate."
+    },
+    "uk": {
+      "regime": {
+        "name": "Sole trader (Self Assessment)",
+        "help": "Income Tax, Class 4 National Insurance and student loans: two payments on account and a balancing payment. VAT returns every quarter, or the Flat Rate Scheme. The tax year runs from 6 April to 5 April."
+      },
+      "fields": {
+        "vatScheme": {
+          "label": "VAT",
+          "help": "You must register once your turnover passes £90,000 in 12 months.",
+          "none": "Not VAT registered",
+          "standard": "VAT registered: standard returns",
+          "flatRate": "VAT registered: Flat Rate Scheme"
+        },
+        "stagger": {
+          "label": "VAT quarters",
+          "help": "As on your VAT registration certificate.",
+          "1": "Ending March, June, September, December",
+          "2": "Ending April, July, October, January",
+          "3": "Ending May, August, November, February"
+        },
+        "flatRate": {
+          "label": "Flat rate (%)",
+          "help": "Your business type's rate; 16.5 for a limited cost trader."
+        },
+        "firstYearDiscount": {
+          "label": "First year of VAT registration (1% off the flat rate)",
+          "help": "HMRC's discount for the first 12 months."
+        },
+        "scottish": {
+          "label": "Scottish taxpayer",
+          "help": "Scotland's Income Tax bands apply when you live in Scotland."
+        },
+        "studentLoan": {
+          "label": "Student loan",
+          "none": "None",
+          "plan1": "Plan 1",
+          "plan2": "Plan 2",
+          "plan4": "Plan 4 (Scotland)",
+          "plan5": "Plan 5"
+        },
+        "postgraduateLoan": {
+          "label": "Postgraduate loan"
+        },
+        "tradingAllowance": {
+          "label": "Use the £1,000 trading allowance when it beats your expenses",
+          "help": "Instead of deducting your actual expenses: you can't do both."
+        },
+        "previousYearTax": {
+          "label": "Last year's Self Assessment bill (£, optional)",
+          "help": "Income Tax and Class 4 National Insurance on last year's return: each payment on account is half of it. Left empty, this year's estimate is used."
+        }
+      },
+      "lines": {
+        "turnover": "Turnover (excluding VAT)",
+        "flatRateSurplus": "+ VAT kept under the Flat Rate Scheme",
+        "tradingAllowance": "− Trading allowance",
+        "expenses": "− Allowable expenses",
+        "profit": "Profit",
+        "personalAllowance": "− Personal allowance",
+        "incomeTax": "Income Tax",
+        "incomeTaxScottish": "Income Tax (Scottish rates)",
+        "class4": "Class 4 National Insurance",
+        "studentLoan": "Student loan repayment",
+        "withheld": "− Tax deducted at source",
+        "basisEstimate": "Basis: this year's estimate",
+        "basisLastYear": "Basis: last year's bill",
+        "noPaymentsOnAccount": "No payments on account below £1,000",
+        "half": "Half of the basis",
+        "paidOnAccount": "Paid on account",
+        "balanceToPay": "Balancing payment",
+        "refund": "Refund",
+        "vatOnSales": "VAT due on sales",
+        "vatReverseCharge": "VAT due on services from abroad (reverse charge)",
+        "vatReclaimed": "VAT reclaimed on purchases",
+        "vatToPay": "VAT to pay",
+        "vatRepayment": "VAT repayment",
+        "flatRateTurnover": "Turnover including VAT",
+        "flatRateApplied": "× flat rate of {rate}%",
+        "vatCharged": "VAT charged to customers"
+      },
+      "forms": {
+        "firstPayment": "First payment on account",
+        "secondPayment": "Second payment on account",
+        "balancing": "Balancing payment",
+        "vatReturn": "VAT return · Q{quarter}"
+      },
+      "periods": {
+        "firstPayment": "January payment on account",
+        "secondPayment": "July payment on account",
+        "balancing": "Balancing payment"
+      },
+      "warnings": {
+        "unknownYear": "The rates of {year} are not known yet: those of {known} are used.",
+        "scottishBands": "Scotland's bands for {year} are not included yet: those of {known} are used.",
+        "cashBasis": "Income and expenses count when invoiced; since 2024/25 a sole trader's accounts use the cash basis (when paid) unless they opt out.",
+        "otherIncome": "Only this business's profit is counted: employment, savings or dividend income would change the bands.",
+        "mustRegister": "Turnover above £{threshold}: you must register for VAT."
+      }
     }
   }
 }

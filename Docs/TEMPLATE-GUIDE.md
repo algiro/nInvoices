@@ -168,6 +168,18 @@ compliance.germany.vatNote          - "Gemäß § 19 UStG wird keine Umsatzsteue
 ```
 § 14 UStG asks for the Steuernummer or the USt-IdNr on every invoice; the default template prints them and the note.
 
+**`compliance.uk`** (United Kingdom); `isApplicable` is true when the UK rules are on:
+```
+compliance.uk.isApplicable     - true if the UK rules apply to the invoice
+compliance.uk.isVatRegistered  - true for a VAT-registered business: the invoice is a VAT invoice
+compliance.uk.vatNumber        - "GB 980 7806 84", for a VAT-registered business; empty otherwise
+compliance.uk.tradingName      - the name the business trades under, if set
+compliance.uk.hasVatNote       - true if the invoice charges no VAT and vatNote says why
+compliance.uk.vatNote          - "Zero-rated supply.", "Exempt from VAT.", "Outside the scope of UK VAT.",
+                                 or "Reverse charge: customer to pay the VAT to HMRC."
+```
+A VAT invoice must show the VAT number; the default template prints it, the trading name and the note.
+
 ### Monthly Report Template Model
 
 | Property | Type | Description | Example |

@@ -11,6 +11,7 @@
     <ProjectReference Include="..\nInvoices.Countries.Spain\nInvoices.Countries.Spain.csproj" />
     <ProjectReference Include="..\nInvoices.Countries.Italy\nInvoices.Countries.Italy.csproj" />
     <ProjectReference Include="..\nInvoices.Countries.Germany\nInvoices.Countries.Germany.csproj" />
+    <ProjectReference Include="..\nInvoices.Countries.UnitedKingdom\nInvoices.Countries.UnitedKingdom.csproj" />
   </ItemGroup>
 
   <ItemGroup>

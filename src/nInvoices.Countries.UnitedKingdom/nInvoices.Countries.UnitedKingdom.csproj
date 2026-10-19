@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- United Kingdom: VAT invoice rules and tax prediction for a sole trader (Self Assessment: Income Tax,
+       Class 4 National Insurance, student loans; VAT returns or the Flat Rate Scheme). Registered by the Api
+       through UnitedKingdomCountry; nothing outside this project names the United Kingdom. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\nInvoices.Application\nInvoices.Application.csproj" />
+    <ProjectReference Include="..\nInvoices.Infrastructure\nInvoices.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="nInvoices.Application.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -447,5 +447,19 @@
         [[ end ]]
     </div>
     [[ end ]]
+
+    [[ if compliance.uk.isApplicable ]]
+    <div class="summary-section">
+        [[ if compliance.uk.tradingName != "" ]]
+        <div class="summary-text">Trading as [[ compliance.uk.tradingName ]]</div>
+        [[ end ]]
+        [[ if compliance.uk.isVatRegistered ]]
+        <div class="summary-text">VAT registration number: [[ compliance.uk.vatNumber ]]</div>
+        [[ end ]]
+        [[ if compliance.uk.hasVatNote ]]
+        <div class="summary-text">[[ compliance.uk.vatNote ]]</div>
+        [[ end ]]
+    </div>
+    [[ end ]]
 </body>
 </html>
