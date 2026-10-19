@@ -22,7 +22,7 @@
           :class="cellClasses(day)"
           :style="partialStyle(day.date)"
           @pointerdown="onPointerDown($event, day.date)"
-          @pointerenter="onPointerEnter(day.date)"
+          @pointerenter="onPointerEnter($event, day.date)"
         >
           <span class="cell-top">
             <span class="cell-num">{{ day.day }}</span>
@@ -134,16 +134,25 @@ function onPointerDown(event: PointerEvent, date: string) {
   }
 }
 
-function onPointerEnter(date: string) {
-  if (dragging.value && anchor.value) selectRange(anchor.value, date)
+function onPointerEnter(event: PointerEvent, date: string) {
+  if (!dragging.value || !anchor.value) return
+  // No button held: the release happened where we couldn't see it (outside the window, over a screen
+  // recorder's frame...), so the drag is over. Without this, hovering would keep growing the selection.
+  if ((event.buttons & 1) === 0) {
+    dragging.value = false
+    return
+  }
+  selectRange(anchor.value, date)
 }
 
 function stopDragging() {
   dragging.value = false
 }
 
-onMounted(() => window.addEventListener('pointerup', stopDragging))
-onBeforeUnmount(() => window.removeEventListener('pointerup', stopDragging))
+const dragEnders = ['pointerup', 'pointercancel', 'blur'] as const
+
+onMounted(() => dragEnders.forEach(name => window.addEventListener(name, stopDragging)))
+onBeforeUnmount(() => dragEnders.forEach(name => window.removeEventListener(name, stopDragging)))
 
 // ---------- keyboard ----------
 
