@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <Deterministic>true</Deterministic>
+    <!-- The release number; the commit is added after it (1.0.0+a1b2c3d), see SetSourceRevisionId below -->
+    <VersionPrefix>1.0.0</VersionPrefix>
 
     <!-- The .NET analyzers at the recommended level, and the .editorconfig style rules, in every build -->
     <AnalysisLevel>latest-recommended</AnalysisLevel>
@@ -16,6 +18,16 @@
     <!-- Reproducible paths in CI builds -->
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
+
+  <!-- The commit being built goes into the assembly's informational version, so a running instance can be matched with
+       its source (Settings > General shows it). Docker builds have no .git: they pass -p:SourceRevisionId=<sha> instead. -->
+  <Target Name="SetSourceRevisionId" BeforeTargets="InitializeSourceControlInformation"
+          Condition="'$(SourceRevisionId)' == '' And Exists('$(MSBuildThisFileDirectory).git')">
+    <Exec Command="git describe --long --always --dirty --exclude=* --abbrev=7" ConsoleToMSBuild="true" IgnoreExitCode="true"
+          StandardOutputImportance="low" StandardErrorImportance="low">
+      <Output PropertyName="SourceRevisionId" TaskParameter="ConsoleOutput" />
+    </Exec>
+  </Target>
 
   <!-- Application code reads the time only from the injected TimeProvider: the clock calls in
        BannedSymbols.txt are build errors (RS0030). Tests may use them, to build fixed times. -->

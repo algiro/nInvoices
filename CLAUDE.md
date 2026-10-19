@@ -36,6 +36,8 @@ FACe). `.editorconfig` also encodes the C# conventions (file-scoped namespaces, 
 API before building, or its DLLs are locked. `docker/Dockerfile.api` copies the root `Directory.*.props`
 before restoring; keep that in step.
 
+**Version stamp**: the API's `AssemblyInformationalVersion` is `<VersionPrefix>+<short sha>` (`Directory.Build.props`: `VersionPrefix` is the release number, a target adds the commit from git; Docker builds pass `SOURCE_REVISION` since the image has no `.git`). `GET /api/version` returns it (`BuildInfo`); the web bundle carries its own (`__APP_COMMIT__` from `VITE_APP_COMMIT` or git, `vite.config.ts`). Settings › General shows both with a link to the commit on GitHub, and warns when they differ. `build-and-push` and CI pass the commit to both images.
+
 **CI** (`.github/workflows/ci.yml`, every push to main and every PR): backend Release build and tests
 (PostgreSQL tests run on the runner's Docker), frontend `npm run check` + build, and both Docker images build.
 `.github/dependabot.yml` opens update PRs weekly (NuGet, npm: minor/patch grouped, majors separately) and

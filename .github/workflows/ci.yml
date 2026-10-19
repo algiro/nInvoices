@@ -94,6 +94,7 @@ jobs:
           context: .
           file: docker/Dockerfile.api
           push: false
+          build-args: SOURCE_REVISION=${{ github.sha }}
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
@@ -103,5 +104,6 @@ jobs:
           context: .
           file: docker/Dockerfile.web
           push: false
+          build-args: VITE_APP_COMMIT=${{ github.sha }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web

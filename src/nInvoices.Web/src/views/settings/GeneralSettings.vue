@@ -18,6 +18,8 @@
   </BasePanel>
 
   <HolidayCalendarsPanel />
+
+  <VersionPanel />
 </template>
 
 <script setup lang="ts">
@@ -27,6 +29,7 @@ import BasePanel from '@/components/ui/BasePanel.vue'
 import ThemePicker from '@/components/settings/ThemePicker.vue'
 import HolidayCalendarsPanel from '@/components/settings/HolidayCalendarsPanel.vue'
 import LanguagePanel from '@/components/settings/LanguagePanel.vue'
+import VersionPanel from '@/components/settings/VersionPanel.vue'
 import { currentLanguage } from '@/i18n'
 import { useI18n } from 'vue-i18n'
 

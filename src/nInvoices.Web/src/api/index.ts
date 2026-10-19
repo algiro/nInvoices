@@ -14,3 +14,4 @@ export * from './taxPrediction';
 export * from './businessExpenses';
 export * from './country';
 export * from './preferences';
+export * from './version';

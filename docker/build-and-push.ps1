@@ -63,7 +63,9 @@ Write-Host "================================================================`n" 
 Write-Host "Image: $API_IMAGE`:$version" -ForegroundColor White
 Write-Host "Building...`n" -ForegroundColor Gray
 
-docker build -t "${API_IMAGE}:${version}" -f Dockerfile.api ..
+$commit = (git rev-parse --short=7 HEAD 2>$null)
+if (git status --porcelain 2>$null) { $commit = "$commit-dirty" }
+docker build -t "${API_IMAGE}:${version}" --build-arg SOURCE_REVISION=$commit -f Dockerfile.api ..
 if ($LASTEXITCODE -ne 0) {
     Write-Host "`nAPI build failed. Exiting." -ForegroundColor Red
     exit 1
@@ -94,6 +96,7 @@ docker build `
     --build-arg VITE_KEYCLOAK_CLIENT_ID=$KeycloakClientId `
     --build-arg VITE_API_URL=$ApiUrl `
     --build-arg VITE_BASE=$Base `
+    --build-arg VITE_APP_COMMIT=$commit `
     -f Dockerfile.web ..
 
 if ($LASTEXITCODE -ne 0) {
