@@ -23,7 +23,7 @@ nInvoices is built around that monthly routine:
 
 - **Your month on a calendar.** Weekdays start as full days and public holidays are already marked. You only touch the days that differ.
 - **See the real invoice before it's created.** The last step renders the actual invoice PDF and timesheet with your data, and nothing is saved until you press *Generate*.
-- **Your layout, your language.** Invoices and timesheets are HTML templates you design, with dates and month names in each client's language.
+- **Your layout, your language.** Invoices and timesheets are HTML templates you design, with dates and month names in each client's language. The app itself speaks English, Italian, Spanish and German.
 - **Self-hosted.** Your clients, rates and invoices stay on your own server or laptop.
 
 ## Features
@@ -43,7 +43,7 @@ nInvoices is built around that monthly routine:
 - **Template editor with live preview** and a panel of available variables.
 - **Pixel-exact PDFs** rendered by headless Chrome, for invoices, timesheets and a worked-days calendar.
 - **Configurable invoice numbers, per user**: each user has their own sequence and pattern, e.g. `{YEAR}-{MONTH:00}-{NUMBER:000}`, set in Settings. An invoice takes its number when you finalize it; until then every draft shows the next number, so deleting a draft never leaves a gap.
-- **E-invoicing rules per country (optional, off by default).** Each user picks the country they work from and can turn on its rules; nobody else sees a thing. **Spain, Italy and Germany** are built in (see [below](#e-invoicing-by-country)), each as a plug-in, so other countries can be added.
+- **E-invoicing rules per country (optional, off by default).** Each user picks the country they work from and can turn on its rules; nobody else sees a thing. **Spain, Italy, Germany and the United Kingdom** are built in (see [below](#e-invoicing-by-country)), each as a plug-in, so other countries can be added.
 
 ### E-invoicing by country
 
@@ -70,6 +70,12 @@ Some countries ask freelancers for more than a PDF: a signed structured invoice,
 - **XRechnung 3.0** (UBL 2.1), on request for a finalized invoice, unsigned. Checked in the tests against the UBL 2.1 schema and with KoSIT's validator against the EN 16931 and XRechnung Schematron rules: every case is accepted.
 - Steuernummer or USt-IdNr (§ 14 UStG) with their checks, Kleinunternehmer (§ 19 UStG) with its note, the contact and IBAN XRechnung needs, the customer's Leitweg-ID and e-invoice email.
 - Each 0% VAT says why: reverse charge (AE), intra-community supply (K), export (G), not subject (O), exempt (E) or zero rate (Z). Templates get the Steuernummer, the USt-IdNr and the VAT note under `compliance.germany`.
+
+**United Kingdom** is implemented, for a sole trader. No e-invoice: none is mandatory in the UK.
+
+- VAT registered or not, the VAT number (both HMRC check-digit schemes, branches included) or a UTR, the trading name and a UK postcode. Finalizing is refused when an unregistered business charges VAT, or a VAT invoice has a 0% VAT without a reason; each 0% VAT says why (zero-rated, exempt, outside the scope, domestic reverse charge).
+- Templates get the VAT number as HMRC writes it, the trading name and the 0% note under `compliance.uk`.
+- Tax prediction over the 6 April - 5 April tax year: Income Tax (rest of the UK or Scottish bands), Class 4 National Insurance, student loans, the trading allowance, payments on account, and VAT returns (standard or Flat Rate Scheme).
 
 > **Status (Italy, Germany):** the files pass the official schemas (and, for Germany, KoSIT's validator), but **none has yet gone through the SDI or a German recipient's portal**. Try them there before relying on them.
 
@@ -175,7 +181,7 @@ Open **http://localhost:3000**, add your first customer with a rate, and create 
 | **.NET Aspire** | Trying the full stack locally | `aspire run --project src/nInvoices.AppHost` starts PostgreSQL, Keycloak (test user `testuser` / `Test123!`), the API and the web app. Needs Docker. See [`src/nInvoices.AppHost/README.md`](src/nInvoices.AppHost/README.md). |
 | **Local, SQLite** | One person on one machine | The [quick start](#quick-start) above. |
 
-PostgreSQL schema changes are shipped as idempotent SQL scripts in [`docker/migrations-postgres/`](docker/migrations-postgres/README.md).
+On PostgreSQL the API applies its EF Core migrations at startup, so an upgrade needs nothing else.
 
 ### Multiple users
 
@@ -212,7 +218,7 @@ src/
   nInvoices.Core/            entities, value objects, interfaces
   nInvoices.Application/     commands, queries, services (generation, templates, holidays, the country hooks)
   nInvoices.Infrastructure/  EF Core, PDF export, tax handlers, Gmail
-  nInvoices.Countries.*/     one project per country: Spain, Italy, Germany (rules, e-invoices, tax prediction)
+  nInvoices.Countries.*/     one project per country: Spain, Italy, Germany, United Kingdom (rules, e-invoices, tax prediction)
   nInvoices.Api/             ASP.NET Core API
   nInvoices.Web/             Vue 3 app
   nInvoices.AppHost/         .NET Aspire orchestrator (local only)
@@ -240,7 +246,7 @@ Ideas and bug reports are welcome in [Issues](https://github.com/algiro/nInvoice
 
 ## Contributing
 
-Issues, questions and suggestions are very welcome, and so is help with [e-invoicing for your country](#help-wanted-more-countries). For code changes, please **open an issue first** so we can agree on the approach before you invest time. Pull requests are accepted under the project's license (see below).
+Issues, questions and suggestions are very welcome, and so is help with [e-invoicing for your country](#help-wanted-more-countries). For code changes, please **open an issue first** so we can agree on the approach before you invest time. Pull requests are accepted under the project's license (see below). The details are in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## License
 
