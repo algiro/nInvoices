@@ -1382,6 +1382,20 @@
     "restoreFailed": "Ripristino non riuscito",
     "newerVersion": "Questo backup cifrato è stato creato da una versione più recente di nInvoices."
   },
+  "sampleData": {
+    "title": "Dati di esempio",
+    "description": "Riempie il tuo spazio con clienti fittizi e due mesi di giorni lavorati, per provare nInvoices senza inserire dati reali.",
+    "note": "Aggiunge due clienti di esempio con tariffe, imposte, progetti e giorni lavorati, più i modelli iniziali. Poi crea una fattura del mese scorso da Nuova fattura. Non viene fatturato nulla al posto tuo.",
+    "load": "Carica i dati di esempio",
+    "remove": "Rimuovi i clienti di esempio",
+    "removeTitle": "Rimuovere i clienti di esempio?",
+    "removeMessage": "Elimina i due clienti di esempio e i loro giorni lavorati. I tuoi clienti non vengono toccati.",
+    "loaded": "Dati di esempio caricati.",
+    "alreadyThere": "I dati di esempio ci sono già.",
+    "loadFailed": "Impossibile caricare i dati di esempio",
+    "removed": "Rimossi {count} clienti di esempio.",
+    "removeFailed": "Impossibile rimuovere i clienti di esempio"
+  },
   "deleteAccount": {
     "title": "Elimina il tuo account",
     "description": "Rimuove tutto ciò che hai su questo server. Non si può annullare.",

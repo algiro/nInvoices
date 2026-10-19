@@ -1382,6 +1382,20 @@
     "restoreFailed": "No se ha podido restaurar",
     "newerVersion": "Esta copia cifrada se hizo con una versión más reciente de nInvoices."
   },
+  "sampleData": {
+    "title": "Datos de ejemplo",
+    "description": "Rellena tu espacio con clientes ficticios y dos meses de días trabajados, para probar nInvoices sin introducir datos reales.",
+    "note": "Añade dos clientes de ejemplo con tarifas, impuestos, proyectos y días trabajados, y plantillas iniciales. Después crea una factura del mes pasado desde Nueva factura. No se factura nada por ti.",
+    "load": "Cargar datos de ejemplo",
+    "remove": "Quitar los clientes de ejemplo",
+    "removeTitle": "¿Quitar los clientes de ejemplo?",
+    "removeMessage": "Elimina los dos clientes de ejemplo y sus días trabajados. Tus propios clientes no se tocan.",
+    "loaded": "Datos de ejemplo cargados.",
+    "alreadyThere": "Los datos de ejemplo ya están.",
+    "loadFailed": "No se pudieron cargar los datos de ejemplo",
+    "removed": "Se quitaron {count} clientes de ejemplo.",
+    "removeFailed": "No se pudieron quitar los clientes de ejemplo"
+  },
   "deleteAccount": {
     "title": "Eliminar tu cuenta",
     "description": "Elimina todo lo que tienes en este servidor. No se puede deshacer.",

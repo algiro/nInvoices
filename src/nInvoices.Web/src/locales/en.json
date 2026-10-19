@@ -1382,6 +1382,20 @@
     "restoreFailed": "Restore failed",
     "newerVersion": "This encrypted backup was made by a newer version of nInvoices."
   },
+  "sampleData": {
+    "title": "Sample data",
+    "description": "Fill your workspace with fictional customers and two months of worked days, to try nInvoices without entering real data.",
+    "note": "Adds two sample customers with rates, taxes, projects and worked days, plus starter templates. Then create an invoice for last month from New invoice. Nothing is invoiced for you.",
+    "load": "Load sample data",
+    "remove": "Remove sample customers",
+    "removeTitle": "Remove the sample customers?",
+    "removeMessage": "Deletes the two sample customers and their worked days. Your own customers are not touched.",
+    "loaded": "Sample data loaded.",
+    "alreadyThere": "The sample data is already there.",
+    "loadFailed": "Couldn't load the sample data",
+    "removed": "Removed {count} sample customers.",
+    "removeFailed": "Couldn't remove the sample customers"
+  },
   "deleteAccount": {
     "title": "Delete your account",
     "description": "Removes everything you have on this server. It can't be undone.",

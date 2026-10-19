@@ -1382,6 +1382,20 @@
     "restoreFailed": "Wiederherstellung fehlgeschlagen",
     "newerVersion": "Dieses verschlüsselte Backup wurde mit einer neueren Version von nInvoices erstellt."
   },
+  "sampleData": {
+    "title": "Beispieldaten",
+    "description": "Füllt deinen Bereich mit fiktiven Kunden und zwei Monaten Arbeitstagen, damit du nInvoices ohne echte Daten ausprobieren kannst.",
+    "note": "Fügt zwei Beispielkunden mit Sätzen, Steuern, Projekten und Arbeitstagen sowie Startvorlagen hinzu. Erstelle danach unter Neue Rechnung eine Rechnung für den letzten Monat. Es wird nichts für dich abgerechnet.",
+    "load": "Beispieldaten laden",
+    "remove": "Beispielkunden entfernen",
+    "removeTitle": "Beispielkunden entfernen?",
+    "removeMessage": "Löscht die beiden Beispielkunden und ihre Arbeitstage. Deine eigenen Kunden bleiben unberührt.",
+    "loaded": "Beispieldaten geladen.",
+    "alreadyThere": "Die Beispieldaten sind schon da.",
+    "loadFailed": "Die Beispieldaten konnten nicht geladen werden",
+    "removed": "{count} Beispielkunden entfernt.",
+    "removeFailed": "Die Beispielkunden konnten nicht entfernt werden"
+  },
   "deleteAccount": {
     "title": "Dein Konto löschen",
     "description": "Entfernt alles, was du auf diesem Server hast. Das kann nicht rückgängig gemacht werden.",
