@@ -123,7 +123,9 @@ function cellTitle(date: string): string {
 function onPointerDown(event: PointerEvent, date: string) {
   if (event.button !== 0) return
   event.preventDefault() // no text selection while dragging
-  gridEl.value?.focus()
+  // No scrolling: when the grid is taller than the window the browser would scroll it into view on this
+  // first focus, sliding another day under the pressed pointer, which then reads as a drag across days
+  gridEl.value?.focus({ preventScroll: true })
   if (event.shiftKey && anchor.value) {
     select(date, 'range')
   } else if (event.ctrlKey || event.metaKey) {
