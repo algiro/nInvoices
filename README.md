@@ -11,7 +11,7 @@ Mark the days you worked, check the invoice before it exists, and send the PDF, 
 ![Vue 3](https://img.shields.io/badge/Vue-3-42b883)
 ![Self-hosted](https://img.shields.io/badge/self--hosted-yes-0e7490)
 
-![nInvoices dashboard, Lagoon theme](Docs/screenshots/dashboard-lagoon.png)
+<img src="Docs/screenshots/demo.gif" alt="From worked days to the invoice preview in a few clicks" width="800">
 
 </div>
 
@@ -128,6 +128,8 @@ Each country is its own project, `src/nInvoices.Countries.<Name>`, exposing an `
 
 ## Screenshots
 
+![nInvoices dashboard, Lagoon theme](Docs/screenshots/dashboard-lagoon.png)
+
 | | |
 |---|---|
 | ![Dashboard, Volt theme](Docs/screenshots/dashboard-volt.png) **Dashboard** in the *Volt* dark theme | ![Time step with public holidays, Aurora theme](Docs/screenshots/invoice-wizard-aurora.png) **Time step:** holidays pre-marked (*Aurora*) |
@@ -169,7 +171,7 @@ npm install
 npm run dev
 ```
 
-Open **http://localhost:3000**, add your first customer with a rate, and create an invoice.
+Open **http://localhost:3000**, add your first customer with a rate, and create an invoice. To look around first, go to *Settings → Data & account → Load sample data*: it adds two fictional customers with two months of worked days and starter templates, and *Remove sample customers* takes them away again.
 
 > The first PDF takes a little longer: the API downloads the headless Chrome it uses for rendering, once.
 
