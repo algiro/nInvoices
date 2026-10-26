@@ -14,6 +14,8 @@
     <PackageReference Include="Aspire.Hosting.JavaScript" />
     <!-- Patched release of a vulnerable transitive dependency of Aspire; see Directory.Packages.props -->
     <PackageReference Include="MessagePack" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
   </ItemGroup>
 
   <ItemGroup>
